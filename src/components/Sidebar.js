@@ -13,72 +13,68 @@ const Sidebar = ({ setView, currentView }) => {
   ];
 
   return (
-    <div className={`fixed left-5 top-[150px] h-[calc(100vh-220px)] bg-gradient-to-br from-[#6c5ce7]/60 to-[#a855f7]/60 backdrop-blur-xl border border-white/20 rounded-[20px] flex flex-col py-6 shadow-2xl z-[1000] transition-all duration-500 ease-in-out overflow-hidden ${isOpen ? 'w-[260px]' : 'w-[85px]'}`}>
+    <div 
+      onMouseEnter={() => setIsOpen(true)}
+      onMouseLeave={() => setIsOpen(false)}
+      className={`fixed left-5 top-[120px] h-[calc(100vh-180px)] bg-gradient-to-br from-[#6c5ce7]/60 to-[#a855f7]/60 backdrop-blur-xl border border-white/20 rounded-[30px] flex flex-col py-8 shadow-[0_20px_50px_rgba(0,0,0,0.2)] z-[1000] transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden ${isOpen ? 'w-[240px]' : 'w-[85px]'}`}
+    >
       
       {/* Profile Section */}
-      <div 
-        className="flex flex-col items-center px-2.5 mb-6 cursor-pointer relative text-center" 
-        onClick={() => !isOpen && setIsOpen(true)}
-      >
-        <div className="relative mb-2">
-          <div className="w-[50px] h-[50px] bg-focusPurple text-white rounded-full flex items-center justify-center font-extrabold border-2 border-white/30 shadow-md">
-            MD
+      <div className="flex flex-col items-center px-4 mb-10 relative">
+        <div className="relative group">
+          <div className="w-[52px] h-[52px] bg-white/20 backdrop-blur-md text-white rounded-2xl flex items-center justify-center font-black border border-white/30 shadow-lg group-hover:scale-110 transition-transform duration-300">
+            MA
           </div>
-          <span className="absolute bottom-0.5 right-0.5 w-3 h-3 bg-[#00d1b2] border-2 border-white rounded-full"></span>
+          <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-[#2ecc71] border-2 border-[#6c5ce7] rounded-full"></span>
         </div>
         
-        {isOpen && (
-          <div className="animate-in fade-in slide-in-from-top-1 duration-300">
-            <p className="text-white font-bold text-[0.85rem] whitespace-nowrap mt-1">M. Ahmad Malik</p>
-            <button 
-              className="absolute top-0 right-2 bg-[#00b894] text-white w-5 h-5 rounded-full flex items-center justify-center text-xs"
-              onClick={(e) => {
-                e.stopPropagation(); 
-                setIsOpen(false);
-              }}
-            > ← </button>
-          </div>
-        )}
+        <div className={`mt-4 transition-all duration-500 ${isOpen ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'}`}>
+          <p className="text-white font-black text-[0.9rem] whitespace-nowrap">Ahmad Malik</p>
+          <p className="text-white/60 text-[0.65rem] font-bold tracking-widest uppercase">Elite Member</p>
+        </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex flex-col gap-1">
+      <nav className="flex flex-col gap-3 px-3">
         {menuItems.map((item) => {
           const isActive = currentView === item.id;
           return (
             <button 
               key={item.id}
               onClick={() => setView(item.id)} 
-              className={`group relative flex items-center p-2 mx-3 transition-all duration-300 
+              className={`group relative flex items-center h-[50px] transition-all duration-300 rounded-2xl
                 ${isActive 
-                  ? 'bg-[#f8f9ff] text-focusPurple rounded-l-[40px] -mr-0 ml-4 shadow-[-5px_0_0_0_#f8f9ff]' 
-                  : 'text-white/85 hover:text-white'}`}
+                  ? 'bg-white text-[#6c5ce7] shadow-xl shadow-black/10' 
+                  : 'text-white hover:bg-white/10'}`}
             >
-              {/* Concave Curve Top */}
-              {isActive && (
-                <div className="absolute -top-5 right-0 w-5 h-5 bg-transparent rounded-br-[20px] shadow-[5px_5px_0_0_#f8f9ff]"></div>
-              )}
-              
-              <div className={`min-w-[50px] h-[50px] flex items-center justify-center rounded-full transition-all duration-300 z-10
-                ${isActive 
-                  ? 'bg-white shadow-lg text-focusPurple scale-100' 
-                  : 'group-hover:bg-white/25 group-hover:shadow-white/10 group-hover:scale-105'}`}>
-                <span className="text-2xl">{item.icon}</span>
+              {/* Icon Container */}
+              <div className="min-w-[60px] flex items-center justify-center">
+                <span className={`text-xl transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-120'}`}>
+                  {item.icon}
+                </span>
               </div>
               
-              <span className={`ml-3 font-bold text-[0.95rem] whitespace-nowrap transition-opacity duration-300 
-                ${isOpen ? 'opacity-100' : 'opacity-0'}`}>
+              {/* Label */}
+              <span className={`font-bold text-[0.85rem] tracking-wide whitespace-nowrap transition-all duration-500
+                ${isOpen ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-10'}`}>
                 {item.label}
               </span>
 
-              {/* Concave Curve Bottom */}
+              {/* Active Indicator Glow */}
               {isActive && (
-                <div className="absolute -bottom-5 right-0 w-5 h-5 bg-transparent rounded-tr-[20px] shadow-[5px_-5px_0_0_#f8f9ff]"></div>
+                <div className="absolute left-0 w-1 h-6 bg-[#6c5ce7] rounded-full ml-1"></div>
               )}
             </button>
           );
         })}
       </nav>
+
+      <div className={`mt-auto px-6 transition-opacity duration-500 ${isOpen ? 'opacity-100' : 'opacity-0'}`}>
+         <div className="p-3 bg-white/10 rounded-xl border border-white/10">
+            <p className="text-[10px] text-white/70 font-bold leading-tight uppercase tracking-tighter">Current Streak</p>
+            <p className="text-white font-black text-lg">12 Days</p>
+         </div>
+      </div>
     </div>
   );
 };
