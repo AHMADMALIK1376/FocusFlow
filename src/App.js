@@ -8,19 +8,18 @@ import TimelinePage from "./Pages/TimelinePage";
 import TimetablePage from "./Pages/DailyRoutine";
 import FocusModePage from "./Pages/FocusModePage";
 import { UserProvider, UserContext } from "./components/UserContext"; 
-import "./Style/App.css";
 
-// 1. Created a wrapper to use Context properly
 function AppContent() {
   const { userName } = useContext(UserContext);
   const [view, setView] = useState("dashboard");
 
+  // Timer State
   const [hours, setHours] = useState(0);
   const [minutes, setMinutes] = useState(0);
   const [seconds, setSeconds] = useState(0);
   const [isActive, setIsActive] = useState(false);
 
-  // 2. State management for data
+  // Data State
   const [tasks, setTasks] = useState(() => {
     const saved = localStorage.getItem("focus_tasks");
     return saved ? JSON.parse(saved) : [];
@@ -36,14 +35,14 @@ function AppContent() {
     return savedGoals ? parseInt(savedGoals) : 0;
   });
 
-  // 3. Logic: If userName becomes null or Guest, force them to Auth view
+  // Auth Guard
   useEffect(() => {
     if (!userName || userName === "Guest") {
       setView("auth");
     }
   }, [userName]);
 
-  // Timer Logic
+  // Global Timer Logic
   useEffect(() => {
     let interval = null;
     if (isActive) {
@@ -57,7 +56,7 @@ function AppContent() {
     return () => clearInterval(interval);
   }, [isActive, hours, minutes, seconds]);
 
-  // LocalStorage Sync
+  // Persistence
   useEffect(() => { localStorage.setItem("focus_goals_count", completedGoals); }, [completedGoals]);
   useEffect(() => { localStorage.setItem("focus_timetable", JSON.stringify(timetable)); }, [timetable]);
 
@@ -66,6 +65,7 @@ function AppContent() {
     localStorage.setItem("focus_tasks", JSON.stringify(newTasks));
   };
 
+  // Stats Calculation
   const pendingCount = tasks.filter((t) => !t.completed).length;
   const todayName = new Date().toLocaleDateString('en-US', { weekday: 'long' });
   const pendingRoutine = timetable.filter((task) =>
@@ -76,13 +76,13 @@ function AppContent() {
     ? Math.round((tasks.filter((t) => t.completed).length / tasks.length) * 100)
     : 0;
 
-  // 4. Conditional Rendering based on view and auth status
   return (
-    <div className="App">
+    <div className="min-h-screen bg-[#f0f2f5] font-sans selection:bg-focusPurple/20">
       {view === "auth" ? (
         <AuthPage setView={setView} />
       ) : (
-        <>
+        <div className="flex flex-col">
+          {/* NAVIGATION */}
           <Navbar 
             taskCount={pendingCount}
             routineCount={pendingRoutine}
@@ -90,11 +90,16 @@ function AppContent() {
             setView={setView}
           />
 
-          <div className="progress-container">
-            <div className="progress-bar" style={{ width: `${progress}%` }}></div> 
+          {/* GLOBAL PROGRESS BAR (Floating) */}
+          <div className="fixed top-0 left-0 w-full h-1.5 z-[100] bg-gray-200/50">
+            <div 
+              className="h-full bg-gradient-to-r from-focusPurple to-purple-400 transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(108,92,231,0.5)]" 
+              style={{ width: `${progress}%` }}
+            ></div> 
           </div>
 
-          <main className="main-content">
+          {/* VIEW ROUTING */}
+          <main className="animate-fadeIn">
             {view === "dashboard" && (
               <Home 
                 tasks={tasks} 
@@ -143,11 +148,12 @@ function AppContent() {
               />
             )}
           </main>
-        </>
+        </div>
       )}
     </div>
   );
 }
+
 function App() {
   const [loading, setLoading] = useState(true);
 

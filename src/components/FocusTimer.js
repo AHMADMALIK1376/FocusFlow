@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import "../Style/Home.css";
 
 export default function FocusTimer({ setView, hours, minutes, seconds, isActive }) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -7,47 +6,51 @@ export default function FocusTimer({ setView, hours, minutes, seconds, isActive 
   const displayTime = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 
   return (
-    <div className={`stat-card neumorphic liquid-card ${isExpanded ? "expanded" : ""}`}>
+    <div className={`relative bg-[#f0f2f5] p-10 rounded-[40px] flex-1 min-w-[320px] max-w-[450px] shadow-[20px_20px_60px_#d1d9e6,-20px_-20px_60px_#ffffff] transition-all duration-500 overflow-hidden text-center group hover:-translate-y-2
+      ${isExpanded ? "min-h-[320px]" : "min-h-[280px]"}`}>
 
-      <div className="card-face face-front">
-        <div className="card-header">
-          <span className="icons">⚡</span>
-          <h3>Deep Work</h3>
+      {/* FRONT FACE */}
+      <div className={`transition-all duration-500 ${isExpanded ? "opacity-0 scale-95" : "opacity-100 scale-100"}`}>
+        <div className="flex flex-col items-center mb-4">
+          <span className="text-[2.2rem] mb-2 drop-shadow-md">⚡</span>
+          <h3 className="text-xl font-black text-gray-800">Deep Work</h3>
         </div>
-        <div className="count-display">🚀</div>
-        <p className="card-desc">Set custom timers & track sessions.</p>
-        <button className="magic-btn" onClick={() => setView("focus-mode")}>
+        <div className="text-8xl font-black text-focusPurple drop-shadow-lg mb-2">🚀</div>
+        <p className="text-gray-500 font-bold mb-6">Set custom timers & track sessions.</p>
+        <button 
+          className="bg-[#f0f2f5] px-8 py-3.5 rounded-2xl shadow-[6px_6px_12px_#d1d9e6,-6px_-6px_12px_#ffffff] text-focusPurple font-bold hover:translate-y-[-3px] active:scale-95 active:shadow-inner transition-all"
+          onClick={() => setView("focus-mode")}
+        >
           ⏱️ Enter Focus Mode
         </button>
       </div>
 
-    
-      <div className="card-face face-back">
-        <div className="card-header">
-          <span className="icons">{isActive ? "☄️" : "🪐"}</span>
-          <h3>Flow State</h3>
+      {/* BACK FACE (Liquid Expand) */}
+      <div className={`absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-200 flex flex-col items-center justify-center transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] z-2
+        ${isExpanded ? "[clip-path:circle(150%_at_50%_90%)] pointer-events-auto" : "[clip-path:circle(0%_at_50%_90%)] pointer-events-none"}`}>
+        
+        <div className="flex flex-col items-center mb-6">
+          <span className="text-[2.2rem] mb-2">{isActive ? "☄️" : "🪐"}</span>
+          <h3 className="text-xl font-black text-gray-800">Flow State</h3>
         </div>
 
-          <div className={`timer-orb ${isActive ? "pulsing" : ""}`}style={{ width: '150px', height: '150px' }}>
-          <div className="orb-inner-glow"></div>
+        {/* TIMER ORB */}
+        <div className={`relative w-[150px] h-[150px] rounded-full bg-[#f0f2f5] shadow-[10px_10px_20px_#d1d9e6,-10px_-10px_20px_#ffffff] flex items-center justify-center border-4 border-transparent transition-all duration-500
+          ${isActive ? "animate-orbPulse border-focusPurple/20" : ""}`}>
           
-          <div 
-            className={`editable-timer-display ${isActive ? "" : ""}`} 
-            style={{ 
-              fontSize: '1.5rem', 
-              fontWeight: 'bold',
-              transition: 'all 0.3s ease',
-              color: isActive ? '#6c5ce7' : 'inherit'
-            }}
-          >
+          <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-focusPurple/5 to-transparent blur-sm"></div>
+          
+          <div className={`text-2xl font-black transition-colors duration-300 ${isActive ? "text-focusPurple" : "text-gray-400"}`}>
             {displayTime}
           </div>
         </div>
-
-      
       </div>
 
-      <button className="liquid-trigger" onClick={() => setIsExpanded(!isExpanded)}>
+      {/* LIQUID TRIGGER BUTTON */}
+      <button
+        className="absolute bottom-4 right-4 w-11 h-11 rounded-full bg-focusPurple text-white text-xl flex items-center justify-center z-10 shadow-[0_4px_15px_rgba(108,92,231,0.4)] hover:scale-110 hover:rotate-12 transition-transform"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
         {isExpanded ? "↩" : "⏳"}
       </button>
     </div>

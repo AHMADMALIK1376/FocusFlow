@@ -1,13 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* --- Global Reset & Fonts --- */
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  @apply bg-[#f0f2f5] text-gray-800;
 }
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+/* --- Custom University App Components --- */
+@layer components {
+  /* --- The Liquid Expandable Card (Dashboard) --- */
+  .liquid-card {
+    @apply relative overflow-hidden transition-all duration-500;
+  }
+
+  .face-back {
+    @apply absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-200 
+           flex flex-col items-center justify-center z-10 pointer-events-none 
+           transition-all duration-700 ease-in-out;
+    clip-path: circle(0% at 50% 90%);
+  }
+
+  .liquid-card-expanded .face-back {
+    @apply pointer-events-auto;
+    clip-path: circle(150% at 50% 90%);
+  }
+
+  /* --- Hover Delete Logic (The Bin Swap) --- */
+  .hover-delete-btn {
+    @apply bg-transparent border-none text-focusPurple font-extrabold text-xs cursor-pointer transition-all duration-300;
+  }
+
+  /* Parent container must have 'group' class for this to work */
+  .card-header-group:hover .hover-delete-text {
+    @apply hidden;
+  }
+
+  .card-header-group:hover .hover-delete-btn::after {
+    content: '🗑';
+    @apply block text-xl animate-popIn;
+  }
+
+  /* --- Custom Neumorphic Inputs (Forms) --- */
+  .neu-input {
+    @apply w-full py-4 px-6 rounded-2xl bg-[#f0f2f5] border-none outline-none font-semibold
+           shadow-[inset_8px_8px_16px_#d1d9e6,inset_-8px_-8px_16px_#ffffff]
+           focus:shadow-[inset_4px_4px_8px_#d1d9e6,inset_-4px_-4px_8px_#ffffff] transition-all;
+  }
+
+  .neu-select {
+    @apply neu-input appearance-none bg-no-repeat bg-[right_20px_center] bg-[length:15px];
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236c5ce7' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  }
+
+  /* --- Reusable Neumorphic Card Base --- */
+  .neu-card {
+    @apply bg-[#f0f2f5] rounded-[40px] shadow-[20px_20px_60px_#d1d9e6,-20px_-20px_60px_#ffffff];
+  }
+}
+
+/* --- Scrollbar Styling --- */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-[#f0f2f5];
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-[#d1d9e6] rounded-full hover:bg-focusPurple transition-colors;
 }
