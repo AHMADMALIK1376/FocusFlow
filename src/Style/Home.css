@@ -1,0 +1,793 @@
+/* ============================================================
+   SECTION 1: CORE LAYOUT & GLOBAL STYLES 
+   (Applied across the whole App)
+   ============================================================ */
+
+.home-page {
+  padding: 40px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: #f0f2f5;
+}
+
+.home-container {
+  display: block; 
+  width: 100%;
+  min-height: 100vh; 
+  overflow-y: auto;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Unified Buttons (Shared) --- */
+.magic-btn {
+  padding: 14px 30px;
+  border: none;
+  border-radius: 16px;
+  background: #f0f2f5;
+  box-shadow: 6px 6px 12px #d1d9e6, -6px -6px 12px #ffffff;
+  color: #6c5ce7;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+/* Updated Reset/Magic button hover effect to purple theme */
+.magic-btn:hover {
+  transform: translateY(-3px);
+  color: #6c5ce7;
+  box-shadow: 0 8px 20px rgba(108, 92, 231, 0.2);
+}
+
+.magic-btn:active {
+  box-shadow: inset 4px 4px 8px #d1d9e6, inset -4px -4px 8px #ffffff;
+  transform: scale(0.98);
+}
+
+.magic-btn.locked {
+  background: #dfe6e9;
+  color: #b2bec3;
+  cursor: not-allowed;
+  box-shadow: none;
+  opacity: 0.6;
+}
+
+
+
+/* ============================================================
+   SECTION: HOVER DELETE LOGIC (Timetable & Timeline)
+   ============================================================ */
+
+/* Container for the delete button - set to relative for positioning */
+.delete-btn-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 100px;
+  cursor: pointer;
+  position: relative;
+}
+
+/* The "Clear Section/Day" text */
+.hover-delete-btn {
+  background: none;
+  border: none;
+  color: #6c5ce7;
+  font-weight: 800;
+  font-size: 0.85rem;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-block;
+}
+
+/* EFFECT: When hovering over the CARD HEADER, swap text for bin */
+.card-header:hover .hover-delete-btn span {
+  display: none; /* Hide "Clear Section" text */
+}
+
+.card-header:hover .hover-delete-btn::after {
+  content: '🗑'; /* Show bin instead */
+  font-size: 1.3rem;
+  animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Optional: Slight color change when specifically hovering the bin */
+.hover-delete-btn:hover {
+  transform: scale(1.2);
+  color: #a855f7;
+}
+
+@keyframes popIn {
+  0% { transform: scale(0); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Ensures the header doesn't shrink when text disappears */
+.card-header {
+  min-height: 50px;
+}
+/* ============================================================
+   SECTION 2: HOME / DASHBOARD PAGE 
+   (Hero section and Main Stat Cards)
+   ============================================================ */
+/* ... (Rest of your existing code remains the same) ... */
+
+.hero {
+  margin-bottom: 50px;
+  text-align: center;
+  animation: fadeInUp 0.8s ease-out;
+}
+
+.time-badge {
+  display: inline-block;
+  padding: 6px 15px;
+  background: rgba(108, 92, 231, 0.1);
+  color: #6c5ce7;
+  border-radius: 50px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-bottom: 15px;
+}
+
+.hero-title {
+  font-size: 3.5rem;
+  font-weight: 900;
+  color: #2d3436;
+  margin: 0;
+  letter-spacing: -1px;
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #6c5ce7, #a855f7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.hero-subtitle {
+  font-size: 1.2rem;
+  color: #636e72;
+  margin-top: 15px;
+}
+
+.stats-grid {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  flex-wrap: wrap;
+  width: 100%;
+  max-width: 1000px;
+}
+
+/* --- Dashboard Stat Card & Liquid Transition --- */
+.stat-card {
+  background: #f0f2f5;
+  padding: 40px;
+  border-radius: 40px;
+  flex: 1;
+  min-width: 320px;
+  max-width: 450px;
+  box-shadow: 20px 20px 60px #d1d9e6, -20px -20px 60px #ffffff;
+  transition: transform 0.3s ease;
+  text-align: center;
+}
+
+.stat-card:hover {
+  transform: translateY(-10px);
+}
+
+.count-display {
+  font-size: 5rem;
+  font-weight: 900;
+  color: #6c5ce7;
+  margin: 10px 0;
+  filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.1));
+}
+
+.liquid-card {
+  position: relative;
+  overflow: hidden;
+  min-height: 280px;
+  transition: all 0.5s ease;
+}
+
+.card-face {
+  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 100%;
+}
+
+.face-back {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  clip-path: circle(0% at 50% 90%); 
+  pointer-events: none;
+}
+
+.liquid-card.expanded .face-back {
+  clip-path: circle(150% at 50% 90%);
+  pointer-events: auto;
+}
+
+.liquid-trigger {
+  position: absolute;
+  bottom: 15px;
+  right: 15px;
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  border: none;
+  background: #6c5ce7;
+  color: white;
+  font-size: 1.2rem;
+  cursor: pointer;
+  z-index: 10;
+  box-shadow: 0 4px 15px rgba(108, 92, 231, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s ease;
+}
+
+.liquid-trigger:hover {
+  transform: scale(1.1) rotate(15deg);
+}
+
+.completed-glow {
+  color: #6c5ce7;
+  font-size: 5rem !important; 
+  font-weight: 800;
+}
+
+.proto-footer {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.proto-day { font-weight: 700; font-size: 1.2rem; margin: 0; }
+.proto-date { color: #636e72; font-size: 1.0rem; }
+
+/* --- Dashboard Task Manager Section --- */
+.task-manager-section {
+  width: 100%;
+  max-width: 900px;
+  margin: 60px auto; 
+  display: flex;
+  flex-direction: column;
+  gap: 50px;
+  animation: fadeInUp 1s ease-out;
+}
+
+.task-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f0f2f5;
+  padding: 25px 35px;
+  border-radius: 30px;
+  margin-bottom: 25px;
+  box-shadow: 12px 12px 24px #d1d9e6, -12px -12px 24px #ffffff;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.task-item:hover {
+  transform: scale(1.02) translateX(10px);
+  box-shadow: 15px 15px 30px #d1d9e6, -15px -15px 30px #ffffff;
+}
+
+.task-text {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #2d3436;
+  margin-bottom: 5px;
+}
+
+.task-date {
+  font-size: 0.85rem;
+  color: #6c5ce7;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.check-btn {
+  padding: 12px 25px;
+  border: none;
+  border-radius: 14px;
+  background: #f0f2f5;
+  box-shadow: 4px 4px 10px #d1d9e6, -4px -4px 10px #ffffff;
+  color: #00b894;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.check-btn:hover {
+  background: #00b894;
+  color: #ffffff;
+  box-shadow: 0 10px 20px rgba(0, 184, 148, 0.3);
+}
+
+.empty-msg {
+  color: #b2bec3;
+  font-style: italic;
+  text-align: center;
+  padding: 40px;
+  background: #f0f2f5;
+  border-radius: 30px;
+  box-shadow: inset 10px 10px 20px #d1d9e6, inset -10px -10px 20px #ffffff;
+}
+
+/* ============================================================
+   SECTION 3: TIMETABLE / SCHEDULE PAGE
+   (Calendar, Weekly View, and Task Form)
+   ============================================================ */
+
+.calendar-card.neumorphic {
+  margin-top: 20px;
+  width: 100%;
+  max-width: 800px;
+  padding: 40px;
+  background: #f0f2f5;
+  border-radius: 40px;
+  box-shadow: 20px 20px 60px #d1d9e6, -20px -20px 60px #ffffff;
+}
+
+.add-task-card {
+  background: #f0f2f5;
+  padding: 45px;
+  border-radius: 40px; 
+  box-shadow: 20px 20px 60px #d1d9e6, -20px -20px 60px #ffffff;
+  text-align: left;
+  transition: transform 0.3s ease;
+}
+
+.add-task-card:hover {
+  transform: translateY(-5px);
+}
+
+.add-task-card h3 {
+  color: #2d3436;
+  font-weight: 900;
+  margin-bottom: 30px;
+  font-size: 1.8rem;
+  letter-spacing: -0.5px;
+}
+
+/* --- Task Input Form --- */
+.task-form {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.task-form input {
+  flex: 1;
+  min-width: 250px;
+  padding: 18px 25px;
+  border: none;
+  border-radius: 20px;
+  background: #f0f2f5;
+  box-shadow: inset 8px 8px 16px #d1d9e6, inset -8px -8px 16px #ffffff;
+  color: #2d3436;
+  font-family: inherit;
+  font-weight: 600;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.task-form input:focus {
+  box-shadow: inset 4px 4px 8px #d1d9e6, inset -4px -4px 8px #ffffff;
+}
+
+.task-select {
+  flex: 1;
+  min-width: 150px;
+  padding: 15px 20px;
+  border: none;
+  border-radius: 20px;
+  background: #f0f2f5;
+  box-shadow: inset 6px 6px 12px #d1d9e6, inset -6px -6px 12px #ffffff;
+  outline: none;
+  color: #2d3436;
+  font-weight: 600;
+  cursor: pointer;
+  appearance: none; 
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236c5ce7' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 20px center;
+  background-size: 15px;
+}
+
+.task-time-input {
+  flex: 0.5;
+  min-width: 120px;
+  padding: 15px 20px;
+  border: none;
+  border-radius: 20px;
+  background: #f0f2f5;
+  box-shadow: inset 6px 6px 12px #d1d9e6, inset -6px -6px 12px #ffffff;
+  outline: none;
+  color: #2d3436;
+  font-weight: 600;
+}
+
+.full-width-input {
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.input-row {
+  display: flex;
+  gap: 15px;
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.submit-btn {
+  width: 100%;
+  padding: 18px !important;
+}
+
+/* --- Type Selector & Chips --- */
+.type-selector {
+  width: 100%;
+  margin: 15px 0;
+}
+
+.type-selector .label {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #636e72;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.type-chip {
+  padding: 10px 18px;
+  background: #f0f2f5;
+  border-radius: 15px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #636e72;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 5px 5px 10px #d1d9e6, -5px -5px 10px #ffffff;
+}
+
+.type-chip:hover {
+  color: #6c5ce7;
+  transform: translateY(-2px);
+}
+
+.type-chip.active {
+  color: #6c5ce7;
+  box-shadow: inset 4px 4px 8px #d1d9e6, inset -4px -4px 8px #ffffff;
+  transform: translateY(0);
+}
+
+.type-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  background: rgba(108, 92, 231, 0.1);
+  color: #6c5ce7;
+  border-radius: 8px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  letter-spacing: 0.5px;
+} 
+
+/* --- Weekly Layout & Day Cards --- */
+.day-card {
+  margin-bottom: 25px;
+  transition: all 0.4s ease;
+}
+
+.locked-card {
+  background: #f8f9fa;
+}
+
+.task-horizontal-list {
+  overflow-x: auto;
+  width: 100%;
+  padding-bottom: 5px;
+}
+
+/* --- Mini Task Cards (Inside Timetable) --- */
+.mini-task-card {
+  min-width: 130px;
+  transition: all 0.3s ease;
+  padding: 15px;
+  border-radius: 20px;
+  background: white;
+  text-align: center;
+  position: relative;
+}
+
+.mini-activity {
+  font-weight: 800;
+  font-size: 0.9rem;
+  margin: 0;
+  color: #2d3436;
+}
+
+.mini-time {
+  font-size: 0.75rem;
+  color: #6c5ce7;
+  margin-top: 5px;
+}
+
+.mini-done {
+  opacity: 0.6;
+  background: #f1f2f6;
+  text-decoration: line-through;
+}
+
+.mini-task-card.mini-done {
+  border-left: 4px solid #00b894;
+}
+
+.mini-actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.mini-btn {
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: 0.2s;
+}
+
+.mini-btn.tick { background: #00b894; color: white; }
+.mini-btn.cross { background: #ff7675; color: white; }
+.mini-btn:hover { transform: scale(1.1); }
+
+.mini-btn.locked-time {
+  background: #dfe6e9 !important;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* --- Lock UI effect --- */
+.lock-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.lock-text {
+  font-weight: 800;
+  font-size: 0.75rem;
+  color: #636e72;
+  letter-spacing: 1px;
+  background: white;
+  padding: 5px 15px;
+  border-radius: 20px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+/* ============================================================
+   SECTION 4: TIMELINE LEGACY STYLES 
+   (If still used in Timetable Page)
+   ============================================================ */
+
+.timeline {
+  position: relative;
+  padding: 20px 0;
+  margin-top: 30px;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 20px;
+  top: 0;
+  height: 100%;
+  width: 4px;
+  background: #e0e5ec;
+  border-radius: 10px;
+  box-shadow: inset 2px 2px 5px #d1d9e6, inset -2px -2px 5px #ffffff;
+}
+
+.timeline-item {
+  position: relative;
+  padding-left: 60px;
+  margin-bottom: 40px;
+  transition: 0.3s ease;
+  text-align: left;
+}
+
+.dot {
+  position: absolute;
+  left: 12px;
+  top: 5px;
+  width: 20px;
+  height: 20px;
+  background: #f0f2f5;
+  border: 4px solid #6c5ce7;
+  border-radius: 50%;
+  z-index: 2;
+  box-shadow: 3px 3px 6px #d1d9e6, -3px -3px 6px #ffffff;
+}
+
+.timeline-item.is-done .dot {
+  background: #00b894;
+  border-color: #00b894;
+  box-shadow: 0 0 10px rgba(0, 184, 148, 0.4);
+}
+
+.timeline-date {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #6c5ce7;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.timeline-content {
+  background: #f0f2f5;
+  padding: 20px 25px;
+  border-radius: 20px;
+  box-shadow: 10px 10px 20px #d1d9e6, -10px -10px 20px #ffffff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.timeline-text {
+  font-weight: 600;
+  color: #2d3436;
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.status-label {
+  background: #00b894;
+  color: white;
+  font-size: 0.7rem;
+  padding: 4px 12px;
+  border-radius: 50px;
+  font-weight: 700;
+}
+
+.timeline-item:hover {
+  transform: translateX(10px);
+}
+
+.timeline-item.is-done .timeline-text {
+  text-decoration: line-through;
+  color: #b2bec3;
+}
+
+.timeline-content .delete-mini {
+  border: none;
+  background: none;
+  color: #ff7675;
+  font-size: 1.5rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.2s ease;
+  padding: 0 10px;
+}
+
+.timeline-content .delete-mini:hover {
+  color: #d63031;
+  transform: scale(1.2);
+}
+
+.pending-list h4 {
+  color: #636e72;
+  font-size: 1.3rem;
+  font-weight: 800;
+  margin-bottom: 25px;
+  padding-left: 10px;
+}
+
+
+ 
+/* Layout Centering */
+.timeline-page-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Centers cards and footer horizontally */
+  width: 100%;
+  padding-bottom: 50px;
+}
+
+.timeline-main-content {
+  width: 100%;
+  max-width: 850px; /* Adjust based on your card width */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Footer Styling (Matches your Image) */
+.timeline-footer {
+  margin-top: 50px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  width: 100%;
+}
+
+.hero-btn-group {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+/* The 22% width for the Reset Button */
+.reset-btn {
+  width: 10% !important; 
+  min-width: 220px; /* Ensures it doesn't get too small on mobile */
+  color: #ff7675 !important;
+  font-weight: 700;
+}
+
+.timeline-divider {
+  width: 100%;
+  max-width: 800px;
+  border: none;
+  height: 2px;
+  background: #d1d9e6;
+  margin: 40px 0;
+  opacity: 0.5;
+}
+
+/* Global style for all icons across the app */
+.icons {
+  font-size: 2.2rem; /* Adjust this value to change size globally */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  
+  /* This ensures the icon has some breathing room */
+  margin-bottom: 8px;
+  
+  /* Optional: Adds a subtle high-end look */
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  transition: transform 0.3s ease;
+}
+
+/* Optional: Adds a nice "pop" effect when you hover over any card */
+.stat-card:hover .icon, 
+.calendar-card:hover .icon {
+  transform: scale(1.1);
+}
+

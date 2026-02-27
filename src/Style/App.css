@@ -1,0 +1,24 @@
+:root {
+  --bg-color: #e0e5ec;
+  --text-main: #44475a;
+  --accent-color: #6c5ce7;
+  --shadow-light: #ffffff;
+  --shadow-dark: #a3b1c6;
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  font-family: 'Poppins', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.section-divider {
+  border: 0;
+  height: 2px;
+  background: linear-gradient(to right, transparent, var(--shadow-dark), transparent);
+  margin: 40px 0;
+}

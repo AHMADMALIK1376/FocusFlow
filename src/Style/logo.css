@@ -1,0 +1,78 @@
+.logo-container {
+  display: flex;
+  flex-direction: column; 
+  align-items: center;    
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.logo-container.small {
+  display: flex;
+  flex-direction: row; 
+  align-items: center; 
+  justify-content: flex-start;
+  width: auto; 
+  gap: 12px;
+}
+
+/* --- The Solid White Box (No Glow, No Glass) --- */
+.glass-icon-box {
+  background: #ffffff; /* Solid White */
+  border: 1px solid #e0e4e8; /* Flat light grey border */
+  /* Replaced glowing shadow with a flat, soft depth shadow */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); 
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: transform 0.3s ease;
+  backdrop-filter: none; /* Removed blur */
+}
+
+.logo-img {
+  width: 85%;
+  height: 85%;
+  object-fit: contain;
+}
+
+.logo-container.large .glass-icon-box {
+  --float-dist: -15px; 
+  width: 120px;
+  height: 120px;
+  border-radius: 40px;
+  padding: 20px;
+  animation: logo-float 3.5s ease-in-out infinite;
+}
+
+.logo-container.small .glass-icon-box {
+  width: 45px; 
+  height: 45px;
+  border-radius: 10px;
+  margin: 0; 
+  animation: logo-float-small 3s ease-in-out infinite;
+}
+
+.logo-container.small .logo-text {
+  font-size: 1.2rem; 
+  font-weight: 700;
+  color: #333; /* Ensuring text is clear against white */
+}
+
+/* --- Floating Animations --- */
+@keyframes logo-float {
+  0%, 100% { 
+    transform: translateY(0); 
+  }
+  50% { 
+    transform: translateY(var(--float-dist)); 
+  }
+}
+
+@keyframes logo-float-small {
+  0%, 100% { 
+    transform: translateY(0); 
+  }
+  50% { 
+    transform: translateY(-3px); 
+  }
+}

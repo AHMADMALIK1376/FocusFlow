@@ -1,0 +1,257 @@
+/* --- Master Wrapper --- */
+.auth-master-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: #f0f2f5;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.auth-sliding-box {
+  background-color: #fff;
+  border-radius: 40px; 
+  box-shadow: 20px 20px 60px #d1d9e6, -20px -20px 60px #ffffff;
+  position: relative;
+  overflow: hidden;
+  width: 900px;
+  max-width: 95%;
+  min-height: 550px;
+}
+
+/* --- New Centralized Header --- */
+.auth-header-container {
+  position: absolute;
+  top: 30px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  z-index: 1000; /* Ensures it is above both white and purple sides */
+  font-size: 2rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  pointer-events: none;
+}
+
+/* --- Color Definitions --- */
+.color-purple {
+  color: #6C5CE7;
+  transition: color 0.4s ease;
+}
+
+.color-white {
+  color: #FFF8F8;
+  transition: color 0.4s ease;
+}
+
+/* --- Form Container Logic --- */
+.auth-forms-container {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  width: 50%;
+  left: 0;
+  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 5;
+}
+
+.signup-mode .auth-forms-container {
+  transform: translateX(100%);
+}
+
+.auth-form-block {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  transition: opacity 0.4s ease-in-out, visibility 0.4s;
+}
+
+.sign-in-form { opacity: 1; visibility: visible; z-index: 2; }
+.sign-up-form { opacity: 0; visibility: hidden; z-index: 1; }
+
+.signup-mode .sign-in-form { opacity: 0; visibility: hidden; }
+.signup-mode .sign-up-form { opacity: 1; visibility: visible; z-index: 5; }
+
+/* --- Liquid Overlay Panel (Purple Side) --- */
+.auth-overlay-panel {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 50%;
+  height: 100%;
+  z-index: 100;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.overlay-content-wrapper {
+  background: linear-gradient(135deg, #8d81e8 0%, #886ad0 100%);
+  color: #fff;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: clip-path 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+  clip-path: circle(150% at 0% 50%); 
+}
+
+.signup-mode .auth-overlay-panel {
+  transform: translateX(-100%);
+}
+
+.signup-mode .overlay-content-wrapper {
+  clip-path: circle(150% at 100% 50%);
+}
+
+.overlay-inner {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 0 40px;
+  text-align: center;
+  width: 100%;
+  height: 100%;
+  transition: opacity 0.5s ease;
+  padding-top: 100px !important; 
+}
+
+.overlay-left { opacity: 0; visibility: hidden; }
+.overlay-right { opacity: 1; visibility: visible; }
+
+.signup-mode .overlay-left { opacity: 1; visibility: visible; }
+.signup-mode .overlay-right { opacity: 0; visibility: hidden; }
+
+.motto {
+  font-size: 0.9rem;
+  padding: 0 20px;
+  line-height: 1.4;
+  margin-top: 15px;
+  font-style: italic;
+  opacity: 0.9;
+}
+
+.auth-form-block form {
+  padding: 100px 50px 0 !important; 
+  text-align: center;
+  width: 100%;
+}
+
+.input-field input {
+  width: 80%;
+  padding: 15px 20px;
+  background: #f0f2f5;
+  border: none;
+  border-radius: 20px;
+  box-shadow: inset 6px 6px 12px #d1d9e6, inset -6px -6px 12px #ffffff;
+  outline: none;
+  margin: 10px 0;
+}
+
+.auth-main-btn {
+  padding: 14px 40px;
+  border: none;
+  border-radius: 20px;
+  background: #f0f2f5;
+  box-shadow: 6px 6px 12px #d1d9e6, -6px -6px 12px #ffffff;
+  color: #6c5ce7;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 20px;
+}
+
+.auth-main-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(108, 92, 231, 0.2);
+}
+
+.ghost-btn {
+  background: transparent;
+  border: 2px solid #fff;
+  border-radius: 20px;
+  color: #fff;
+  padding: 12px 40px;
+  margin-top: 25px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.ghost-btn:hover {
+  background: #fff;
+  color: #6c5ce7;
+}
+
+.top-logo-text, .purple-text, .white-text {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .auth-overlay-panel { display: none; }
+  .auth-forms-container { width: 100%; }
+  .auth-sliding-box { width: 400px; border-radius: 30px; }
+}
+/* Google Button Style */
+.google-btn {
+  width: 80%;
+  padding: 12px;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.3s;
+  color: #555;
+  margin-top: 10px;
+}
+
+.google-btn:hover {
+  background: #f8f9ff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.google-btn img {
+  width: 20px;
+}
+
+.auth-divider {
+  margin: 20px 0;
+  position: relative;
+  text-align: center;
+}
+
+.auth-divider::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: #eee;
+  z-index: 1;
+}
+
+.auth-divider span {
+  position: relative;
+  background: white;
+  padding: 0 15px;
+  color: #aaa;
+  font-size: 0.8rem;
+  font-weight: 700;
+  z-index: 2;
+}
+

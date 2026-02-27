@@ -1,0 +1,195 @@
+.sidebar-container {
+  position: fixed;
+  left: 20px;
+  top: 150px;
+  height: calc(100vh - 220px); 
+  width: 85px;
+  background: linear-gradient(135deg, rgba(108, 92, 231, 0.6), rgba(168, 85, 247, 0.6));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  padding: 25px 0;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+.sidebar-container.open {
+  width: 260px;
+}
+
+/* --- Profile Section (User Name Under Icon) --- */
+.sidebar-profile {
+  display: flex;
+  flex-direction: column; 
+  align-items: center;
+  padding: 0 10px;
+  margin-bottom: 25px;
+  cursor: pointer;
+  position: relative;
+  text-align: center;
+}
+
+.profile-img-container {
+  position: relative;
+  margin-bottom: 8px;
+}
+
+.sidebar-avatar-placeholder {
+  width: 50px;
+  height: 50px;
+  background: #6c5ce7;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: 800;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.status-dot {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 12px;
+  height: 12px;
+  background: #00d1b2;
+  border: 2px solid white;
+  border-radius: 50%;
+}
+
+.profile-info-text {
+  white-space: nowrap;
+  color: #ffffff; /* Changed to white for the purple background */
+  font-weight: 700;
+  font-size: 0.85rem;
+  margin-top: 5px;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.close-sidebar-btn {
+  position: absolute;
+  top: 0;
+  right: 10px;
+  background: #00b894;
+  border: none;
+  color: white;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+/* --- Navigation & White Circle Hover Effect --- */
+.nav-item {
+  background: none;
+  border: none;
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 8px 15px;
+  color: rgba(255, 255, 255, 0.85); /* Light text for purple background */
+  cursor: pointer;
+  transition: 0.3s;
+  width: 100%;
+  margin-bottom: 5px;
+}
+
+.nav-icon-wrapper {
+  min-width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%; 
+  transition: all 0.3s ease;
+  z-index: 2;
+}
+
+/* The White Circle Hover Effect */
+.nav-item:hover .nav-icon-wrapper {
+  background: rgba(255, 255, 255, 0.25); /* Subtle white glass circle */
+  box-shadow: 0 4px 15px rgba(255, 255, 255, 0.1);
+  transform: scale(1.05);
+}
+
+.nav-icon {
+  font-size: 1.5rem;
+}
+
+.nav-text {
+  margin-left: 12px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  opacity: 0;
+  white-space: nowrap;
+  transition: 0.3s;
+  color: white;
+}
+
+.open .nav-text {
+  opacity: 1;
+}
+
+/* --- THE CONCAVE CUTOUT --- */
+.nav-item.active {
+  background: #f8f9ff; /* Matches your Home Page background */
+  color: #6c5ce7;
+  border-radius: 40px 0 0 40px;
+  margin-left: 15px;
+}
+
+/* Active Icon looks like a solid white button */
+.nav-item.active .nav-icon-wrapper {
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(108, 92, 231, 0.2);
+}
+
+.nav-item.active .nav-text {
+  color: #6c5ce7;
+}
+
+.nav-item.active::before,
+.nav-item.active::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  width: 20px;
+  height: 20px;
+  background: transparent;
+}
+
+.nav-item.active::before {
+  top: -20px;
+  border-radius: 0 0 20px 0;
+  box-shadow: 5px 5px 0 0 #f8f9ff;
+}
+
+.nav-item.active::after {
+  bottom: -20px;
+  border-radius: 0 20px 0 0;
+  box-shadow: 5px -5px 0 0 #f8f9ff;
+}
+
+/* --- Footer --- */
+.sidebar-footer {
+  margin-top: auto;
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  gap: 10px;
+  color: rgba(255, 255, 255, 0.7);
+}
