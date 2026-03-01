@@ -68,7 +68,6 @@ export default function Navbar({ taskCount, routineCount, setView }) {
 
       <div className="flex items-center gap-4">
         
-        {/* Quartz Cells */}
         <div className="hidden sm:flex gap-3 items-center">
           {/* Pending Cell */}
           <div className="relative min-w-[115px] px-4 py-1.5 rounded-[15px] bg-white/15 border border-white/20 backdrop-blur-md flex items-center gap-3 transition-all duration-400 hover:-translate-y-1 hover:bg-white/25 group overflow-hidden">
