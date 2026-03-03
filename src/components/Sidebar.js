@@ -12,6 +12,13 @@ const Sidebar = ({ setView, currentView }) => {
     { id: 'settings', label: 'Settings', icon: '⚙️' },
   ];
 
+  // Helper function to handle navigation
+  const handleNavigation = (id) => {
+    setView(id);
+    // Optional: If you want the sidebar to close after clicking on mobile
+    // setIsOpen(false); 
+  };
+
   return (
     <div 
       onMouseEnter={() => setIsOpen(true)}
@@ -21,11 +28,10 @@ const Sidebar = ({ setView, currentView }) => {
       
       {/* Profile Section */}
       <div className="flex flex-col items-center px-4 mb-10 relative">
-        <div className="relative group">
+        <div className="relative group cursor-pointer" onClick={() => handleNavigation('settings')}>
           <div className="w-[52px] h-[52px] bg-white/20 backdrop-blur-md text-white rounded-2xl flex items-center justify-center font-black border border-white/30 shadow-lg group-hover:scale-110 transition-transform duration-300">
             MA
           </div>
-          {/* Status Dot matched to Auth UI */}
           <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-[#2ecc71] border-2 border-[#6c5ce7] rounded-full shadow-sm"></span>
         </div>
         
@@ -35,22 +41,22 @@ const Sidebar = ({ setView, currentView }) => {
         </div>
       </div>
 
-      {/* Navigation */}
+      {/* Navigation Links */}
       <nav className="flex flex-col gap-3 px-3">
         {menuItems.map((item) => {
           const isActive = currentView === item.id;
           return (
             <button 
               key={item.id}
-              onClick={() => setView(item.id)} 
-              className={`group relative flex items-center h-[50px] transition-all duration-300 rounded-2xl
+              onClick={() => handleNavigation(item.id)} 
+              className={`group relative flex items-center h-[50px] transition-all duration-300 rounded-2xl outline-none
                 ${isActive 
-                  ? 'bg-white text-[#6c5ce7] shadow-xl shadow-purple-900/20' 
-                  : 'text-white hover:bg-white/10'}`}
+                  ? 'bg-white text-[#6c5ce7] shadow-xl shadow-purple-900/20 scale-[1.02]' 
+                  : 'text-white hover:bg-white/10 hover:translate-x-1'}`}
             >
               {/* Icon Container */}
               <div className="min-w-[60px] flex items-center justify-center">
-                <span className={`text-xl transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-120'}`}>
+                <span className={`text-xl transition-all duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-125 group-active:scale-95'}`}>
                   {item.icon}
                 </span>
               </div>
@@ -61,21 +67,31 @@ const Sidebar = ({ setView, currentView }) => {
                 {item.label}
               </span>
 
-              {/* Active Indicator matched to FocusPurple */}
+              {/* Active Indicator (Invisible when not active) */}
               {isActive && (
-                <div className="absolute left-0 w-1.5 h-6 bg-[#6c5ce7] rounded-r-full"></div>
+                <div className="absolute left-0 w-1.5 h-6 bg-[#6c5ce7] rounded-r-full animate-pulse"></div>
+              )}
+
+              {/* Tooltip for when Sidebar is closed */}
+              {!isOpen && (
+                <div className="absolute left-[90px] px-3 py-1 bg-gray-800 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-300 whitespace-nowrap z-50 shadow-xl">
+                  {item.label}
+                </div>
               )}
             </button>
           );
         })}
       </nav>
 
-      {/* Streak Widget */}
-      <div className={`mt-auto px-4 transition-opacity duration-500 ${isOpen ? 'opacity-100' : 'opacity-0'}`}>
-         <div className="p-4 bg-white/10 rounded-2xl border border-white/10 backdrop-blur-sm">
+      {/* Streak Widget (Clickable to go to Streak Page) */}
+      <div 
+        onClick={() => handleNavigation('streak')}
+        className={`mt-auto px-4 cursor-pointer transition-all duration-500 hover:scale-[1.02] active:scale-95 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+      >
+         <div className="p-4 bg-white/10 rounded-2xl border border-white/10 backdrop-blur-sm hover:bg-white/20 transition-colors">
             <p className="text-[10px] text-white/50 font-black leading-tight uppercase tracking-[2px]">Current Streak</p>
             <div className="flex items-center gap-2 mt-1">
-              <span className="text-xl">🔥</span>
+              <span className="text-xl animate-bounce">🔥</span>
               <p className="text-white font-black text-xl">12 Days</p>
             </div>
          </div>

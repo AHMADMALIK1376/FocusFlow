@@ -1,21 +1,22 @@
 import React, { useState, useContext } from "react";
-import { UserContext } from "./UserContext"; // Corrected path
+import { UserContext } from "./UserContext"; 
 
 export default function LoginForm({ setView }) {
   const { setUserName } = useContext(UserContext);
-  const [email, setEmail] = useState(""); // Now being used below
+  const [email, setEmail] = useState(""); 
   const [password, setPassword] = useState("");
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // For now, setting a default name to match your AuthPage logic
     setUserName("M. Ahmad Malik"); 
     setView("dashboard");
   };
 
   return (
-    <div className="absolute inset-0 bg-white flex flex-col items-center justify-center p-8 pt-16">
+    /* Removed 'absolute inset-0' to prevent overlapping the logo */
+    <div className="w-full bg-white flex flex-col items-center p-0">
       <form onSubmit={handleSubmit} className="w-full flex flex-col items-center animate-in fade-in slide-in-from-left-4">
+        {/* mb-1 keeps the header tight to the logo as requested */}
         <h2 className="text-2xl font-black text-gray-800 mb-1">Welcome Back</h2>
         <p className="text-gray-400 text-xs font-bold mb-6 uppercase tracking-widest">Reconnect with goals</p>
         

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 
 export default function FocusModePage({ 
   setView, 
@@ -20,7 +20,8 @@ export default function FocusModePage({
     localStorage.setItem("focus_history", JSON.stringify(history));
   }, [history]);
 
-  const processSessionEnd = (isComplete) => {
+  // Wrap processSessionEnd in useCallback to stabilize it
+  const processSessionEnd = useCallback((isComplete) => {
     const endTime = new Date();
     const currentRemaining = (hours * 3600) + (minutes * 60) + seconds;
     const secondsDone = totalDuration - currentRemaining;
@@ -47,13 +48,16 @@ export default function FocusModePage({
     setHours(0); setMinutes(0); setSeconds(0);
     setActivity("");
     setStartTime(null);
-  };
+  }, [
+    activity, hours, minutes, seconds, startTime, totalDuration, 
+    setHours, setMinutes, setSeconds, setIsActive
+  ]);
 
   useEffect(() => {
     if (isActive && hours === 0 && minutes === 0 && seconds === 0) {
       processSessionEnd(true);
     }
-  }, [hours, minutes, seconds, isActive]);
+  }, [hours, minutes, seconds, isActive, processSessionEnd]); // Added processSessionEnd here
 
   const handleStart = () => {
     if (!activity) return alert("Please enter an activity name!");
