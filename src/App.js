@@ -7,6 +7,7 @@ import TaskManager from "./components/TaskManager";
 import TimelinePage from "./Pages/TimelinePage";
 import TimetablePage from "./Pages/DailyRoutine";
 import FocusModePage from "./Pages/FocusModePage";
+import AcademicCalendarPage from "./Pages/AcademicCalendarPage"; // 1. Import the new page
 import { UserProvider, UserContext } from "./components/UserContext"; 
 
 function AppContent() {
@@ -27,6 +28,12 @@ function AppContent() {
 
   const [timetable, setTimetable] = useState(() => {
     const saved = localStorage.getItem("focus_timetable");
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // 2. New Academic Calendar State with Persistence
+  const [calendar, setCalendar] = useState(() => {
+    const saved = localStorage.getItem("focus_academic_calendar");
     return saved ? JSON.parse(saved) : [];
   });
 
@@ -59,6 +66,11 @@ function AppContent() {
   // Persistence
   useEffect(() => { localStorage.setItem("focus_goals_count", completedGoals); }, [completedGoals]);
   useEffect(() => { localStorage.setItem("focus_timetable", JSON.stringify(timetable)); }, [timetable]);
+  
+  // 3. Save Academic Calendar to LocalStorage automatically
+  useEffect(() => { 
+    localStorage.setItem("focus_academic_calendar", JSON.stringify(calendar)); 
+  }, [calendar]);
 
   const saveAndSetTasks = (newTasks) => {
     setTasks(newTasks);
@@ -104,6 +116,7 @@ function AppContent() {
               <Home 
                 tasks={tasks} 
                 timetable={timetable} 
+                calendar={calendar} // 4. Pass calendar to Home for the Dashboard Card
                 completedGoals={completedGoals}
                 setView={setView} 
                 hours={hours}
@@ -144,6 +157,15 @@ function AppContent() {
               <TimetablePage 
                 schedule={timetable}
                 setSchedule={setTimetable}
+                setView={setView} 
+              />
+            )}
+
+            {/* 5. NEW ROUTE: Academic Calendar Page */}
+            {view === "academicPage" && (
+              <AcademicCalendarPage 
+                calendar={calendar}
+                setCalendar={setCalendar}
                 setView={setView} 
               />
             )}

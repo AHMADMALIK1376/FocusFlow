@@ -20,7 +20,6 @@ export default function FocusModePage({
     localStorage.setItem("focus_history", JSON.stringify(history));
   }, [history]);
 
-  // Wrap processSessionEnd in useCallback to stabilize it
   const processSessionEnd = useCallback((isComplete) => {
     const endTime = new Date();
     const currentRemaining = (hours * 3600) + (minutes * 60) + seconds;
@@ -57,7 +56,7 @@ export default function FocusModePage({
     if (isActive && hours === 0 && minutes === 0 && seconds === 0) {
       processSessionEnd(true);
     }
-  }, [hours, minutes, seconds, isActive, processSessionEnd]); // Added processSessionEnd here
+  }, [hours, minutes, seconds, isActive, processSessionEnd]);
 
   const handleStart = () => {
     if (!activity) return alert("Please enter an activity name!");
@@ -163,17 +162,34 @@ export default function FocusModePage({
           </div>
         )}
 
-        {/* Footer Actions */}
-        <div className="flex flex-wrap justify-center gap-6 mt-10 mb-20">
-          <button className="bg-white text-focusPurple px-10 py-4 rounded-[20px] font-bold shadow-[6px_6px_12px_#d1d9e6,-2px_-2px_5px_#ffffff] hover:-translate-y-1 transition-all flex items-center gap-2" onClick={() => setView("dashboard")}>
-            🏠 Back to Dashboard
-          </button>
-          {history.length > 0 && (
-            <button className="bg-white text-red-400 px-10 py-4 rounded-[20px] font-bold shadow-[6px_6px_12px_#d1d9e6,-2px_-2px_5px_#ffffff] hover:-translate-y-1 transition-all flex items-center gap-2" onClick={clearHistory}>
-              🗑️ Clear History
-            </button>
-          )}
-        </div>
+        {/* UPDATED FOOTER NAVIGATION */}
+        <footer className="mt-10 mb-20 w-full flex justify-center px-4">
+          <div className="flex flex-row items-center justify-center gap-6">
+            {(() => {
+              const baseBtn = "py-4 px-10 rounded-[20px] font-bold transition-all flex items-center justify-center gap-2 whitespace-nowrap hover:-translate-y-1 shadow-[6px_6px_12px_#d1d9e6,-2px_-2px_5px_#ffffff]";
+
+              return (
+                <>
+                  <button 
+                    onClick={() => setView("dashboard")} 
+                    className={`${baseBtn} bg-white text-focusPurple`}
+                  >
+                    🏠 Back to Dashboard
+                  </button>
+
+                  {history.length > 0 && (
+                    <button 
+                      onClick={clearHistory} 
+                      className={`${baseBtn} bg-white text-red-400 hover:text-red-500 hover:shadow-[0_5px_15px_rgba(255,118,117,0.15)]`}
+                    >
+                      🗑️ Clear History
+                    </button>
+                  )}
+                </>
+              );
+            })()}
+          </div>
+        </footer>
       </div>
     </div>
   );

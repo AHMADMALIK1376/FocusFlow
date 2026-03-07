@@ -156,22 +156,41 @@ export default function TaskManager({ tasks, setTasks, setCompletedGoals, setVie
       </div>
 
       {/* FOOTER */}
-      <footer className="mt-16 flex flex-col items-center gap-6 w-full">
-        <div className="flex gap-4">
-          <button className="px-8 py-4 rounded-2xl bg-[#f0f2f5] shadow-[6px_6px_12px_#d1d9e6,-6px_-6px_12px_#ffffff] text-focusPurple font-bold hover:-translate-y-1 transition-all" onClick={() => setView("roadmap")}>
+    <footer className="mt-16 w-full flex justify-center px-4">
+  <div className="flex flex-row items-center justify-center gap-6 flex-wrap">
+    {(() => {
+      // Shared "Blueprint" classes
+      const baseBtn = "bg-[#f0f2f5] text-focusPurple py-4 px-8 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 whitespace-nowrap hover:-translate-y-1 shadow-[6px_6px_12px_#d1d9e6,-6px_-6px_12px_#ffffff]";
+
+      return (
+        <>
+          <button 
+            onClick={() => setView("roadmap")} 
+            className={`${baseBtn} `}
+          >
             🗺️ Academic Timeline
           </button>
-          <button className="px-8 py-4 rounded-2xl bg-[#f0f2f5] shadow-[6px_6px_12px_#d1d9e6,-6px_-6px_12px_#ffffff] text-focusPurple font-bold hover:-translate-y-1 transition-all" onClick={() => setView("dashboard")}>
+
+          <button 
+            onClick={() => setView("dashboard")} 
+            className={`${baseBtn} `}
+          >
             🏠 Dashboard
           </button>
-        </div>
 
-        {tasks.length > 0 && (
-          <button className="w-full max-w-[250px] py-4 rounded-2xl bg-[#f0f2f5] shadow-[6px_6px_12px_#d1d9e6,-6px_-6px_12px_#ffffff] text-red-400 font-bold hover:shadow-[0_5px_15px_rgba(255,118,117,0.2)] hover:text-red-500 transition-all" onClick={resetTimeline}>
-            🗑 Delete All Tasks
-          </button>
-        )}
-      </footer>
+          {tasks.length > 0 && (
+            <button 
+              onClick={resetTimeline} 
+              className={`${baseBtn}  text-red-400 hover:text-red-500 hover:shadow-[0_5px_15px_rgba(255,118,117,0.2)]`}
+            >
+              🗑 Delete All Tasks
+            </button>
+          )}
+        </>
+      );
+    })()}
+  </div>
+</footer>
     </div>
   );
 }

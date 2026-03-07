@@ -88,13 +88,13 @@ export default function TimetablePage({ schedule, setSchedule, setView }) {
 
   return (
     <div className="min-h-screen bg-[#f0f2f5] py-10 px-5 flex flex-col items-center">
+      
       {/* HERO SECTION */}
       <section className="text-center mb-12 animate-fadeInUp">
         <h1 className="text-5xl md:text-6xl font-black text-gray-800 tracking-tighter mb-2">
-          {dayName}'s <span className="bg-gradient-to-r from-focusPurple to-purple-500 bg-clip-text text-transparent">Routine</span>
+          {dayName}'s <span className="bg-gradient-to-r from-[#6c5ce7] to-purple-500 bg-clip-text text-transparent">Routine</span>
         </h1>
         <p className="text-lg text-gray-500 font-medium italic">Today is <b className="text-gray-700">{dateStr}</b></p>
-        <button onClick={() => setView("dashboard")} className="magic-btn mt-6"> ⬅ Back to Dashboard </button>
       </section>
 
       {/* ADD ACTIVITY CARD */}
@@ -109,7 +109,7 @@ export default function TimetablePage({ schedule, setSchedule, setView }) {
           <div className="flex flex-wrap gap-3">
             <button 
               onClick={() => handleDayToggle("All Days")}
-              className={`px-5 py-2 rounded-xl font-bold transition-all shadow-[5px_5px_10px_#d1d9e6,-5px_-5px_10px_#ffffff] ${selectedDays.includes("All Days") ? "text-focusPurple shadow-inner" : "text-gray-500 hover:text-focusPurple"}`}
+              className={`px-5 py-2 rounded-xl font-bold transition-all shadow-[5px_5px_10px_#d1d9e6,-5px_-5px_10px_#ffffff] ${selectedDays.includes("All Days") ? "text-[#6c5ce7] shadow-inner" : "text-gray-500 hover:text-[#6c5ce7]"}`}
             >
               All Days
             </button>
@@ -118,7 +118,7 @@ export default function TimetablePage({ schedule, setSchedule, setView }) {
                 key={day}
                 disabled={selectedDays.includes("All Days")}
                 onClick={() => handleDayToggle(day)}
-                className={`px-4 py-2 rounded-xl font-bold transition-all shadow-[5px_5px_10px_#d1d9e6,-5px_-5px_10px_#ffffff] ${selectedDays.includes("All Days") ? "opacity-40" : selectedDays.includes(day) ? "text-focusPurple shadow-inner" : "text-gray-500 hover:text-focusPurple"}`}
+                className={`px-4 py-2 rounded-xl font-bold transition-all shadow-[5px_5px_10px_#d1d9e6,-5px_-5px_10px_#ffffff] ${selectedDays.includes("All Days") ? "opacity-40" : selectedDays.includes(day) ? "text-[#6c5ce7] shadow-inner" : "text-gray-500 hover:text-[#6c5ce7]"}`}
               >
                 {day.substring(0, 3)}
               </button>
@@ -152,7 +152,7 @@ export default function TimetablePage({ schedule, setSchedule, setView }) {
             <div key={day} className={`bg-[#f0f2f5] p-8 rounded-[40px] shadow-[20px_20px_60px_#d1d9e6,-20px_-20px_60px_#ffffff] transition-all duration-500 ${!isToday ? 'opacity-70 scale-[0.98]' : ''}`}>
               <div className="flex justify-between items-center mb-6">
                 <div className="flex items-center gap-3">
-                  <h3 className={`text-xl font-black uppercase tracking-tight ${isToday ? 'text-focusPurple' : 'text-gray-400'}`}>{day}</h3>
+                  <h3 className={`text-xl font-black uppercase tracking-tight ${isToday ? 'text-[#6c5ce7]' : 'text-gray-400'}`}>{day}</h3>
                   {isToday && <span className="px-3 py-1 bg-green-500 text-white text-[10px] font-bold rounded-full animate-pulse">ACTIVE</span>}
                 </div>
                 <button onClick={() => deleteWholeDay(day)} className="text-gray-400 hover:text-red-500 font-bold text-sm transition-colors group">
@@ -174,9 +174,9 @@ export default function TimetablePage({ schedule, setSchedule, setView }) {
                     const unlocked = isTimeReached(task.time);
 
                     return (
-                      <div key={`${day}-${task.id}`} className={`min-w-[150px] p-5 rounded-3xl bg-white shadow-sm border-l-4 transition-all ${isCompleted ? 'border-green-500 opacity-60' : 'border-focusPurple'}`}>
+                      <div key={`${day}-${task.id}`} className={`min-w-[150px] p-5 rounded-3xl bg-white shadow-sm border-l-4 transition-all ${isCompleted ? 'border-green-500 opacity-60' : 'border-[#6c5ce7]'}`}>
                         <p className={`font-black text-gray-800 ${isCompleted ? 'line-through' : ''}`}>{task.activity}</p>
-                        <p className="text-xs font-bold text-focusPurple mt-1">{formatTime12h(task.time)}</p>
+                        <p className="text-xs font-bold text-[#6c5ce7] mt-1">{formatTime12h(task.time)}</p>
 
                         {isToday && (
                           <div className="flex gap-2 mt-4">
@@ -199,14 +199,36 @@ export default function TimetablePage({ schedule, setSchedule, setView }) {
         })}
       </div>
 
-      {/* GLOBAL RESET */}
-      {schedule.length > 0 && (
-        <footer className="mt-12">
-          <button onClick={resetRoutine} className="magic-btn !text-red-400 !shadow-none border border-red-100 hover:!bg-red-50">
-            🗑 Reset Whole Routine 
+      {/* FOOTER NAVIGATION - FIXED SIDE BY SIDE */}
+  {/* FOOTER NAVIGATION */}
+<footer className="mt-20 w-full flex justify-center px-4">
+  <div className="flex flex-row items-center gap-6">
+    {/* Base Style Variable */}
+    {(() => {
+      const baseBtn = "bg-white text-[#6c5ce7] py-4 px-10 rounded-[22px] font-bold transition-all flex items-center justify-center gap-2 whitespace-nowrap hover:-translate-y-1 shadow-[6px_6px_12px_#d1d9e6,-2px_-2px_5px_#ffffff]";
+      
+      return (
+        <>
+          <button 
+            onClick={() => setView("dashboard")} 
+            className={`${baseBtn} `}
+          > 
+            🏠 Back to Dashboard 
           </button>
-        </footer>
-      )}
+
+          {schedule.length > 0 && (
+            <button 
+              onClick={resetRoutine} 
+              className={`${baseBtn}  text-red-400 hover:text-red-500 hover:shadow-[0_5px_15px_rgba(255,118,117,0.2)]`}
+            >
+              <span>🗑</span> Reset Whole Routine
+            </button>
+          )}
+        </>
+      );
+    })()}
+  </div>
+</footer>
     </div>
   );
 }

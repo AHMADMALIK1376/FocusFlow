@@ -5,9 +5,11 @@ import DailyTimetableCard from "../components/DailyTimetableCard";
 import FocusTimer from "../components/FocusTimer";
 import Sidebar from "../components/Sidebar";
 import GoalCard from "../components/GoalCard";
+import AcademicCalendar from "../components/AcademicCalendar";
 
 export default function Home({
   timetable,
+  calendar,        // Added this to catch the prop from App.js
   completedGoals,
   setView,
   hours,
@@ -77,7 +79,14 @@ export default function Home({
             isActive={isActive}
           />
 
+          {/* Daily Timetable (Routine Card) */}
           <DailyTimetableCard schedule={timetable} setView={setView} />
+
+          {/* Academic Calendar Entry Card - Updated Props */}
+          <AcademicCalendar
+            calendar={calendar} 
+            setView={setView} 
+          />
 
           <UniCalendar setView={setView} />
 

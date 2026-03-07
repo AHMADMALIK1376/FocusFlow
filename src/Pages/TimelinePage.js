@@ -127,21 +127,41 @@ export default function TimelinePage({ tasks, setTasks, setView }) {
       </div>
 
       {/* FOOTER NAV */}
-      <footer className="mt-20 flex flex-col items-center gap-6 w-full">
-        <div className="flex gap-4">
-          <button className="magic-btn" onClick={() => setView("timeline")}>📓 Back to Planner</button>
-          <button className="magic-btn shadow-purple-100" onClick={() => setView("dashboard")}>🏠 Dashboard</button>
-        </div>
-        
-        {tasks.length > 0 && (
+     <footer className="mt-20 w-full flex justify-center px-4">
+  <div className="flex flex-row items-center justify-center gap-6 flex-wrap">
+    {(() => {
+      // The "Blueprint" - Shared styling for all buttons
+      const baseBtn = "bg-white text-focusPurple py-4 px-10 rounded-[20px] font-bold transition-all flex items-center justify-center gap-2 whitespace-nowrap hover:-translate-y-1 shadow-[6px_6px_12px_#d1d9e6,-2px_-2px_5px_#ffffff]";
+
+      return (
+        <>
           <button 
-            className="text-red-400 font-black text-xs uppercase tracking-widest hover:underline transition-all"
-            onClick={resetTimeline}
+            onClick={() => setView("timeline")} 
+            className={`${baseBtn} `}
           >
-            🗑 Delete Entire Timeline
+            📓 Back to Planner
           </button>
-        )}
-      </footer>
+
+          <button 
+            onClick={() => setView("dashboard")} 
+            className={`${baseBtn} `}
+          >
+            🏠 Back to Dashboard
+          </button>
+
+          {tasks.length > 0 && (
+            <button 
+              onClick={resetTimeline} 
+              className={`${baseBtn}  text-red-400 hover:text-red-500 hover:shadow-[0_5px_15px_rgba(255,118,117,0.2)]`}
+            >
+              🗑 Delete All Tasks
+            </button>
+          )}
+        </>
+      );
+    })()}
+  </div>
+</footer>
     </div>
   );
 }

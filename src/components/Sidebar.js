@@ -12,18 +12,16 @@ const Sidebar = ({ setView, currentView }) => {
     { id: 'settings', label: 'Settings', icon: '⚙️' },
   ];
 
-  // Helper function to handle navigation
   const handleNavigation = (id) => {
     setView(id);
-    // Optional: If you want the sidebar to close after clicking on mobile
-    // setIsOpen(false); 
   };
 
   return (
     <div 
       onMouseEnter={() => setIsOpen(true)}
       onMouseLeave={() => setIsOpen(false)}
-      className={`fixed left-5 top-[120px] h-[calc(100vh-180px)] bg-gradient-to-br from-[#6c5ce7] to-[#8271ff] backdrop-blur-xl border border-white/20 rounded-[30px] flex flex-col py-8 shadow-[0_20px_50px_rgba(108,92,231,0.3)] z-[1000] transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden ${isOpen ? 'w-[240px]' : 'w-[85px]'}`}
+      // Added will-change-transform here to optimize animation performance
+      className={`fixed left-5 top-[120px] h-[calc(100vh-180px)] bg-gradient-to-br from-[#6c5ce7] to-[#8271ff] backdrop-blur-xl border border-white/20 rounded-[30px] flex flex-col py-8 shadow-[0_20px_50px_rgba(108,92,231,0.3)] z-[1000] transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] will-change-transform overflow-hidden ${isOpen ? 'w-[240px]' : 'w-[85px]'}`}
     >
       
       {/* Profile Section */}
@@ -54,25 +52,21 @@ const Sidebar = ({ setView, currentView }) => {
                   ? 'bg-white text-[#6c5ce7] shadow-xl shadow-purple-900/20 scale-[1.02]' 
                   : 'text-white hover:bg-white/10 hover:translate-x-1'}`}
             >
-              {/* Icon Container */}
               <div className="min-w-[60px] flex items-center justify-center">
                 <span className={`text-xl transition-all duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-125 group-active:scale-95'}`}>
                   {item.icon}
                 </span>
               </div>
               
-              {/* Label */}
               <span className={`font-bold text-[0.85rem] tracking-wide whitespace-nowrap transition-all duration-500
                 ${isOpen ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-10'}`}>
                 {item.label}
               </span>
 
-              {/* Active Indicator (Invisible when not active) */}
               {isActive && (
                 <div className="absolute left-0 w-1.5 h-6 bg-[#6c5ce7] rounded-r-full animate-pulse"></div>
               )}
 
-              {/* Tooltip for when Sidebar is closed */}
               {!isOpen && (
                 <div className="absolute left-[90px] px-3 py-1 bg-gray-800 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-300 whitespace-nowrap z-50 shadow-xl">
                   {item.label}
@@ -83,7 +77,7 @@ const Sidebar = ({ setView, currentView }) => {
         })}
       </nav>
 
-      {/* Streak Widget (Clickable to go to Streak Page) */}
+      {/* Streak Widget */}
       <div 
         onClick={() => handleNavigation('streak')}
         className={`mt-auto px-4 cursor-pointer transition-all duration-500 hover:scale-[1.02] active:scale-95 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
