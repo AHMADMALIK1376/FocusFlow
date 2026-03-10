@@ -1,9 +1,13 @@
-import React, { useState, useEffect, useRef, useContext } from "react";
-import { UserContext } from "../components/UserContext";
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { useUser } from "./UserContext";
+import { useApp } from "./AppContext";
 import Logo from "./Logo";
 
-export default function Navbar({ taskCount, routineCount, setView }) {
-  const { userName, setUserName } = useContext(UserContext);
+export default function Navbar() {
+  const navigate = useNavigate();
+  const { userName, logout } = useUser();
+  const { pendingCount, pendingRoutine } = useApp();
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -19,8 +23,8 @@ export default function Navbar({ taskCount, routineCount, setView }) {
 
   const handleLogout = () => {
     if (window.confirm("Are you sure you want to log out?")) {
-      setUserName(null);
-      setView("auth");
+      logout();
+      navigate("/login");
       setShowDropdown(false);
     }
   };
@@ -34,21 +38,24 @@ export default function Navbar({ taskCount, routineCount, setView }) {
       
       <div className="flex items-center gap-5">
         <div 
-          onClick={() => setView("dashboard")} 
+          onClick={() => navigate("/dashboard")} 
           className="cursor-pointer transition-transform hover:scale-110 active:scale-95 duration-300 drop-shadow-md"
         >
           <Logo size="small" showText={false} />
         </div>
 
         <div className="flex flex-col items-start leading-tight">
-          <span onClick={() => setView("dashboard")}
-            className="text-xl font-black tracking-tighter cursor-pointer select-none text-white drop-shadow-sm">
-            FOCUS FLOW </span>
+          <span
+            onClick={() => navigate("/dashboard")}
+            className="text-xl font-black tracking-tighter cursor-pointer select-none text-white drop-shadow-sm"
+          >
+            FOCUS FLOW
+          </span>
           
           <ul className="flex gap-4 list-none m-0 p-0 mt-1">
             <li>
               <button 
-                onClick={() => setView("dashboard")} 
+                onClick={() => navigate("/dashboard")} 
                 className="text-white text-[0.7rem] font-black opacity-80 hover:opacity-100 hover:translate-y-[-1px] transition-all duration-300 uppercase tracking-[1px]"
               >
                 Dashboard
@@ -75,7 +82,7 @@ export default function Navbar({ taskCount, routineCount, setView }) {
             <span className="text-lg z-10 group-hover:scale-110 transition-transform">🎯</span>
             <div className="flex flex-col z-10">
               <span className="font-mono text-lg font-black text-white leading-none">
-                {taskCount.toString().padStart(2, '0')}
+                {pendingCount.toString().padStart(2, '0')}
               </span>
               <span className="text-[0.5rem] font-black text-white/70 tracking-widest uppercase mt-0.5">Pending</span>
             </div>
@@ -87,7 +94,7 @@ export default function Navbar({ taskCount, routineCount, setView }) {
             <span className="text-lg z-10 group-hover:scale-110 transition-transform">⚡</span>
             <div className="flex flex-col z-10">
               <span className="font-mono text-lg font-black text-white leading-none">
-                {routineCount.toString().padStart(2, '0')}
+                {pendingRoutine.toString().padStart(2, '0')}
               </span>
               <span className="text-[0.5rem] font-black text-white/70 tracking-widest uppercase mt-0.5">Routine</span>
             </div>

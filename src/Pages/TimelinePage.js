@@ -1,6 +1,11 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
+import { useApp } from "../components/AppContext";
 
-export default function TimelinePage({ tasks, setTasks, setView }) {
+export default function TimelinePage() {
+  const navigate = useNavigate();
+  const { tasks, setTasks } = useApp();
+
   const taskTypes = ["Assignment", "Project", "Presentation", "Code", "Daily Task"];
 
   const resetTimeline = () => {
@@ -127,41 +132,40 @@ export default function TimelinePage({ tasks, setTasks, setView }) {
       </div>
 
       {/* FOOTER NAV */}
-     <footer className="mt-20 w-full flex justify-center px-4">
-  <div className="flex flex-row items-center justify-center gap-6 flex-wrap">
-    {(() => {
-      // The "Blueprint" - Shared styling for all buttons
-      const baseBtn = "bg-white text-focusPurple py-4 px-10 rounded-[20px] font-bold transition-all flex items-center justify-center gap-2 whitespace-nowrap hover:-translate-y-1 shadow-[6px_6px_12px_#d1d9e6,-2px_-2px_5px_#ffffff]";
+      <footer className="mt-20 w-full flex justify-center px-4">
+        <div className="flex flex-row items-center justify-center gap-6 flex-wrap">
+          {(() => {
+            const baseBtn = "bg-white text-focusPurple py-4 px-10 rounded-[20px] font-bold transition-all flex items-center justify-center gap-2 whitespace-nowrap hover:-translate-y-1 shadow-[6px_6px_12px_#d1d9e6,-2px_-2px_5px_#ffffff]";
 
-      return (
-        <>
-          <button 
-            onClick={() => setView("timeline")} 
-            className={`${baseBtn} `}
-          >
-            📓 Back to Planner
-          </button>
+            return (
+              <>
+                <button 
+                  onClick={() => navigate("/tasks")} 
+                  className={`${baseBtn}`}
+                >
+                  📓 Back to Planner
+                </button>
 
-          <button 
-            onClick={() => setView("dashboard")} 
-            className={`${baseBtn} `}
-          >
-            🏠 Back to Dashboard
-          </button>
+                <button 
+                  onClick={() => navigate("/dashboard")} 
+                  className={`${baseBtn}`}
+                >
+                  🏠 Back to Dashboard
+                </button>
 
-          {tasks.length > 0 && (
-            <button 
-              onClick={resetTimeline} 
-              className={`${baseBtn}  text-red-400 hover:text-red-500 hover:shadow-[0_5px_15px_rgba(255,118,117,0.2)]`}
-            >
-              🗑 Delete All Tasks
-            </button>
-          )}
-        </>
-      );
-    })()}
-  </div>
-</footer>
+                {tasks.length > 0 && (
+                  <button 
+                    onClick={resetTimeline} 
+                    className={`${baseBtn} text-red-400 hover:text-red-500 hover:shadow-[0_5px_15px_rgba(255,118,117,0.2)]`}
+                  >
+                    🗑 Delete All Tasks
+                  </button>
+                )}
+              </>
+            );
+          })()}
+        </div>
+      </footer>
     </div>
   );
 }

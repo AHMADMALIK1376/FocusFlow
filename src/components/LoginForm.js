@@ -1,15 +1,17 @@
-import React, { useState, useContext } from "react";
-import { UserContext } from "./UserContext"; 
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useUser } from "./UserContext";
 
-export default function LoginForm({ setView }) {
-  const { setUserName } = useContext(UserContext);
+export default function LoginForm() {
+  const { setUserName } = useUser();
+  const navigate = useNavigate();
   const [email, setEmail] = useState(""); 
   const [password, setPassword] = useState("");
 
   const handleSubmit = (e) => {
     e.preventDefault();
     setUserName("M. Ahmad Malik"); 
-    setView("dashboard");
+    navigate("/verify");
   };
 
   return (
@@ -43,6 +45,15 @@ export default function LoginForm({ setView }) {
           UNLEASH FOCUS
         </button>
       </form>
+
+      <div className="mt-6 text-center">
+        <p className="text-sm text-gray-500">
+          New here?{" "}
+          <Link to="/signup" className="text-[#6c5ce7] font-bold hover:underline">
+            Create an Account
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }

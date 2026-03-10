@@ -1,6 +1,10 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useApp } from "./AppContext";
 
-export default function AcademicCalendar({ calendar, setView }) {
+export default function AcademicCalendar() {
+  const navigate = useNavigate();
+  const { calendar } = useApp();
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Logic to calculate stats for the card
@@ -25,8 +29,9 @@ export default function AcademicCalendar({ calendar, setView }) {
         </div>
         <p className="text-gray-500 font-bold mb-6">Upcoming Lectures</p>
         <button 
-          className="bg-[#f0f2f5] px-8 py-3.5 rounded-2xl shadow-[6px_6px_12px_#d1d9e6,-6px_-6px_12px_#ffffff] text-focusPurple font-bold hover:translate-y-[-3px] active:scale-95 active:shadow-inner transition-all"
-onClick={() => setView("academicPage")}        >
+          className="magic-btn px-8 py-3.5  rounded-2xl bg-[#f0f2f5] shadow-[6px_6px_12px_#d1d9e6,-6px_-6px_12px_#ffffff] text-focusPurple font-bold transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_20px_rgba(108,92,231,0.2)] active:scale-95 active:shadow-inner"
+          onClick={() => navigate("/academic")}
+        >
           ✏️ Edit Calendar
         </button>
       </div>

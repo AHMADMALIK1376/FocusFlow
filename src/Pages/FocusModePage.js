@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import { useApp } from "../components/AppContext";
 
-export default function FocusModePage({ 
-  setView, 
-  hours, setHours, 
-  minutes, setMinutes, 
-  seconds, setSeconds, 
-  isActive, setIsActive 
-}) {
+export default function FocusModePage() {
+  const navigate = useNavigate();
+  const { hours, setHours, minutes, setMinutes, seconds, setSeconds, isActive, setIsActive } = useApp();
+
   const [activity, setActivity] = useState("");
   const [startTime, setStartTime] = useState(null);
   const [totalDuration, setTotalDuration] = useState(25 * 60);
@@ -162,7 +161,7 @@ export default function FocusModePage({
           </div>
         )}
 
-        {/* UPDATED FOOTER NAVIGATION */}
+        {/* FOOTER NAVIGATION */}
         <footer className="mt-10 mb-20 w-full flex justify-center px-4">
           <div className="flex flex-row items-center justify-center gap-6">
             {(() => {
@@ -171,7 +170,7 @@ export default function FocusModePage({
               return (
                 <>
                   <button 
-                    onClick={() => setView("dashboard")} 
+                    onClick={() => navigate("/dashboard")} 
                     className={`${baseBtn} bg-white text-focusPurple`}
                   >
                     🏠 Back to Dashboard

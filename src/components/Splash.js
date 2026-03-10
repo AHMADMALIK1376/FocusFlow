@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import Logo from "../components/Logo";
+import Logo from "./Logo";
 
 export default function Splash({ onComplete }) {
   const [fadeOut, setFadeOut] = useState(false);

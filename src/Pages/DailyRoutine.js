@@ -1,6 +1,11 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useApp } from "../components/AppContext";
 
-export default function TimetablePage({ schedule, setSchedule, setView }) {
+export default function TimetablePage() {
+  const navigate = useNavigate();
+  const { timetable: schedule, setTimetable: setSchedule } = useApp();
+
   const [activity, setActivity] = useState("");
   const [time, setTime] = useState("");
   const [selectedDays, setSelectedDays] = useState([]);
@@ -130,14 +135,14 @@ export default function TimetablePage({ schedule, setSchedule, setView }) {
           <input 
             type="text" placeholder="e.g. GYM" value={activity} 
             onChange={(e) => setActivity(e.target.value)}
-            className="flex-1 min-w-[200px] p-4 rounded-2xl bg-[#f0f2f5] shadow-inner outline-none font-semibold text-gray-700 focus:ring-2 ring-purple-200"
+            className="w-100% p-5 rounded-2xl bg-[#F1F5F9] shadow-[inset_6px_6px_12px_#d1d9e6,inset_-6px_-6px_12px_#ffffff] outline-none font-bold text-gray-500 placeholder:text-gray-300 border-none focus:ring-2 ring-purple-100/50 transition-all"
           />
           <input 
             type="time" value={time} 
             onChange={(e) => setTime(e.target.value)}
-            className="w-full md:w-auto p-4 rounded-2xl bg-[#f0f2f5] shadow-inner outline-none font-semibold text-gray-700"
+            className="w-80% p-5 rounded-2xl bg-[#F1F5F9] shadow-[inset_6px_6px_12px_#d1d9e6,inset_-6px_-6px_12px_#ffffff] outline-none font-bold text-gray-500 placeholder:text-gray-300 border-none focus:ring-2 ring-purple-100/50 transition-all"
           />
-          <button type="submit" className="magic-btn flex-grow md:flex-grow-0">Add to Routine</button>
+          <button type="submit" className="magic-btn">Add to Routine</button>
         </form>
       </div>
 
@@ -155,6 +160,7 @@ export default function TimetablePage({ schedule, setSchedule, setView }) {
                   <h3 className={`text-xl font-black uppercase tracking-tight ${isToday ? 'text-[#6c5ce7]' : 'text-gray-400'}`}>{day}</h3>
                   {isToday && <span className="px-3 py-1 bg-green-500 text-white text-[10px] font-bold rounded-full animate-pulse">ACTIVE</span>}
                 </div>
+                {/* Clear Day — kept minimal since it's inline in a card header */}
                 <button onClick={() => deleteWholeDay(day)} className="text-gray-400 hover:text-red-500 font-bold text-sm transition-colors group">
                   <span className="group-hover:hidden">Clear Day</span>
                   <span className="hidden group-hover:inline text-lg">🗑</span>
@@ -180,6 +186,7 @@ export default function TimetablePage({ schedule, setSchedule, setView }) {
 
                         {isToday && (
                           <div className="flex gap-2 mt-4">
+                            {/* These are small circular action buttons — kept as-is */}
                             <button 
                               onClick={() => toggleComplete(task.id, day)}
                               className={`w-8 h-8 flex items-center justify-center rounded-full text-white transition-transform hover:scale-110 ${!unlocked && !isCompleted ? "bg-gray-300 cursor-not-allowed" : "bg-green-500"}`}
@@ -199,36 +206,19 @@ export default function TimetablePage({ schedule, setSchedule, setView }) {
         })}
       </div>
 
-      {/* FOOTER NAVIGATION - FIXED SIDE BY SIDE */}
-  {/* FOOTER NAVIGATION */}
-<footer className="mt-20 w-full flex justify-center px-4">
-  <div className="flex flex-row items-center gap-6">
-    {/* Base Style Variable */}
-    {(() => {
-      const baseBtn = "bg-white text-[#6c5ce7] py-4 px-10 rounded-[22px] font-bold transition-all flex items-center justify-center gap-2 whitespace-nowrap hover:-translate-y-1 shadow-[6px_6px_12px_#d1d9e6,-2px_-2px_5px_#ffffff]";
-      
-      return (
-        <>
-          <button 
-            onClick={() => setView("dashboard")} 
-            className={`${baseBtn} `}
-          > 
-            🏠 Back to Dashboard 
+      {/* FOOTER NAVIGATION */}
+      <footer className="mt-20 w-full flex justify-center px-4">
+        <div className="flex flex-row items-center gap-6">
+          <button onClick={() => navigate("/dashboard")} className="magic-btn">
+            🏠 Back to Dashboard
           </button>
-
           {schedule.length > 0 && (
-            <button 
-              onClick={resetRoutine} 
-              className={`${baseBtn}  text-red-400 hover:text-red-500 hover:shadow-[0_5px_15px_rgba(255,118,117,0.2)]`}
-            >
-              <span>🗑</span> Reset Whole Routine
+            <button onClick={resetRoutine} className="magic-btn text-red-400">
+              🗑 Reset Whole Routine
             </button>
           )}
-        </>
-      );
-    })()}
-  </div>
-</footer>
+        </div>
+      </footer>
     </div>
   );
 }

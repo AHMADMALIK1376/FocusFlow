@@ -20,6 +20,15 @@ code {
 
 /* --- Custom University App Components --- */
 @layer components {
+  /* --- Global Button Style --- */
+  .magic-btn {
+    @apply bg-[#f0f2f5] text-[#7C3AED] font-bold rounded-2xl px-8 py-3.5
+           shadow-[6px_6px_12px_#d1d9e6,-6px_-6px_12px_#ffffff]
+           transition-all duration-300
+           hover:-translate-y-1 hover:shadow-[0_8px_20px_rgba(108,92,231,0.2)]
+           active:scale-95 active:shadow-inner;
+  }
+
   /* --- The Liquid Expandable Card (Dashboard) --- */
   .liquid-card {
     @apply relative overflow-hidden transition-all duration-500;

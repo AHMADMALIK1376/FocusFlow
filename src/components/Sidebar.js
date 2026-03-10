@@ -1,32 +1,30 @@
 import React, { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 
-const Sidebar = ({ setView, currentView }) => {
+const Sidebar = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
 
   const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: '🏠' },
-    { id: 'deepwork', label: 'Deep Work', icon: '⚡' },
-    { id: 'routine', label: 'Daily Routine', icon: '🕒' },
-    { id: 'streak', label: 'Daily Streak', icon: '🔥' },
-    { id: 'timetable', label: 'Timetable', icon: '📅' },
-    { id: 'settings', label: 'Settings', icon: '⚙️' },
+    { id: 'dashboard',  path: '/dashboard',  label: 'Dashboard',    icon: '🏠' },
+    { id: 'deepwork',   path: '/focus-mode', label: 'Deep Work',    icon: '⚡' },
+    { id: 'routine',    path: '/routine',    label: 'Daily Routine', icon: '🕒' },
+    { id: 'streak',     path: '/tasks',      label: 'Daily Streak', icon: '🔥' },
+    { id: 'timetable',  path: '/academic',   label: 'Timetable',    icon: '📅' },
+    { id: 'settings',   path: '/dashboard',  label: 'Settings',     icon: '⚙️' },
   ];
-
-  const handleNavigation = (id) => {
-    setView(id);
-  };
 
   return (
     <div 
       onMouseEnter={() => setIsOpen(true)}
       onMouseLeave={() => setIsOpen(false)}
-      // Added will-change-transform here to optimize animation performance
       className={`fixed left-5 top-[120px] h-[calc(100vh-180px)] bg-gradient-to-br from-[#6c5ce7] to-[#8271ff] backdrop-blur-xl border border-white/20 rounded-[30px] flex flex-col py-8 shadow-[0_20px_50px_rgba(108,92,231,0.3)] z-[1000] transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] will-change-transform overflow-hidden ${isOpen ? 'w-[240px]' : 'w-[85px]'}`}
     >
       
       {/* Profile Section */}
       <div className="flex flex-col items-center px-4 mb-10 relative">
-        <div className="relative group cursor-pointer" onClick={() => handleNavigation('settings')}>
+        <div className="relative group cursor-pointer" onClick={() => navigate('/dashboard')}>
           <div className="w-[52px] h-[52px] bg-white/20 backdrop-blur-md text-white rounded-2xl flex items-center justify-center font-black border border-white/30 shadow-lg group-hover:scale-110 transition-transform duration-300">
             MA
           </div>
@@ -42,11 +40,11 @@ const Sidebar = ({ setView, currentView }) => {
       {/* Navigation Links */}
       <nav className="flex flex-col gap-3 px-3">
         {menuItems.map((item) => {
-          const isActive = currentView === item.id;
+          const isActive = location.pathname === item.path;
           return (
             <button 
               key={item.id}
-              onClick={() => handleNavigation(item.id)} 
+              onClick={() => navigate(item.path)} 
               className={`group relative flex items-center h-[50px] transition-all duration-300 rounded-2xl outline-none
                 ${isActive 
                   ? 'bg-white text-[#6c5ce7] shadow-xl shadow-purple-900/20 scale-[1.02]' 
@@ -79,16 +77,16 @@ const Sidebar = ({ setView, currentView }) => {
 
       {/* Streak Widget */}
       <div 
-        onClick={() => handleNavigation('streak')}
+        onClick={() => navigate('/tasks')}
         className={`mt-auto px-4 cursor-pointer transition-all duration-500 hover:scale-[1.02] active:scale-95 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
       >
-         <div className="p-4 bg-white/10 rounded-2xl border border-white/10 backdrop-blur-sm hover:bg-white/20 transition-colors">
-            <p className="text-[10px] text-white/50 font-black leading-tight uppercase tracking-[2px]">Current Streak</p>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-xl animate-bounce">🔥</span>
-              <p className="text-white font-black text-xl">12 Days</p>
-            </div>
-         </div>
+        <div className="p-4 bg-white/10 rounded-2xl border border-white/10 backdrop-blur-sm hover:bg-white/20 transition-colors">
+          <p className="text-[10px] text-white/50 font-black leading-tight uppercase tracking-[2px]">Current Streak</p>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-xl animate-bounce">🔥</span>
+            <p className="text-white font-black text-xl">12 Days</p>
+          </div>
+        </div>
       </div>
     </div>
   );

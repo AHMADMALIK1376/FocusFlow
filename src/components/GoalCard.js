@@ -1,6 +1,9 @@
 import React from "react";
+import { useApp } from "./AppContext";
 
-export default function GoalCard({ completedGoals }) {
+export default function GoalCard() {
+  const { completedGoals } = useApp();
+
   const getAppreciationMessage = () => {
     if (completedGoals === 0) return "Complete tasks to see your performance!";
     if (completedGoals < 5) return "Great start! Keep the momentum going. 🚀";

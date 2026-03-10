@@ -1,6 +1,10 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useApp } from "./AppContext";
 
-export default function FocusTimer({ setView, hours, minutes, seconds, isActive }) {
+export default function FocusTimer() {
+  const navigate = useNavigate();
+  const { hours, minutes, seconds, isActive } = useApp();
   const [isExpanded, setIsExpanded] = useState(false);
   
   const displayTime = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
@@ -18,8 +22,8 @@ export default function FocusTimer({ setView, hours, minutes, seconds, isActive 
         <div className="text-8xl font-black text-focusPurple drop-shadow-lg mb-2">🚀</div>
         <p className="text-gray-500 font-bold mb-6">Set custom timers & track sessions.</p>
         <button 
-          className="bg-[#f0f2f5] px-8 py-3.5 rounded-2xl shadow-[6px_6px_12px_#d1d9e6,-6px_-6px_12px_#ffffff] text-focusPurple font-bold hover:translate-y-[-3px] active:scale-95 active:shadow-inner transition-all"
-          onClick={() => setView("focus-mode")}
+          className="magic-btn px-8 py-3.5  rounded-2xl bg-[#f0f2f5] shadow-[6px_6px_12px_#d1d9e6,-6px_-6px_12px_#ffffff] text-focusPurple font-bold transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_20px_rgba(108,92,231,0.2)] active:scale-95 active:shadow-inner"
+          onClick={() => navigate("/focus-mode")}
         >
           ⏱️ Enter Focus Mode
         </button>

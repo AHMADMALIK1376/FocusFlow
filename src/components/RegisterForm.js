@@ -1,11 +1,23 @@
-import React from "react";
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useUser } from "./UserContext";
 
-export default function RegisterForm({ onComplete }) {
+export default function RegisterForm() {
+  const { setUserName } = useUser();
+  const navigate = useNavigate();
+  const [nameInput, setNameInput] = useState("");
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setUserName(nameInput || "New User");
+    navigate("/verify");
+  };
+
   return (
     /* Removed absolute inset-0 and pt-16 to prevent logo overlap */
     <div className="w-full bg-white flex flex-col items-center p-0">
       <form 
-        onSubmit={(e) => { e.preventDefault(); onComplete(); }} 
+        onSubmit={handleSubmit} 
         className="w-full flex flex-col items-center animate-in fade-in slide-in-from-right-4"
       >
         {/* mb-1 keeps the header close to the logo as seen in your reference */}
@@ -15,7 +27,9 @@ export default function RegisterForm({ onComplete }) {
         <div className="w-full space-y-3 flex flex-col items-center">
           <input 
             type="text" 
-            placeholder="Identity Name" 
+            placeholder="Identity Name"
+            value={nameInput}
+            onChange={(e) => setNameInput(e.target.value)}
             className="w-[80%] p-4 bg-[#f0f2f5] rounded-2xl shadow-neu-pressed outline-none text-sm" 
             required 
           />

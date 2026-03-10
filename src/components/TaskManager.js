@@ -1,6 +1,11 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useApp } from "./AppContext";
 
-export default function TaskManager({ tasks, setTasks, setCompletedGoals, setView }) {
+export default function TaskManager() {
+  const navigate = useNavigate();
+  const { tasks, setTasks, setCompletedGoals } = useApp();
+
   const [input, setInput] = useState("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
@@ -156,41 +161,40 @@ export default function TaskManager({ tasks, setTasks, setCompletedGoals, setVie
       </div>
 
       {/* FOOTER */}
-    <footer className="mt-16 w-full flex justify-center px-4">
-  <div className="flex flex-row items-center justify-center gap-6 flex-wrap">
-    {(() => {
-      // Shared "Blueprint" classes
-      const baseBtn = "bg-[#f0f2f5] text-focusPurple py-4 px-8 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 whitespace-nowrap hover:-translate-y-1 shadow-[6px_6px_12px_#d1d9e6,-6px_-6px_12px_#ffffff]";
+      <footer className="mt-16 w-full flex justify-center px-4">
+        <div className="flex flex-row items-center justify-center gap-6 flex-wrap">
+          {(() => {
+            const baseBtn = "bg-[#f0f2f5] text-focusPurple py-4 px-8 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 whitespace-nowrap hover:-translate-y-1 shadow-[6px_6px_12px_#d1d9e6,-6px_-6px_12px_#ffffff]";
 
-      return (
-        <>
-          <button 
-            onClick={() => setView("roadmap")} 
-            className={`${baseBtn} `}
-          >
-            🗺️ Academic Timeline
-          </button>
+            return (
+              <>
+                <button 
+                  onClick={() => navigate("/timeline")} 
+                  className={`${baseBtn}`}
+                >
+                  🗺️ Academic Timeline
+                </button>
 
-          <button 
-            onClick={() => setView("dashboard")} 
-            className={`${baseBtn} `}
-          >
-            🏠 Dashboard
-          </button>
+                <button 
+                  onClick={() => navigate("/dashboard")} 
+                  className={`${baseBtn}`}
+                >
+                  🏠 Dashboard
+                </button>
 
-          {tasks.length > 0 && (
-            <button 
-              onClick={resetTimeline} 
-              className={`${baseBtn}  text-red-400 hover:text-red-500 hover:shadow-[0_5px_15px_rgba(255,118,117,0.2)]`}
-            >
-              🗑 Delete All Tasks
-            </button>
-          )}
-        </>
-      );
-    })()}
-  </div>
-</footer>
+                {tasks.length > 0 && (
+                  <button 
+                    onClick={resetTimeline} 
+                    className={`${baseBtn} text-red-400 hover:text-red-500 hover:shadow-[0_5px_15px_rgba(255,118,117,0.2)]`}
+                  >
+                    🗑 Delete All Tasks
+                  </button>
+                )}
+              </>
+            );
+          })()}
+        </div>
+      </footer>
     </div>
   );
 }
