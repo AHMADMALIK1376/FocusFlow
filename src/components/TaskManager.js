@@ -44,9 +44,7 @@ export default function TaskManager() {
   const toggleComplete = (id) => {
     setTasks(tasks.map(task => {
       if (task.id === id) {
-        if (!task.completed) {
-          setCompletedGoals(prev => prev + 1);
-        }
+        if (!task.completed) setCompletedGoals(prev => prev + 1);
         return { ...task, completed: !task.completed };
       }
       return task;
@@ -57,8 +55,8 @@ export default function TaskManager() {
 
   return (
     <div className="flex flex-col items-center w-full max-w-[900px] mx-auto py-10 px-4 animate-fadeInUp">
-      
-      {/* HERO SECTION */}
+
+      {/* HERO */}
       <section className="text-center mb-12">
         <h1 className="text-[3.5rem] font-black text-gray-800 tracking-tight leading-tight">
           Task <span className="bg-gradient-to-r from-focusPurple to-purple-400 bg-clip-text text-transparent">Planner</span>
@@ -99,7 +97,7 @@ export default function TaskManager() {
             <input type="date" className="flex-1 p-4 rounded-2xl bg-[#f0f2f5] shadow-[inset_6px_6px_12px_#d1d9e6,inset_-6px_-6px_12px_#ffffff] outline-none font-bold text-gray-700" value={date} onChange={(e) => setDate(e.target.value)} />
           </div>
 
-          <button type="submit" className="w-full py-5 rounded-2xl bg-[#f0f2f5] shadow-[6px_6px_12px_#d1d9e6,-6px_-6px_12px_#ffffff] text-focusPurple font-black hover:-translate-y-1 active:scale-[0.98] active:shadow-inner transition-all">
+          <button type="submit" className="magic-btn w-full py-5">
             Add to Flow
           </button>
         </form>
@@ -125,8 +123,8 @@ export default function TaskManager() {
                     <span className="text-2xl">⏳</span>
                     <h3 className="text-xl font-black text-gray-800">{cat}s</h3>
                   </div>
-
-                  <button 
+                  {/* Animated flip text button — kept as-is (special hover effect) */}
+                  <button
                     onClick={() => deleteCategory(cat)}
                     className="relative text-focusPurple font-extrabold text-sm group/del overflow-hidden h-8 flex items-center"
                   >
@@ -145,8 +143,9 @@ export default function TaskManager() {
                           {task.time && <span className="text-xs font-bold text-focusPurple tracking-widest uppercase">⏰ {task.time}</span>}
                         </div>
                       </div>
-                      <button 
-                        onClick={() => toggleComplete(task.id)} 
+                      {/* Done button — kept green accent style intentionally */}
+                      <button
+                        onClick={() => toggleComplete(task.id)}
                         className="px-6 py-2 rounded-xl bg-[#f0f2f5] shadow-[4px_4px_10px_#d1d9e6,-4px_-4px_10px_#ffffff] text-[#00b894] font-black hover:bg-[#00b894] hover:text-white hover:shadow-[0_10px_20px_rgba(0,184,148,0.3)] transition-all"
                       >
                         Done
@@ -163,36 +162,17 @@ export default function TaskManager() {
       {/* FOOTER */}
       <footer className="mt-16 w-full flex justify-center px-4">
         <div className="flex flex-row items-center justify-center gap-6 flex-wrap">
-          {(() => {
-            const baseBtn = "bg-[#f0f2f5] text-focusPurple py-4 px-8 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 whitespace-nowrap hover:-translate-y-1 shadow-[6px_6px_12px_#d1d9e6,-6px_-6px_12px_#ffffff]";
-
-            return (
-              <>
-                <button 
-                  onClick={() => navigate("/timeline")} 
-                  className={`${baseBtn}`}
-                >
-                  🗺️ Academic Timeline
-                </button>
-
-                <button 
-                  onClick={() => navigate("/dashboard")} 
-                  className={`${baseBtn}`}
-                >
-                  🏠 Dashboard
-                </button>
-
-                {tasks.length > 0 && (
-                  <button 
-                    onClick={resetTimeline} 
-                    className={`${baseBtn} text-red-400 hover:text-red-500 hover:shadow-[0_5px_15px_rgba(255,118,117,0.2)]`}
-                  >
-                    🗑 Delete All Tasks
-                  </button>
-                )}
-              </>
-            );
-          })()}
+          <button onClick={() => navigate("/timeline")} className="magic-btn flex items-center gap-2">
+            🗺️ Academic Timeline
+          </button>
+          <button onClick={() => navigate("/dashboard")} className="magic-btn flex items-center gap-2">
+            🏠 Dashboard
+          </button>
+          {tasks.length > 0 && (
+            <button onClick={resetTimeline} className="magic-btn text-red-400 flex items-center gap-2">
+              🗑 Delete All Tasks
+            </button>
+          )}
         </div>
       </footer>
     </div>

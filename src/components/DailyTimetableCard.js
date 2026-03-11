@@ -33,18 +33,14 @@ export default function DailyTimetableCard() {
           {todaysRemainingTasks}
         </div>
         <p className="text-gray-500 font-bold mb-6">Remaining Tasks</p>
-        <button 
-          className="magic-btn px-8 py-3.5  rounded-2xl bg-[#f0f2f5] shadow-[6px_6px_12px_#d1d9e6,-6px_-6px_12px_#ffffff] text-focusPurple font-bold transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_20px_rgba(108,92,231,0.2)] active:scale-95 active:shadow-inner"
-          onClick={() => navigate("/routine")}
-        >
+        <button className="magic-btn" onClick={() => navigate("/routine")}>
           📅 Manage Schedule
         </button>
       </div>
 
-      {/* BACK FACE (Liquid Expand) */}
+      {/* BACK FACE */}
       <div className={`absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-200 flex flex-col items-center justify-center transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] z-2
         ${isExpanded ? "[clip-path:circle(150%_at_50%_90%)] pointer-events-auto" : "[clip-path:circle(0%_at_50%_90%)] pointer-events-none"}`}>
-        
         <div className="flex flex-col items-center">
           <span className="text-[2.2rem] mb-2">🏅</span>
           <h3 className="text-xl font-black text-gray-800">Total Task Completed</h3>
@@ -58,7 +54,7 @@ export default function DailyTimetableCard() {
         </div>
       </div>
 
-      {/* LIQUID TRIGGER BUTTON */}
+      {/* LIQUID TRIGGER BUTTON — kept as circular FAB */}
       <button
         className="absolute bottom-4 right-4 w-11 h-11 rounded-full bg-focusPurple text-white text-xl flex items-center justify-center z-10 shadow-[0_4px_15px_rgba(108,92,231,0.4)] hover:scale-110 hover:rotate-12 transition-transform"
         onClick={() => setIsExpanded(!isExpanded)}

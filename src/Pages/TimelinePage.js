@@ -39,15 +39,12 @@ export default function TimelinePage() {
     <div className="relative border-l-4 border-[#e0e5ec] ml-5 md:ml-8 py-4 space-y-10">
       {list.map((task) => (
         <div key={task.id} className="relative pl-10 group transition-all hover:translate-x-2">
-          {/* Timeline Dot */}
           <span className={`absolute -left-[14px] top-1 w-6 h-6 rounded-full border-4 bg-[#f0f2f5] transition-all shadow-[3px_3px_6px_#d1d9e6,-3px_-3px_6px_#ffffff] z-10 ${task.completed ? "border-green-500 bg-green-500 shadow-green-200" : "border-focusPurple"}`}></span>
-          
           <div className="mb-2">
             <span className="text-xs font-black text-focusPurple uppercase tracking-widest bg-purple-50 px-2 py-1 rounded-md">
               {task.date} {task.time && `• ⏰ ${task.time}`}
             </span>
           </div>
-
           <div className="bg-[#f0f2f5] p-5 rounded-2xl shadow-[10px_10px_20px_#d1d9e6,-10px_-10px_20px_#ffffff] flex justify-between items-center group-hover:shadow-[15px_15px_30px_#d1d9e6,-15px_-15px_30px_#ffffff]">
             <div>
               <span className="inline-block px-2 py-1 bg-purple-100 text-focusPurple text-[10px] font-black rounded uppercase mb-2 tracking-tighter">
@@ -66,7 +63,8 @@ export default function TimelinePage() {
 
   return (
     <div className="min-h-screen bg-[#f0f2f5] py-10 px-5 flex flex-col items-center">
-      {/* HERO SECTION */}
+
+      {/* HERO */}
       <section className="text-center mb-16 animate-fadeInUp">
         <h1 className="text-5xl md:text-6xl font-black text-gray-800 tracking-tighter">
           Academic <span className="bg-gradient-to-r from-focusPurple to-purple-500 bg-clip-text text-transparent">Timeline</span>
@@ -81,7 +79,7 @@ export default function TimelinePage() {
           </div>
         ) : (
           <>
-            {/* ACTIVE SECTION */}
+            {/* ACTIVE */}
             {pendingTasks.length > 0 && (
               <div className="space-y-8">
                 <h2 className="text-2xl font-black text-gray-700 px-4 border-l-4 border-focusPurple">Active Roadmap</h2>
@@ -95,6 +93,7 @@ export default function TimelinePage() {
                           <span className="text-2xl">⏳</span>
                           <h3 className="text-xl font-black text-gray-800">{type}s</h3>
                         </div>
+                        {/* Small inline icon button — kept minimal */}
                         <button onClick={() => deleteCategory(type, false)} className="text-focusPurple font-bold text-sm hover:scale-110 transition-transform">🗑</button>
                       </div>
                       {RenderTimeline(getSortedList(tasksByType))}
@@ -104,7 +103,7 @@ export default function TimelinePage() {
               </div>
             )}
 
-            {/* COMPLETED SECTION */}
+            {/* COMPLETED */}
             {completedTasks.length > 0 && (
               <div className="space-y-8 pt-10">
                 <hr className="border-none h-1 bg-gray-200 rounded-full opacity-50 mb-10" />
@@ -131,39 +130,20 @@ export default function TimelinePage() {
         )}
       </div>
 
-      {/* FOOTER NAV */}
+      {/* FOOTER */}
       <footer className="mt-20 w-full flex justify-center px-4">
         <div className="flex flex-row items-center justify-center gap-6 flex-wrap">
-          {(() => {
-            const baseBtn = "bg-white text-focusPurple py-4 px-10 rounded-[20px] font-bold transition-all flex items-center justify-center gap-2 whitespace-nowrap hover:-translate-y-1 shadow-[6px_6px_12px_#d1d9e6,-2px_-2px_5px_#ffffff]";
-
-            return (
-              <>
-                <button 
-                  onClick={() => navigate("/tasks")} 
-                  className={`${baseBtn}`}
-                >
-                  📓 Back to Planner
-                </button>
-
-                <button 
-                  onClick={() => navigate("/dashboard")} 
-                  className={`${baseBtn}`}
-                >
-                  🏠 Back to Dashboard
-                </button>
-
-                {tasks.length > 0 && (
-                  <button 
-                    onClick={resetTimeline} 
-                    className={`${baseBtn} text-red-400 hover:text-red-500 hover:shadow-[0_5px_15px_rgba(255,118,117,0.2)]`}
-                  >
-                    🗑 Delete All Tasks
-                  </button>
-                )}
-              </>
-            );
-          })()}
+          <button onClick={() => navigate("/tasks")} className="magic-btn flex items-center gap-2">
+            📓 Back to Planner
+          </button>
+          <button onClick={() => navigate("/dashboard")} className="magic-btn flex items-center gap-2">
+            🏠 Back to Dashboard
+          </button>
+          {tasks.length > 0 && (
+            <button onClick={resetTimeline} className="magic-btn text-red-400 flex items-center gap-2">
+              🗑 Delete All Tasks
+            </button>
+          )}
         </div>
       </footer>
     </div>

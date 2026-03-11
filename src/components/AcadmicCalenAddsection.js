@@ -79,7 +79,7 @@ export default function AcadmicCalenAddsection({
             />
           </div>
           <div className="md:col-span-3">
-            <button type="submit" className="magic-btn px-8 py-3.5  rounded-2xl bg-[#f0f2f5] shadow-[6px_6px_12px_#d1d9e6,-6px_-6px_12px_#ffffff] text-focusPurple font-bold transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_20px_rgba(108,92,231,0.2)] active:scale-95 active:shadow-inner">
+            <button type="submit" className="magic-btn w-full">
               Add to Flow
             </button>
           </div>

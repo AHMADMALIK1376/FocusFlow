@@ -11,14 +11,12 @@ export default function LoginForm() {
   const handleSubmit = (e) => {
     e.preventDefault();
     setUserName("M. Ahmad Malik"); 
-    navigate("/verify");
+    navigate("/dashboard");
   };
 
   return (
-    /* Removed 'absolute inset-0' to prevent overlapping the logo */
     <div className="w-full bg-white flex flex-col items-center p-0">
       <form onSubmit={handleSubmit} className="w-full flex flex-col items-center animate-in fade-in slide-in-from-left-4">
-        {/* mb-1 keeps the header tight to the logo as requested */}
         <h2 className="text-2xl font-black text-gray-800 mb-1">Welcome Back</h2>
         <p className="text-gray-400 text-xs font-bold mb-6 uppercase tracking-widest">Reconnect with goals</p>
         
@@ -41,7 +39,7 @@ export default function LoginForm() {
           />
         </div>
 
-        <button type="submit" className="mt-8 w-[80%] py-4 bg-[#f0f2f5] shadow-[6px_6px_12px_#d1d9e6,-6px_-6px_12px_#ffffff] rounded-2xl text-[#6c5ce7] font-black hover:-translate-y-1 transition-all active:scale-95 tracking-widest text-xs">
+        <button type="submit" className="magic-btn mt-8 w-[80%] tracking-widest text-xs">
           UNLEASH FOCUS
         </button>
       </form>
