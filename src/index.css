@@ -46,7 +46,6 @@ code {
     clip-path: circle(150% at 50% 90%);
   }
 
-  /* --- Hover Delete Logic (The Bin Swap) --- */
   .hover-delete-btn {
     @apply bg-transparent border-none text-focusPurple font-extrabold text-xs cursor-pointer transition-all duration-300;
   }

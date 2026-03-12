@@ -71,14 +71,25 @@ export const AppProvider = ({ children }) => {
   // ── Derived values ───────────────────────────────────────────────
   const pendingCount = tasks.filter(t => !t.completed).length;
 
-  const todayName = new Date().toLocaleDateString("en-US", { weekday: "long" });
+  const todayLong  = new Date().toLocaleDateString("en-US", { weekday: "long"  }); // "Friday"
+  const todayShort = new Date().toLocaleDateString("en-US", { weekday: "short" }); // "Fri"
+
   const pendingRoutine = timetable.filter(
-    t => t.repeatOn?.includes(todayName) && !t.completedDays?.includes(todayName)
+    t => t.repeatOn?.includes(todayLong) && !t.completedDays?.includes(todayLong)
   ).length;
 
-  const totalTasks = tasks.length;
+  const totalTasks     = tasks.length;
   const completedTasks = tasks.filter(t => t.completed).length;
-  const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+  const progress       = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+  // Normalize day matching — handles both "Fri" and "Friday" stored formats
+  const todaysClasses = calendar.filter(item => {
+    const days = Array.isArray(item.days) ? item.days : [item.days];
+    return days.some(d => {
+      const trimmed = (d || "").trim();
+      return trimmed === todayLong || trimmed === todayShort;
+    });
+  });
 
   return (
     <AppContext.Provider value={{
@@ -96,6 +107,7 @@ export const AppProvider = ({ children }) => {
       pendingCount,
       pendingRoutine,
       progress,
+      todaysClasses,
     }}>
       {children}
     </AppContext.Provider>
