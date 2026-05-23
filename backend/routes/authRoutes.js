@@ -2,16 +2,22 @@
 const router = express.Router();
 const authController = require('../controllers/authController');
 
-// Register endpoint
+// Register endpoint - sends verification email
 router.post('/register', authController.register);
 
-// Login endpoint
+// Verify email endpoint
+router.post('/verify-email', authController.verifyEmail);
+
+// Resend verification code
+router.post('/resend-verification', authController.resendVerificationCode);
+
+// Login endpoint (checks if verified)
 router.post('/login', authController.login);
 
-// Get current user endpoint
+// Get current user
 router.get('/me', authController.getMe);
 
-// Logout endpoint
+// Logout
 router.post('/logout', authController.logout);
 
 // Test endpoint

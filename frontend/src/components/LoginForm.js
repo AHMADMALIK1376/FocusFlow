@@ -7,15 +7,25 @@ export default function LoginForm() {
   const navigate = useNavigate();
   const [email, setEmail] = useState(""); 
   const [password, setPassword] = useState("");
+  const [requiresVerification, setRequiresVerification] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     clearError();
+    setRequiresVerification(false);
     
     const result = await login(email, password);
     
     if (result.success) {
       navigate("/dashboard");
+    } else if (result.requiresVerification) {
+      // Store email for verification and redirect to verify page
+      sessionStorage.setItem('pendingVerificationEmail', email);
+      setRequiresVerification(true);
+      // Redirect to verify page after 1 second
+      setTimeout(() => {
+        navigate("/verify");
+      }, 1500);
     }
   };
 
@@ -29,6 +39,13 @@ export default function LoginForm() {
         {error && (
           <div className="w-[80%] mb-4 p-3 bg-red-100 border border-red-300 text-red-600 rounded-xl text-sm font-bold text-center">
             {error}
+          </div>
+        )}
+        
+        {/* Verification Required Message */}
+        {requiresVerification && (
+          <div className="w-[80%] mb-4 p-3 bg-yellow-100 border border-yellow-300 text-yellow-700 rounded-xl text-sm font-bold text-center">
+            ⚠️ Email not verified! Redirecting to verification page...
           </div>
         )}
         
@@ -49,6 +66,13 @@ export default function LoginForm() {
             className="w-[80%] p-4 bg-[#f0f2f5] rounded-2xl shadow-neu-pressed outline-none text-sm" 
             required 
           />
+        </div>
+
+        {/* Forgot Password Link */}
+        <div className="w-[80%] text-right mt-2">
+          <Link to="/forgot-password" className="text-[10px] text-gray-400 hover:text-focusPurple transition-colors">
+            Forgot Password?
+          </Link>
         </div>
 
         <button 

@@ -1,40 +1,63 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useUser } from "./UserContext";
 
 export default function RegisterForm() {
-  const { register, isLoading, error, clearError } = useUser();
   const navigate = useNavigate();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    clearError();
+    setLoading(true);
+    setError("");
+    setSuccessMessage("");
     
-    const result = await register(email, password, fullName);
-    
-    if (result.success) {
-      navigate("/dashboard");
+    try {
+      const response = await fetch('http://localhost:5555/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, fullName })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        // Store email in sessionStorage for verification
+        sessionStorage.setItem('pendingVerificationEmail', email);
+        setSuccessMessage(data.message);
+        // Redirect to verify page after 2 seconds
+        setTimeout(() => {
+          navigate('/verify');
+        }, 2000);
+      } else {
+        setError(data.error || 'Registration failed');
+      }
+    } catch (err) {
+      setError('Network error. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    /* Removed absolute inset-0 and pt-16 to prevent logo overlap */
     <div className="w-full bg-white flex flex-col items-center p-0">
-      <form 
-        onSubmit={handleSubmit} 
-        className="w-full flex flex-col items-center animate-in fade-in slide-in-from-right-4"
-      >
-        {/* mb-1 keeps the header close to the logo as seen in your reference */}
+      <form onSubmit={handleSubmit} className="w-full flex flex-col items-center animate-in fade-in slide-in-from-right-4">
         <h2 className="text-2xl font-black text-gray-800 mb-1">New Account</h2>
         <p className="text-gray-400 text-xs font-bold mb-6 uppercase tracking-widest">Start the journey</p>
         
-        {/* Error Message Display */}
         {error && (
           <div className="w-[80%] mb-4 p-3 bg-red-100 border border-red-300 text-red-600 rounded-xl text-sm font-bold text-center">
             {error}
+          </div>
+        )}
+        
+        {successMessage && (
+          <div className="w-[80%] mb-4 p-3 bg-green-100 border border-green-300 text-green-600 rounded-xl text-sm font-bold text-center">
+            {successMessage}
           </div>
         )}
         
@@ -68,9 +91,9 @@ export default function RegisterForm() {
         <button 
           type="submit" 
           className="mt-8 w-[80%] py-4 bg-[#f0f2f5] shadow-neu-flat rounded-2xl text-[#6c5ce7] font-black hover:-translate-y-1 transition-all active:scale-95 tracking-widest text-xs"
-          disabled={isLoading}
+          disabled={loading}
         >
-          {isLoading ? "CREATING ACCOUNT..." : "CLAIM YOUR REIGN"}
+          {loading ? "SENDING CODE..." : "CLAIM YOUR REIGN"}
         </button>
       </form>
     </div>

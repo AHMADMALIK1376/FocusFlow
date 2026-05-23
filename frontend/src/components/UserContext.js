@@ -46,6 +46,24 @@ export const authAPI = {
         return handleResponse(response);
     },
     
+    verifyEmail: async (email, code) => {
+        const response = await fetch(`${API_URL}/auth/verify-email`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, code })
+        });
+        return handleResponse(response);
+    },
+    
+    resendVerification: async (email) => {
+        const response = await fetch(`${API_URL}/auth/resend-verification`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        return handleResponse(response);
+    },
+    
     logout: () => {
         setToken(null);
     }
@@ -64,6 +82,7 @@ export const UserProvider = ({ children }) => {
     );
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [requiresVerification, setRequiresVerification] = useState(false);
 
     const setUserName = (name) => {
         setUserNameState(name);
@@ -83,10 +102,11 @@ export const UserProvider = ({ children }) => {
         }
     };
 
-    // Login function - calls real API
+    // Login function - calls real API with verification check
     const login = async (email, password) => {
         setIsLoading(true);
         setError(null);
+        setRequiresVerification(false);
         
         try {
             const response = await authAPI.login(email, password);
@@ -98,6 +118,15 @@ export const UserProvider = ({ children }) => {
                 setUserEmail(email);
                 return { success: true };
             } else {
+                // Check if error is due to unverified email
+                if (response.requiresVerification || (response.error && response.error.includes('verify'))) {
+                    setRequiresVerification(true);
+                    return { 
+                        success: false, 
+                        requiresVerification: true, 
+                        error: response.error || 'Email not verified' 
+                    };
+                }
                 setError(response.error || "Login failed");
                 return { success: false, error: response.error };
             }
@@ -110,21 +139,95 @@ export const UserProvider = ({ children }) => {
         }
     };
 
-    // Register function - calls real API
+    // Register function - sends verification email
     const register = async (email, password, fullName) => {
         setIsLoading(true);
         setError(null);
+        setRequiresVerification(false);
         
         try {
             const response = await authAPI.register(email, password, fullName);
             
-            if (response.success && response.token) {
-                setToken(response.token);
-                setUserName(fullName || email.split('@')[0]);
-                setUserEmail(email);
+            if (response.success) {
+                // Check if verification is required
+                if (response.requiresVerification) {
+                    setRequiresVerification(true);
+                    return { 
+                        success: true, 
+                        requiresVerification: true,
+                        message: response.message,
+                        email: response.email || email
+                    };
+                }
+                
+                // If no verification required (legacy or already verified)
+                if (response.token) {
+                    setToken(response.token);
+                    setUserName(fullName || email.split('@')[0]);
+                    setUserEmail(email);
+                }
                 return { success: true };
             } else {
                 setError(response.error || "Registration failed");
+                return { success: false, error: response.error };
+            }
+        } catch (err) {
+            const errorMsg = err.message || "Network error. Please try again.";
+            setError(errorMsg);
+            return { success: false, error: errorMsg };
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Verify email function - AUTOMATICALLY LOGS USER IN
+    const verifyEmail = async (email, code) => {
+        setIsLoading(true);
+        setError(null);
+        
+        try {
+            const response = await authAPI.verifyEmail(email, code);
+            
+            if (response.success && response.token) {
+                // Store token and user info
+                setToken(response.token);
+                const name = response.user?.fullName || email.split('@')[0];
+                setUserName(name);
+                setUserEmail(email);
+                
+                // Clear verification flag
+                setRequiresVerification(false);
+                
+                return { 
+                    success: true, 
+                    token: response.token,
+                    user: response.user 
+                };
+            } else {
+                setError(response.error || "Verification failed");
+                return { success: false, error: response.error };
+            }
+        } catch (err) {
+            const errorMsg = err.message || "Network error. Please try again.";
+            setError(errorMsg);
+            return { success: false, error: errorMsg };
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Resend verification code
+    const resendVerificationCode = async (email) => {
+        setIsLoading(true);
+        setError(null);
+        
+        try {
+            const response = await authAPI.resendVerification(email);
+            
+            if (response.success) {
+                return { success: true, message: response.message };
+            } else {
+                setError(response.error || "Failed to resend code");
                 return { success: false, error: response.error };
             }
         } catch (err) {
@@ -143,6 +246,7 @@ export const UserProvider = ({ children }) => {
         setUserName(null);
         setUserEmail(null);
         setError(null);
+        setRequiresVerification(false);
     };
 
     // Check if user is authenticated
@@ -162,8 +266,11 @@ export const UserProvider = ({ children }) => {
                 userEmail,
                 isLoading,
                 error,
+                requiresVerification,
                 login,
                 register,
+                verifyEmail,
+                resendVerificationCode,
                 logout,
                 setUserName,
                 isAuthenticated,
