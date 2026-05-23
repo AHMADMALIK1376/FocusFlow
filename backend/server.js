@@ -1,7 +1,15 @@
 ﻿require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const cron = require('node-cron');
 const { initialize } = require('./config/database');
+const { startReminderScheduler } = require('./services/reminderService');
+const { sendAllDailySchedules } = require('./services/dailyScheduleEmailService');
+const { 
+    sendWeeklyTaskSummary, 
+    sendDailyTaskSummary, 
+    sendHourlyTaskReminders 
+} = require('./services/taskReminderEmailService');
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
@@ -51,17 +59,90 @@ app.use((err, req, res, next) => {
 
 async function startServer() {
     try {
+        // Initialize Oracle Database connection pool
         await initialize();
+        console.log('✅ Oracle Database connection pool created');
+        
+        // ==============================================
+        // CLASS REMINDERS (1 hour before class)
+        // ==============================================
+        startReminderScheduler();
+        console.log('⏰ Class reminder scheduler started. Will check every minute.');
+        
+        // ==============================================
+        // DAILY SCHEDULE EMAIL (Classes for today)
+        // ==============================================
+        cron.schedule('0 6 * * *', () => {
+            console.log('📅 Running 6:00 AM daily schedule email job...');
+            sendAllDailySchedules();
+        });
+        console.log('📧 Daily schedule email job scheduled for 6:00 AM');
+        
+        // ==============================================
+        // TASK REMINDERS
+        // ==============================================
+        
+        // 1. WEEKLY TASK SUMMARY - Every Monday at 7:00 AM
+        cron.schedule('0 7 * * 1', () => {
+            console.log('📋 Running weekly task summary job...');
+            sendWeeklyTaskSummary();
+        });
+        console.log('📋 Weekly task summary scheduled for Monday at 7:00 AM');
+        
+        // 2. DAILY TASK SUMMARY - Every day at 8:00 AM
+        cron.schedule('0 8 * * *', () => {
+            console.log('📋 Running daily task summary job...');
+            sendDailyTaskSummary();
+        });
+        console.log('📋 Daily task summary scheduled for 8:00 AM');
+        
+        // 3. HOURLY TASK REMINDERS - Every minute (1 hour before task due)
+        cron.schedule('* * * * *', () => {
+            sendHourlyTaskReminders();
+        });
+        console.log('⏰ Hourly task reminder scheduler started. Will check every minute.');
+        
+        // ==============================================
+        // FOR TESTING - Run once immediately (REMOVE FOR PRODUCTION)
+        // ==============================================
+        setTimeout(() => {
+            console.log('🧪 Running immediate test of all reminders...');
+            sendAllDailySchedules();
+            setTimeout(() => sendWeeklyTaskSummary(), 3000);
+            setTimeout(() => sendDailyTaskSummary(), 6000);
+            setTimeout(() => sendHourlyTaskReminders(), 9000);
+        }, 5000);
+        
+        // Start Express server
         app.listen(PORT, () => {
             console.log('='.repeat(50));
             console.log(`🚀 FocusFlow Backend running on port ${PORT}`);
             console.log(`📍 Health check: http://localhost:${PORT}/api/health`);
             console.log('='.repeat(50));
+            console.log('📋 REMINDER SCHEDULE SUMMARY:');
+            console.log('   🏫 Class Reminders: Every minute (1 hour before class)');
+            console.log('   📅 Daily Schedule: 6:00 AM');
+            console.log('   📋 Weekly Tasks: Monday at 7:00 AM');
+            console.log('   📋 Daily Tasks: 8:00 AM');
+            console.log('   ⏰ Hourly Task Reminders: Every minute');
+            console.log('='.repeat(50));
         });
+        
     } catch (err) {
         console.error('Failed to start server:', err);
         process.exit(1);
     }
 }
+
+// Handle graceful shutdown
+process.on('SIGINT', async () => {
+    console.log('\n🛑 Shutting down server...');
+    process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+    console.log('\n🛑 Shutting down server...');
+    process.exit(0);
+});
 
 startServer();

@@ -104,12 +104,13 @@ export default function Home() {
           </p>
         </header>
 
+        {/* All 5 cards - FocusTimer and UniCalendar positions swapped */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-[1000px] w-full mx-auto items-stretch">
           <GoalCard />
-          <FocusTimer />
+          <UniCalendar />
           <DailyTimetableCard />
           <AcademicCalendar />
-          <UniCalendar />
+          <FocusTimer />
         </div>
       </div>
     </div>

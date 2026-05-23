@@ -3,15 +3,23 @@ import { useNavigate } from "react-router-dom";
 import { useApp } from "../components/AppContext";
 import { calendarAPI, getToken } from "../services/api";
 
-const displayDays = ["Mon", "Tue", "Wed", "Thu", "Fri"];
+// Updated to include Saturday and Sunday for reminder testing
+const displayDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 const getDayDate = (dayName) => {
   const today = new Date();
-  const dayOfWeek = today.getDay();
-  const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-  const dayMap = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 };
+  const dayMap = { Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 0 };
+  let targetDay = dayMap[dayName];
+  
+  const currentDay = today.getDay();
+  let diff = targetDay - currentDay;
+  
+  // If the target day is earlier in the week, get next week's date
+  if (diff < 0) diff += 7;
+  
   const targetDate = new Date(today);
-  targetDate.setDate(today.getDate() + mondayOffset + dayMap[dayName]);
+  targetDate.setDate(today.getDate() + diff);
+  
   return targetDate.toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
 };
 
@@ -27,7 +35,7 @@ const smBtn = "magic-btn text-[10px] px-3 py-1.5 rounded-lg";
 
 export default function AcademicCalendarViewPage() {
   const navigate = useNavigate();
-  const { setCalendar } = useApp();  // Removed unused 'calendar'
+  const { setCalendar } = useApp();
 
   const [calendars, setCalendarsRaw] = useState([]);
   const [activeCalendarId, setActiveCalendarIdRaw] = useState(null);
@@ -311,10 +319,10 @@ function CalendarTable({
         </div>
       </div>
 
-      {/* Grid */}
-      <div className="min-w-[1000px] grid grid-cols-5">
+      {/* Grid - Now with 7 columns for all days */}
+      <div className="min-w-[1200px] grid grid-cols-7">
         {displayDays.map((day, index) => (
-          <div key={day} className={`flex flex-col ${index !== 4 ? "border-r-2 border-[#7C3AED]/10" : ""}`}>
+          <div key={day} className={`flex flex-col ${index !== 6 ? "border-r-2 border-[#7C3AED]/10" : ""}`}>
             <div className="p-6 text-center border-b-2 border-[#7C3AED]/20">
               <div className="font-black text-gray-800 uppercase tracking-[0.2em] text-sm">{day}</div>
               <div className="text-[10px] font-bold text-[#7C3AED] mt-1 opacity-70">{getDayDate(day)}</div>

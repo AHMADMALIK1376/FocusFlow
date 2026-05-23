@@ -13,6 +13,9 @@ import AuthPage    from "./Pages/Authpage";
 import LoginForm   from "./components/LoginForm";
 import RegisterForm from "./components/RegisterForm";
 import VerifyForm  from "./components/VerifyForm";
+import ForgotPasswordForm from "./components/ForgotPasswordForm";
+import ResetPasswordVerify from "./components/ResetPasswordVerify";
+import ResetPassword from "./components/ResetPassword";
 
 // ✅ Protected pages lazy loaded — only downloaded after login
 // This keeps the initial bundle small without hurting FCP
@@ -67,6 +70,9 @@ function App() {
                 <Route path="/login" element={<LoginForm />} />
                 <Route path="/signup" element={<RegisterForm />} />
                 <Route path="/verify" element={<VerifyForm />} />
+                <Route path="/forgot-password" element={<ForgotPasswordForm />} />
+                <Route path="/reset-password-verify" element={<ResetPasswordVerify />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
               </Route>
 
               {/* Protected App Routes — lazy loaded after login */}

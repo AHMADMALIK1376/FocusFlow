@@ -15,6 +15,16 @@ export default function TaskManager() {
 
   const taskOptions = ["Assignment", "Project", "Presentation", "Code", "Quiz", "Daily Task"];
 
+  // Helper function to convert 24-hour time to 12-hour format for display
+  const formatTimeTo12Hour = (time24) => {
+    if (!time24) return "";
+    const [hours, minutes] = time24.split(":");
+    let h = parseInt(hours, 10);
+    const ampm = h >= 12 ? "PM" : "AM";
+    h = h % 12 || 12;
+    return `${h}:${minutes} ${ampm}`;
+  };
+
   // Load tasks from API on mount
   useEffect(() => {
     const fetchTasks = async () => {
@@ -87,7 +97,6 @@ export default function TaskManager() {
 
   const toggleComplete = async (id) => {
     try {
-      // Removed unused 'task' and 'result' variables
       await taskAPI.toggleComplete(id);
       
       setTasks(tasks.map(t => {
@@ -155,8 +164,18 @@ export default function TaskManager() {
           </div>
 
           <div className="flex gap-4">
-            <input type="time" className="flex-1 p-4 rounded-2xl bg-[#f0f2f5] shadow-[inset_6px_6px_12px_#d1d9e6,inset_-6px_-6px_12px_#ffffff] outline-none font-bold text-gray-700" value={time} onChange={(e) => setTime(e.target.value)} />
-            <input type="date" className="flex-1 p-4 rounded-2xl bg-[#f0f2f5] shadow-[inset_6px_6px_12px_#d1d9e6,inset_-6px_-6px_12px_#ffffff] outline-none font-bold text-gray-700" value={date} onChange={(e) => setDate(e.target.value)} />
+            <input 
+              type="time" 
+              className="flex-1 p-4 rounded-2xl bg-[#f0f2f5] shadow-[inset_6px_6px_12px_#d1d9e6,inset_-6px_-6px_12px_#ffffff] outline-none font-bold text-gray-700" 
+              value={time} 
+              onChange={(e) => setTime(e.target.value)} 
+            />
+            <input 
+              type="date" 
+              className="flex-1 p-4 rounded-2xl bg-[#f0f2f5] shadow-[inset_6px_6px_12px_#d1d9e6,inset_-6px_-6px_12px_#ffffff] outline-none font-bold text-gray-700" 
+              value={date} 
+              onChange={(e) => setDate(e.target.value)} 
+            />
           </div>
 
           <button type="submit" className="magic-btn w-full py-5">
@@ -165,7 +184,7 @@ export default function TaskManager() {
         </form>
       </div>
 
-      {/* PENDING LIST */}
+      {/* PENDING LIST - Display times in 12-hour format */}
       <div className="w-full space-y-12">
         <h2 className="text-2xl font-black text-gray-800 text-left border-l-4 border-focusPurple pl-4">Pending Roadmap</h2>
 
@@ -201,7 +220,11 @@ export default function TaskManager() {
                         <p className="text-lg font-black text-gray-800 mb-1">{task.text}</p>
                         <div className="flex gap-4">
                           <span className="text-xs font-bold text-focusPurple tracking-widest uppercase">📅 {task.date}</span>
-                          {task.time && <span className="text-xs font-bold text-focusPurple tracking-widest uppercase">⏰ {task.time}</span>}
+                          {task.time && (
+                            <span className="text-xs font-bold text-focusPurple tracking-widest uppercase">
+                              ⏰ {formatTimeTo12Hour(task.time)}
+                            </span>
+                          )}
                         </div>
                       </div>
                       <button

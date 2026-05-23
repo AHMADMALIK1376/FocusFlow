@@ -11,13 +11,19 @@ exports.getDashboardSummary = async (req, res) => {
         const todayName = getDayOfWeek();
         const todayShort = todayName.substring(0, 3);
         
-        // 1. Get user stats (streak and goals)
+        console.log('='.repeat(50));
+        console.log(`📅 Dashboard Summary Request`);
+        console.log(`   User ID: ${req.user.userId}`);
+        console.log(`   Today: ${todayName} (${todayStr})`);
+        console.log(`   Today Short: ${todayShort}`);
+        console.log('='.repeat(50));
+        
+        // 1. Get user stats
         const statsResult = await connection.execute(
             `SELECT current_streak, total_goals_completed 
              FROM USER_STATS WHERE user_id = :userId`,
             [req.user.userId]
         );
-        
         const stats = statsResult.rows[0] || { CURRENT_STREAK: 0, TOTAL_GOALS_COMPLETED: 0 };
         
         // 2. Get pending tasks count
@@ -27,7 +33,6 @@ exports.getDashboardSummary = async (req, res) => {
              WHERE user_id = :userId AND is_completed = 0`,
             [req.user.userId]
         );
-        
         const pendingCount = tasksResult.rows[0].PENDING_COUNT;
         
         // 3. Get today's pending routine count
@@ -36,45 +41,59 @@ exports.getDashboardSummary = async (req, res) => {
              FROM DAILY_ROUTINE r
              JOIN ROUTINE_REPEAT_DAYS rd ON r.routine_id = rd.routine_id
              LEFT JOIN ROUTINE_COMPLETIONS rc ON r.routine_id = rc.routine_id 
-                 AND rc.user_id = r.user_id AND rc.completion_date = :todayStr
+                 AND rc.user_id = r.user_id AND rc.completion_date = TO_DATE(:todayStr, 'YYYY-MM-DD')
              WHERE r.user_id = :userId 
                AND rd.day_of_week = :todayName
                AND rc.completion_id IS NULL`,
             [todayStr, req.user.userId, todayName]
         );
-        
         const pendingRoutine = routineResult.rows[0].PENDING_COUNT;
         
-        // 4. Get today's classes from active calendar
+        // 4. Get today's classes - FIXED VERSION
         let todaysClasses = [];
         
-        const activeCalendarResult = await connection.execute(
-            `SELECT calendar_id FROM CALENDAR_LIST 
-             WHERE user_id = :userId AND is_active = 1`,
+        // Get the active calendar for this user
+        const calendarResult = await connection.execute(
+            `SELECT calendar_id, calendar_title FROM CALENDAR_LIST 
+             WHERE user_id = :UserId ORDER BY is_active DESC, created_at DESC`,
             [req.user.userId]
         );
         
-        if (activeCalendarResult.rows.length > 0) {
-            const activeCalendarId = activeCalendarResult.rows[0].CALENDAR_ID;
-            
-            const classesResult = await connection.execute(
-                `SELECT ce.subject_name, ce.start_time, ce.end_time, ce.room_number
-                 FROM CALENDAR_ENTRIES ce
-                 JOIN CALENDAR_ENTRY_DAYS ced ON ce.entry_id = ced.entry_id
-                 WHERE ce.calendar_id = :calendarId 
-                   AND (ced.day_of_week = :todayName OR ced.day_of_week = :todayShort)
-                 ORDER BY ce.start_time ASC`,
-                [activeCalendarId, todayName, todayShort]
-            );
-            
-            todaysClasses = classesResult.rows.map(row => ({
-                subject: row.SUBJECT_NAME,
-                startTime: row.START_TIME,
-                endTime: row.END_TIME,
-                room: row.ROOM_NUMBER,
-                lecturer: null
-            }));
+        console.log(`📚 Calendars found: ${calendarResult.rows.length}`);
+        
+        if (calendarResult.rows.length > 0) {
+            for (const calendar of calendarResult.rows) {
+                const calendarId = calendar.CALENDAR_ID;
+                console.log(`   Checking calendar: ${calendar.CALENDAR_TITLE} (${calendarId})`);
+                
+                // Get entries for this calendar that match today
+                const classesResult = await connection.execute(
+                    `SELECT ce.subject_name, ce.start_time, ce.end_time, ce.room_number
+                     FROM CALENDAR_ENTRIES ce
+                     JOIN CALENDAR_ENTRY_DAYS ced ON ce.entry_id = ced.entry_id
+                     WHERE ce.calendar_id = :calendarId 
+                       AND (ced.day_of_week = :todayName OR ced.day_of_week = :todayShort)
+                     ORDER BY ce.start_time ASC`,
+                    [calendarId, todayName, todayShort]
+                );
+                
+                console.log(`      Found ${classesResult.rows.length} classes for today`);
+                
+                for (const cls of classesResult.rows) {
+                    todaysClasses.push({
+                        subject: cls.SUBJECT_NAME,
+                        startTime: cls.START_TIME,
+                        endTime: cls.END_TIME,
+                        room: cls.ROOM_NUMBER,
+                        lecturer: null
+                    });
+                }
+            }
+        } else {
+            console.log('❌ No calendars found for this user');
         }
+        
+        console.log(`📊 Total classes for today: ${todaysClasses.length}`);
         
         res.json({
             streakCount: stats.CURRENT_STREAK,
@@ -85,7 +104,7 @@ exports.getDashboardSummary = async (req, res) => {
         });
         
     } catch (err) {
-        console.error('Dashboard summary error:', err);
+        console.error('❌ Dashboard summary error:', err);
         res.status(500).json({ error: 'Failed to get dashboard summary.' });
     } finally {
         if (connection) await connection.close();

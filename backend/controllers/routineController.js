@@ -53,31 +53,43 @@ exports.getRoutines = async (req, res) => {
     }
 };
 
-// Get today's routine with completion status
+// Get today's routine with completion status - FIXED VERSION
 exports.getTodayRoutine = async (req, res) => {
     let connection;
     try {
         const todayName = getDayOfWeek();
         const todayStr = today();
         
+        console.log(`📋 Fetching today's routine for user: ${req.user.userId}, day: ${todayName}`);
+        
         connection = await getConnection();
         
+        // FIXED: Using named bind parameters with correct object syntax
         const result = await connection.execute(
             `SELECT r.routine_id, r.activity_name, r.activity_time,
-                    (SELECT COUNT(*) FROM ROUTINE_COMPLETIONS rc 
-                     WHERE rc.routine_id = r.routine_id AND rc.completion_date = :todayStr AND rc.user_id = :userId) as is_completed
+                    NVL((
+                        SELECT 1 FROM ROUTINE_COMPLETIONS rc 
+                        WHERE rc.routine_id = r.routine_id 
+                        AND rc.completion_date = TO_DATE(:todayStr, 'YYYY-MM-DD')
+                        AND rc.user_id = r.user_id
+                    ), 0) as is_completed
              FROM DAILY_ROUTINE r
              JOIN ROUTINE_REPEAT_DAYS rd ON r.routine_id = rd.routine_id
-             WHERE r.user_id = :userId AND rd.day_of_week = :todayName
+             WHERE r.user_id = :userId 
+             AND rd.day_of_week = :todayName
              ORDER BY r.activity_time ASC`,
-            [todayStr, req.user.userId, todayName]
+            {
+                todayStr: todayStr,
+                userId: req.user.userId,
+                todayName: todayName
+            }
         );
         
         const routines = result.rows.map(row => ({
             id: row.ROUTINE_ID,
             activity: row.ACTIVITY_NAME,
             time: row.ACTIVITY_TIME,
-            completed: row.IS_COMPLETED > 0
+            completed: row.IS_COMPLETED === 1
         }));
         
         res.json(routines);
@@ -201,7 +213,7 @@ exports.completeRoutine = async (req, res) => {
         // Check if already completed today
         const checkResult = await connection.execute(
             `SELECT completion_id FROM ROUTINE_COMPLETIONS 
-             WHERE routine_id = :routineId AND user_id = :userId AND completion_date = :today`,
+             WHERE routine_id = :routineId AND user_id = :userId AND completion_date = TO_DATE(:today, 'YYYY-MM-DD')`,
             [routineId, req.user.userId, todayStr]
         );
         
@@ -209,7 +221,7 @@ exports.completeRoutine = async (req, res) => {
             // Uncomplete (delete)
             await connection.execute(
                 `DELETE FROM ROUTINE_COMPLETIONS 
-                 WHERE routine_id = :routineId AND user_id = :userId AND completion_date = :today`,
+                 WHERE routine_id = :routineId AND user_id = :userId AND completion_date = TO_DATE(:today, 'YYYY-MM-DD')`,
                 [routineId, req.user.userId, todayStr]
             );
             res.json({ success: true, completed: false });
@@ -218,7 +230,7 @@ exports.completeRoutine = async (req, res) => {
             const completionId = generateId();
             await connection.execute(
                 `INSERT INTO ROUTINE_COMPLETIONS (completion_id, routine_id, user_id, completion_date) 
-                 VALUES (:completionId, :routineId, :userId, :today)`,
+                 VALUES (:completionId, :routineId, :userId, TO_DATE(:today, 'YYYY-MM-DD'))`,
                 [completionId, routineId, req.user.userId, todayStr]
             );
             res.json({ success: true, completed: true });

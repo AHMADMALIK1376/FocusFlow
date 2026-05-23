@@ -10,6 +10,16 @@ export default function TimelinePage() {
 
   const taskTypes = ["Assignment", "Project", "Presentation", "Code", "Daily Task"];
 
+  // Helper function to convert 24-hour time to 12-hour format for display
+  const formatTimeTo12Hour = (time24) => {
+    if (!time24) return "";
+    const [hours, minutes] = time24.split(":");
+    let h = parseInt(hours, 10);
+    const ampm = h >= 12 ? "PM" : "AM";
+    h = h % 12 || 12;
+    return `${h}:${minutes} ${ampm}`;
+  };
+
   // Load tasks from API
   useEffect(() => {
     const fetchTasks = async () => {
@@ -73,27 +83,32 @@ export default function TimelinePage() {
 
   const RenderTimeline = (list) => (
     <div className="relative border-l-4 border-[#e0e5ec] ml-5 md:ml-8 py-4 space-y-10">
-      {list.map((task) => (
-        <div key={task.id} className="relative pl-10 group transition-all hover:translate-x-2">
-          <span className={`absolute -left-[14px] top-1 w-6 h-6 rounded-full border-4 bg-[#f0f2f5] transition-all shadow-[3px_3px_6px_#d1d9e6,-3px_-3px_6px_#ffffff] z-10 ${task.completed ? "border-green-500 bg-green-500 shadow-green-200" : "border-focusPurple"}`}></span>
-          <div className="mb-2">
-            <span className="text-xs font-black text-focusPurple uppercase tracking-widest bg-purple-50 px-2 py-1 rounded-md">
-              {task.date} {task.time && `• ⏰ ${task.time}`}
-            </span>
-          </div>
-          <div className="bg-[#f0f2f5] p-5 rounded-2xl shadow-[10px_10px_20px_#d1d9e6,-10px_-10px_20px_#ffffff] flex justify-between items-center group-hover:shadow-[15px_15px_30px_#d1d9e6,-15px_-15px_30px_#ffffff]">
-            <div>
-              <span className="inline-block px-2 py-1 bg-purple-100 text-focusPurple text-[10px] font-black rounded uppercase mb-2 tracking-tighter">
-                {task.type}
+      {list.map((task) => {
+        // Format the time to 12-hour format for display
+        const formattedTime = formatTimeTo12Hour(task.time);
+        
+        return (
+          <div key={task.id} className="relative pl-10 group transition-all hover:translate-x-2">
+            <span className={`absolute -left-[14px] top-1 w-6 h-6 rounded-full border-4 bg-[#f0f2f5] transition-all shadow-[3px_3px_6px_#d1d9e6,-3px_-3px_6px_#ffffff] z-10 ${task.completed ? "border-green-500 bg-green-500 shadow-green-200" : "border-focusPurple"}`}></span>
+            <div className="mb-2">
+              <span className="text-xs font-black text-focusPurple uppercase tracking-widest bg-purple-50 px-2 py-1 rounded-md">
+                {task.date} {task.time && `• ⏰ ${formattedTime}`}
               </span>
-              <p className={`font-bold text-gray-700 text-lg ${task.completed ? "line-through opacity-50" : ""}`}>{task.text}</p>
             </div>
-            {task.completed && (
-              <span className="bg-green-500 text-white text-[10px] px-3 py-1 rounded-full font-black uppercase">Done</span>
-            )}
+            <div className="bg-[#f0f2f5] p-5 rounded-2xl shadow-[10px_10px_20px_#d1d9e6,-10px_-10px_20px_#ffffff] flex justify-between items-center group-hover:shadow-[15px_15px_30px_#d1d9e6,-15px_-15px_30px_#ffffff]">
+              <div>
+                <span className="inline-block px-2 py-1 bg-purple-100 text-focusPurple text-[10px] font-black rounded uppercase mb-2 tracking-tighter">
+                  {task.type}
+                </span>
+                <p className={`font-bold text-gray-700 text-lg ${task.completed ? "line-through opacity-50" : ""}`}>{task.text}</p>
+              </div>
+              {task.completed && (
+                <span className="bg-green-500 text-white text-[10px] px-3 py-1 rounded-full font-black uppercase">Done</span>
+              )}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 
@@ -137,7 +152,6 @@ export default function TimelinePage() {
                           <span className="text-2xl">⏳</span>
                           <h3 className="text-xl font-black text-gray-800">{type}s</h3>
                         </div>
-                        {/* Small inline icon button — kept minimal */}
                         <button onClick={() => deleteCategory(type, false)} className="text-focusPurple font-bold text-sm hover:scale-110 transition-transform">🗑</button>
                       </div>
                       {RenderTimeline(getSortedList(tasksByType))}
