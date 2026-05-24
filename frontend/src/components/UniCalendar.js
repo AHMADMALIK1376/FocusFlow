@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { dashboardAPI, getToken, taskAPI } from "../services/api";
-
+import { taskAPI, getToken } from "../services/api";
 export default function UniCalendar() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -23,7 +22,6 @@ export default function UniCalendar() {
         const tasks = await taskAPI.getAll();
         const today = new Date().toISOString().split('T')[0];
         
-        // Find next pending task
         const upcomingTasks = tasks
           .filter(t => !t.completed && t.date >= today)
           .sort((a, b) => {
@@ -34,16 +32,12 @@ export default function UniCalendar() {
         if (upcomingTasks.length > 0) {
           const task = upcomingTasks[0];
           setNextTask(task);
-          
-          // Calculate time left
           calculateTimeLeft(task);
         }
         
-        // Weekly progress calculation
         const startOfWeek = new Date();
         startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
         
-        // Calculate daily completion for line chart
         const dailyCompletion = [];
         for (let i = 0; i < 7; i++) {
           const currentDate = new Date(startOfWeek);
@@ -73,7 +67,6 @@ export default function UniCalendar() {
     
     fetchData();
     
-    // Update time left every minute
     const interval = setInterval(() => {
       if (nextTask) {
         calculateTimeLeft(nextTask);
@@ -89,7 +82,6 @@ export default function UniCalendar() {
     const now = new Date();
     const dueDate = new Date(task.date);
     
-    // If task has time, combine date and time
     if (task.time) {
       const [hours, minutes] = task.time.split(':');
       dueDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
@@ -126,19 +118,23 @@ export default function UniCalendar() {
     return `${h}:${minutes} ${ampm}`;
   };
 
+  // Bar Chart parameters
   const chartWidth = 280;
   const chartHeight = 140;
-  const padding = 20;
-  const graphWidth = chartWidth - padding * 2;
-  const graphHeight = chartHeight - padding * 2;
+  const barWidth = 30;
+  const barSpacing = 10;
+  const maxBarHeight = 90;
+  const startX = 20;
   
-  const points = weeklyData.map((value, index) => {
-    const x = padding + (index / (weeklyData.length - 1)) * graphWidth;
-    const y = chartHeight - padding - (value / 100) * graphHeight;
-    return `${x},${y}`;
-  }).join(" ");
+  const barHeights = weeklyData.map(value => (value / 100) * maxBarHeight);
   
-  const areaPoints = `${padding},${chartHeight - padding} ${points} ${chartWidth - padding},${chartHeight - padding}`;
+  const getBarColor = (value) => {
+    if (value >= 80) return "#22c55e";
+    if (value >= 60) return "#6c5ce7";
+    if (value >= 40) return "#f59e0b";
+    return "#ef4444";
+  };
+  
   const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   if (loading) {
@@ -152,61 +148,129 @@ export default function UniCalendar() {
   return (
     <div className={`relative bg-[#f0f2f5] p-8 rounded-[40px] flex-1 min-w-[320px] max-w-[450px] min-h-[420px] shadow-[20px_20px_60px_#d1d9e6,-20px_-20px_60px_#ffffff] transition-all duration-500 text-center group hover:-translate-y-2`}>
       
-      {/* FRONT FACE - Weekly Trend Line Chart */}
+      {/* FRONT FACE - Weekly Trend Bar Chart */}
       <div className={`flex flex-col items-center justify-center h-full transition-all duration-500 ${isExpanded ? "opacity-0 scale-95 absolute inset-0" : "opacity-100 scale-100 relative"}`}>
         <h3 className="text-lg font-black text-gray-800 mb-1">Weekly Trend</h3>
         <p className="text-[10px] text-gray-400 mb-4">Daily completion rate</p>
 
+        {/* Bar Chart */}
         <div className="relative w-full flex justify-center mb-4">
           <svg width={chartWidth} height={chartHeight} viewBox={`0 0 ${chartWidth} ${chartHeight}`}>
-            {[0, 25, 50, 75, 100].map((level) => (
-              <line
-                key={level}
-                x1={padding}
-                y1={chartHeight - padding - (level / 100) * graphHeight}
-                x2={chartWidth - padding}
-                y2={chartHeight - padding - (level / 100) * graphHeight}
-                stroke="#e0e0e0"
-                strokeWidth="1"
-                strokeDasharray="4"
-              />
-            ))}
-            <polygon points={areaPoints} fill="url(#gradientFill)" opacity="0.3" />
-            <polyline points={points} fill="none" stroke="#6c5ce7" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="transition-all duration-1000 ease-out" />
-            {weeklyData.map((value, index) => {
-              const x = padding + (index / (weeklyData.length - 1)) * graphWidth;
-              const y = chartHeight - padding - (value / 100) * graphHeight;
-              return <circle key={index} cx={x} cy={y} r="3.5" fill="white" stroke="#6c5ce7" strokeWidth="2" />;
+            {/* Y-axis grid lines */}
+            {[0, 25, 50, 75, 100].map((level) => {
+              const y = chartHeight - 20 - (level / 100) * maxBarHeight;
+              return (
+                <line
+                  key={level}
+                  x1={startX}
+                  y1={y}
+                  x2={chartWidth - startX}
+                  y2={y}
+                  stroke="#e0e0e0"
+                  strokeWidth="1"
+                  strokeDasharray="4"
+                />
+              );
             })}
-            <defs>
-              <linearGradient id="gradientFill" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#6c5ce7" />
-                <stop offset="100%" stopColor="rgba(108,92,231,0)" />
-              </linearGradient>
-            </defs>
+            
+            {/* Y-axis labels */}
+            {[0, 25, 50, 75, 100].map((level) => {
+              const y = chartHeight - 20 - (level / 100) * maxBarHeight;
+              return (
+                <text
+                  key={level}
+                  x={startX - 5}
+                  y={y + 2}
+                  textAnchor="end"
+                  fontSize="6"
+                  fill="#aaa"
+                >
+                  {level}%
+                </text>
+              );
+            })}
+            
+            {/* Bars */}
+            {weeklyData.map((value, index) => {
+              const x = startX + index * (barWidth + barSpacing);
+              const y = chartHeight - 20 - barHeights[index];
+              const barColor = getBarColor(value);
+              
+              return (
+                <g key={index}>
+                  {/* Bar with animation */}
+                  <rect
+                    x={x}
+                    y={chartHeight - 20}
+                    width={barWidth}
+                    height="0"
+                    fill={barColor}
+                    rx="4"
+                    ry="4"
+                    opacity="0.3"
+                  />
+                  <rect
+                    x={x}
+                    y={y}
+                    width={barWidth}
+                    height={barHeights[index]}
+                    fill={barColor}
+                    rx="4"
+                    ry="4"
+                    className="transition-all duration-700 ease-out"
+                  >
+                    <title>{`${dayLabels[index]}: ${Math.round(value)}%`}</title>
+                  </rect>
+                  {/* Value label */}
+                  <text
+                    x={x + barWidth / 2}
+                    y={y - 4}
+                    textAnchor="middle"
+                    fontSize="7"
+                    fill={barColor}
+                    fontWeight="bold"
+                  >
+                    {Math.round(value)}%
+                  </text>
+                </g>
+              );
+            })}
           </svg>
         </div>
         
-        <div className="flex justify-between w-full max-w-[280px] mx-auto mb-4">
+        {/* X-axis labels */}
+        <div className="flex justify-between w-full max-w-[280px] mx-auto">
           {dayLabels.map((day, index) => (
-            <span key={index} className="text-[7px] text-gray-400 font-medium">{day}</span>
+            <div key={index} className="text-center" style={{ width: barWidth, marginLeft: index === 0 ? 0 : barSpacing }}>
+              <span className="text-[7px] text-gray-400 font-medium">{day}</span>
+            </div>
           ))}
         </div>
 
-        <div className="w-full max-w-[280px] mx-auto mt-2">
+        {/* Summary Stats */}
+        <div className="w-full max-w-[280px] mx-auto mt-4">
           <div className="flex justify-between text-center">
-            <div className="flex-1"><p className="text-sm font-black text-focusPurple">{Math.round(weeklyProgress)}%</p><p className="text-[8px] text-gray-500">Weekly Avg</p></div>
+            <div className="flex-1">
+              <p className="text-sm font-black text-focusPurple">{Math.round(weeklyProgress)}%</p>
+              <p className="text-[8px] text-gray-500">Weekly Avg</p>
+            </div>
             <div className="w-px h-8 bg-gray-300"></div>
-            <div className="flex-1"><p className="text-sm font-black text-green-500">{Math.max(...weeklyData).toFixed(0)}%</p><p className="text-[8px] text-gray-500">Best Day</p></div>
+            <div className="flex-1">
+              <p className="text-sm font-black text-green-500">{Math.max(...weeklyData).toFixed(0)}%</p>
+              <p className="text-[8px] text-gray-500">Best Day</p>
+            </div>
             <div className="w-px h-8 bg-gray-300"></div>
-            <div className="flex-1"><p className="text-sm font-black text-orange-500">{Math.min(...weeklyData).toFixed(0)}%</p><p className="text-[8px] text-gray-500">Lowest</p></div>
+            <div className="flex-1">
+              <p className="text-sm font-black text-orange-500">{Math.min(...weeklyData).toFixed(0)}%</p>
+              <p className="text-[8px] text-gray-500">Lowest</p>
+            </div>
           </div>
         </div>
 
         <button className="magic-btn mt-4" onClick={() => navigate("/tasks")}>📓 Open Task Planner</button>
       </div>
 
-      {/* BACK FACE - Larger Next Task Card (No Button) */}
+      {/* BACK FACE - Next Task Card */}
       <div className={`absolute inset-0 p-6 flex flex-col items-center justify-center transition-all duration-700 ease-[cubic-bezier(0.4,0,0.2,1)] rounded-[40px]
         ${isExpanded ? "opacity-100 scale-100 relative" : "opacity-0 scale-95 pointer-events-none"}
         bg-gradient-to-br from-gray-50 to-gray-200`}>
@@ -215,14 +279,10 @@ export default function UniCalendar() {
           <h3 className="text-lg font-black text-gray-800 mb-1">Next Task</h3>
           <p className="text-[10px] text-gray-400 mb-4">Your upcoming deadline</p>
 
-          {/* Larger Next Task Card */}
           {nextTask ? (
             <div className="w-full bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-              {/* Priority Bar */}
               <div className="h-1.5 bg-gradient-to-r from-focusPurple to-purple-400"></div>
-              
               <div className="p-5">
-                {/* Task Title - Larger */}
                 <div className="flex items-start gap-3 mb-3">
                   <div className="w-12 h-12 bg-focusPurple/10 rounded-xl flex items-center justify-center flex-shrink-0">
                     <span className="text-xl">📋</span>
@@ -235,7 +295,6 @@ export default function UniCalendar() {
                   </div>
                 </div>
                 
-                {/* Date and Time Row - Larger */}
                 <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-gray-100">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
@@ -259,7 +318,6 @@ export default function UniCalendar() {
                   )}
                 </div>
                 
-                {/* Time Left Display - Larger */}
                 <div className="mt-3 p-2.5 bg-gradient-to-r from-focusPurple/5 to-purple-100 rounded-xl">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">

@@ -1,5 +1,6 @@
 ﻿const { getConnection } = require('../config/database');
 const { generateId } = require('../utils/helpers');
+const { calculateAttendance, sendAttendanceWarning } = require('../services/attendanceService');
 
 // ========== CALENDAR LIST OPERATIONS ==========
 
@@ -14,7 +15,7 @@ exports.getCalendars = async (req, res) => {
              FROM CALENDAR_LIST 
              WHERE user_id = :userId 
              ORDER BY is_active DESC, created_at DESC`,
-            [req.user.userId]
+            { userId: req.user.userId }
         );
         
         const calendars = result.rows.map(row => ({
@@ -51,7 +52,7 @@ exports.createCalendar = async (req, res) => {
         await connection.execute(
             `INSERT INTO CALENDAR_LIST (calendar_id, user_id, calendar_title, is_active) 
              VALUES (:calendarId, :userId, :title, 0)`,
-            [calendarId, req.user.userId, title.trim()]
+            { calendarId, userId: req.user.userId, title: title.trim() }
         );
         
         res.status(201).json({
@@ -88,7 +89,7 @@ exports.updateCalendar = async (req, res) => {
             `UPDATE CALENDAR_LIST 
              SET calendar_title = :title 
              WHERE calendar_id = :id AND user_id = :userId`,
-            [title.trim(), id, req.user.userId]
+            { title: title.trim(), id, userId: req.user.userId }
         );
         
         if (result.rowsAffected === 0) {
@@ -113,17 +114,15 @@ exports.setActiveCalendar = async (req, res) => {
         
         connection = await getConnection();
         
-        // First, deactivate all calendars for this user
         await connection.execute(
             `UPDATE CALENDAR_LIST SET is_active = 0 WHERE user_id = :userId`,
-            [req.user.userId]
+            { userId: req.user.userId }
         );
         
-        // Then activate the selected calendar
         const result = await connection.execute(
             `UPDATE CALENDAR_LIST SET is_active = 1 
              WHERE calendar_id = :id AND user_id = :userId`,
-            [id, req.user.userId]
+            { id, userId: req.user.userId }
         );
         
         if (result.rowsAffected === 0) {
@@ -140,7 +139,7 @@ exports.setActiveCalendar = async (req, res) => {
     }
 };
 
-// Delete calendar (cascade deletes all entries)
+// Delete calendar
 exports.deleteCalendar = async (req, res) => {
     let connection;
     try {
@@ -151,7 +150,7 @@ exports.deleteCalendar = async (req, res) => {
         const result = await connection.execute(
             `DELETE FROM CALENDAR_LIST 
              WHERE calendar_id = :id AND user_id = :userId`,
-            [id, req.user.userId]
+            { id, userId: req.user.userId }
         );
         
         if (result.rowsAffected === 0) {
@@ -170,7 +169,7 @@ exports.deleteCalendar = async (req, res) => {
 
 // ========== CALENDAR ENTRIES (Subjects) OPERATIONS ==========
 
-// Get entries for a calendar
+// Get entries for a calendar - WITH PER-DAY TIMINGS AND ATTENDANCE STATUS
 exports.getCalendarEntries = async (req, res) => {
     let connection;
     try {
@@ -178,35 +177,58 @@ exports.getCalendarEntries = async (req, res) => {
         
         connection = await getConnection();
         
-        // Verify calendar belongs to user
         const calendarCheck = await connection.execute(
             `SELECT calendar_id FROM CALENDAR_LIST 
              WHERE calendar_id = :calendarId AND user_id = :userId`,
-            [calendarId, req.user.userId]
+            { calendarId, userId: req.user.userId }
         );
         
         if (calendarCheck.rows.length === 0) {
             return res.status(404).json({ error: 'Calendar not found.' });
         }
         
-        // Get entries with their days
         const entriesResult = await connection.execute(
             `SELECT entry_id, subject_name, start_time, end_time, room_number, is_done, created_at
              FROM CALENDAR_ENTRIES 
              WHERE calendar_id = :calendarId 
              ORDER BY created_at ASC`,
-            [calendarId]
+            { calendarId }
         );
         
         const entries = [];
         
         for (const entry of entriesResult.rows) {
-            // Get days for this entry
+            // Get days with per-day timings
             const daysResult = await connection.execute(
-                `SELECT day_of_week FROM CALENDAR_ENTRY_DAYS 
-                 WHERE entry_id = :entryId`,
-                [entry.ENTRY_ID]
+                `SELECT day_of_week, day_start_time, day_end_time, day_room_number 
+                 FROM CALENDAR_ENTRY_DAYS 
+                 WHERE entry_id = :entryId
+                 ORDER BY day_of_week`,
+                { entryId: entry.ENTRY_ID }
             );
+            
+            // ========== NEW: Get attendance records for this entry ==========
+            const attendanceRecords = await connection.execute(
+                `SELECT 
+                    TO_CHAR(class_date, 'YYYY-MM-DD') as class_date,
+                    status,
+                    points_earned,
+                    points_possible
+                 FROM ATTENDANCE_RECORDS 
+                 WHERE user_id = :userId AND entry_id = :entryId
+                 ORDER BY class_date ASC`,
+                { userId: req.user.userId, entryId: entry.ENTRY_ID }
+            );
+            
+            // Create a map of date -> status for quick lookup
+            const dateStatusMap = {};
+            attendanceRecords.rows.forEach(record => {
+                dateStatusMap[record.CLASS_DATE] = {
+                    status: record.STATUS,
+                    pointsEarned: record.POINTS_EARNED,
+                    pointsPossible: record.POINTS_POSSIBLE
+                };
+            });
             
             entries.push({
                 id: entry.ENTRY_ID,
@@ -216,6 +238,15 @@ exports.getCalendarEntries = async (req, res) => {
                 lrNo: entry.ROOM_NUMBER,
                 done: entry.IS_DONE === 1,
                 days: daysResult.rows.map(d => d.DAY_OF_WEEK),
+                // Per-day timing info
+                dayDetails: daysResult.rows.map(d => ({
+                    day: d.DAY_OF_WEEK,
+                    startTime: d.DAY_START_TIME || entry.START_TIME,
+                    endTime: d.DAY_END_TIME || entry.END_TIME,
+                    room: d.DAY_ROOM_NUMBER || entry.ROOM_NUMBER
+                })),
+                // ========== NEW: Date-specific attendance status ==========
+                dateAttendance: dateStatusMap,
                 createdAt: entry.CREATED_AT
             });
         }
@@ -230,12 +261,12 @@ exports.getCalendarEntries = async (req, res) => {
     }
 };
 
-// Add entry to calendar
+// Add entry to calendar - NOW SUPPORTS PER-DAY TIMINGS
 exports.addCalendarEntry = async (req, res) => {
     let connection;
     try {
         const { calendarId } = req.params;
-        const { subject, startTime, endTime, lrNo, days } = req.body;
+        const { subject, startTime, endTime, lrNo, days, dayDetails } = req.body;
         
         if (!subject || !days || days.length === 0) {
             return res.status(400).json({ error: 'Subject and at least one day are required.' });
@@ -243,11 +274,10 @@ exports.addCalendarEntry = async (req, res) => {
         
         connection = await getConnection();
         
-        // Verify calendar belongs to user
         const calendarCheck = await connection.execute(
             `SELECT calendar_id FROM CALENDAR_LIST 
              WHERE calendar_id = :calendarId AND user_id = :userId`,
-            [calendarId, req.user.userId]
+            { calendarId, userId: req.user.userId }
         );
         
         if (calendarCheck.rows.length === 0) {
@@ -256,23 +286,63 @@ exports.addCalendarEntry = async (req, res) => {
         
         const entryId = generateId();
         
-        // Insert entry
+        // Insert entry with default times
         await connection.execute(
             `INSERT INTO CALENDAR_ENTRIES 
              (entry_id, calendar_id, subject_name, start_time, end_time, room_number, is_done) 
              VALUES (:entryId, :calendarId, :subject, :startTime, :endTime, :lrNo, 0)`,
-            [entryId, calendarId, subject, startTime || null, endTime || null, lrNo || null]
+            { entryId, calendarId, subject, startTime: startTime || null, endTime: endTime || null, lrNo: lrNo || null }
         );
         
-        // Insert days
+        // Insert days with per-day timings if provided
         for (const day of days) {
             const dayId = generateId();
+            const detail = dayDetails ? dayDetails.find(d => d.day === day) : null;
+            
             await connection.execute(
-                `INSERT INTO CALENDAR_ENTRY_DAYS (entry_day_id, entry_id, day_of_week) 
-                 VALUES (:dayId, :entryId, :day)`,
-                [dayId, entryId, day]
+                `INSERT INTO CALENDAR_ENTRY_DAYS 
+                 (entry_day_id, entry_id, day_of_week, day_start_time, day_end_time, day_room_number) 
+                 VALUES (:dayId, :entryId, :day, :dayStartTime, :dayEndTime, :dayRoom)`,
+                {
+                    dayId, entryId, day,
+                    dayStartTime: detail?.startTime || startTime || null,
+                    dayEndTime: detail?.endTime || endTime || null,
+                    dayRoom: detail?.room || lrNo || null
+                }
             );
         }
+        
+        // Auto-generate attendance sessions
+        console.log(`🔄 Auto-generating attendance sessions for: ${subject}`);
+        
+        const semesterStart = new Date('2026-02-18');
+        const semesterEnd = new Date('2026-06-25');
+        
+        let sessionsCreated = 0;
+        const currentDate = new Date(semesterStart);
+        
+        while (currentDate <= semesterEnd) {
+            const dayOfWeek = currentDate.toLocaleDateString('en-US', { weekday: 'short' });
+            
+            if (days.includes(dayOfWeek)) {
+                const dateStr = currentDate.toISOString().split('T')[0];
+                const recordId = generateId();
+                
+                await connection.execute(
+                    `INSERT INTO ATTENDANCE_RECORDS 
+                     (record_id, user_id, entry_id, class_date, status, points_earned, points_possible)
+                     VALUES (:recordId, :userId, :entryId, TO_DATE(:classDate, 'YYYY-MM-DD'), 'Pending', 0, 2)`,
+                    { recordId, userId: req.user.userId, entryId, classDate: dateStr }
+                );
+                sessionsCreated++;
+            }
+            
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+        
+        console.log(`✅ Generated ${sessionsCreated} attendance sessions for ${subject}`);
+        
+        await calculateAttendance(connection, req.user.userId, entryId);
         
         res.status(201).json({
             success: true,
@@ -283,7 +353,9 @@ exports.addCalendarEntry = async (req, res) => {
                 endTime,
                 lrNo,
                 days,
-                done: false
+                dayDetails: dayDetails || [],
+                done: false,
+                sessionsGenerated: sessionsCreated
             }
         });
         
@@ -304,43 +376,38 @@ exports.updateCalendarEntry = async (req, res) => {
         
         connection = await getConnection();
         
-        // Verify entry belongs to user's calendar
         const entryCheck = await connection.execute(
             `SELECT ce.entry_id 
              FROM CALENDAR_ENTRIES ce
              JOIN CALENDAR_LIST cl ON ce.calendar_id = cl.calendar_id
              WHERE ce.entry_id = :entryId AND cl.user_id = :userId`,
-            [entryId, req.user.userId]
+            { entryId, userId: req.user.userId }
         );
         
         if (entryCheck.rows.length === 0) {
             return res.status(404).json({ error: 'Entry not found.' });
         }
         
-        // Update entry
         await connection.execute(
             `UPDATE CALENDAR_ENTRIES 
              SET subject_name = :subject, start_time = :startTime, 
                  end_time = :endTime, room_number = :lrNo
              WHERE entry_id = :entryId`,
-            [subject, startTime || null, endTime || null, lrNo || null, entryId]
+            { subject, startTime: startTime || null, endTime: endTime || null, lrNo: lrNo || null, entryId }
         );
         
-        // Update days if provided
         if (days && days.length > 0) {
-            // Delete existing days
             await connection.execute(
                 `DELETE FROM CALENDAR_ENTRY_DAYS WHERE entry_id = :entryId`,
-                [entryId]
+                { entryId }
             );
             
-            // Insert new days
             for (const day of days) {
                 const dayId = generateId();
                 await connection.execute(
                     `INSERT INTO CALENDAR_ENTRY_DAYS (entry_day_id, entry_id, day_of_week) 
                      VALUES (:dayId, :entryId, :day)`,
-                    [dayId, entryId, day]
+                    { dayId, entryId, day }
                 );
             }
         }
@@ -367,7 +434,7 @@ exports.deleteCalendarEntry = async (req, res) => {
             `DELETE FROM CALENDAR_ENTRIES 
              WHERE entry_id = :entryId 
              AND calendar_id IN (SELECT calendar_id FROM CALENDAR_LIST WHERE user_id = :userId)`,
-            [entryId, req.user.userId]
+            { entryId, userId: req.user.userId }
         );
         
         if (result.rowsAffected === 0) {
@@ -384,7 +451,7 @@ exports.deleteCalendarEntry = async (req, res) => {
     }
 };
 
-// Toggle done status for entry
+// Toggle done status for entry AND update attendance
 exports.toggleEntryDone = async (req, res) => {
     let connection;
     try {
@@ -392,19 +459,101 @@ exports.toggleEntryDone = async (req, res) => {
         
         connection = await getConnection();
         
-        const result = await connection.execute(
-            `UPDATE CALENDAR_ENTRIES 
-             SET is_done = CASE WHEN is_done = 0 THEN 1 ELSE 0 END
-             WHERE entry_id = :entryId 
-             AND calendar_id IN (SELECT calendar_id FROM CALENDAR_LIST WHERE user_id = :userId)`,
-            [entryId, req.user.userId]
+        const entryResult = await connection.execute(
+            `SELECT ce.entry_id, ce.subject_name, ce.calendar_id,
+                    cl.user_id, ce.start_time, ce.end_time
+             FROM CALENDAR_ENTRIES ce
+             JOIN CALENDAR_LIST cl ON ce.calendar_id = cl.calendar_id
+             WHERE ce.entry_id = :entryId AND cl.user_id = :userId`,
+            { entryId, userId: req.user.userId }
         );
         
-        if (result.rowsAffected === 0) {
+        if (entryResult.rows.length === 0) {
             return res.status(404).json({ error: 'Entry not found.' });
         }
         
-        res.json({ success: true, message: 'Entry status toggled.' });
+        const entry = entryResult.rows[0];
+        
+        const statusResult = await connection.execute(
+            `SELECT is_done FROM CALENDAR_ENTRIES WHERE entry_id = :entryId`,
+            { entryId }
+        );
+        
+        const currentStatus = statusResult.rows[0].IS_DONE;
+        const newStatus = currentStatus === 0 ? 1 : 0;
+        
+        await connection.execute(
+            `UPDATE CALENDAR_ENTRIES 
+             SET is_done = :newStatus
+             WHERE entry_id = :entryId`,
+            { newStatus, entryId }
+        );
+        
+        // Update attendance
+        const today = new Date();
+        const todayDayName = today.toLocaleDateString('en-US', { weekday: 'short' });
+        const todayDateStr = today.toISOString().split('T')[0];
+        
+        const daysResult = await connection.execute(
+            `SELECT day_of_week FROM CALENDAR_ENTRY_DAYS WHERE entry_id = :entryId`,
+            { entryId }
+        );
+        
+        const entryDays = daysResult.rows.map(d => d.DAY_OF_WEEK);
+        const runsToday = entryDays.some(day => day.trim() === todayDayName);
+        
+        if (runsToday) {
+            if (newStatus === 1) {
+                const existingRecord = await connection.execute(
+                    `SELECT record_id FROM ATTENDANCE_RECORDS 
+                     WHERE user_id = :userId AND entry_id = :entryId 
+                     AND class_date = TO_DATE(:todayDate, 'YYYY-MM-DD')`,
+                    { userId: req.user.userId, entryId, todayDate: todayDateStr }
+                );
+                
+                if (existingRecord.rows.length > 0) {
+                    await connection.execute(
+                        `UPDATE ATTENDANCE_RECORDS 
+                         SET status = 'Present', points_earned = 2
+                         WHERE record_id = :recordId`,
+                        { recordId: existingRecord.rows[0].RECORD_ID }
+                    );
+                } else {
+                    const recordId = generateId();
+                    await connection.execute(
+                        `INSERT INTO ATTENDANCE_RECORDS 
+                         (record_id, user_id, entry_id, class_date, status, points_earned, points_possible)
+                         VALUES (:recordId, :userId, :entryId, TO_DATE(:todayDate, 'YYYY-MM-DD'), 'Present', 2, 2)`,
+                        { recordId, userId: req.user.userId, entryId, todayDate: todayDateStr }
+                    );
+                }
+            } else {
+                const existingRecord = await connection.execute(
+                    `SELECT record_id FROM ATTENDANCE_RECORDS 
+                     WHERE user_id = :userId AND entry_id = :entryId 
+                     AND class_date = TO_DATE(:todayDate, 'YYYY-MM-DD')`,
+                    { userId: req.user.userId, entryId, todayDate: todayDateStr }
+                );
+                
+                if (existingRecord.rows.length > 0) {
+                    await connection.execute(
+                        `UPDATE ATTENDANCE_RECORDS 
+                         SET status = 'Absent', points_earned = 0
+                         WHERE record_id = :recordId`,
+                        { recordId: existingRecord.rows[0].RECORD_ID }
+                    );
+                }
+            }
+            
+            await calculateAttendance(connection, req.user.userId, entryId);
+        }
+        
+        res.json({ 
+            success: true, 
+            message: newStatus === 1 ? 'Marked as done and attendance recorded.' : 'Marked as not done.',
+            isDone: newStatus === 1,
+            attendanceUpdated: runsToday
+        });
         
     } catch (err) {
         console.error('Toggle entry error:', err);

@@ -10,6 +10,7 @@ const {
     sendDailyTaskSummary, 
     sendHourlyTaskReminders 
 } = require('./services/taskReminderEmailService');
+const { autoMarkAbsent } = require('./services/attendanceService');
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
@@ -18,6 +19,7 @@ const taskRoutes = require('./routes/taskRoutes');
 const routineRoutes = require('./routes/routineRoutes');
 const focusRoutes = require('./routes/focusRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
+const attendanceRoutes = require('./routes/attendanceRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -40,6 +42,7 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/routines', routineRoutes);
 app.use('/api/focus', focusRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/attendance', attendanceRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -103,15 +106,22 @@ async function startServer() {
         console.log('⏰ Hourly task reminder scheduler started. Will check every minute.');
         
         // ==============================================
-        // FOR TESTING - Run once immediately (REMOVE FOR PRODUCTION)
+        // AUTO-MARK ABSENT - Every day at 12:05 AM
+        // ==============================================
+        cron.schedule('5 0 * * *', () => {
+            console.log('🕐 [MIDNIGHT] Running auto-absent check...');
+            autoMarkAbsent();
+        });
+        console.log('⏰ Auto-absent scheduler: Daily at 12:05 AM - Marks unmarked classes as Absent');
+        
+        // ==============================================
+        // TESTING - Run auto-absent 10 seconds after startup
+        // REMOVE THIS FOR PRODUCTION
         // ==============================================
         setTimeout(() => {
-            console.log('🧪 Running immediate test of all reminders...');
-            sendAllDailySchedules();
-            setTimeout(() => sendWeeklyTaskSummary(), 3000);
-            setTimeout(() => sendDailyTaskSummary(), 6000);
-            setTimeout(() => sendHourlyTaskReminders(), 9000);
-        }, 5000);
+            console.log('🧪 [TEST] Running auto-absent check immediately...');
+            autoMarkAbsent();
+        }, 10000);
         
         // Start Express server
         app.listen(PORT, () => {
@@ -120,6 +130,7 @@ async function startServer() {
             console.log(`📍 Health check: http://localhost:${PORT}/api/health`);
             console.log('='.repeat(50));
             console.log('📋 REMINDER SCHEDULE SUMMARY:');
+            console.log('   🕐 Auto-Absent: 12:05 AM (marks past pending as absent)');
             console.log('   🏫 Class Reminders: Every minute (1 hour before class)');
             console.log('   📅 Daily Schedule: 6:00 AM');
             console.log('   📋 Weekly Tasks: Monday at 7:00 AM');
