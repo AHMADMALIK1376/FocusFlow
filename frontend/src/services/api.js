@@ -1,12 +1,38 @@
-// API Service for FocusFlow - Complete Version
-const API_URL = 'http://localhost:5555/api';
+// src/services/api.js
+
+// ==============================================
+// API CONFIGURATION
+// ==============================================
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5555';
+const API_URL = `${API_BASE_URL}/api`;
+
 // Helper function to handle responses
 const handleResponse = async (response) => {
     const data = await response.json();
     if (!response.ok) {
-        throw new Error(data.error || 'Something went wrong');
+        throw new Error(data.error || data.message || 'Something went wrong');
     }
     return data;
+};
+
+// Helper for authorized requests
+const authFetch = async (endpoint, options = {}) => {
+    const token = localStorage.getItem('focus_token');
+    const headers = {
+        'Content-Type': 'application/json',
+        ...options.headers,
+    };
+    
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    const response = await fetch(`${API_URL}${endpoint}`, {
+        ...options,
+        headers,
+    });
+    
+    return handleResponse(response);
 };
 
 // Token management
@@ -27,32 +53,62 @@ export const getToken = () => {
 // ==============================================
 export const authAPI = {
     register: async (email, password, fullName) => {
-        const response = await fetch(`${API_URL}/auth/register`, {
+        return authFetch('/auth/register', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password, fullName })
         });
-        return handleResponse(response);
     },
     
     login: async (email, password) => {
-        const response = await fetch(`${API_URL}/auth/login`, {
+        return authFetch('/auth/login', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
         });
-        return handleResponse(response);
+    },
+    
+    verifyEmail: async (email, code) => {
+        return authFetch('/auth/verify-email', {
+            method: 'POST',
+            body: JSON.stringify({ email, code })
+        });
+    },
+    
+    resendVerification: async (email) => {
+        return authFetch('/auth/resend-verification', {
+            method: 'POST',
+            body: JSON.stringify({ email })
+        });
+    },
+    
+    forgotPassword: async (email) => {
+        return authFetch('/auth/forgot-password', {
+            method: 'POST',
+            body: JSON.stringify({ email })
+        });
+    },
+    
+    verifyResetCode: async (email, code) => {
+        return authFetch('/auth/verify-reset-code', {
+            method: 'POST',
+            body: JSON.stringify({ email, code })
+        });
+    },
+    
+    resetPassword: async (email, code, newPassword) => {
+        return authFetch('/auth/reset-password', {
+            method: 'POST',
+            body: JSON.stringify({ email, code, newPassword })
+        });
     },
     
     logout: () => {
         setToken(null);
+        localStorage.removeItem('focus_username');
+        localStorage.removeItem('focus_email');
     },
     
     getMe: async () => {
-        const response = await fetch(`${API_URL}/auth/me`, {
-            headers: { 'Authorization': `Bearer ${getToken()}` }
-        });
-        return handleResponse(response);
+        return authFetch('/auth/me');
     }
 };
 
@@ -61,55 +117,37 @@ export const authAPI = {
 // ==============================================
 export const taskAPI = {
     getAll: async () => {
-        const response = await fetch(`${API_URL}/tasks`, {
-            headers: { 'Authorization': `Bearer ${getToken()}` }
-        });
-        return handleResponse(response);
+        return authFetch('/tasks');
     },
     
     create: async (taskData) => {
-        const response = await fetch(`${API_URL}/tasks`, {
+        return authFetch('/tasks', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${getToken()}`
-            },
             body: JSON.stringify(taskData)
         });
-        return handleResponse(response);
     },
     
     toggleComplete: async (taskId) => {
-        const response = await fetch(`${API_URL}/tasks/${taskId}/complete`, {
-            method: 'PUT',
-            headers: { 'Authorization': `Bearer ${getToken()}` }
+        return authFetch(`/tasks/${taskId}/complete`, {
+            method: 'PUT'
         });
-        return handleResponse(response);
     },
     
     delete: async (taskId) => {
-        const response = await fetch(`${API_URL}/tasks/${taskId}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${getToken()}` }
+        return authFetch(`/tasks/${taskId}`, {
+            method: 'DELETE'
         });
-        return handleResponse(response);
     },
     
     deleteAll: async () => {
-        const response = await fetch(`${API_URL}/tasks`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${getToken()}` }
+        return authFetch('/tasks', {
+            method: 'DELETE'
         });
-        return handleResponse(response);
     },
     
     deleteByType: async (type, completed) => {
-        const url = `${API_URL}/tasks/type/${type}${completed !== undefined ? `?completed=${completed}` : ''}`;
-        const response = await fetch(url, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${getToken()}` }
-        });
-        return handleResponse(response);
+        const url = `/tasks/type/${type}${completed !== undefined ? `?completed=${completed}` : ''}`;
+        return authFetch(url, { method: 'DELETE' });
     }
 };
 
@@ -117,100 +155,64 @@ export const taskAPI = {
 // CALENDAR APIs
 // ==============================================
 export const calendarAPI = {
-    // Calendar list operations
     getAll: async () => {
-        const response = await fetch(`${API_URL}/calendars`, {
-            headers: { 'Authorization': `Bearer ${getToken()}` }
-        });
-        return handleResponse(response);
+        return authFetch('/calendars');
     },
     
-    create: async (title) => {
-        const response = await fetch(`${API_URL}/calendars`, {
+    create: async (title, semesterStart, semesterEnd, semesterName) => {
+        return authFetch('/calendars', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${getToken()}`
-            },
-            body: JSON.stringify({ title })
+            body: JSON.stringify({ title, semesterStart, semesterEnd, semesterName })
         });
-        return handleResponse(response);
     },
     
-    update: async (calendarId, title) => {
-        const response = await fetch(`${API_URL}/calendars/${calendarId}`, {
+    update: async (calendarId, title, semesterStart, semesterEnd, semesterName) => {
+        return authFetch(`/calendars/${calendarId}`, {
             method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${getToken()}`
-            },
-            body: JSON.stringify({ title })
+            body: JSON.stringify({ title, semesterStart, semesterEnd, semesterName })
         });
-        return handleResponse(response);
     },
     
     setActive: async (calendarId) => {
-        const response = await fetch(`${API_URL}/calendars/${calendarId}/activate`, {
-            method: 'PUT',
-            headers: { 'Authorization': `Bearer ${getToken()}` }
+        return authFetch(`/calendars/${calendarId}/activate`, {
+            method: 'PUT'
         });
-        return handleResponse(response);
     },
     
     delete: async (calendarId) => {
-        const response = await fetch(`${API_URL}/calendars/${calendarId}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${getToken()}` }
+        return authFetch(`/calendars/${calendarId}`, {
+            method: 'DELETE'
         });
-        return handleResponse(response);
     },
     
-    // Calendar entries (subjects) operations
     getEntries: async (calendarId) => {
-        const response = await fetch(`${API_URL}/calendars/${calendarId}/entries`, {
-            headers: { 'Authorization': `Bearer ${getToken()}` }
-        });
-        return handleResponse(response);
+        return authFetch(`/calendars/${calendarId}/entries`);
     },
     
     addEntry: async (calendarId, entryData) => {
-        const response = await fetch(`${API_URL}/calendars/${calendarId}/entries`, {
+        return authFetch(`/calendars/${calendarId}/entries`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${getToken()}`
-            },
             body: JSON.stringify(entryData)
         });
-        return handleResponse(response);
     },
     
     updateEntry: async (entryId, entryData) => {
-        const response = await fetch(`${API_URL}/calendars/entries/${entryId}`, {
+        return authFetch(`/calendars/entries/${entryId}`, {
             method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${getToken()}`
-            },
             body: JSON.stringify(entryData)
         });
-        return handleResponse(response);
     },
     
     deleteEntry: async (entryId) => {
-        const response = await fetch(`${API_URL}/calendars/entries/${entryId}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${getToken()}` }
+        return authFetch(`/calendars/entries/${entryId}`, {
+            method: 'DELETE'
         });
-        return handleResponse(response);
     },
     
     toggleEntryDone: async (entryId) => {
-        const response = await fetch(`${API_URL}/calendars/entries/${entryId}/toggle-done`, {
-            method: 'PUT',
-            headers: { 'Authorization': `Bearer ${getToken()}` }
+        return authFetch(`/calendars/entries/${entryId}/toggle-done`, {
+            method: 'PUT'
         });
-        return handleResponse(response);
     }
 };
 
@@ -219,110 +221,133 @@ export const calendarAPI = {
 // ==============================================
 export const routineAPI = {
     getAll: async () => {
-        const response = await fetch(`${API_URL}/routines`, {
-            headers: { 'Authorization': `Bearer ${getToken()}` }
-        });
-        return handleResponse(response);
+        return authFetch('/routines');
     },
     
     getToday: async () => {
-        const response = await fetch(`${API_URL}/routines/today`, {
-            headers: { 'Authorization': `Bearer ${getToken()}` }
-        });
-        return handleResponse(response);
+        return authFetch('/routines/today');
     },
     
     create: async (routineData) => {
-        const response = await fetch(`${API_URL}/routines`, {
+        return authFetch('/routines', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${getToken()}`
-            },
             body: JSON.stringify(routineData)
         });
-        return handleResponse(response);
+    },
+    
+    update: async (routineId, routineData) => {
+        return authFetch(`/routines/${routineId}`, {
+            method: 'PUT',
+            body: JSON.stringify(routineData)
+        });
     },
     
     delete: async (routineId) => {
-        const response = await fetch(`${API_URL}/routines/${routineId}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${getToken()}` }
+        return authFetch(`/routines/${routineId}`, {
+            method: 'DELETE'
         });
-        return handleResponse(response);
     },
     
     deleteAll: async () => {
-        const response = await fetch(`${API_URL}/routines`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${getToken()}` }
-        });
-        return handleResponse(response);
+        return authFetch('/routines', { method: 'DELETE' });
     },
     
     complete: async (routineId) => {
-        const response = await fetch(`${API_URL}/routines/${routineId}/complete`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${getToken()}` }
+        return authFetch(`/routines/${routineId}/complete`, {
+            method: 'POST'
         });
-        return handleResponse(response);
     }
 };
 
 // ==============================================
-// FOCUS SESSION APIs
+// FOCUS APIs
 // ==============================================
 export const focusAPI = {
     getSessions: async () => {
-        const response = await fetch(`${API_URL}/focus/sessions`, {
-            headers: { 'Authorization': `Bearer ${getToken()}` }
-        });
-        return handleResponse(response);
+        return authFetch('/focus/sessions');
     },
     
     getSession: async (sessionId) => {
-        const response = await fetch(`${API_URL}/focus/sessions/${sessionId}`, {
-            headers: { 'Authorization': `Bearer ${getToken()}` }
-        });
-        return handleResponse(response);
+        return authFetch(`/focus/sessions/${sessionId}`);
     },
     
     createSession: async (sessionData) => {
-        const response = await fetch(`${API_URL}/focus/sessions`, {
+        return authFetch('/focus/sessions', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${getToken()}`
-            },
             body: JSON.stringify(sessionData)
         });
-        return handleResponse(response);
     },
     
     deleteAll: async () => {
-        const response = await fetch(`${API_URL}/focus/sessions`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${getToken()}` }
-        });
-        return handleResponse(response);
+        return authFetch('/focus/sessions', { method: 'DELETE' });
     }
 };
 
 // ==============================================
-// DASHBOARD APIs
+// DASHBOARD APIs - UPDATED WITH COMBINED ENDPOINT
 // ==============================================
 export const dashboardAPI = {
+    // NEW: Combined endpoint - ONE CALL instead of multiple!
+    // This reduces rate limiting by 90%+
+    getComplete: async () => {
+        return authFetch('/dashboard/complete');
+    },
+    
+    // Quick stats for navbar (lightweight)
+    getQuick: async () => {
+        return authFetch('/dashboard/quick');
+    },
+    
+    // Legacy endpoints (kept for backward compatibility)
     getSummary: async () => {
-        const response = await fetch(`${API_URL}/dashboard/summary`, {
-            headers: { 'Authorization': `Bearer ${getToken()}` }
-        });
-        return handleResponse(response);
+        return authFetch('/dashboard/summary');
     },
     
     getStats: async () => {
-        const response = await fetch(`${API_URL}/dashboard/stats`, {
-            headers: { 'Authorization': `Bearer ${getToken()}` }
-        });
-        return handleResponse(response);
+        return authFetch('/dashboard/stats');
     }
+};
+
+// ==============================================
+// ATTENDANCE APIs
+// ==============================================
+export const attendanceAPI = {
+    getDashboard: async () => {
+        return authFetch('/attendance/dashboard');
+    },
+    
+    getSummary: async () => {
+        return authFetch('/attendance/summary');
+    },
+    
+    getRecords: async (entryId) => {
+        return authFetch(`/attendance/records/${entryId}`);
+    },
+    
+    getTrend: async (entryId) => {
+        return authFetch(`/attendance/trend/${entryId}`);
+    },
+    
+    updateAttendance: async (entryId, classDate, status, pointsEarned, remarks) => {
+        return authFetch(`/attendance/${entryId}/${classDate}`, {
+            method: 'PUT',
+            body: JSON.stringify({ status, pointsEarned, remarks: remarks || '' })
+        });
+    },
+    
+    generateSessions: async (entryId) => {
+        return authFetch(`/attendance/generate/${entryId}`, {
+            method: 'POST'
+        });
+    }
+};
+
+// ==============================================
+// UTILITY - Clear all user data on logout
+// ==============================================
+export const clearAllUserData = () => {
+    localStorage.removeItem('focus_token');
+    localStorage.removeItem('focus_username');
+    localStorage.removeItem('focus_email');
+    sessionStorage.clear();
 };

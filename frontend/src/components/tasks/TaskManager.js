@@ -1,12 +1,18 @@
-import React, { useState, useEffect } from "react";
+// src/components/tasks/TaskManager.js
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { useApp } from "./AppContext";
-import { taskAPI, getToken } from "../services/api";
+import { useApp } from "../context/AppContext";
+import { taskAPI, getToken } from "../../services/api";
 
 export default function TaskManager() {
   const navigate = useNavigate();
   const { tasks, setTasks, setCompletedGoals } = useApp();
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // ✅ Add a ref to prevent multiple fetches
+  const hasFetched = useRef(false);
 
   const [input, setInput] = useState("");
   const [date, setDate] = useState("");
@@ -25,64 +31,87 @@ export default function TaskManager() {
     return `${h}:${minutes} ${ampm}`;
   };
 
-  // Load tasks from API on mount
+  // ✅ FIXED: Load tasks from API on mount - only once
   useEffect(() => {
+    // Prevent multiple fetches
+    if (hasFetched.current) return;
+    hasFetched.current = true;
+    
     const fetchTasks = async () => {
       try {
+        setLoading(true);
+        setError(null);
         const token = getToken();
         if (!token) {
           setLoading(false);
           return;
         }
         
+        console.log('Fetching tasks...');
         const fetchedTasks = await taskAPI.getAll();
-        setTasks(fetchedTasks);
+        console.log('Tasks fetched:', fetchedTasks.length);
+        
+        // Only update if tasks are different
+        if (JSON.stringify(tasks) !== JSON.stringify(fetchedTasks)) {
+          setTasks(fetchedTasks);
+        }
       } catch (error) {
         console.error('Failed to fetch tasks:', error);
+        setError(error.message || 'Failed to load tasks');
       } finally {
         setLoading(false);
       }
     };
     
     fetchTasks();
-  }, [setTasks]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // ✅ Empty dependency array - runs only once
 
   const resetTimeline = async () => {
-    if (window.confirm("Are you sure you want to clear your entire academic timeline?")) {
-      try {
-        await taskAPI.deleteAll();
-        setTasks([]);
-      } catch (error) {
-        console.error('Failed to delete all tasks:', error);
-        alert('Failed to delete tasks. Please try again.');
-      }
+    if (!window.confirm("Are you sure you want to clear your entire academic timeline?")) return;
+    
+    try {
+      await taskAPI.deleteAll();
+      setTasks([]);
+      alert("All tasks deleted successfully!");
+    } catch (error) {
+      console.error('Failed to delete all tasks:', error);
+      alert(error.message || 'Failed to delete tasks. Please try again.');
     }
   };
 
   const deleteCategory = async (categoryType) => {
-    if (window.confirm(`Remove all pending ${categoryType}s?`)) {
-      try {
-        await taskAPI.deleteByType(categoryType, false);
-        const updated = tasks.filter(task => !(task.type === categoryType && !task.completed));
-        setTasks(updated);
-      } catch (error) {
-        console.error('Failed to delete category:', error);
-        alert('Failed to delete tasks. Please try again.');
-      }
+    if (!window.confirm(`Remove all pending ${categoryType}s?`)) return;
+    
+    try {
+      await taskAPI.deleteByType(categoryType, false);
+      const updated = tasks.filter(task => !(task.type === categoryType && !task.completed));
+      setTasks(updated);
+      alert(`All pending ${categoryType}s removed!`);
+    } catch (error) {
+      console.error('Failed to delete category:', error);
+      alert(error.message || 'Failed to delete tasks. Please try again.');
     }
   };
 
   const addTask = async (e) => {
     e.preventDefault();
-    if (!input || !date) return;
     
+    if (!input || !date) {
+      alert("Please enter task text and date");
+      return;
+    }
+    
+    setIsSubmitting(true);
     try {
+      console.log('Adding task:', { text: input, date, time, type });
       const newTask = await taskAPI.create({
         text: input,
         date: date,
         time: time,
         type: type
       });
+      console.log('Task added successfully:', newTask);
       
       setTasks([...tasks, newTask.task]);
       setInput("");
@@ -90,13 +119,16 @@ export default function TaskManager() {
       setTime("");
       setType("Assignment");
     } catch (error) {
-      console.error('Failed to add task:', error);
-      alert('Failed to add task. Please try again.');
+      console.error('Failed to add task - Full error:', error);
+      alert(error.message || 'Failed to add task. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const toggleComplete = async (id) => {
     try {
+      console.log('Toggling task completion:', id);
       await taskAPI.toggleComplete(id);
       
       setTasks(tasks.map(t => {
@@ -106,9 +138,10 @@ export default function TaskManager() {
         }
         return t;
       }));
+      console.log('Task toggled successfully');
     } catch (error) {
       console.error('Failed to toggle task:', error);
-      alert('Failed to update task. Please try again.');
+      alert(error.message || 'Failed to update task. Please try again.');
     }
   };
 
@@ -119,6 +152,21 @@ export default function TaskManager() {
       <div className="flex flex-col items-center w-full max-w-[900px] mx-auto py-10 px-4 animate-fadeInUp">
         <div className="flex justify-center items-center h-64">
           <div className="w-12 h-12 border-4 border-focusPurple border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center w-full max-w-[900px] mx-auto py-10 px-4">
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-center max-w-md">
+          <span className="text-4xl mb-3 block">⚠️</span>
+          <h2 className="text-xl font-black text-red-600 mb-2">Error Loading Tasks</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button onClick={() => window.location.reload()} className="magic-btn">
+            Retry
+          </button>
         </div>
       </div>
     );
@@ -178,13 +226,13 @@ export default function TaskManager() {
             />
           </div>
 
-          <button type="submit" className="magic-btn w-full py-5">
-            Add to Flow
+          <button type="submit" className="magic-btn w-full py-5" disabled={isSubmitting}>
+            {isSubmitting ? "Adding..." : "Add to Flow"}
           </button>
         </form>
       </div>
 
-      {/* PENDING LIST - Display times in 12-hour format */}
+      {/* PENDING LIST */}
       <div className="w-full space-y-12">
         <h2 className="text-2xl font-black text-gray-800 text-left border-l-4 border-focusPurple pl-4">Pending Roadmap</h2>
 

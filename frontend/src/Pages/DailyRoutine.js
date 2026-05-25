@@ -1,87 +1,42 @@
+// src/Pages/DailyRoutine.js
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { routineAPI, getToken } from "../services/api";
 
-export default function TimetablePage() {
+// Use SHORT day names for backend compatibility
+const daysOfWeek = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+export default function DailyRoutine() {
   const navigate = useNavigate();
   const [schedule, setSchedule] = useState([]);
   const [loading, setLoading] = useState(true);
-
+  const [error, setError] = useState(null);
   const [activity, setActivity] = useState("");
   const [time, setTime] = useState("");
   const [selectedDays, setSelectedDays] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-  const today = new Date();
-  const dayName = today.toLocaleDateString('en-US', { weekday: 'long' });
-  const dateStr = today.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-
-  // Load routines from API
   useEffect(() => {
     const fetchRoutines = async () => {
       try {
+        setLoading(true);
+        setError(null);
         const token = getToken();
-        if (!token) {
-          setLoading(false);
-          return;
+        if (!token) { 
+          setLoading(false); 
+          return; 
         }
-        
         const routines = await routineAPI.getAll();
         setSchedule(routines);
-      } catch (error) {
+      } catch (error) { 
         console.error('Failed to fetch routines:', error);
-      } finally {
-        setLoading(false);
+        setError(error.message || 'Failed to load routines');
+      } finally { 
+        setLoading(false); 
       }
     };
-    
     fetchRoutines();
   }, []);
-
-  const formatTime12h = (time24) => {
-    if (!time24) return "";
-    const [hours, minutes] = time24.split(':');
-    let h = parseInt(hours, 10);
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    h = h % 12 || 12;
-    return `${h}:${minutes} ${ampm}`;
-  };
-
-  const resetRoutine = async () => {
-    if (window.confirm("Are you sure you want to clear your entire weekly routine?")) {
-      try {
-        await routineAPI.deleteAll();
-        setSchedule([]);
-      } catch (error) {
-        console.error('Failed to reset routine:', error);
-        alert('Failed to reset routine. Please try again.');
-      }
-    }
-  };
-
-  const deleteWholeDay = async (day) => {
-    if (window.confirm(`Remove all activities from ${day}?`)) {
-      try {
-        const routinesToDelete = schedule.filter(task => task.repeatOn.includes(day));
-        for (const routine of routinesToDelete) {
-          await routineAPI.delete(routine.id);
-        }
-        const updated = schedule.filter(task => !task.repeatOn.includes(day));
-        setSchedule(updated);
-      } catch (error) {
-        console.error('Failed to delete day:', error);
-        alert('Failed to delete activities. Please try again.');
-      }
-    }
-  };
-
-  const isTimeReached = (taskTime) => {
-    const now = new Date();
-    const [hours, minutes] = taskTime.split(":").map(Number);
-    const taskDate = new Date();
-    taskDate.setHours(hours, minutes, 0, 0);
-    return now >= taskDate;
-  };
 
   const handleDayToggle = (day) => {
     if (day === "All Days") {
@@ -96,16 +51,26 @@ export default function TimetablePage() {
 
   const addSlot = async (e) => {
     e.preventDefault();
-    if (!activity || !time) return;
-    const newDays = selectedDays.includes("All Days") ? [...daysOfWeek] : (selectedDays.length > 0 ? selectedDays : [dayName]);
+    if (!activity || !time) {
+      alert("Please enter activity name and time");
+      return;
+    }
     
+    let newDays;
+    if (selectedDays.includes("All Days")) {
+      newDays = [...daysOfWeek];
+    } else if (selectedDays.length > 0) {
+      newDays = selectedDays;
+    } else {
+      alert("Please select at least one day");
+      return;
+    }
+    
+    setIsSubmitting(true);
     try {
-      const newRoutine = await routineAPI.create({
-        activity,
-        time,
-        repeatOn: newDays
-      });
-      
+      console.log('Adding routine:', { activity, time, repeatOn: newDays });
+      const newRoutine = await routineAPI.create({ activity, time, repeatOn: newDays });
+      console.log('Routine added:', newRoutine);
       setSchedule([...schedule, newRoutine.routine].sort((a, b) => a.time.localeCompare(b.time)));
       setActivity("");
       setTime("");
@@ -113,185 +78,121 @@ export default function TimetablePage() {
     } catch (error) {
       console.error('Failed to add routine:', error);
       alert(error.message || 'Failed to add routine. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const toggleComplete = async (routineId, day) => {
+  const resetRoutine = async () => {
+    if (!window.confirm("Are you sure you want to clear your entire weekly routine?")) return;
     try {
-      await routineAPI.complete(routineId);
-      
-      setSchedule(schedule.map(task => {
-        if (task.id === routineId) {
-          const isDone = task.completedDays?.includes(day);
-          return { 
-            ...task, 
-            completedDays: isDone 
-              ? task.completedDays.filter(d => d !== day) 
-              : [...(task.completedDays || []), day] 
-          };
-        }
-        return task;
-      }));
-    } catch (error) {
-      console.error('Failed to toggle completion:', error);
-    }
-  };
-
-  const removeSlotFromDay = async (routineId, day) => {
-    try {
-      const routine = schedule.find(r => r.id === routineId);
-      const newRepeatOn = routine.repeatOn.filter(d => d !== day);
-      
-      if (newRepeatOn.length === 0) {
-        await routineAPI.delete(routineId);
-        setSchedule(schedule.filter(r => r.id !== routineId));
-      } else {
-        // Update with new repeatOn days (API update needed)
-        const updated = schedule.map(r => 
-          r.id === routineId ? { ...r, repeatOn: newRepeatOn } : r
-        );
-        setSchedule(updated);
-      }
-    } catch (error) {
-      console.error('Failed to remove routine day:', error);
+      await routineAPI.deleteAll();
+      setSchedule([]);
+    } catch (error) { 
+      console.error('Failed to reset routine:', error);
+      alert('Failed to reset routine.'); 
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f0f2f5] py-10 px-5 flex flex-col items-center justify-center">
+      <div className="min-h-screen bg-[#F1F5F9] flex items-center justify-center">
         <div className="w-12 h-12 border-4 border-focusPurple border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen bg-[#f0f2f5] py-10 px-5 flex flex-col items-center">
-      
-      {/* HERO SECTION */}
-      <section className="text-center mb-12 animate-fadeInUp">
-        <h1 className="text-5xl md:text-6xl font-black text-gray-800 tracking-tighter mb-2">
-          {dayName}'s <span className="bg-gradient-to-r from-[#6c5ce7] to-purple-500 bg-clip-text text-transparent">Routine</span>
-        </h1>
-        <p className="text-lg text-gray-500 font-medium italic">Today is <b className="text-gray-700">{dateStr}</b></p>
-      </section>
-
-      {/* ADD ACTIVITY CARD */}
-      <div className="w-full max-w-3xl bg-[#f0f2f5] p-10 rounded-[40px] shadow-[20px_20px_60px_#d1d9e6,-20px_-20px_60px_#ffffff] mb-12">
-        <div className="flex items-center gap-4 mb-8">
-          <span className="text-3xl">✍️</span>
-          <h3 className="text-2xl font-black text-gray-800">Add New Activity</h3>
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#F1F5F9] flex items-center justify-center">
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-center max-w-md">
+          <span className="text-4xl mb-3 block">⚠️</span>
+          <h2 className="text-xl font-black text-red-600 mb-2">Error Loading Routines</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button onClick={() => window.location.reload()} className="magic-btn">
+            Retry
+          </button>
         </div>
+      </div>
+    );
+  }
 
-        <div className="mb-6">
-          <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3 px-1">Select Days:</p>
-          <div className="flex flex-wrap gap-3">
+  return (
+    <div className="min-h-screen bg-[#F1F5F9] py-10 px-4 flex flex-col items-center">
+      
+      {/* HEADER */}
+      <div className="text-center mb-8">
+        <h1 className="text-4xl font-black text-[#7C3AED]">Create Your Routine</h1>
+        <p className="text-gray-400 text-sm mt-2">Add activities for each day of the week</p>
+      </div>
+
+      {/* ADD FORM */}
+      <div className="w-full max-w-2xl bg-white p-8 rounded-[40px] shadow-[20px_20px_60px_#d1d9e6,-20px_-20px_60px_#ffffff] mb-8">
+        <h3 className="text-xl font-black text-gray-800 mb-6">✍️ Add New Activity</h3>
+        
+        <div className="mb-5">
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Select Days:</p>
+          <div className="flex flex-wrap gap-2">
             <button 
               onClick={() => handleDayToggle("All Days")}
-              className={`px-5 py-2 rounded-xl font-bold transition-all shadow-[5px_5px_10px_#d1d9e6,-5px_-5px_10px_#ffffff] ${selectedDays.includes("All Days") ? "text-[#6c5ce7] shadow-inner" : "text-gray-500 hover:text-[#6c5ce7]"}`}
+              className={`px-4 py-2 rounded-xl font-bold text-xs transition-all shadow-sm
+                ${selectedDays.includes("All Days") ? "bg-[#7C3AED] text-white shadow-md" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}
             >
               All Days
             </button>
             {daysOfWeek.map(day => (
               <button 
-                key={day}
+                key={day} 
                 disabled={selectedDays.includes("All Days")}
                 onClick={() => handleDayToggle(day)}
-                className={`px-4 py-2 rounded-xl font-bold transition-all shadow-[5px_5px_10px_#d1d9e6,-5px_-5px_10px_#ffffff] ${selectedDays.includes("All Days") ? "opacity-40" : selectedDays.includes(day) ? "text-[#6c5ce7] shadow-inner" : "text-gray-500 hover:text-[#6c5ce7]"}`}
+                className={`px-4 py-2 rounded-xl font-bold text-xs transition-all shadow-sm
+                  ${selectedDays.includes("All Days") ? "opacity-40 cursor-not-allowed" : 
+                    selectedDays.includes(day) ? "bg-[#7C3AED] text-white shadow-md" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}
               >
-                {day.substring(0, 3)}
+                {day}
               </button>
             ))}
           </div>
         </div>
 
-        <form onSubmit={addSlot} className="flex flex-wrap gap-4">
+        <form onSubmit={addSlot} className="flex flex-wrap gap-3">
           <input 
-            type="text" placeholder="e.g. GYM" value={activity} 
+            type="text" 
+            placeholder="e.g. Morning Gym" 
+            value={activity} 
             onChange={(e) => setActivity(e.target.value)}
-            className="w-100% p-5 rounded-2xl bg-[#F1F5F9] shadow-[inset_6px_6px_12px_#d1d9e6,inset_-6px_-6px_12px_#ffffff] outline-none font-bold text-gray-500 placeholder:text-gray-300 border-none focus:ring-2 ring-purple-100/50 transition-all"
-            required
+            className="flex-1 min-w-[180px] p-4 rounded-2xl bg-[#F1F5F9] shadow-[inset_4px_4px_8px_#d1d9e6,inset_-4px_-4px_8px_#ffffff] outline-none font-bold text-gray-600 text-sm" 
+            required 
           />
           <input 
-            type="time" value={time} 
+            type="time" 
+            value={time} 
             onChange={(e) => setTime(e.target.value)}
-            className="w-80% p-5 rounded-2xl bg-[#F1F5F9] shadow-[inset_6px_6px_12px_#d1d9e6,inset_-6px_-6px_12px_#ffffff] outline-none font-bold text-gray-500 placeholder:text-gray-300 border-none focus:ring-2 ring-purple-100/50 transition-all"
-            required
+            className="p-4 rounded-2xl bg-[#F1F5F9] shadow-[inset_4px_4px_8px_#d1d9e6,inset_-4px_-4px_8px_#ffffff] outline-none font-bold text-gray-600 text-sm" 
+            required 
           />
-          <button type="submit" className="magic-btn">Add to Routine</button>
+          <button type="submit" className="magic-btn" disabled={isSubmitting}>
+            {isSubmitting ? "Adding..." : "Add to Routine"}
+          </button>
         </form>
       </div>
 
-      {/* WEEKLY LIST */}
-      <div className="w-full max-w-4xl space-y-8">
-        {daysOfWeek.map((day) => {
-          const isToday = day === dayName;
-          const dayTasks = schedule.filter(task => task.repeatOn?.includes(day));
-          if (dayTasks.length === 0) return null;
-
-          return (
-            <div key={day} className={`bg-[#f0f2f5] p-8 rounded-[40px] shadow-[20px_20px_60px_#d1d9e6,-20px_-20px_60px_#ffffff] transition-all duration-500 ${!isToday ? 'opacity-70 scale-[0.98]' : ''}`}>
-              <div className="flex justify-between items-center mb-6">
-                <div className="flex items-center gap-3">
-                  <h3 className={`text-xl font-black uppercase tracking-tight ${isToday ? 'text-[#6c5ce7]' : 'text-gray-400'}`}>{day}</h3>
-                  {isToday && <span className="px-3 py-1 bg-green-500 text-white text-[10px] font-bold rounded-full animate-pulse">ACTIVE</span>}
-                </div>
-                <button onClick={() => deleteWholeDay(day)} className="text-gray-400 hover:text-red-500 font-bold text-sm transition-colors group">
-                  <span className="group-hover:hidden">Clear Day</span>
-                  <span className="hidden group-hover:inline text-lg">🗑</span>
-                </button>
-              </div>
-
-              <div className="relative">
-                {!isToday && (
-                  <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/10 backdrop-blur-[2px] rounded-2xl">
-                    <span className="bg-white px-4 py-2 rounded-full shadow-md text-xs font-black text-gray-400 uppercase tracking-widest">Locked until {day}</span>
-                  </div>
-                )}
-
-                <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
-                  {dayTasks.map((task) => {
-                    const isCompleted = task.completedDays?.includes(day);
-                    const unlocked = isTimeReached(task.time);
-
-                    return (
-                      <div key={`${day}-${task.id}`} className={`min-w-[150px] p-5 rounded-3xl bg-white shadow-sm border-l-4 transition-all ${isCompleted ? 'border-green-500 opacity-60' : 'border-[#6c5ce7]'}`}>
-                        <p className={`font-black text-gray-800 ${isCompleted ? 'line-through' : ''}`}>{task.activity}</p>
-                        <p className="text-xs font-bold text-[#6c5ce7] mt-1">{formatTime12h(task.time)}</p>
-
-                        {isToday && (
-                          <div className="flex gap-2 mt-4">
-                            <button 
-                              onClick={() => toggleComplete(task.id, day)}
-                              className={`w-8 h-8 flex items-center justify-center rounded-full text-white transition-transform hover:scale-110 ${!unlocked && !isCompleted ? "bg-gray-300 cursor-not-allowed" : "bg-green-500"}`}
-                            >
-                              {!unlocked && !isCompleted ? "🔒" : (isCompleted ? "↩" : "✔")}
-                            </button>
-                            <button onClick={() => removeSlotFromDay(task.id, day)} className="w-8 h-8 flex items-center justify-center rounded-full bg-red-400 text-white hover:scale-110 transition-transform">×</button> 
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          );
-        })}
+      {/* NAVIGATION */}
+      <div className="text-center space-y-3">
+        <button onClick={() => navigate("/routine/view")} className="magic-btn text-sm">
+          👁️ View Timeline →
+        </button>
+        <p className="text-[10px] text-gray-400">
+          {schedule.length} activities in your weekly routine
+        </p>
       </div>
 
-      {/* FOOTER NAVIGATION */}
-      <footer className="mt-20 w-full flex justify-center px-4">
-        <div className="flex flex-row items-center gap-6">
-          <button onClick={() => navigate("/dashboard")} className="magic-btn">
-            🏠 Back to Dashboard
-          </button>
-          {schedule.length > 0 && (
-            <button onClick={resetRoutine} className="magic-btn text-red-400">
-              🗑 Reset Whole Routine
-            </button>
-          )}
-        </div>
+      {/* FOOTER */}
+      <footer className="mt-10 flex gap-4 flex-wrap justify-center">
+        <button onClick={() => navigate("/dashboard")} className="magic-btn">🏠 Dashboard</button>
+        {schedule.length > 0 && (
+          <button onClick={resetRoutine} className="magic-btn text-red-400">🗑 Reset All</button>
+        )}
       </footer>
     </div>
   );

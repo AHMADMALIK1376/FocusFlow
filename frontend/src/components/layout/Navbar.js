@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { useUser } from "./UserContext";
-import { useApp } from "./AppContext";
+import { useUser } from "../auth/UserContext";
+import { useApp } from "../context/AppContext";
 import Logo from "./Logo";
 
 export default function Navbar() {

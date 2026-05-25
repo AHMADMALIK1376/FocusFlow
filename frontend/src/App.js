@@ -1,100 +1,126 @@
+// src/App.js
 import React, { useState, lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
-// ✅ Always loaded immediately — needed on first paint
-import Splash from "./components/Splash";
-import { UserProvider } from "./components/UserContext";
-import { AppProvider } from "./components/AppContext";
-import ProtectedRoute from "./components/ProtectedRoute";
-import Layout from "./components/Layout";
+// ==============================================
+// ERROR BOUNDARY
+// ==============================================
+import ErrorBoundary from "./components/common/ErrorBoundary";
+import ErrorBoundaryRoute from "./components/common/ErrorBoundaryRoute";
 
-// ✅ Auth pages load immediately — users see these first
-import AuthPage    from "./Pages/Authpage";
-import LoginForm   from "./components/LoginForm";
-import RegisterForm from "./components/RegisterForm";
-import VerifyForm  from "./components/VerifyForm";
-import ForgotPasswordForm from "./components/ForgotPasswordForm";
-import ResetPasswordVerify from "./components/ResetPasswordVerify";
-import ResetPassword from "./components/ResetPassword";
+// ==============================================
+// LOADING COMPONENT
+// ==============================================
+import { LoadingSpinner } from "./components/common/LoadingSpinner";
 
-// ✅ Protected pages lazy loaded — only downloaded after login
-// This keeps the initial bundle small without hurting FCP
-const Home                     = lazy(() => import("./Pages/Home"));
-const TaskManager              = lazy(() => import("./components/TaskManager"));
-const TimelinePage             = lazy(() => import("./Pages/TimelinePage"));
-const TimetablePage            = lazy(() => import("./Pages/DailyRoutine"));
-const FocusModePage            = lazy(() => import("./Pages/FocusModePage"));
-const AcademicCalendarPage     = lazy(() => import("./Pages/AcademicCalendarPage"));
+// ==============================================
+// ALWAYS LOADED IMMEDIATELY
+// ==============================================
+import Splash from "./components/layout/Splash";
+import { UserProvider } from "./components/auth/UserContext";
+import { AppProvider } from "./components/context/AppContext";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
+import Layout from "./components/layout/Layout";
+
+// ==============================================
+// AUTH PAGES (Load immediately)
+// ==============================================
+import AuthPage from "./Pages/Authpage";
+import LoginForm from "./components/auth/LoginForm";
+import RegisterForm from "./components/auth/RegisterForm";
+import VerifyForm from "./components/auth/VerifyForm";
+import ForgotPasswordForm from "./components/auth/ForgotPasswordForm";
+import ResetPasswordVerify from "./components/auth/ResetPasswordVerify";
+import ResetPassword from "./components/auth/ResetPassword";
+
+// ==============================================
+// PROTECTED PAGES (Lazy loaded - only after login)
+// ==============================================
+const Home = lazy(() => import("./Pages/Home"));
+const TaskManager = lazy(() => import("./components/tasks/TaskManager"));
+const TimelinePage = lazy(() => import("./Pages/TimelinePage"));
+const TimetablePage = lazy(() => import("./Pages/DailyRoutine"));
+const RoutineView = lazy(() => import("./components/routine/RoutineView"));
+const FocusModePage = lazy(() => import("./Pages/FocusModePage"));
+const AcademicCalendarPage = lazy(() => import("./Pages/AcademicCalendarPage"));
 const AcademicCalendarViewPage = lazy(() => import("./Pages/AcademicCalendarViewPage"));
+const AttendanceTracker = lazy(() => import("./components/attendance/AttendanceTracker"));
 
-// ✅ Spinner shown while a lazy page is downloading
+// ==============================================
+// PAGE LOADER using LoadingSpinner component
+// ==============================================
 function PageLoader() {
-  return (
-    <div style={{
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      height: "100vh",
-      background: "#f0f2f5",
-    }}>
-      <div style={{
-        width: "40px",
-        height: "40px",
-        border: "4px solid #e0e0e0",
-        borderTop: "4px solid #7C3AED",
-        borderRadius: "50%",
-        animation: "spin 0.8s linear infinite",
-      }} />
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-    </div>
-  );
+    return <LoadingSpinner fullScreen message="Loading page..." />;
 }
 
+// ==============================================
+// MAIN APP COMPONENT
+// ==============================================
 function App() {
-  const [loading, setLoading] = useState(true);
+    const [showSplash, setShowSplash] = useState(true);
 
-  if (loading) {
-    return <Splash onComplete={() => setLoading(false)} />;
-  }
+    // Handle splash screen completion
+    const handleSplashComplete = () => {
+        setShowSplash(false);
+    };
 
-  return (
-    <UserProvider>
-      <AppProvider>
-        <BrowserRouter>
-          <Suspense fallback={<PageLoader />}>
-            <Routes>
+    // Show splash screen on initial load
+    if (showSplash) {
+        return <Splash onComplete={handleSplashComplete} />;
+    }
 
-              {/* Auth Routes — NOT lazy, loaded immediately for fast FCP */}
-              <Route element={<AuthPage />}>
-                <Route path="/" element={<Navigate to="/login" replace />} />
-                <Route path="/login" element={<LoginForm />} />
-                <Route path="/signup" element={<RegisterForm />} />
-                <Route path="/verify" element={<VerifyForm />} />
-                <Route path="/forgot-password" element={<ForgotPasswordForm />} />
-                <Route path="/reset-password-verify" element={<ResetPasswordVerify />} />
-                <Route path="/reset-password" element={<ResetPassword />} />
-              </Route>
+    return (
+        <ErrorBoundary>
+            <UserProvider>
+                <AppProvider>
+                    <BrowserRouter>
+                        <Suspense fallback={<PageLoader />}>
+                            <Routes>
+                                {/* ============================================== */}
+                                {/* AUTH ROUTES (No layout, no authentication needed) */}
+                                {/* ============================================== */}
+                                <Route element={<AuthPage />}>
+                                    <Route path="/" element={<Navigate to="/login" replace />} />
+                                    <Route path="/login" element={<LoginForm />} />
+                                    <Route path="/signup" element={<RegisterForm />} />
+                                    <Route path="/verify" element={<VerifyForm />} />
+                                    <Route path="/forgot-password" element={<ForgotPasswordForm />} />
+                                    <Route path="/reset-password-verify" element={<ResetPasswordVerify />} />
+                                    <Route path="/reset-password" element={<ResetPassword />} />
+                                </Route>
 
-              {/* Protected App Routes — lazy loaded after login */}
-              <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-                <Route path="/dashboard"     element={<Home />} />
-                <Route path="/focus-mode"    element={<FocusModePage />} />
-                <Route path="/tasks"         element={<TaskManager />} />
-                <Route path="/timeline"      element={<TimelinePage />} />
-                <Route path="/routine"       element={<TimetablePage />} />
-                <Route path="/academic"      element={<AcademicCalendarPage />} />
-                <Route path="/academic/view" element={<AcademicCalendarViewPage />} />
-              </Route>
+                                {/* ============================================== */}
+                                {/* PROTECTED ROUTES (Require authentication + Layout) */}
+                                {/* ============================================== */}
+                                <Route
+                                    element={
+                                        <ProtectedRoute>
+                                            <Layout />
+                                        </ProtectedRoute>
+                                    }
+                                >
+                                    <Route path="/dashboard" element={<Home />} />
+                                    <Route path="/focus-mode" element={<FocusModePage />} />
+                                    <Route path="/tasks" element={<TaskManager />} />
+                                    <Route path="/timeline" element={<TimelinePage />} />
+                                    <Route path="/routine" element={<TimetablePage />} />
+                                    <Route path="/routine/view" element={<RoutineView />} />
+                                    <Route path="/academic" element={<AcademicCalendarPage />} />
+                                    <Route path="/academic/view" element={<AcademicCalendarViewPage />} />
+                                    <Route path="/attendance" element={<AttendanceTracker />} />
+                                </Route>
 
-              {/* Fallback */}
-              <Route path="*" element={<Navigate to="/login" replace />} />
-
-            </Routes>
-          </Suspense>
-        </BrowserRouter>
-      </AppProvider>
-    </UserProvider>
-  );
+                                {/* ============================================== */}
+                                {/* 404 - NOT FOUND ROUTE with Error Boundary */}
+                                {/* ============================================== */}
+                                <Route path="*" element={<ErrorBoundaryRoute />} />
+                            </Routes>
+                        </Suspense>
+                    </BrowserRouter>
+                </AppProvider>
+            </UserProvider>
+        </ErrorBoundary>
+    );
 }
 
 export default App;

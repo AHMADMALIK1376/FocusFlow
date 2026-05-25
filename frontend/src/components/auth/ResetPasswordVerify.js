@@ -1,11 +1,10 @@
-import React, { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { useUser } from "./UserContext";  // ADD THIS
+// src/components/auth/ResetPasswordVerify.js
+import React, { useState, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { authAPI } from "../../services/api";
 
-export default function VerifyForm() {
+export default function ResetPasswordVerify() {
   const navigate = useNavigate();
-  const { setUserName } = useUser();  // ADD THIS
-  const inputRefs = useRef([]);
   const [code, setCode] = useState(["", "", "", ""]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -14,11 +13,11 @@ export default function VerifyForm() {
   const [canResend, setCanResend] = useState(true);
 
   useEffect(() => {
-    const pendingEmail = sessionStorage.getItem('pendingVerificationEmail');
-    if (pendingEmail) {
-      setEmail(pendingEmail);
+    const resetEmail = sessionStorage.getItem('resetEmail');
+    if (resetEmail) {
+      setEmail(resetEmail);
     } else {
-      navigate('/signup');
+      navigate('/forgot-password');
     }
   }, [navigate]);
 
@@ -30,21 +29,21 @@ export default function VerifyForm() {
       setCode(newCode);
       
       if (value && index < 3) {
-        inputRefs.current[index + 1].focus();
+        document.getElementById(`code-input-${index + 1}`)?.focus();
       }
     }
   };
 
   const handleKeyDown = (e, index) => {
     if (e.key === "Backspace" && !code[index] && index > 0) {
-      inputRefs.current[index - 1].focus();
+      document.getElementById(`code-input-${index - 1}`)?.focus();
     }
   };
 
   const handleVerify = async () => {
     const verificationCode = code.join('');
     if (verificationCode.length !== 4) {
-      setError("Please enter the 4-digit verification code");
+      setError("Please enter the 4-digit reset code");
       return;
     }
     
@@ -52,35 +51,18 @@ export default function VerifyForm() {
     setError("");
     
     try {
-      const response = await fetch('http://localhost:5555/api/auth/verify-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, code: verificationCode })
-      });
+      const data = await authAPI.verifyResetCode(email, verificationCode);
       
-      const data = await response.json();
-      
-      if (response.ok && data.token) {
-        // Store token in localStorage
-        localStorage.setItem('focus_token', data.token);
-        
-        // Get the username from response or email
-        const username = data.user?.fullName || data.user?.email || email;
-        localStorage.setItem('focus_username', username);
-        
-        // IMPORTANT: Update UserContext state
-        setUserName(username);
-        
-        // Clear pending verification email
-        sessionStorage.removeItem('pendingVerificationEmail');
-        
-        // Redirect to dashboard
-        navigate('/dashboard');
+      if (data.success) {
+        sessionStorage.setItem('verifiedResetEmail', email);
+        sessionStorage.setItem('resetCode', verificationCode);
+        navigate('/reset-password');
       } else {
-        setError(data.error || 'Verification failed');
+        setError(data.error || 'Invalid code');
       }
     } catch (err) {
-      setError('Network error. Please try again.');
+      console.error('Verify reset code error:', err);
+      setError(err.message || 'Network error. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -93,15 +75,9 @@ export default function VerifyForm() {
     setCountdown(60);
     
     try {
-      const response = await fetch('http://localhost:5555/api/auth/resend-verification', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      });
+      const data = await authAPI.forgotPassword(email);
       
-      const data = await response.json();
-      
-      if (response.ok) {
+      if (data.success) {
         setError("");
         const timer = setInterval(() => {
           setCountdown((prev) => {
@@ -118,7 +94,8 @@ export default function VerifyForm() {
         setCanResend(true);
       }
     } catch (err) {
-      setError('Network error. Please try again.');
+      console.error('Resend code error:', err);
+      setError(err.message || 'Network error. Please try again.');
       setCanResend(true);
     }
   };
@@ -127,7 +104,7 @@ export default function VerifyForm() {
     <div className="w-full flex flex-col items-center py-4">
       <div className="w-full flex flex-col items-center animate-in zoom-in duration-500">
         <div className="text-4xl mb-4">📧</div>
-        <h2 className="text-2xl font-black text-gray-800 mb-1">Verify Identity</h2>
+        <h2 className="text-2xl font-black text-gray-800 mb-1">Reset Password</h2>
         <p className="text-gray-400 text-[10px] font-bold mb-2 uppercase tracking-[2px] text-center max-w-[250px]">
           We sent a 4-digit code to
         </p>
@@ -143,7 +120,7 @@ export default function VerifyForm() {
           {[0, 1, 2, 3].map((i) => (
             <input
               key={i}
-              ref={(el) => (inputRefs.current[i] = el)}
+              id={`code-input-${i}`}
               type="text"
               maxLength="1"
               value={code[i]}
@@ -159,7 +136,7 @@ export default function VerifyForm() {
           className="w-[80%] py-4 bg-[#6c5ce7] text-white rounded-2xl font-black shadow-lg shadow-purple-200 hover:scale-[1.02] active:scale-95 transition-all tracking-widest text-xs"
           disabled={loading}
         >
-          {loading ? "VERIFYING..." : "VERIFY & ENTER"}
+          {loading ? "VERIFYING..." : "VERIFY CODE"}
         </button>
         
         <p 
@@ -170,6 +147,12 @@ export default function VerifyForm() {
         >
           {canResend ? 'Resend Code' : `Resend Code (${countdown}s)`}
         </p>
+        
+        <div className="mt-6 text-center">
+          <Link to="/login" className="text-[#6c5ce7] font-bold text-xs hover:underline">
+            Back to Login
+          </Link>
+        </div>
       </div>
     </div>
   );

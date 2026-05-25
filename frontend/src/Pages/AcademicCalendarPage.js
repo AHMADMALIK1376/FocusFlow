@@ -1,19 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useApp } from "../components/AppContext";
-import AcadmicCalenAddsection from "../components/AcadmicCalenAddsection";
-import AcadmicCalenNewCal from "../components/AcadmicCalenNewCal";
+import { useApp } from "../components/context/AppContext";
+import AcadmicCalenAddsection from "../components/calendar/AcadmicCalenAddsection";
+import AcadmicCalenNewCal from "../components/calendar/AcadmicCalenNewCal";
 import { calendarAPI, getToken } from "../services/api";
 
 export default function AcademicCalendarPage() {
   const navigate = useNavigate();
-  const { setCalendar } = useApp();  // Removed unused 'calendar'
+  const { setCalendar } = useApp();
 
   const [calendars, setCalendarsRaw] = useState([]);
   const [activeCalendarId, setActiveCalendarIdRaw] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Load calendars from API
   useEffect(() => {
     const fetchCalendars = async () => {
       try {
@@ -26,7 +25,6 @@ export default function AcademicCalendarPage() {
         const fetchedCalendars = await calendarAPI.getAll();
         setCalendarsRaw(fetchedCalendars);
         
-        // Find active calendar
         const activeCal = fetchedCalendars.find(c => c.isActive === true);
         if (activeCal) {
           setActiveCalendarIdRaw(activeCal.id);
@@ -92,7 +90,6 @@ export default function AcademicCalendarPage() {
     );
   }
 
-  // ── EMPTY STATE: delegated to AcadmicCalenNewCal ─────────────────
   if (calendars.length === 0) {
     return (
       <div className="flex flex-col items-center px-4 pt-10 pb-20 max-w-[1400px] mx-auto min-h-screen bg-[#F1F5F9]">
@@ -105,19 +102,16 @@ export default function AcademicCalendarPage() {
     );
   }
 
-  // ── ACTIVE STATE ──────────────────────────────────────────────────
   return (
     <div className="flex flex-col items-center px-4 pt-10 pb-20 max-w-[1400px] mx-auto min-h-screen bg-[#F1F5F9]">
       <PageHeader />
 
-      {/* Add Subject Card */}
       <AcadmicCalenAddsection
         activeCalendar={activeCalendar}
         onAddEntry={handleAddEntry}
         onCreateNewCalendar={handleCreateNewCalendar}
       />
 
-      {/* Footer */}
       <footer className="w-full flex justify-center gap-6 px-4 mt-4 flex-wrap">
         <button onClick={() => navigate("/academic/view")} className="magic-btn flex items-center gap-2">
           📅 View Calendars →

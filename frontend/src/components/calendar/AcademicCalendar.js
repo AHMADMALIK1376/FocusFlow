@@ -1,14 +1,14 @@
-import React, { useState, useEffect, useRef } from "react";
+// src/components/calendar/AcademicCalendar.js
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useApp } from "./AppContext";
+import { useApp } from "../context/AppContext";
 import Lottie from "lottie-react";
-import fireAnimation from "../assets/animation/work managemnt.json";
-import { getToken } from "../services/api";
+import fireAnimation from "../../assets/animation/work managemnt.json";
 import AttendanceGraphPopup from "./AttendanceGraphPopup";
 
 export default function AcademicCalendar() {
   const navigate = useNavigate();
-  const { setTodaysClasses } = useApp();
+  const { todaysClasses, attendanceSummary } = useApp();
   const [showTooltip, setShowTooltip] = useState(false);
   const [loading, setLoading] = useState(true);
   const [classCount, setClassCount] = useState(0);
@@ -19,45 +19,58 @@ export default function AcademicCalendar() {
   const [attendanceStats, setAttendanceStats] = useState({
     overallPercentage: 0, subjectsAtRisk: 0, totalSubjects: 0, totalEarned: 0, totalPossible: 0
   });
-  
-  const hasFetched = useRef(false);
 
+  // Use data from context instead of fetching
   useEffect(() => {
-    if (hasFetched.current) return;
-    hasFetched.current = true;
+    // Process todaysClasses from context
+    if (todaysClasses && todaysClasses.length > 0) {
+      setClassCount(todaysClasses.length);
+      setClassDetails(todaysClasses);
+    } else {
+      setClassCount(0);
+      setClassDetails([]);
+    }
     
-    const fetchAllData = async () => {
-      try {
-        const token = getToken();
-        if (!token) { setLoading(false); return; }
+    // Process attendance data from context
+    if (attendanceSummary && attendanceSummary.length > 0) {
+      setAttendanceData(attendanceSummary);
+      
+      // Calculate attendance stats from the data
+      const totalSubjects = attendanceSummary.length;
+      let totalEarned = 0;
+      let totalPossible = 0;
+      let subjectsAtRisk = 0;
+      let subjectsSafe = 0;
+      let overallPercentageSum = 0;
+      
+      attendanceSummary.forEach(subject => {
+        const percentage = subject.percentage || 0;
+        overallPercentageSum += percentage;
         
-        const summaryResponse = await fetch('http://localhost:5555/api/dashboard/summary', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const summaryData = await summaryResponse.json();
+        totalEarned += subject.totalPointsEarned || 0;
+        totalPossible += subject.totalPointsPossible || 0;
         
-        if (summaryResponse.ok && summaryData?.todaysClasses) {
-          setClassCount(summaryData.todaysClasses.length);
-          setClassDetails(summaryData.todaysClasses);
-          setTodaysClasses(summaryData.todaysClasses);
-        } else { setClassCount(0); setClassDetails([]); setTodaysClasses([]); }
-        
-        try {
-          const attRes = await fetch('http://localhost:5555/api/attendance/summary', {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          if (attRes.ok) setAttendanceData(await attRes.json());
-          
-          const statsRes = await fetch('http://localhost:5555/api/attendance/dashboard', {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          if (statsRes.ok) setAttendanceStats(await statsRes.json());
-        } catch (e) {}
-      } catch (error) { console.error('Fetch error:', error); }
-      finally { setLoading(false); }
-    };
-    fetchAllData();
-  }, [setTodaysClasses]);
+        if (percentage < 60) {
+          subjectsAtRisk++;
+        } else if (percentage >= 75) {
+          subjectsSafe++;
+        }
+      });
+      
+      const overallPercentage = totalSubjects > 0 ? overallPercentageSum / totalSubjects : 0;
+      
+      setAttendanceStats({
+        overallPercentage: overallPercentage,
+        subjectsAtRisk: subjectsAtRisk,
+        totalSubjects: totalSubjects,
+        totalEarned: totalEarned,
+        totalPossible: totalPossible,
+        subjectsSafe: subjectsSafe
+      });
+    }
+    
+    setLoading(false);
+  }, [todaysClasses, attendanceSummary]);
 
   const getOverallStatus = () => {
     const pct = attendanceStats.overallPercentage || 0;
@@ -75,7 +88,7 @@ export default function AcademicCalendar() {
   }
 
   const overallStatus = getOverallStatus();
-  const hasAttendanceData = attendanceData.length > 0;
+  const hasAttendanceData = attendanceData && attendanceData.length > 0;
 
   return (
     <>

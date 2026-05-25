@@ -1,72 +1,70 @@
+// src/components/dashboard/UniCalendar.js
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { taskAPI, getToken } from "../services/api";
+import { useApp } from "../context/AppContext";
+
 export default function UniCalendar() {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
+  const { tasks } = useApp();
   const [isExpanded, setIsExpanded] = useState(false);
   const [weeklyProgress, setWeeklyProgress] = useState(0);
   const [nextTask, setNextTask] = useState(null);
   const [weeklyData, setWeeklyData] = useState([0, 0, 0, 0, 0, 0, 0]);
   const [timeLeft, setTimeLeft] = useState("");
 
+  // Calculate all data from context tasks
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const token = getToken();
-        if (!token) {
-          setLoading(false);
-          return;
-        }
-        
-        const tasks = await taskAPI.getAll();
-        const today = new Date().toISOString().split('T')[0];
-        
-        const upcomingTasks = tasks
-          .filter(t => !t.completed && t.date >= today)
-          .sort((a, b) => {
-            if (a.date === b.date) return (a.time || '00:00').localeCompare(b.time || '00:00');
-            return a.date.localeCompare(b.date);
-          });
-        
-        if (upcomingTasks.length > 0) {
-          const task = upcomingTasks[0];
-          setNextTask(task);
-          calculateTimeLeft(task);
-        }
-        
-        const startOfWeek = new Date();
-        startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
-        
-        const dailyCompletion = [];
-        for (let i = 0; i < 7; i++) {
-          const currentDate = new Date(startOfWeek);
-          currentDate.setDate(startOfWeek.getDate() + i);
-          const dateStr = currentDate.toISOString().split('T')[0];
-          
-          const dayTasks = tasks.filter(t => t.date === dateStr);
-          const dayCompleted = dayTasks.filter(t => t.completed).length;
-          const dayTotal = dayTasks.length;
-          
-          dailyCompletion.push(dayTotal > 0 ? (dayCompleted / dayTotal) * 100 : 0);
-        }
-        setWeeklyData(dailyCompletion);
-        
-        const weekTasks = tasks.filter(t => t.date >= startOfWeek.toISOString().split('T')[0]);
-        const weekCompleted = weekTasks.filter(t => t.completed).length;
-        const weekTotal = weekTasks.length;
-        
-        setWeeklyProgress(weekTotal > 0 ? (weekCompleted / weekTotal) * 100 : 0);
-        
-      } catch (error) {
-        console.error('Failed to fetch data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    if (!tasks || tasks.length === 0) {
+      setWeeklyProgress(0);
+      setWeeklyData([0, 0, 0, 0, 0, 0, 0]);
+      setNextTask(null);
+      return;
+    }
+
+    const today = new Date().toISOString().split('T')[0];
     
-    fetchData();
+    // Find next upcoming task
+    const upcomingTasks = tasks
+      .filter(t => !t.completed && t.date >= today)
+      .sort((a, b) => {
+        if (a.date === b.date) return (a.time || '00:00').localeCompare(b.time || '00:00');
+        return a.date.localeCompare(b.date);
+      });
     
+    if (upcomingTasks.length > 0) {
+      const task = upcomingTasks[0];
+      setNextTask(task);
+      calculateTimeLeft(task);
+    } else {
+      setNextTask(null);
+    }
+    
+    // Calculate weekly completion data
+    const startOfWeek = new Date();
+    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+    
+    const dailyCompletion = [];
+    for (let i = 0; i < 7; i++) {
+      const currentDate = new Date(startOfWeek);
+      currentDate.setDate(startOfWeek.getDate() + i);
+      const dateStr = currentDate.toISOString().split('T')[0];
+      
+      const dayTasks = tasks.filter(t => t.date === dateStr);
+      const dayCompleted = dayTasks.filter(t => t.completed).length;
+      const dayTotal = dayTasks.length;
+      
+      dailyCompletion.push(dayTotal > 0 ? (dayCompleted / dayTotal) * 100 : 0);
+    }
+    setWeeklyData(dailyCompletion);
+    
+    // Calculate weekly average
+    const weekTasks = tasks.filter(t => t.date >= startOfWeek.toISOString().split('T')[0]);
+    const weekCompleted = weekTasks.filter(t => t.completed).length;
+    const weekTotal = weekTasks.length;
+    
+    setWeeklyProgress(weekTotal > 0 ? (weekCompleted / weekTotal) * 100 : 0);
+    
+    // Set up interval to update time left every minute
     const interval = setInterval(() => {
       if (nextTask) {
         calculateTimeLeft(nextTask);
@@ -74,7 +72,7 @@ export default function UniCalendar() {
     }, 60000);
     
     return () => clearInterval(interval);
-  }, [nextTask]);
+  }, [tasks, nextTask]);
 
   const calculateTimeLeft = (task) => {
     if (!task || !task.date) return;
@@ -136,14 +134,6 @@ export default function UniCalendar() {
   };
   
   const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
-  if (loading) {
-    return (
-      <div className="flex-1 min-w-[320px] max-w-[450px] bg-[#f0f2f5] p-10 rounded-[40px] shadow-[20px_20px_60px_#d1d9e6,-20px_-20px_60px_#ffffff] transition-transform duration-300 hover:-translate-y-2 text-center group flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-focusPurple border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
-  }
 
   return (
     <div className={`relative bg-[#f0f2f5] p-8 rounded-[40px] flex-1 min-w-[320px] max-w-[450px] min-h-[420px] shadow-[20px_20px_60px_#d1d9e6,-20px_-20px_60px_#ffffff] transition-all duration-500 text-center group hover:-translate-y-2`}>

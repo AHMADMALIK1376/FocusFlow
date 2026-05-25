@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useApp } from "../components/AppContext";
-import { calendarAPI, getToken } from "../services/api";
-import EditEntryPopup from "../components/EditEntryPopup";
+import { useApp } from "../components/context/AppContext";
+import { calendarAPI, attendanceAPI, getToken } from "../services/api";
+import EditEntryPopup from "../components/calendar/EditEntryPopup";
 
 const displayDays = ["Mon", "Tue", "Wed", "Thu", "Fri"];
 
@@ -125,19 +125,15 @@ export default function AcademicCalendarViewPage() {
     fetchAllData();
   }, [setCalendar]);
 
+  // ✅ FIX: Use attendanceAPI instead of direct fetch
   const fetchAttendanceData = async () => {
     try {
       const token = getToken();
       if (!token) return;
-      const response = await fetch('http://localhost:5555/api/attendance/summary', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        const map = {};
-        data.forEach(item => { map[item.entryId] = item; });
-        setAttendanceMap(map);
-      }
+      const data = await attendanceAPI.getSummary();
+      const map = {};
+      data.forEach(item => { map[item.entryId] = item; });
+      setAttendanceMap(map);
     } catch (error) { console.error('Failed to fetch attendance data:', error); }
   };
 
@@ -351,12 +347,12 @@ function CalendarTable({
     useEffect(() => {
       const fetchTrend = async () => {
         try {
-          const token = getToken();
-          const response = await fetch(`http://localhost:5555/api/attendance/trend/${entryId}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          if (response.ok) { const data = await response.json(); setTrendData(data); }
-        } catch (error) {}
+          // ✅ FIX: Use attendanceAPI instead of direct fetch
+          const data = await attendanceAPI.getTrend(entryId);
+          setTrendData(data || []);
+        } catch (error) {
+          console.error('Failed to fetch trend:', error);
+        }
       };
       fetchTrend();
     }, [entryId]);

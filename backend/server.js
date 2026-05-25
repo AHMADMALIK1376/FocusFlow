@@ -1,8 +1,11 @@
 ﻿require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const compression = require('compression');
+const rateLimit = require('express-rate-limit');
 const cron = require('node-cron');
-const { initialize } = require('./config/database');
+const { initialize, healthCheck: dbHealthCheck, getPoolStats, closePool } = require('./config/database');
 const { startReminderScheduler } = require('./services/reminderService');
 const { sendAllDailySchedules } = require('./services/dailyScheduleEmailService');
 const { 
@@ -11,6 +14,8 @@ const {
     sendHourlyTaskReminders 
 } = require('./services/taskReminderEmailService');
 const { autoMarkAbsent } = require('./services/attendanceService');
+const { sendAllDailyRoutines } = require('./services/dailyRoutineEmailService');
+const { getEmailQueueStats, clearEmailQueue } = require('./services/emailService');
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
@@ -24,10 +29,136 @@ const attendanceRoutes = require('./routes/attendanceRoutes');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// ==============================================
+// CORS CONFIGURATION - MUST BE FIRST!
+// ==============================================
+app.use((req, res, next) => {
+    // Allow all origins in development
+    const origin = req.headers.origin;
+    res.header('Access-Control-Allow-Origin', origin || '*');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, X-Requested-With, Origin');
+    res.header('Access-Control-Max-Age', '86400');
+    
+    // Handle preflight requests
+    if (req.method === 'OPTIONS') {
+        return res.status(200).json({});
+    }
+    next();
+});
+
+// Standard CORS as backup
+app.use(cors({
+    origin: true,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With']
+}));
+
+// ==============================================
+// ENVIRONMENT VARIABLE VALIDATION
+// ==============================================
+const requiredEnv = ['JWT_SECRET', 'ORACLE_USER', 'ORACLE_PASSWORD', 'EMAIL_USER', 'EMAIL_PASS'];
+const missing = requiredEnv.filter(varName => !process.env[varName]);
+
+if (missing.length > 0) {
+    console.error('❌ Missing required environment variables:');
+    missing.forEach(varName => console.error(`   - ${varName}`));
+    console.error('\nPlease check your .env file and restart the server.');
+    process.exit(1);
+}
+
+if (!process.env.ORACLE_CONNECTION_STRING) {
+    console.warn('⚠️ ORACLE_CONNECTION_STRING not set. Using default: localhost:1521/XEPDB1');
+}
+
+if (process.env.JWT_SECRET && process.env.JWT_SECRET.length < 32) {
+    console.warn('⚠️ WARNING: JWT_SECRET should be at least 32 characters long for production!');
+}
+
+console.log('✅ Environment variables validated');
+
+// ==============================================
+// OTHER MIDDLEWARE
+// ==============================================
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+            fontSrc: ["'self'", "https://fonts.gstatic.com"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+            imgSrc: ["'self'", "data:", "https:"],
+        },
+    },
+}));
+
+app.use(compression({
+    level: 6,
+    threshold: 1024,
+}));
+
+// ==============================================
+// RATE LIMITING - TEMPORARILY DISABLED FOR TESTING
+// ==============================================
+
+// const globalLimiter = rateLimit({
+//     windowMs: 15 * 60 * 1000,
+//     max: 100,
+//     message: { error: 'Too many requests, please try again later.' },
+//     standardHeaders: true,
+//     legacyHeaders: false,
+// });
+
+// const authLimiter = rateLimit({
+//     windowMs: 60 * 1000,
+//     max: 5,
+//     message: { error: 'Too many login attempts, please try again later.' },
+//     skipSuccessfulRequests: true,
+// });
+
+// app.use('/api/', globalLimiter);
+// app.use('/api/auth/login', authLimiter);
+// app.use('/api/auth/register', authLimiter);
+// app.use('/api/auth/forgot-password', authLimiter);
+// app.use('/api/auth/reset-password', authLimiter);
+
+console.log('⚠️ Rate limiting is DISABLED for testing');
+
+// Body parsing
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Request timeout
+const REQUEST_TIMEOUT_MS = 30000;
+const SLOW_REQUEST_WARNING_MS = 5000;
+
+app.use((req, res, next) => {
+    req.setTimeout(REQUEST_TIMEOUT_MS, () => {
+        console.error(`❌ Request timeout: ${req.method} ${req.path}`);
+        if (!res.headersSent) {
+            res.status(408).json({ error: 'Request timeout' });
+        }
+    });
+    
+    res.setTimeout(REQUEST_TIMEOUT_MS, () => {
+        console.error(`❌ Response timeout: ${req.method} ${req.path}`);
+        if (!res.headersSent) {
+            res.status(408).json({ error: 'Response timeout' });
+        }
+    });
+    
+    const startTime = Date.now();
+    res.on('finish', () => {
+        const duration = Date.now() - startTime;
+        if (duration > SLOW_REQUEST_WARNING_MS) {
+            console.warn(`⚠️ Slow request: ${req.method} ${req.path} took ${duration}ms`);
+        }
+    });
+    
+    next();
+});
 
 // Request logging
 app.use((req, res, next) => {
@@ -35,7 +166,9 @@ app.use((req, res, next) => {
     next();
 });
 
-// Routes
+// ==============================================
+// API ROUTES
+// ==============================================
 app.use('/api/auth', authRoutes);
 app.use('/api/calendars', calendarRoutes);
 app.use('/api/tasks', taskRoutes);
@@ -44,116 +177,169 @@ app.use('/api/focus', focusRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/attendance', attendanceRoutes);
 
-// Health check
+// ==============================================
+// HEALTH CHECK
+// ==============================================
 app.get('/api/health', (req, res) => {
-    res.json({ status: 'OK', timestamp: new Date().toISOString() });
+    res.json({ 
+        status: 'OK', 
+        timestamp: new Date().toISOString(),
+        version: '2.2.0',
+        uptime: process.uptime(),
+        cors: 'enabled',
+        rateLimiting: 'disabled (testing)'
+    });
 });
 
-// 404 handler
+app.get('/api/health/detailed', async (req, res) => {
+    const dbHealth = await dbHealthCheck();
+    const poolStats = await getPoolStats();
+    const emailStats = getEmailQueueStats();
+    
+    res.json({
+        status: 'OK',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        database: dbHealth,
+        pool: poolStats,
+        emailQueue: emailStats,
+        cors: 'enabled',
+        rateLimiting: 'disabled (testing)'
+    });
+});
+
+// Email queue endpoints
+app.get('/api/email/queue/stats', (req, res) => {
+    try {
+        const stats = getEmailQueueStats();
+        res.json({ success: true, data: stats });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to get queue statistics' });
+    }
+});
+
+app.delete('/api/email/queue/clear', (req, res) => {
+    try {
+        const cleared = clearEmailQueue();
+        res.json({ success: true, message: `Cleared ${cleared} emails from queue` });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to clear queue' });
+    }
+});
+
+// Error handling
 app.use((req, res) => {
     res.status(404).json({ error: 'Route not found', path: req.originalUrl });
 });
 
-// Error handler
 app.use((err, req, res, next) => {
     console.error('Server error:', err);
     res.status(500).json({ error: 'Internal server error' });
 });
 
+// ==============================================
+// CRON JOBS
+// ==============================================
+let isAutoMarking = false;
+let isHourlyRemindersRunning = false;
+
 async function startServer() {
     try {
-        // Initialize Oracle Database connection pool
         await initialize();
         console.log('✅ Oracle Database connection pool created');
         
-        // ==============================================
-        // CLASS REMINDERS (1 hour before class)
-        // ==============================================
         startReminderScheduler();
-        console.log('⏰ Class reminder scheduler started. Will check every minute.');
+        console.log('⏰ Class reminder scheduler started');
         
-        // ==============================================
-        // DAILY SCHEDULE EMAIL (Classes for today)
-        // ==============================================
         cron.schedule('0 6 * * *', () => {
-            console.log('📅 Running 6:00 AM daily schedule email job...');
-            sendAllDailySchedules();
+            console.log('📅 [6:00 AM] Sending daily class schedule emails...');
+            sendAllDailySchedules().catch(err => console.error('Daily schedule error:', err));
         });
-        console.log('📧 Daily schedule email job scheduled for 6:00 AM');
         
-        // ==============================================
-        // TASK REMINDERS
-        // ==============================================
+        cron.schedule('0 7 * * *', () => {
+            console.log('🕒 [7:00 AM] Sending daily routine emails...');
+            sendAllDailyRoutines().catch(err => console.error('Daily routine error:', err));
+        });
         
-        // 1. WEEKLY TASK SUMMARY - Every Monday at 7:00 AM
         cron.schedule('0 7 * * 1', () => {
-            console.log('📋 Running weekly task summary job...');
-            sendWeeklyTaskSummary();
+            console.log('📋 [Monday 7:00 AM] Sending weekly task summary...');
+            sendWeeklyTaskSummary().catch(err => console.error('Weekly summary error:', err));
         });
-        console.log('📋 Weekly task summary scheduled for Monday at 7:00 AM');
         
-        // 2. DAILY TASK SUMMARY - Every day at 8:00 AM
         cron.schedule('0 8 * * *', () => {
-            console.log('📋 Running daily task summary job...');
-            sendDailyTaskSummary();
+            console.log('📋 [8:00 AM] Sending daily task summary...');
+            sendDailyTaskSummary().catch(err => console.error('Daily summary error:', err));
         });
-        console.log('📋 Daily task summary scheduled for 8:00 AM');
         
-        // 3. HOURLY TASK REMINDERS - Every minute (1 hour before task due)
-        cron.schedule('* * * * *', () => {
-            sendHourlyTaskReminders();
+        cron.schedule('* * * * *', async () => {
+            if (isHourlyRemindersRunning) return;
+            isHourlyRemindersRunning = true;
+            try {
+                await sendHourlyTaskReminders();
+            } catch (err) {
+                console.error('❌ Hourly reminders error:', err.message);
+            } finally {
+                isHourlyRemindersRunning = false;
+            }
         });
-        console.log('⏰ Hourly task reminder scheduler started. Will check every minute.');
         
-        // ==============================================
-        // AUTO-MARK ABSENT - Every day at 12:05 AM
-        // ==============================================
-        cron.schedule('5 0 * * *', () => {
-            console.log('🕐 [MIDNIGHT] Running auto-absent check...');
-            autoMarkAbsent();
+        cron.schedule('5 0 * * *', async () => {
+            if (isAutoMarking) return;
+            console.log('🕐 [12:05 AM] Auto-marking past pending classes as absent...');
+            isAutoMarking = true;
+            try {
+                await autoMarkAbsent();
+            } catch (err) {
+                console.error('❌ Auto-mark absent error:', err.message);
+            } finally {
+                isAutoMarking = false;
+            }
         });
-        console.log('⏰ Auto-absent scheduler: Daily at 12:05 AM - Marks unmarked classes as Absent');
         
-        // ==============================================
-        // TESTING - Run auto-absent 10 seconds after startup
-        // REMOVE THIS FOR PRODUCTION
-        // ==============================================
-        setTimeout(() => {
-            console.log('🧪 [TEST] Running auto-absent check immediately...');
-            autoMarkAbsent();
-        }, 10000);
-        
-        // Start Express server
         app.listen(PORT, () => {
-            console.log('='.repeat(50));
+            console.log('='.repeat(60));
             console.log(`🚀 FocusFlow Backend running on port ${PORT}`);
-            console.log(`📍 Health check: http://localhost:${PORT}/api/health`);
-            console.log('='.repeat(50));
-            console.log('📋 REMINDER SCHEDULE SUMMARY:');
-            console.log('   🕐 Auto-Absent: 12:05 AM (marks past pending as absent)');
-            console.log('   🏫 Class Reminders: Every minute (1 hour before class)');
-            console.log('   📅 Daily Schedule: 6:00 AM');
-            console.log('   📋 Weekly Tasks: Monday at 7:00 AM');
-            console.log('   📋 Daily Tasks: 8:00 AM');
-            console.log('   ⏰ Hourly Task Reminders: Every minute');
-            console.log('='.repeat(50));
+            console.log(`📍 Health: http://localhost:${PORT}/api/health`);
+            console.log(`📍 CORS Enabled for http://localhost:3000`);
+            console.log(`⚠️ Rate limiting is DISABLED for testing`);
+            console.log('='.repeat(60));
         });
         
     } catch (err) {
-        console.error('Failed to start server:', err);
+        console.error('❌ Failed to start server:', err.message);
         process.exit(1);
     }
 }
 
-// Handle graceful shutdown
-process.on('SIGINT', async () => {
-    console.log('\n🛑 Shutting down server...');
-    process.exit(0);
-});
+// Graceful shutdown
+let isShuttingDown = false;
 
-process.on('SIGTERM', async () => {
-    console.log('\n🛑 Shutting down server...');
+async function gracefulShutdown(signal) {
+    if (isShuttingDown) return;
+    isShuttingDown = true;
+    
+    console.log(`\n🛑 Received ${signal}, shutting down gracefully...`);
+    
+    let waitCount = 0;
+    while ((isAutoMarking || isHourlyRemindersRunning) && waitCount < 30) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        waitCount++;
+    }
+    
+    await closePool();
+    console.log('✅ Graceful shutdown complete');
     process.exit(0);
+}
+
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('uncaughtException', (err) => {
+    console.error('❌ Uncaught Exception:', err);
+    gracefulShutdown('uncaughtException');
+});
+process.on('unhandledRejection', (reason) => {
+    console.error('❌ Unhandled Rejection:', reason);
+    gracefulShutdown('unhandledRejection');
 });
 
 startServer();

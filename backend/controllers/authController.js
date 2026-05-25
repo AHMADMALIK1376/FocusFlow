@@ -4,7 +4,89 @@ const { getConnection } = require('../config/database');
 const { generateId } = require('../utils/helpers');
 const { generateVerificationCode, sendVerificationEmail, sendPasswordResetCode } = require('../services/emailService');
 
-// Register new user (sends verification email)
+// ==============================================
+// JWT SECURITY HELPER
+// ==============================================
+const getJWTSecret = () => {
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+        console.error('❌ FATAL: JWT_SECRET environment variable is not set!');
+        console.error('   Please add JWT_SECRET to your .env file and restart the server.');
+        throw new Error('JWT_SECRET not configured. Please check your .env file.');
+    }
+    
+    // Warn if using default/weak secret in production
+    if (process.env.NODE_ENV === 'production' && secret.length < 32) {
+        console.warn('⚠️ WARNING: JWT_SECRET is too short for production!');
+        console.warn('   Generate a strong secret using: openssl rand -base64 32');
+    }
+    
+    if (secret === 'FocusFlowSuperSecretKey2024') {
+        console.warn('⚠️ WARNING: Using default JWT_SECRET. Change this in production!');
+    }
+    
+    return secret;
+};
+
+// Generate JWT token with proper error handling
+const generateToken = (userId, email) => {
+    try {
+        const secret = getJWTSecret();
+        const token = jwt.sign(
+            { userId, email },
+            secret,
+            { expiresIn: '7d' }
+        );
+        return token;
+    } catch (err) {
+        console.error('❌ JWT generation failed:', err.message);
+        throw err;
+    }
+};
+
+// ==============================================
+// HELPER: Send verification email with retry
+// ==============================================
+const sendVerificationEmailWithRetry = async (email, code, maxRetries = 3) => {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        console.log(`📧 Sending verification email to ${email} (attempt ${attempt}/${maxRetries})`);
+        const sent = await sendVerificationEmail(email, code);
+        if (sent) {
+            console.log(`✅ Verification email sent to ${email}`);
+            return true;
+        }
+        if (attempt < maxRetries) {
+            console.log(`⚠️ Attempt ${attempt} failed, retrying in 2 seconds...`);
+            await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+    }
+    console.error(`❌ Failed to send verification email to ${email} after ${maxRetries} attempts`);
+    return false;
+};
+
+// ==============================================
+// HELPER: Send reset email with retry
+// ==============================================
+const sendResetEmailWithRetry = async (email, code, maxRetries = 3) => {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        console.log(`📧 Sending password reset email to ${email} (attempt ${attempt}/${maxRetries})`);
+        const sent = await sendPasswordResetCode(email, code);
+        if (sent) {
+            console.log(`✅ Password reset email sent to ${email}`);
+            return true;
+        }
+        if (attempt < maxRetries) {
+            console.log(`⚠️ Attempt ${attempt} failed, retrying in 2 seconds...`);
+            await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+    }
+    console.error(`❌ Failed to send password reset email to ${email} after ${maxRetries} attempts`);
+    return false;
+};
+
+// ==============================================
+// REGISTER FUNCTION (UPDATED)
+// ==============================================
 exports.register = async (req, res) => {
     let connection;
     try {
@@ -14,6 +96,10 @@ exports.register = async (req, res) => {
         
         if (!email || !password) {
             return res.status(400).json({ error: 'Email and password are required.' });
+        }
+        
+        if (password.length < 6) {
+            return res.status(400).json({ error: 'Password must be at least 6 characters long.' });
         }
         
         connection = await getConnection();
@@ -31,7 +117,8 @@ exports.register = async (req, res) => {
             } else {
                 // User exists but not verified - resend code
                 const verificationCode = generateVerificationCode();
-                const expiresAt = new Date(Date.now() + 10 * 60000); // 10 minutes
+                const expiresAt = new Date(Date.now() + 10 * 60000);
+                const hashedPassword = await bcrypt.hash(password, 10);
                 
                 await connection.execute(
                     `UPDATE USERS 
@@ -40,10 +127,18 @@ exports.register = async (req, res) => {
                          password_hash = :passwordHash,
                          full_name = :fullName
                      WHERE email = :email`,
-                    [verificationCode, expiresAt, await bcrypt.hash(password, 10), fullName || null, email]
+                    [verificationCode, expiresAt, hashedPassword, fullName || null, email]
                 );
                 
-                await sendVerificationEmail(email, verificationCode);
+                // Send email with retry
+                const emailSent = await sendVerificationEmailWithRetry(email, verificationCode);
+                
+                if (!emailSent) {
+                    return res.status(500).json({ 
+                        error: 'Failed to send verification email. Please try again later.',
+                        code: 'EMAIL_SEND_FAILED'
+                    });
+                }
                 
                 return res.status(200).json({
                     success: true,
@@ -58,7 +153,7 @@ exports.register = async (req, res) => {
         const userId = generateId();
         const hashedPassword = await bcrypt.hash(password, 10);
         const verificationCode = generateVerificationCode();
-        const expiresAt = new Date(Date.now() + 10 * 60000); // 10 minutes
+        const expiresAt = new Date(Date.now() + 10 * 60000);
         
         await connection.execute(
             `INSERT INTO USERS (user_id, email, password_hash, full_name, is_verified, verification_code, verification_code_expires) 
@@ -66,18 +161,24 @@ exports.register = async (req, res) => {
             [userId, email, hashedPassword, fullName || null, verificationCode, expiresAt]
         );
         
-        // Initialize user stats (will be activated after verification)
+        // Initialize user stats
         await connection.execute(
             `INSERT INTO USER_STATS (user_id, current_streak, total_goals_completed) 
              VALUES (:userId, 0, 0)`,
             [userId]
         );
         
-        // Send verification email
-        const emailSent = await sendVerificationEmail(email, verificationCode);
+        // Send verification email with retry
+        const emailSent = await sendVerificationEmailWithRetry(email, verificationCode);
         
         if (!emailSent) {
-            return res.status(500).json({ error: 'Failed to send verification email. Please try again.' });
+            // Rollback user creation if email fails
+            await connection.execute(`DELETE FROM USERS WHERE user_id = :userId`, [userId]);
+            await connection.execute(`DELETE FROM USER_STATS WHERE user_id = :userId`, [userId]);
+            return res.status(500).json({ 
+                error: 'Failed to send verification email. Registration rolled back. Please try again.',
+                code: 'EMAIL_SEND_FAILED'
+            });
         }
         
         res.status(201).json({
@@ -95,7 +196,9 @@ exports.register = async (req, res) => {
     }
 };
 
-// Verify email code - Returns token for auto-login
+// ==============================================
+// VERIFY EMAIL FUNCTION
+// ==============================================
 exports.verifyEmail = async (req, res) => {
     let connection;
     try {
@@ -124,11 +227,7 @@ exports.verifyEmail = async (req, res) => {
         // If already verified, just log them in
         if (user.IS_VERIFIED === 1) {
             console.log('✅ User already verified, logging in:', email);
-            const token = jwt.sign(
-                { userId: user.USER_ID, email },
-                process.env.JWT_SECRET || 'FocusFlowSecretKey2024',
-                { expiresIn: '7d' }
-            );
+            const token = generateToken(user.USER_ID, email);
             
             return res.json({
                 success: true,
@@ -164,11 +263,7 @@ exports.verifyEmail = async (req, res) => {
         );
         
         // Generate JWT token for immediate login
-        const token = jwt.sign(
-            { userId: user.USER_ID, email },
-            process.env.JWT_SECRET || 'FocusFlowSecretKey2024',
-            { expiresIn: '7d' }
-        );
+        const token = generateToken(user.USER_ID, email);
         
         console.log('✅ Email verified successfully for:', email);
         
@@ -191,7 +286,9 @@ exports.verifyEmail = async (req, res) => {
     }
 };
 
-// Resend verification code
+// ==============================================
+// RESEND VERIFICATION CODE (UPDATED)
+// ==============================================
 exports.resendVerificationCode = async (req, res) => {
     let connection;
     try {
@@ -230,10 +327,14 @@ exports.resendVerificationCode = async (req, res) => {
             [verificationCode, expiresAt, email]
         );
         
-        const emailSent = await sendVerificationEmail(email, verificationCode);
+        // Send email with retry
+        const emailSent = await sendVerificationEmailWithRetry(email, verificationCode);
         
         if (!emailSent) {
-            return res.status(500).json({ error: 'Failed to send verification email.' });
+            return res.status(500).json({ 
+                error: 'Failed to send verification email. Please try again later.',
+                code: 'EMAIL_SEND_FAILED'
+            });
         }
         
         console.log('✅ New verification code sent to:', email);
@@ -251,7 +352,9 @@ exports.resendVerificationCode = async (req, res) => {
     }
 };
 
-// Login user (check if verified)
+// ==============================================
+// LOGIN FUNCTION
+// ==============================================
 exports.login = async (req, res) => {
     let connection;
     try {
@@ -294,11 +397,7 @@ exports.login = async (req, res) => {
             return res.status(401).json({ error: 'Invalid email or password.' });
         }
         
-        const token = jwt.sign(
-            { userId: user.USER_ID, email: user.EMAIL },
-            process.env.JWT_SECRET || 'FocusFlowSecretKey2024',
-            { expiresIn: '7d' }
-        );
+        const token = generateToken(user.USER_ID, user.EMAIL);
         
         console.log('✅ Login successful for:', email);
         
@@ -321,10 +420,8 @@ exports.login = async (req, res) => {
 };
 
 // ==============================================
-// PASSWORD RESET FUNCTIONS
+// FORGOT PASSWORD (UPDATED)
 // ==============================================
-
-// Forgot password - send reset code
 exports.forgotPassword = async (req, res) => {
     let connection;
     try {
@@ -350,7 +447,7 @@ exports.forgotPassword = async (req, res) => {
         
         const user = result.rows[0];
         const resetCode = generateVerificationCode();
-        const expiresAt = new Date(Date.now() + 10 * 60000); // 10 minutes
+        const expiresAt = new Date(Date.now() + 10 * 60000);
         
         // Store reset code in database
         await connection.execute(
@@ -358,11 +455,14 @@ exports.forgotPassword = async (req, res) => {
             [resetCode, expiresAt, email]
         );
         
-        // Send reset code via email
-        const emailSent = await sendPasswordResetCode(email, resetCode);
+        // Send reset code via email with retry
+        const emailSent = await sendResetEmailWithRetry(email, resetCode);
         
         if (!emailSent) {
-            return res.status(500).json({ error: 'Failed to send reset code. Please try again.' });
+            return res.status(500).json({ 
+                error: 'Failed to send reset code. Please try again later.',
+                code: 'EMAIL_SEND_FAILED'
+            });
         }
         
         console.log('✅ Password reset code sent to:', email);
@@ -381,7 +481,9 @@ exports.forgotPassword = async (req, res) => {
     }
 };
 
-// Verify reset code
+// ==============================================
+// VERIFY RESET CODE
+// ==============================================
 exports.verifyResetCode = async (req, res) => {
     let connection;
     try {
@@ -438,7 +540,9 @@ exports.verifyResetCode = async (req, res) => {
     }
 };
 
-// Reset password
+// ==============================================
+// RESET PASSWORD
+// ==============================================
 exports.resetPassword = async (req, res) => {
     let connection;
     try {
@@ -502,7 +606,9 @@ exports.resetPassword = async (req, res) => {
     }
 };
 
-// Get current user info
+// ==============================================
+// GET CURRENT USER
+// ==============================================
 exports.getMe = async (req, res) => {
     let connection;
     try {
@@ -536,7 +642,9 @@ exports.getMe = async (req, res) => {
     }
 };
 
-// Logout
+// ==============================================
+// LOGOUT
+// ==============================================
 exports.logout = async (req, res) => {
     res.json({ success: true, message: 'Logged out successfully.' });
 };

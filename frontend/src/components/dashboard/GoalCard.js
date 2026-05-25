@@ -1,45 +1,17 @@
-import React, { useState, useEffect } from "react";
-import { useApp } from "./AppContext";
-import { dashboardAPI, getToken, taskAPI } from "../services/api";
+// src/components/dashboard/GoalCard.js
+import React, { useState } from "react";
+import { useApp } from "../context/AppContext";
 
 export default function GoalCard() {
-  const { completedGoals, setCompletedGoals } = useApp();
-  const [loading, setLoading] = useState(true);
-  const [taskStats, setTaskStats] = useState({ total: 0, completed: 0, pending: 0 });
+  const { tasks, completedGoals } = useApp();
   const [isHovered, setIsHovered] = useState(false);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const token = getToken();
-        if (!token) {
-          setLoading(false);
-          return;
-        }
-        
-        const statsData = await dashboardAPI.getStats();
-        if (statsData && statsData.totalGoalsCompleted !== undefined) {
-          setCompletedGoals(statsData.totalGoalsCompleted);
-        }
-        
-        const tasks = await taskAPI.getAll();
-        const total = tasks.length;
-        const completed = tasks.filter(t => t.completed).length;
-        const pending = total - completed;
-        
-        setTaskStats({ total, completed, pending });
-        
-      } catch (error) {
-        console.error('Failed to fetch data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchData();
-  }, [setCompletedGoals]);
-
-  const completionPercentage = taskStats.total > 0 ? (taskStats.completed / taskStats.total) * 100 : 0;
+  // Calculate task stats from context data
+  const totalTasks = tasks.length;
+  const completed = tasks.filter(t => t.completed).length;
+  const pending = totalTasks - completed;
+  
+  const completionPercentage = totalTasks > 0 ? (completed / totalTasks) * 100 : 0;
   const pendingPercentage = 100 - completionPercentage;
   
   // Concentric Donut Chart parameters
@@ -71,14 +43,6 @@ export default function GoalCard() {
   const pendingRad = (pendingAngle - 90) * Math.PI / 180;
   const pendingTextX = center + (radius2 + 14) * Math.cos(pendingRad);
   const pendingTextY = center + (radius2 + 14) * Math.sin(pendingRad);
-
-  if (loading) {
-    return (
-      <div className="relative bg-[#f0f2f5] p-6 rounded-[40px] min-w-[320px] max-w-[450px] min-h-[400px] shadow-[20px_20px_60px_#d1d9e6,-20px_-20px_60px_#ffffff] transition-all duration-500 overflow-hidden text-center group hover:-translate-y-2 flex flex-col justify-center items-center">
-        <div className="w-12 h-12 border-4 border-focusPurple border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
-  }
 
   return (
     <div 
@@ -185,9 +149,9 @@ export default function GoalCard() {
           
           {/* Center content - Numbers only (removed labels) */}
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-3xl font-black text-focusPurple">{taskStats.completed}</span>
+            <span className="text-3xl font-black text-focusPurple">{completed}</span>
             <div className="w-8 h-px bg-gray-200 my-1"></div>
-            <span className="text-base font-bold text-orange-500">{taskStats.pending}</span>
+            <span className="text-base font-bold text-orange-500">{pending}</span>
           </div>
         </div>
       </div>

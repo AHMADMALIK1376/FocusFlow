@@ -1,5 +1,7 @@
+// src/components/auth/ForgotPasswordForm.js
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";  // Link should be here
+import { Link, useNavigate } from "react-router-dom";
+import { authAPI } from "../../services/api";
 
 export default function ForgotPasswordForm() {
   const navigate = useNavigate();
@@ -15,16 +17,10 @@ export default function ForgotPasswordForm() {
     setSuccess("");
     
     try {
-      const response = await fetch('http://localhost:5555/api/auth/forgot-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      });
+      const data = await authAPI.forgotPassword(email);
       
-      const data = await response.json();
-      
-      if (response.ok) {
-        setSuccess(data.message);
+      if (data.success) {
+        setSuccess(data.message || "Reset code sent to your email!");
         sessionStorage.setItem('resetEmail', email);
         setTimeout(() => {
           navigate('/reset-password-verify');
@@ -33,7 +29,8 @@ export default function ForgotPasswordForm() {
         setError(data.error || 'Failed to send reset code');
       }
     } catch (err) {
-      setError('Network error. Please try again.');
+      console.error('Forgot password error:', err);
+      setError(err.message || 'Network error. Please try again.');
     } finally {
       setLoading(false);
     }

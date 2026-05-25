@@ -1,49 +1,135 @@
-﻿# Dependencies
+﻿# ==============================================
+# DEPENDENCIES
+# ==============================================
 node_modules/
-npm-debug.log
-yarn-error.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+.pnpm-debug.log*
 
-# Environment variables
+# ==============================================
+# ENVIRONMENT VARIABLES (CRITICAL - NEVER COMMIT!)
+# ==============================================
 .env
 .env.local
+.env.production
+.env.development
+.env.test
 .env.*.local
+.env.example  # Remove this line if you want to commit the example
 
-# Build outputs
+# ==============================================
+# BUILD OUTPUTS
+# ==============================================
 dist/
 build/
 *.tgz
+*.tar.gz
 
-# Logs
+# ==============================================
+# LOGS
+# ==============================================
 logs/
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
 
-# OS files
+# ==============================================
+# OPERATING SYSTEM FILES
+# ==============================================
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
+*.AppleDouble
+*.LSOverride
+Icon
 
-# IDE files
+# ==============================================
+# IDE FILES
+# ==============================================
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
+.idea_modules/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
 
-# Testing
+# ==============================================
+# TESTING
+# ==============================================
 coverage/
+.nyc_output/
+.jest/
+*.test.js.snap
+*.spec.js.snap
 
-# Runtime data
-pids
+# ==============================================
+# RUNTIME DATA
+# ==============================================
+pids/
 *.pid
 *.seed
 *.pid.lock
 
-# Optional npm cache
-.npm
-
-# Optional REPL history
-.node_repl_history
-
-# Output of 'npm pack'
-*.tgz
-
-# Yarn Integrity file
+# ==============================================
+# CACHE FILES
+# ==============================================
+.npm/
+.npm-cache/
 .yarn-integrity
+.eslintcache
+.stylelintcache
+.parcel-cache/
+
+# ==============================================
+# DATABASE FILES (Local development)
+# ==============================================
+*.db
+*.sqlite
+*.sqlite3
+*.dump
+
+# ==============================================
+# ORACLE WALLET
+# ==============================================
+wallet/
+cwallet.sso
+
+# ==============================================
+# MISCELLANEOUS
+# ==============================================
+.repl_history
+.node_repl_history
+*.bak
+*.backup
+*.old
+*.orig
+*.tmp
+*.temp
+
+# ==============================================
+# SECURITY SENSITIVE FILES
+# ==============================================
+*.pem
+*.key
+*.crt
+*.csr
+*.pfx
+*.p12
+.secrets/
+*.secret

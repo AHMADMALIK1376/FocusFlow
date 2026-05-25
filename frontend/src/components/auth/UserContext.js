@@ -1,73 +1,6 @@
+// src/components/auth/UserContext.js
 import React, { createContext, useContext, useState } from "react";
-
-// API Service functions directly in UserContext
-const API_URL = 'http://localhost:5555/api';
-
-// Helper function to handle responses
-const handleResponse = async (response) => {
-    const data = await response.json();
-    if (!response.ok) {
-        throw new Error(data.error || 'Something went wrong');
-    }
-    return data;
-};
-
-// Store token in localStorage
-export const setToken = (token) => {
-    if (token) {
-        localStorage.setItem('focus_token', token);
-    } else {
-        localStorage.removeItem('focus_token');
-    }
-};
-
-// Get token from localStorage
-export const getToken = () => {
-    return localStorage.getItem('focus_token');
-};
-
-// Auth API functions
-export const authAPI = {
-    register: async (email, password, fullName) => {
-        const response = await fetch(`${API_URL}/auth/register`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password, fullName })
-        });
-        return handleResponse(response);
-    },
-    
-    login: async (email, password) => {
-        const response = await fetch(`${API_URL}/auth/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
-        });
-        return handleResponse(response);
-    },
-    
-    verifyEmail: async (email, code) => {
-        const response = await fetch(`${API_URL}/auth/verify-email`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, code })
-        });
-        return handleResponse(response);
-    },
-    
-    resendVerification: async (email) => {
-        const response = await fetch(`${API_URL}/auth/resend-verification`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email })
-        });
-        return handleResponse(response);
-    },
-    
-    logout: () => {
-        setToken(null);
-    }
-};
+import { authAPI, setToken as setTokenAPI, getToken as getTokenAPI } from "../../services/api";
 
 // Create Context
 export const UserContext = createContext();
@@ -102,7 +35,7 @@ export const UserProvider = ({ children }) => {
         }
     };
 
-    // Login function - calls real API with verification check
+    // Login function - uses authAPI from centralized service
     const login = async (email, password) => {
         setIsLoading(true);
         setError(null);
@@ -112,13 +45,12 @@ export const UserProvider = ({ children }) => {
             const response = await authAPI.login(email, password);
             
             if (response.success && response.token) {
-                setToken(response.token);
+                setTokenAPI(response.token);
                 const name = response.user?.fullName || email.split('@')[0];
                 setUserName(name);
                 setUserEmail(email);
                 return { success: true };
             } else {
-                // Check if error is due to unverified email
                 if (response.requiresVerification || (response.error && response.error.includes('verify'))) {
                     setRequiresVerification(true);
                     return { 
@@ -139,7 +71,7 @@ export const UserProvider = ({ children }) => {
         }
     };
 
-    // Register function - sends verification email
+    // Register function - uses authAPI from centralized service
     const register = async (email, password, fullName) => {
         setIsLoading(true);
         setError(null);
@@ -149,7 +81,6 @@ export const UserProvider = ({ children }) => {
             const response = await authAPI.register(email, password, fullName);
             
             if (response.success) {
-                // Check if verification is required
                 if (response.requiresVerification) {
                     setRequiresVerification(true);
                     return { 
@@ -160,9 +91,8 @@ export const UserProvider = ({ children }) => {
                     };
                 }
                 
-                // If no verification required (legacy or already verified)
                 if (response.token) {
-                    setToken(response.token);
+                    setTokenAPI(response.token);
                     setUserName(fullName || email.split('@')[0]);
                     setUserEmail(email);
                 }
@@ -180,7 +110,7 @@ export const UserProvider = ({ children }) => {
         }
     };
 
-    // Verify email function - AUTOMATICALLY LOGS USER IN
+    // Verify email function - uses authAPI from centralized service
     const verifyEmail = async (email, code) => {
         setIsLoading(true);
         setError(null);
@@ -189,13 +119,10 @@ export const UserProvider = ({ children }) => {
             const response = await authAPI.verifyEmail(email, code);
             
             if (response.success && response.token) {
-                // Store token and user info
-                setToken(response.token);
+                setTokenAPI(response.token);
                 const name = response.user?.fullName || email.split('@')[0];
                 setUserName(name);
                 setUserEmail(email);
-                
-                // Clear verification flag
                 setRequiresVerification(false);
                 
                 return { 
@@ -216,7 +143,7 @@ export const UserProvider = ({ children }) => {
         }
     };
 
-    // Resend verification code
+    // Resend verification code - uses authAPI from centralized service
     const resendVerificationCode = async (email) => {
         setIsLoading(true);
         setError(null);
@@ -239,10 +166,79 @@ export const UserProvider = ({ children }) => {
         }
     };
 
+    // Forgot password - uses authAPI from centralized service
+    const forgotPassword = async (email) => {
+        setIsLoading(true);
+        setError(null);
+        
+        try {
+            const response = await authAPI.forgotPassword(email);
+            
+            if (response.success) {
+                return { success: true, message: response.message };
+            } else {
+                setError(response.error || "Failed to send reset code");
+                return { success: false, error: response.error };
+            }
+        } catch (err) {
+            const errorMsg = err.message || "Network error. Please try again.";
+            setError(errorMsg);
+            return { success: false, error: errorMsg };
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Verify reset code - uses authAPI from centralized service
+    const verifyResetCode = async (email, code) => {
+        setIsLoading(true);
+        setError(null);
+        
+        try {
+            const response = await authAPI.verifyResetCode(email, code);
+            
+            if (response.success) {
+                return { success: true, message: response.message };
+            } else {
+                setError(response.error || "Invalid code");
+                return { success: false, error: response.error };
+            }
+        } catch (err) {
+            const errorMsg = err.message || "Network error. Please try again.";
+            setError(errorMsg);
+            return { success: false, error: errorMsg };
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Reset password - uses authAPI from centralized service
+    const resetPassword = async (email, code, newPassword) => {
+        setIsLoading(true);
+        setError(null);
+        
+        try {
+            const response = await authAPI.resetPassword(email, code, newPassword);
+            
+            if (response.success) {
+                return { success: true, message: response.message };
+            } else {
+                setError(response.error || "Failed to reset password");
+                return { success: false, error: response.error };
+            }
+        } catch (err) {
+            const errorMsg = err.message || "Network error. Please try again.";
+            setError(errorMsg);
+            return { success: false, error: errorMsg };
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     // Logout function
     const logout = () => {
         authAPI.logout();
-        setToken(null);
+        setTokenAPI(null);
         setUserName(null);
         setUserEmail(null);
         setError(null);
@@ -251,7 +247,7 @@ export const UserProvider = ({ children }) => {
 
     // Check if user is authenticated
     const isAuthenticated = () => {
-        return !!getToken() && !!userName;
+        return !!getTokenAPI() && !!userName;
     };
 
     // Clear error
@@ -271,6 +267,9 @@ export const UserProvider = ({ children }) => {
                 register,
                 verifyEmail,
                 resendVerificationCode,
+                forgotPassword,
+                verifyResetCode,
+                resetPassword,
                 logout,
                 setUserName,
                 isAuthenticated,

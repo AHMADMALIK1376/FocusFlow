@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import Lottie from "lottie-react"; 
-import Logo from "../components/Logo";
+import Logo from "../components/layout/Logo";
 
 import workingAnimationData from "../assets/animation/Man Working on Laptop in Office.json"; 
 import securityAnimationData from "../assets/animation/Profile Password Unlock.json"; 

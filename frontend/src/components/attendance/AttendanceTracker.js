@@ -1,80 +1,92 @@
+// src/components/attendance/AttendanceTracker.js
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { getToken } from "../services/api";
+import { useApp } from "../context/AppContext";
+import { attendanceAPI } from "../../services/api";
 
 export default function AttendanceTracker() {
   const navigate = useNavigate();
+  const { attendanceSummary, setAttendanceSummary } = useApp();
   const [subjects, setSubjects] = useState([]);
   const [dashboard, setDashboard] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [selectedSubject, setSelectedSubject] = useState(null);
   const [attendanceData, setAttendanceData] = useState(null);
   const [trendData, setTrendData] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [viewMode, setViewMode] = useState('summary');
 
+  // Use data from context if available, otherwise fetch
   useEffect(() => {
-    const fetchAllData = async () => {
+    const loadAttendanceData = async () => {
+      setLoading(true);
+      setError(null);
       try {
-        await Promise.all([fetchSummary(), fetchDashboard()]);
+        // If we already have attendance data in context, use it
+        if (attendanceSummary && attendanceSummary.length > 0) {
+          setSubjects(attendanceSummary);
+          await fetchDashboard();
+        } else {
+          await Promise.all([fetchSummary(), fetchDashboard()]);
+        }
       } catch (error) {
         console.error('Failed to fetch data:', error);
+        setError(error.message || 'Failed to load attendance data');
       } finally {
         setLoading(false);
       }
     };
     
-    fetchAllData();
+    loadAttendanceData();
     // eslint-disable-next-line
   }, []);
 
   const fetchSummary = async () => {
     try {
-      const token = getToken();
-      const response = await fetch('http://localhost:5555/api/attendance/summary', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await response.json();
-      setSubjects(data);
+      const data = await attendanceAPI.getSummary();
+      setSubjects(data || []);
+      // Update context for future use
+      if (setAttendanceSummary) {
+        setAttendanceSummary(data || []);
+      }
     } catch (error) {
       console.error('Failed to fetch summary:', error);
+      throw error;
     }
   };
 
   const fetchDashboard = async () => {
     try {
-      const token = getToken();
-      const response = await fetch('http://localhost:5555/api/attendance/dashboard', {
-        headers: { 'Authorization': `Bearer ${token}` }
+      const data = await attendanceAPI.getDashboard();
+      setDashboard(data || {
+        totalSubjects: 0,
+        overallPercentage: 0,
+        subjectsSafe: 0,
+        subjectsAtRisk: 0,
+        totalEarned: 0,
+        totalPossible: 0
       });
-      const data = await response.json();
-      setDashboard(data);
     } catch (error) {
       console.error('Failed to fetch dashboard:', error);
+      throw error;
     }
   };
 
   const fetchRecords = async (entryId) => {
     try {
-      const token = getToken();
-      const response = await fetch(`http://localhost:5555/api/attendance/records/${entryId}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await response.json();
+      const data = await attendanceAPI.getRecords(entryId);
       setAttendanceData(data);
     } catch (error) {
       console.error('Failed to fetch records:', error);
+      alert(error.message || 'Failed to load attendance records');
     }
   };
 
   const fetchTrend = async (entryId) => {
     try {
-      const token = getToken();
-      const response = await fetch(`http://localhost:5555/api/attendance/trend/${entryId}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await response.json();
-      setTrendData(data);
+      const data = await attendanceAPI.getTrend(entryId);
+      setTrendData(data || []);
     } catch (error) {
       console.error('Failed to fetch trend:', error);
     }
@@ -82,51 +94,41 @@ export default function AttendanceTracker() {
 
   const updateAttendance = async (entryId, classDate, status) => {
     try {
-      const token = getToken();
       const pointsEarned = status === 'Present' ? 2 : 0;
-      await fetch(`http://localhost:5555/api/attendance/${entryId}/${classDate}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ status, pointsEarned, remarks: '' })
-      });
+      await attendanceAPI.updateAttendance(entryId, classDate, status, pointsEarned, '');
       
-      fetchSummary();
-      fetchDashboard();
+      // Refresh data
+      await Promise.all([fetchSummary(), fetchDashboard()]);
+      
       if (selectedSubject) {
-        fetchRecords(selectedSubject.entryId);
-        fetchTrend(selectedSubject.entryId);
+        await Promise.all([
+          fetchRecords(selectedSubject.entryId),
+          fetchTrend(selectedSubject.entryId)
+        ]);
       }
     } catch (error) {
       console.error('Failed to update attendance:', error);
+      alert(error.message || 'Failed to update attendance');
     }
   };
 
   const generateSessions = async (entryId) => {
     try {
-      const token = getToken();
-      const response = await fetch(`http://localhost:5555/api/attendance/generate/${entryId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      const data = await response.json();
-      alert(data.message);
-      fetchSummary();
-      fetchDashboard();
+      const data = await attendanceAPI.generateSessions(entryId);
+      alert(data.message || 'Sessions generated successfully!');
+      await Promise.all([fetchSummary(), fetchDashboard()]);
     } catch (error) {
       console.error('Failed to generate sessions:', error);
+      alert(error.message || 'Failed to generate sessions');
     }
   };
 
   const handleSubjectClick = (subject) => {
     setSelectedSubject(subject);
-    fetchRecords(subject.entryId);
-    fetchTrend(subject.entryId);
+    Promise.all([
+      fetchRecords(subject.entryId),
+      fetchTrend(subject.entryId)
+    ]);
     setShowModal(true);
     setViewMode('summary');
   };
@@ -201,6 +203,21 @@ export default function AttendanceTracker() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="max-w-7xl mx-auto p-6">
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-center">
+          <span className="text-4xl mb-3 block">⚠️</span>
+          <h2 className="text-xl font-black text-red-600 mb-2">Error Loading Attendance</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button onClick={() => window.location.reload()} className="magic-btn">
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto p-6">
       {/* Dashboard Overview Cards */}
@@ -208,7 +225,7 @@ export default function AttendanceTracker() {
         <div className="bg-white rounded-2xl p-5 shadow-[8px_8px_16px_#d1d9e6,-8px_-8px_16px_#ffffff]">
           <div className="flex items-center justify-between mb-2">
             <span className="text-2xl">📚</span>
-            <span className="text-2xl font-black text-focusPurple">{dashboard?.totalSubjects || 0}</span>
+            <span className="text-2xl font-black text-focusPurple">{dashboard?.totalSubjects || subjects.length || 0}</span>
           </div>
           <p className="text-gray-600 text-xs font-bold uppercase tracking-wider">Subjects</p>
         </div>

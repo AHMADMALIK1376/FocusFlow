@@ -1,5 +1,7 @@
 const { getConnection } = require('../config/database');
+const { generateId } = require('../utils/helpers');
 const nodemailer = require('nodemailer');
+const cronLogger = require('./cronLogger');
 
 const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -24,12 +26,15 @@ const calculateAttendance = async (connection, userId, entryId) => {
     );
     
     const row = result.rows[0];
-    const totalPastSessions = row.ATTENDED_SESSIONS + row.ABSENT_SESSIONS;
+    const totalPastSessions = (row.ATTENDED_SESSIONS || 0) + (row.ABSENT_SESSIONS || 0);
     const pointsEarned = row.TOTAL_EARNED || 0;
     const pointsPossibleForPast = totalPastSessions * 2;
     const percentage = pointsPossibleForPast > 0 ? (pointsEarned / pointsPossibleForPast) * 100 : 0;
     
-    // Update summary table
+    // Use generateId() instead of SYS_GUID() for consistency
+    const summaryId = generateId();
+    
+    // Update summary table using MERGE with generateId()
     await connection.execute(
         `MERGE INTO ATTENDANCE_SUMMARY dest
          USING (SELECT :userId as user_id, :entryId as entry_id FROM DUAL) src
@@ -49,11 +54,11 @@ const calculateAttendance = async (connection, userId, entryId) => {
              absent_sessions, upcoming_sessions, total_points_earned, total_points_possible, 
              percentage, is_warning)
          VALUES
-            (SYS_GUID(), :userId, :entryId, :totalSessions, :attendedSessions,
+            (:summaryId, :userId, :entryId, :totalSessions, :attendedSessions,
              :absentSessions, :upcomingSessions, :totalEarned, :totalPossible, 
              :percentage, CASE WHEN :percentage < 60 THEN 1 ELSE 0 END)`,
         {
-            userId, entryId,
+            userId, entryId, summaryId,
             totalSessions: row.TOTAL_SESSIONS,
             attendedSessions: row.ATTENDED_SESSIONS,
             absentSessions: row.ABSENT_SESSIONS,
@@ -77,20 +82,26 @@ const calculateAttendance = async (connection, userId, entryId) => {
 
 // =====================================================
 // AUTO-MARK ABSENT - Runs at midnight every day
-// Marks all pending past classes as Absent
 // =====================================================
 const autoMarkAbsent = async () => {
+    const jobName = 'Auto-Mark Absent';
     let connection;
+    let markedCount = 0;
+    let uniqueCount = 0;
+    
+    cronLogger.start(jobName);
+    
     try {
         connection = await getConnection();
         
-        // Get today's date at midnight
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         
-        console.log('🕐 [AUTO-ABSENT] Checking for unmarked classes before:', today.toISOString().split('T')[0]);
+        cronLogger.info(jobName, `Checking for unmarked classes before: ${today.toISOString().split('T')[0]}`);
         
-        // Find all pending records where class_date is before today
+        // Start transaction
+        await connection.execute('BEGIN TRANSACTION');
+        
         const pendingResult = await connection.execute(
             `SELECT record_id, user_id, entry_id, TO_CHAR(class_date, 'YYYY-MM-DD') as class_date_str
              FROM ATTENDANCE_RECORDS 
@@ -100,13 +111,14 @@ const autoMarkAbsent = async () => {
         );
         
         if (pendingResult.rows.length === 0) {
-            console.log('✅ [AUTO-ABSENT] No pending classes to mark as absent');
+            cronLogger.info(jobName, 'No pending classes to mark as absent');
+            await connection.execute('COMMIT');
+            cronLogger.end(jobName, 0, { message: 'No pending classes found' });
             return;
         }
         
-        console.log(`📋 [AUTO-ABSENT] Found ${pendingResult.rows.length} pending classes to mark as absent`);
+        cronLogger.info(jobName, `Found ${pendingResult.rows.length} pending classes to mark as absent`);
         
-        // Mark all found records as Absent
         const updateResult = await connection.execute(
             `UPDATE ATTENDANCE_RECORDS 
              SET status = 'Absent', points_earned = 0
@@ -115,9 +127,10 @@ const autoMarkAbsent = async () => {
             { today: today }
         );
         
-        console.log(`✅ [AUTO-ABSENT] Marked ${updateResult.rowsAffected} classes as Absent`);
+        markedCount = updateResult.rowsAffected;
+        cronLogger.info(jobName, `Marked ${markedCount} classes as Absent`);
         
-        // Get unique user/entry combinations to recalculate summaries
+        // Get unique user/entry combinations
         const uniqueEntries = new Map();
         pendingResult.rows.forEach(row => {
             const key = `${row.USER_ID}|${row.ENTRY_ID}`;
@@ -126,27 +139,27 @@ const autoMarkAbsent = async () => {
             }
         });
         
-        console.log(`🔄 [AUTO-ABSENT] Recalculating ${uniqueEntries.size} attendance summaries...`);
+        uniqueCount = uniqueEntries.size;
+        cronLogger.info(jobName, `Recalculating ${uniqueCount} attendance summaries...`);
         
-        // Recalculate attendance for each affected subject
+        let warningsSent = 0;
+        
         for (const [key, { userId, entryId }] of uniqueEntries) {
             await calculateAttendance(connection, userId, entryId);
             
-            // Get subject name for logging
             const subjectResult = await connection.execute(
                 `SELECT subject_name FROM CALENDAR_ENTRIES WHERE entry_id = :entryId`,
                 { entryId }
             );
             const subjectName = subjectResult.rows[0]?.SUBJECT_NAME || 'Unknown';
             
-            // Get user email for logging
             const userResult = await connection.execute(
-                `SELECT email FROM USERS WHERE user_id = :userId`,
+                `SELECT email, full_name FROM USERS WHERE user_id = :userId`,
                 { userId }
             );
             const userEmail = userResult.rows[0]?.EMAIL || 'Unknown';
+            const userName = userResult.rows[0]?.FULL_NAME || userEmail.split('@')[0];
             
-            // Check if below 60% to send warning
             const summaryResult = await connection.execute(
                 `SELECT percentage, is_warning, total_points_earned, total_points_possible 
                  FROM ATTENDANCE_SUMMARY 
@@ -156,26 +169,21 @@ const autoMarkAbsent = async () => {
             
             if (summaryResult.rows.length > 0) {
                 const summary = summaryResult.rows[0];
-                console.log(`   📊 ${subjectName} (${userEmail}): ${summary.PERCENTAGE.toFixed(1)}%`);
+                cronLogger.info(jobName, `${subjectName} (${userEmail}): ${summary.PERCENTAGE.toFixed(1)}%`);
                 
                 if (summary.PERCENTAGE < 60 && summary.IS_WARNING === 0) {
-                    console.log(`   ⚠️ ${subjectName} below 60%! Sending warning email...`);
-                    
-                    const fullUserResult = await connection.execute(
-                        `SELECT full_name FROM USERS WHERE user_id = :userId`,
-                        { userId }
-                    );
+                    cronLogger.warn(jobName, `${subjectName} below 60%! Sending warning email...`);
+                    warningsSent++;
                     
                     await sendAttendanceWarning(
                         userEmail,
-                        fullUserResult.rows[0]?.FULL_NAME || userEmail.split('@')[0],
+                        userName,
                         subjectName,
                         summary.PERCENTAGE,
                         summary.TOTAL_POINTS_EARNED || 0,
                         summary.TOTAL_POINTS_POSSIBLE || 0
                     );
                     
-                    // Mark warning as sent
                     await connection.execute(
                         `UPDATE ATTENDANCE_SUMMARY SET is_warning = 1 WHERE user_id = :userId AND entry_id = :entryId`,
                         { userId, entryId }
@@ -185,11 +193,12 @@ const autoMarkAbsent = async () => {
         }
         
         await connection.execute('COMMIT');
-        
-        console.log(`✅ [AUTO-ABSENT] Complete: ${updateResult.rowsAffected} classes marked absent, ${uniqueEntries.size} summaries updated`);
+        cronLogger.end(jobName, markedCount, { 
+            message: `Marked ${markedCount} classes absent, updated ${uniqueCount} summaries, sent ${warningsSent} warnings`
+        });
         
     } catch (err) {
-        console.error('❌ [AUTO-ABSENT] Error:', err.message);
+        cronLogger.error(jobName, err, { stack: err.stack });
         if (connection) {
             try { await connection.execute('ROLLBACK'); } catch (e) {}
         }
@@ -202,6 +211,8 @@ const autoMarkAbsent = async () => {
 
 // Send attendance warning email
 const sendAttendanceWarning = async (userEmail, userName, subjectName, percentage, currentPoints, maxPoints) => {
+    const jobName = 'Send Attendance Warning';
+    
     const mailOptions = {
         from: process.env.EMAIL_USER,
         to: userEmail,
@@ -242,17 +253,22 @@ const sendAttendanceWarning = async (userEmail, userName, subjectName, percentag
     
     try {
         await transporter.sendMail(mailOptions);
-        console.log(`✅ Attendance warning sent to ${userEmail} for ${subjectName}`);
+        cronLogger.info(jobName, `Warning sent to ${userEmail} for ${subjectName}`);
         return true;
     } catch (error) {
-        console.error('Error sending attendance warning:', error);
+        cronLogger.error(jobName, error);
         return false;
     }
 };
 
 // Check all subjects for low attendance
 const checkLowAttendance = async () => {
+    const jobName = 'Check Low Attendance';
     let connection;
+    let warningsSent = 0;
+    
+    cronLogger.start(jobName);
+    
     try {
         connection = await getConnection();
         
@@ -275,8 +291,10 @@ const checkLowAttendance = async () => {
              AND u.is_verified = 1`
         );
         
+        cronLogger.info(jobName, `Found ${result.rows.length} subjects below 60% threshold`);
+        
         for (const row of result.rows) {
-            await sendAttendanceWarning(
+            const emailSent = await sendAttendanceWarning(
                 row.EMAIL,
                 row.FULL_NAME || row.EMAIL.split('@')[0],
                 row.SUBJECT_NAME,
@@ -285,19 +303,29 @@ const checkLowAttendance = async () => {
                 row.TOTAL_POINTS_POSSIBLE
             );
             
-            await connection.execute(
-                `UPDATE ATTENDANCE_SUMMARY SET is_warning = 1 WHERE summary_id = :id`,
-                [row.SUMMARY_ID]
-            );
+            if (emailSent) {
+                warningsSent++;
+                await connection.execute(
+                    `UPDATE ATTENDANCE_SUMMARY SET is_warning = 1 WHERE summary_id = :id`,
+                    [row.SUMMARY_ID]
+                );
+            }
         }
         
-        console.log(`✅ Checked attendance warnings - ${result.rows.length} warnings sent`);
+        cronLogger.end(jobName, warningsSent, { 
+            message: `Sent ${warningsSent} attendance warnings`
+        });
         
     } catch (err) {
-        console.error('Error checking attendance:', err);
+        cronLogger.error(jobName, err, { stack: err.stack });
     } finally {
         if (connection) await connection.close();
     }
 };
 
-module.exports = { calculateAttendance, checkLowAttendance, sendAttendanceWarning, autoMarkAbsent };
+module.exports = { 
+    calculateAttendance, 
+    checkLowAttendance, 
+    sendAttendanceWarning, 
+    autoMarkAbsent 
+};

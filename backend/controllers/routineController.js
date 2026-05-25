@@ -12,31 +12,38 @@ exports.getRoutines = async (req, res) => {
              FROM DAILY_ROUTINE 
              WHERE user_id = :userId 
              ORDER BY activity_time ASC`,
-            [req.user.userId]
+            { userId: req.user.userId }
         );
         
         const routines = [];
         
         for (const routine of result.rows) {
-            // Get repeat days
+            // ✅ Get days with per-day colors
             const daysResult = await connection.execute(
-                `SELECT day_of_week FROM ROUTINE_REPEAT_DAYS 
+                `SELECT day_of_week, NVL(color, '#6366f1') as color 
+                 FROM ROUTINE_REPEAT_DAYS 
                  WHERE routine_id = :routineId`,
-                [routine.ROUTINE_ID]
+                { routineId: routine.ROUTINE_ID }
             );
             
-            // Get completions
             const completionsResult = await connection.execute(
                 `SELECT completion_date FROM ROUTINE_COMPLETIONS 
                  WHERE routine_id = :routineId AND user_id = :userId`,
-                [routine.ROUTINE_ID, req.user.userId]
+                { routineId: routine.ROUTINE_ID, userId: req.user.userId }
             );
+            
+            // Build dayColors map: { "Monday": "#ff0000", "Tuesday": "#00ff00" }
+            const dayColors = {};
+            daysResult.rows.forEach(d => {
+                dayColors[d.DAY_OF_WEEK] = d.COLOR;
+            });
             
             routines.push({
                 id: routine.ROUTINE_ID,
                 activity: routine.ACTIVITY_NAME,
                 time: routine.ACTIVITY_TIME,
                 repeatOn: daysResult.rows.map(d => d.DAY_OF_WEEK),
+                dayColors: dayColors, // ✅ Per-day colors
                 completedDays: completionsResult.rows.map(c => 
                     c.COMPLETION_DATE.toISOString().split('T')[0]
                 )
@@ -53,20 +60,18 @@ exports.getRoutines = async (req, res) => {
     }
 };
 
-// Get today's routine with completion status - FIXED VERSION
+// Get today's routine with completion status
 exports.getTodayRoutine = async (req, res) => {
     let connection;
     try {
         const todayName = getDayOfWeek();
         const todayStr = today();
         
-        console.log(`📋 Fetching today's routine for user: ${req.user.userId}, day: ${todayName}`);
-        
         connection = await getConnection();
         
-        // FIXED: Using named bind parameters with correct object syntax
         const result = await connection.execute(
-            `SELECT r.routine_id, r.activity_name, r.activity_time,
+            `SELECT r.routine_id, r.activity_name, r.activity_time, 
+                    NVL(rd.color, '#6366f1') as color,
                     NVL((
                         SELECT 1 FROM ROUTINE_COMPLETIONS rc 
                         WHERE rc.routine_id = r.routine_id 
@@ -78,17 +83,14 @@ exports.getTodayRoutine = async (req, res) => {
              WHERE r.user_id = :userId 
              AND rd.day_of_week = :todayName
              ORDER BY r.activity_time ASC`,
-            {
-                todayStr: todayStr,
-                userId: req.user.userId,
-                todayName: todayName
-            }
+            { todayStr, userId: req.user.userId, todayName }
         );
         
         const routines = result.rows.map(row => ({
             id: row.ROUTINE_ID,
             activity: row.ACTIVITY_NAME,
             time: row.ACTIVITY_TIME,
+            color: row.COLOR,
             completed: row.IS_COMPLETED === 1
         }));
         
@@ -106,30 +108,29 @@ exports.getTodayRoutine = async (req, res) => {
 exports.createRoutine = async (req, res) => {
     let connection;
     try {
-        const { activity, time, repeatOn } = req.body;
+        const { activity, time, repeatOn, dayColors } = req.body;
         
         if (!activity || !time || !repeatOn || repeatOn.length === 0) {
             return res.status(400).json({ error: 'Activity, time, and repeat days are required.' });
         }
         
         const routineId = generateId();
-        
         connection = await getConnection();
         
-        // Insert routine
         await connection.execute(
             `INSERT INTO DAILY_ROUTINE (routine_id, user_id, activity_name, activity_time) 
              VALUES (:routineId, :userId, :activity, :time)`,
-            [routineId, req.user.userId, activity, time]
+            { routineId, userId: req.user.userId, activity, time }
         );
         
-        // Insert repeat days
+        // ✅ Insert days with per-day colors
         for (const day of repeatOn) {
             const dayId = generateId();
+            const dayColor = (dayColors && dayColors[day]) || '#6366f1';
             await connection.execute(
-                `INSERT INTO ROUTINE_REPEAT_DAYS (repeat_day_id, routine_id, day_of_week) 
-                 VALUES (:dayId, :routineId, :day)`,
-                [dayId, routineId, day]
+                `INSERT INTO ROUTINE_REPEAT_DAYS (repeat_day_id, routine_id, day_of_week, color) 
+                 VALUES (:dayId, :routineId, :day, :color)`,
+                { dayId, routineId, day, color: dayColor }
             );
         }
         
@@ -140,6 +141,7 @@ exports.createRoutine = async (req, res) => {
                 activity,
                 time,
                 repeatOn,
+                dayColors: dayColors || {},
                 completedDays: []
             }
         });
@@ -152,26 +154,77 @@ exports.createRoutine = async (req, res) => {
     }
 };
 
+// Update a routine
+exports.updateRoutine = async (req, res) => {
+    let connection;
+    try {
+        const { id } = req.params;
+        const { activity, time, repeatOn, dayColors } = req.body;
+        
+        connection = await getConnection();
+        
+        const checkResult = await connection.execute(
+            `SELECT routine_id FROM DAILY_ROUTINE WHERE routine_id = :id AND user_id = :userId`,
+            { id, userId: req.user.userId }
+        );
+        
+        if (checkResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Routine not found' });
+        }
+        
+        await connection.execute(
+            `UPDATE DAILY_ROUTINE 
+             SET activity_name = :activity, activity_time = :time 
+             WHERE routine_id = :id AND user_id = :userId`,
+            { activity, time, id, userId: req.user.userId }
+        );
+        
+        // ✅ Update days with per-day colors
+        if (repeatOn && repeatOn.length > 0) {
+            // Delete existing days
+            await connection.execute(
+                `DELETE FROM ROUTINE_REPEAT_DAYS WHERE routine_id = :id`,
+                { id }
+            );
+            
+            // Re-insert with colors
+            for (const day of repeatOn) {
+                const dayId = generateId();
+                const dayColor = (dayColors && dayColors[day]) || '#6366f1';
+                await connection.execute(
+                    `INSERT INTO ROUTINE_REPEAT_DAYS (repeat_day_id, routine_id, day_of_week, color) 
+                     VALUES (:dayId, :id, :day, :color)`,
+                    { dayId, id, day, color: dayColor }
+                );
+            }
+        }
+        
+        await connection.execute('COMMIT');
+        res.json({ success: true, message: 'Routine updated successfully' });
+        
+    } catch (err) {
+        console.error('Update routine error:', err);
+        if (connection) await connection.execute('ROLLBACK');
+        res.status(500).json({ error: 'Failed to update routine' });
+    } finally {
+        if (connection) await connection.close();
+    }
+};
+
 // Delete a routine
 exports.deleteRoutine = async (req, res) => {
     let connection;
     try {
         const { routineId } = req.params;
-        
         connection = await getConnection();
-        
         const result = await connection.execute(
-            `DELETE FROM DAILY_ROUTINE 
-             WHERE routine_id = :routineId AND user_id = :userId`,
-            [routineId, req.user.userId]
+            `DELETE FROM DAILY_ROUTINE WHERE routine_id = :routineId AND user_id = :userId`,
+            { routineId, userId: req.user.userId }
         );
-        
         if (result.rowsAffected === 0) {
             return res.status(404).json({ error: 'Routine not found.' });
         }
-        
         res.json({ success: true, message: 'Routine deleted.' });
-        
     } catch (err) {
         console.error('Delete routine error:', err);
         res.status(500).json({ error: 'Failed to delete routine.' });
@@ -185,14 +238,8 @@ exports.deleteAllRoutines = async (req, res) => {
     let connection;
     try {
         connection = await getConnection();
-        
-        await connection.execute(
-            `DELETE FROM DAILY_ROUTINE WHERE user_id = :userId`,
-            [req.user.userId]
-        );
-        
+        await connection.execute(`DELETE FROM DAILY_ROUTINE WHERE user_id = :userId`, { userId: req.user.userId });
         res.json({ success: true, message: 'All routines deleted.' });
-        
     } catch (err) {
         console.error('Delete all routines error:', err);
         res.status(500).json({ error: 'Failed to delete routines.' });
@@ -207,35 +254,27 @@ exports.completeRoutine = async (req, res) => {
     try {
         const { routineId } = req.params;
         const todayStr = today();
-        
         connection = await getConnection();
-        
-        // Check if already completed today
         const checkResult = await connection.execute(
             `SELECT completion_id FROM ROUTINE_COMPLETIONS 
              WHERE routine_id = :routineId AND user_id = :userId AND completion_date = TO_DATE(:today, 'YYYY-MM-DD')`,
-            [routineId, req.user.userId, todayStr]
+            { routineId, userId: req.user.userId, today: todayStr }
         );
-        
         if (checkResult.rows.length > 0) {
-            // Uncomplete (delete)
             await connection.execute(
-                `DELETE FROM ROUTINE_COMPLETIONS 
-                 WHERE routine_id = :routineId AND user_id = :userId AND completion_date = TO_DATE(:today, 'YYYY-MM-DD')`,
-                [routineId, req.user.userId, todayStr]
+                `DELETE FROM ROUTINE_COMPLETIONS WHERE routine_id = :routineId AND user_id = :userId AND completion_date = TO_DATE(:today, 'YYYY-MM-DD')`,
+                { routineId, userId: req.user.userId, today: todayStr }
             );
             res.json({ success: true, completed: false });
         } else {
-            // Mark as completed
             const completionId = generateId();
             await connection.execute(
                 `INSERT INTO ROUTINE_COMPLETIONS (completion_id, routine_id, user_id, completion_date) 
                  VALUES (:completionId, :routineId, :userId, TO_DATE(:today, 'YYYY-MM-DD'))`,
-                [completionId, routineId, req.user.userId, todayStr]
+                { completionId, routineId, userId: req.user.userId, today: todayStr }
             );
             res.json({ success: true, completed: true });
         }
-        
     } catch (err) {
         console.error('Complete routine error:', err);
         res.status(500).json({ error: 'Failed to update routine completion.' });

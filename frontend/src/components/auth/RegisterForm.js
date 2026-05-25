@@ -1,5 +1,7 @@
+// src/components/auth/RegisterForm.js
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { authAPI } from "../../services/api";
 
 export default function RegisterForm() {
   const navigate = useNavigate();
@@ -17,18 +19,12 @@ export default function RegisterForm() {
     setSuccessMessage("");
     
     try {
-      const response = await fetch('http://localhost:5555/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, fullName })
-      });
+      const data = await authAPI.register(email, password, fullName);
       
-      const data = await response.json();
-      
-      if (response.ok) {
+      if (data.success) {
         // Store email in sessionStorage for verification
         sessionStorage.setItem('pendingVerificationEmail', email);
-        setSuccessMessage(data.message);
+        setSuccessMessage(data.message || "Verification code sent to your email!");
         // Redirect to verify page after 2 seconds
         setTimeout(() => {
           navigate('/verify');
@@ -37,7 +33,8 @@ export default function RegisterForm() {
         setError(data.error || 'Registration failed');
       }
     } catch (err) {
-      setError('Network error. Please try again.');
+      console.error('Registration error:', err);
+      setError(err.message || 'Network error. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -85,6 +82,7 @@ export default function RegisterForm() {
             onChange={(e) => setPassword(e.target.value)}
             className="w-[80%] p-4 bg-[#f0f2f5] rounded-2xl shadow-neu-pressed outline-none text-sm" 
             required 
+            minLength={6}
           />
         </div>
 

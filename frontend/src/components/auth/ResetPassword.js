@@ -1,5 +1,7 @@
+// src/components/auth/ResetPassword.js
 import React, { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";  // Link should be here
+import { useNavigate, Link } from "react-router-dom";
+import { authAPI } from "../../services/api";
 
 export default function ResetPassword() {
   const navigate = useNavigate();
@@ -41,20 +43,10 @@ export default function ResetPassword() {
     setSuccess("");
     
     try {
-      const response = await fetch('http://localhost:5555/api/auth/reset-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          email, 
-          code: resetCode, 
-          newPassword 
-        })
-      });
+      const data = await authAPI.resetPassword(email, resetCode, newPassword);
       
-      const data = await response.json();
-      
-      if (response.ok) {
-        setSuccess(data.message);
+      if (data.success) {
+        setSuccess(data.message || "Password reset successfully!");
         sessionStorage.removeItem('verifiedResetEmail');
         sessionStorage.removeItem('resetCode');
         sessionStorage.removeItem('resetEmail');
@@ -65,7 +57,8 @@ export default function ResetPassword() {
         setError(data.error || 'Failed to reset password');
       }
     } catch (err) {
-      setError('Network error. Please try again.');
+      console.error('Reset password error:', err);
+      setError(err.message || 'Network error. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -99,6 +92,7 @@ export default function ResetPassword() {
             onChange={(e) => setNewPassword(e.target.value)}
             className="w-[80%] p-4 bg-[#f0f2f5] rounded-2xl shadow-neu-pressed outline-none text-sm" 
             required 
+            minLength={6}
           />
           <input 
             type="password" 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { useApp } from "../components/AppContext";
+import { useApp } from "../components/context/AppContext";
 import { focusAPI, getToken } from "../services/api";
 
 export default function FocusModePage() {

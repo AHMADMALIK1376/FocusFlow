@@ -1,8 +1,13 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";  // Add Link here
+// src/components/auth/VerifyForm.js
+import React, { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useUser } from "./UserContext";
+import { authAPI } from "../../services/api";
 
-export default function ResetPasswordVerify() {
+export default function VerifyForm() {
   const navigate = useNavigate();
+  const { setUserName } = useUser();
+  const inputRefs = useRef([]);
   const [code, setCode] = useState(["", "", "", ""]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -11,11 +16,11 @@ export default function ResetPasswordVerify() {
   const [canResend, setCanResend] = useState(true);
 
   useEffect(() => {
-    const resetEmail = sessionStorage.getItem('resetEmail');
-    if (resetEmail) {
-      setEmail(resetEmail);
+    const pendingEmail = sessionStorage.getItem('pendingVerificationEmail');
+    if (pendingEmail) {
+      setEmail(pendingEmail);
     } else {
-      navigate('/forgot-password');
+      navigate('/signup');
     }
   }, [navigate]);
 
@@ -27,21 +32,21 @@ export default function ResetPasswordVerify() {
       setCode(newCode);
       
       if (value && index < 3) {
-        document.getElementById(`code-input-${index + 1}`)?.focus();
+        inputRefs.current[index + 1].focus();
       }
     }
   };
 
   const handleKeyDown = (e, index) => {
     if (e.key === "Backspace" && !code[index] && index > 0) {
-      document.getElementById(`code-input-${index - 1}`)?.focus();
+      inputRefs.current[index - 1].focus();
     }
   };
 
   const handleVerify = async () => {
     const verificationCode = code.join('');
     if (verificationCode.length !== 4) {
-      setError("Please enter the 4-digit reset code");
+      setError("Please enter the 4-digit verification code");
       return;
     }
     
@@ -49,23 +54,25 @@ export default function ResetPasswordVerify() {
     setError("");
     
     try {
-      const response = await fetch('http://localhost:5555/api/auth/verify-reset-code', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, code: verificationCode })
-      });
+      const data = await authAPI.verifyEmail(email, verificationCode);
       
-      const data = await response.json();
-      
-      if (response.ok) {
-        sessionStorage.setItem('verifiedResetEmail', email);
-        sessionStorage.setItem('resetCode', verificationCode);
-        navigate('/reset-password');
+      if (data.success && data.token) {
+        // Token is already stored by authAPI.verifyEmail
+        // But we need to update UserContext
+        const username = data.user?.fullName || data.user?.email || email;
+        setUserName(username);
+        
+        // Clear pending verification email
+        sessionStorage.removeItem('pendingVerificationEmail');
+        
+        // Redirect to dashboard
+        navigate('/dashboard');
       } else {
-        setError(data.error || 'Invalid code');
+        setError(data.error || 'Verification failed');
       }
     } catch (err) {
-      setError('Network error. Please try again.');
+      console.error('Verification error:', err);
+      setError(err.message || 'Network error. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -78,15 +85,9 @@ export default function ResetPasswordVerify() {
     setCountdown(60);
     
     try {
-      const response = await fetch('http://localhost:5555/api/auth/forgot-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      });
+      const data = await authAPI.resendVerification(email);
       
-      const data = await response.json();
-      
-      if (response.ok) {
+      if (data.success) {
         setError("");
         const timer = setInterval(() => {
           setCountdown((prev) => {
@@ -103,7 +104,8 @@ export default function ResetPasswordVerify() {
         setCanResend(true);
       }
     } catch (err) {
-      setError('Network error. Please try again.');
+      console.error('Resend code error:', err);
+      setError(err.message || 'Network error. Please try again.');
       setCanResend(true);
     }
   };
@@ -112,7 +114,7 @@ export default function ResetPasswordVerify() {
     <div className="w-full flex flex-col items-center py-4">
       <div className="w-full flex flex-col items-center animate-in zoom-in duration-500">
         <div className="text-4xl mb-4">📧</div>
-        <h2 className="text-2xl font-black text-gray-800 mb-1">Reset Password</h2>
+        <h2 className="text-2xl font-black text-gray-800 mb-1">Verify Identity</h2>
         <p className="text-gray-400 text-[10px] font-bold mb-2 uppercase tracking-[2px] text-center max-w-[250px]">
           We sent a 4-digit code to
         </p>
@@ -128,7 +130,7 @@ export default function ResetPasswordVerify() {
           {[0, 1, 2, 3].map((i) => (
             <input
               key={i}
-              id={`code-input-${i}`}
+              ref={(el) => (inputRefs.current[i] = el)}
               type="text"
               maxLength="1"
               value={code[i]}
@@ -144,7 +146,7 @@ export default function ResetPasswordVerify() {
           className="w-[80%] py-4 bg-[#6c5ce7] text-white rounded-2xl font-black shadow-lg shadow-purple-200 hover:scale-[1.02] active:scale-95 transition-all tracking-widest text-xs"
           disabled={loading}
         >
-          {loading ? "VERIFYING..." : "VERIFY CODE"}
+          {loading ? "VERIFYING..." : "VERIFY & ENTER"}
         </button>
         
         <p 
@@ -155,12 +157,6 @@ export default function ResetPasswordVerify() {
         >
           {canResend ? 'Resend Code' : `Resend Code (${countdown}s)`}
         </p>
-        
-        <div className="mt-6 text-center">
-          <Link to="/login" className="text-[#6c5ce7] font-bold text-xs hover:underline">
-            Back to Login
-          </Link>
-        </div>
       </div>
     </div>
   );

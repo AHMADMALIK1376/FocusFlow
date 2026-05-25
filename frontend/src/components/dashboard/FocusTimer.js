@@ -1,33 +1,16 @@
-import React, { useState, useEffect } from "react";
+// src/components/dashboard/FocusTimer.js
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useApp } from "./AppContext";
+import { useApp } from "../context/AppContext";
 import Lottie from "lottie-react";
-import fireAnimation from "../assets/animation/Sandy Loading.json";
-import { focusAPI, getToken } from "../services/api";
+import fireAnimation from "../../assets/animation/Sandy Loading.json";
 
 export default function FocusTimer() {
   const navigate = useNavigate();
-  const { hours, minutes, seconds, isActive } = useApp();
+  const { hours, minutes, seconds, isActive, totalFocusSessions } = useApp();
   const [isExpanded, setIsExpanded] = useState(false);
-  const [totalSessions, setTotalSessions] = useState(0);
   
   const displayTime = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-
-  useEffect(() => {
-    const fetchSessionCount = async () => {
-      try {
-        const token = getToken();
-        if (!token) return;
-        
-        const sessions = await focusAPI.getSessions();
-        setTotalSessions(sessions.length);
-      } catch (error) {
-        console.error('Failed to fetch sessions:', error);
-      }
-    };
-    
-    fetchSessionCount();
-  }, []);
 
   return (
     <div className={`relative bg-[#f0f2f5] p-10 rounded-[40px] flex-1 min-w-[320px] max-w-[450px] shadow-[20px_20px_60px_#d1d9e6,-20px_-20px_60px_#ffffff] transition-all duration-500 overflow-hidden text-center group hover:-translate-y-2
@@ -68,10 +51,10 @@ export default function FocusTimer() {
           </div>
         </div>
         
-        {/* Total Sessions from Database */}
+        {/* Total Sessions from Context (already loaded by AppContext) */}
         <div className="mt-4 text-center">
           <p className="text-xs text-gray-400">Total Sessions</p>
-          <p className="text-xl font-black text-focusPurple">{totalSessions}</p>
+          <p className="text-xl font-black text-focusPurple">{totalFocusSessions || 0}</p>
         </div>
       </div>
 
