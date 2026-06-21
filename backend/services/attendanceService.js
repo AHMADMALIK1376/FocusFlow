@@ -36,27 +36,24 @@ const calculateAttendance = async (connection, userId, entryId) => {
     
     // Update summary table using MERGE with generateId()
     await connection.execute(
-        `MERGE INTO ATTENDANCE_SUMMARY dest
-         USING (SELECT :userId as user_id, :entryId as entry_id FROM DUAL) src
-         ON (dest.user_id = src.user_id AND dest.entry_id = src.entry_id)
-         WHEN MATCHED THEN UPDATE SET
-            total_sessions = :totalSessions,
-            attended_sessions = :attendedSessions,
-            absent_sessions = :absentSessions,
-            upcoming_sessions = :upcomingSessions,
-            total_points_earned = :totalEarned,
-            total_points_possible = :totalPossible,
-            percentage = :percentage,
-            is_warning = CASE WHEN :percentage < 60 THEN 1 ELSE 0 END,
-            updated_at = CURRENT_TIMESTAMP
-         WHEN NOT MATCHED THEN INSERT
-            (summary_id, user_id, entry_id, total_sessions, attended_sessions, 
-             absent_sessions, upcoming_sessions, total_points_earned, total_points_possible, 
+        `INSERT INTO ATTENDANCE_SUMMARY
+            (summary_id, user_id, entry_id, total_sessions, attended_sessions,
+             absent_sessions, upcoming_sessions, total_points_earned, total_points_possible,
              percentage, is_warning)
          VALUES
             (:summaryId, :userId, :entryId, :totalSessions, :attendedSessions,
-             :absentSessions, :upcomingSessions, :totalEarned, :totalPossible, 
-             :percentage, CASE WHEN :percentage < 60 THEN 1 ELSE 0 END)`,
+             :absentSessions, :upcomingSessions, :totalEarned, :totalPossible,
+             :percentage, CASE WHEN :percentage < 60 THEN 1 ELSE 0 END)
+         ON CONFLICT (user_id, entry_id) DO UPDATE SET
+            total_sessions = EXCLUDED.total_sessions,
+            attended_sessions = EXCLUDED.attended_sessions,
+            absent_sessions = EXCLUDED.absent_sessions,
+            upcoming_sessions = EXCLUDED.upcoming_sessions,
+            total_points_earned = EXCLUDED.total_points_earned,
+            total_points_possible = EXCLUDED.total_points_possible,
+            percentage = EXCLUDED.percentage,
+            is_warning = CASE WHEN EXCLUDED.percentage < 60 THEN 1 ELSE 0 END,
+            updated_at = CURRENT_TIMESTAMP`,
         {
             userId, entryId, summaryId,
             totalSessions: row.TOTAL_SESSIONS,

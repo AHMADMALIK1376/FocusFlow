@@ -1,165 +1,134 @@
-// src/components/layout/Sidebar.js
+// src/components/layout/Sidebar.js — collapsible, line-icon sidebar (no emojis)
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { ChevronLeft, Search, Settings } from 'lucide-react';
 import { useUser } from '../auth/UserContext';
-import { useApp } from '../context/AppContext';
+import { NAV_ITEMS } from './navItems';
+import { NavIcon } from './navIcons';
+import { cx } from '../ui/cx';
+import storage from '../../storage/storageAdapter';
 
-const Sidebar = () => {
+const MAIN_IDS = ['dashboard', 'deepwork', 'routine', 'tasks', 'timetable', 'attendance'];
+
+export default function Sidebar() {
   const navigate = useNavigate();
-  const location = useLocation();
+  const { pathname } = useLocation();
+  const { t } = useTranslation();
   const { userName, userEmail } = useUser();
-  const { streak, pendingTasksCount, pendingRoutineCount } = useApp();
-  const [isOpen, setIsOpen] = useState(false);
-  const [userInitials, setUserInitials] = useState('??');
+  const [collapsed, setCollapsed] = useState(() => Boolean(storage.get('sidebar.collapsed', false)));
 
-  // ==============================================
-  // Get user initials from userName or userEmail
-  // ==============================================
   useEffect(() => {
-    if (userName) {
-      const initials = userName
-        .split(' ')
-        .map(n => n[0])
-        .join('')
-        .toUpperCase()
-        .substring(0, 2);
-      setUserInitials(initials);
-    } else if (userEmail) {
-      setUserInitials(userEmail[0].toUpperCase());
-    } else {
-      // Fallback for demo/testing
-      setUserInitials('FL');
-    }
-  }, [userName, userEmail]);
+    storage.set('sidebar.collapsed', collapsed);
+  }, [collapsed]);
 
-  // ==============================================
-  // Menu Items Configuration
-  // ==============================================
-  const menuItems = [
-    { id: 'dashboard', path: '/dashboard', label: 'Dashboard', icon: '🏠' },
-    { id: 'deepwork', path: '/focus-mode', label: 'Deep Work', icon: '⚡' },
-    { id: 'routine', path: '/routine', label: 'Daily Routine', icon: '🕒' },
-    { id: 'streak', path: '/tasks', label: 'Daily Streak', icon: '🔥' },
-    { id: 'timetable', path: '/academic', label: 'Timetable', icon: '📅' },
-    { id: 'attendance', path: '/attendance', label: 'Attendance', icon: '📊' },
-  ];
+  const initials = (userName || userEmail || 'U')
+    .split(' ').map((s) => s[0]).join('').toUpperCase().slice(0, 2);
+  const main = NAV_ITEMS.filter((i) => MAIN_IDS.includes(i.id));
+  const workspace = NAV_ITEMS.filter((i) => !MAIN_IDS.includes(i.id));
 
-  // ==============================================
-  // Helper to get display name
-  // ==============================================
-  const getDisplayName = () => {
-    if (userName) return userName;
-    if (userEmail) return userEmail.split('@')[0];
-    return 'User';
-  };
-
-  // ==============================================
-  // Get initials for avatar
-  // ==============================================
-  const getInitials = () => userInitials;
-
-  // ==============================================
-  // Get streak display value (from context)
-  // ==============================================
-  const getStreakDisplay = () => {
-    return streak || 0;
+  const renderItem = (item) => {
+    const active = pathname === item.path;
+    return (
+      <button
+        key={item.id}
+        onClick={() => navigate(item.path)}
+        aria-current={active ? 'page' : undefined}
+        title={collapsed ? t(item.labelKey) : undefined}
+        className={cx(
+          'group relative flex items-center h-10 rounded-token-md transition-colors duration-200',
+          collapsed ? 'justify-center w-10 mx-auto' : 'gap-3 px-3 w-full',
+          active ? 'bg-brand/10 text-brand' : 'text-muted hover:bg-surface-2 hover:text-ink'
+        )}
+      >
+        <NavIcon id={item.id} size={19} className="shrink-0" />
+        {!collapsed && (
+          <span className={cx('text-sm truncate', active && 'font-semibold')}>{t(item.labelKey)}</span>
+        )}
+        {!collapsed && active && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-brand" />}
+        {collapsed && (
+          <span className="absolute left-[56px] px-2.5 py-1 rounded-md bg-ink text-canvas text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 z-50">
+            {t(item.labelKey)}
+          </span>
+        )}
+      </button>
+    );
   };
 
   return (
-    <div 
-      onMouseEnter={() => setIsOpen(true)}
-      onMouseLeave={() => setIsOpen(false)}
-      className={`fixed left-5 top-[120px] h-[calc(100vh-180px)] bg-gradient-to-br from-[#6c5ce7] to-[#8271ff] backdrop-blur-xl border border-white/20 rounded-[30px] flex flex-col py-8 shadow-[0_20px_50px_rgba(108,92,231,0.3)] z-[1000] transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] will-change-transform overflow-hidden ${isOpen ? 'w-[240px]' : 'w-[85px]'}`}
+    <aside
+      className={cx(
+        'hidden md:flex flex-col flex-shrink-0 h-screen sticky top-0 bg-surface border-r border-[rgb(var(--ink)/0.07)] z-40 transition-[width] duration-300 ease-spring',
+        collapsed ? 'w-[78px]' : 'w-[256px]'
+      )}
     >
-      {/* ============================================== */}
-      {/* PROFILE SECTION - Dynamic from UserContext */}
-      {/* ============================================== */}
-      <div className="flex flex-col items-center px-4 mb-6 relative flex-shrink-0">
-        <div className="relative group cursor-pointer" onClick={() => navigate('/dashboard')}>
-          <div className="w-[52px] h-[52px] bg-white/20 backdrop-blur-md text-white rounded-2xl flex items-center justify-center font-black border border-white/30 shadow-lg group-hover:scale-110 transition-transform duration-300 text-lg">
-            {getInitials()}
-          </div>
-          <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-[#2ecc71] border-2 border-[#6c5ce7] rounded-full shadow-sm"></span>
-        </div>
-        <div className={`mt-4 text-center transition-all duration-500 ${isOpen ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'}`}>
-          <p className="text-white font-black text-[0.9rem] whitespace-nowrap">
-            {getDisplayName()}
-          </p>
-          <p className="text-white/60 text-[0.65rem] font-bold tracking-widest uppercase">
-            Elite Member
-          </p>
-        </div>
+      {/* Brand + collapse */}
+      <div className={cx('flex items-center h-[66px] px-4 shrink-0', collapsed ? 'justify-center' : 'justify-between')}>
+        <button onClick={() => navigate('/dashboard')} className="flex items-center gap-2.5 min-w-0">
+          <span className="w-9 h-9 rounded-xl bg-grad-hero text-on-brand flex items-center justify-center font-black text-sm shrink-0">F</span>
+          {!collapsed && <span className="font-black text-ink tracking-tight truncate">FocusFlow</span>}
+        </button>
+        {!collapsed && (
+          <button onClick={() => setCollapsed(true)} aria-label="Collapse sidebar"
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-muted hover:bg-surface-2 hover:text-ink transition-colors">
+            <ChevronLeft size={18} />
+          </button>
+        )}
       </div>
 
-      {/* ============================================== */}
-      {/* SCROLLABLE NAVIGATION */}
-      {/* ============================================== */}
-      <nav
-        className="flex flex-col gap-3 px-3 overflow-y-auto flex-1"
-        style={{
-          scrollbarWidth: 'none',
-          msOverflowStyle: 'none',
-        }}
-      >
-        <style>{`nav::-webkit-scrollbar { display: none; }`}</style>
-        
-        {menuItems.map((item) => {
-          const isActive = location.pathname === item.path;
-          return (
-            <button
-              key={item.id}
-              onClick={() => navigate(item.path)}
-              className={`group relative flex items-center h-[50px] flex-shrink-0 transition-all duration-300 rounded-2xl outline-none
-                ${isActive
-                  ? 'bg-white text-[#6c5ce7] shadow-xl shadow-purple-900/20 scale-[1.02]'
-                  : 'text-white hover:bg-white/10 hover:translate-x-1'}`}
-            >
-              <div className="min-w-[60px] flex items-center justify-center">
-                <span className={`text-xl transition-all duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-125 group-active:scale-95'}`}>
-                  {item.icon}
-                </span>
-              </div>
+      {collapsed && (
+        <button onClick={() => setCollapsed(false)} aria-label="Expand sidebar"
+          className="mx-auto mb-1 w-8 h-8 rounded-lg flex items-center justify-center text-muted hover:bg-surface-2 hover:text-ink transition-colors">
+          <ChevronLeft size={18} className="rotate-180" />
+        </button>
+      )}
 
-              <span className={`font-bold text-[0.85rem] tracking-wide whitespace-nowrap transition-all duration-500
-                ${isOpen ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-10'}`}>
-                {item.label}
-              </span>
+      {/* Search */}
+      <div className="px-3.5 mb-3 shrink-0">
+        {collapsed ? (
+          <button aria-label="Search" className="w-10 h-10 mx-auto rounded-token-md bg-surface-2 flex items-center justify-center text-muted hover:text-ink transition-colors">
+            <Search size={18} />
+          </button>
+        ) : (
+          <div className="flex items-center gap-2 h-10 px-3 rounded-token-md bg-surface-2">
+            <Search size={17} className="text-muted shrink-0" />
+            <input placeholder="Search" className="bg-transparent outline-none text-sm flex-1 min-w-0 text-ink placeholder:text-muted" />
+            <span className="text-[10px] font-bold text-muted px-1.5 py-0.5 rounded bg-surface border border-[rgb(var(--ink)/0.08)]">⌘K</span>
+          </div>
+        )}
+      </div>
 
-              {isActive && (
-                <div className="absolute left-0 w-1.5 h-6 bg-[#6c5ce7] rounded-r-full animate-pulse"></div>
-              )}
-
-              {!isOpen && (
-                <div className="absolute left-[90px] px-3 py-1 bg-gray-800 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-300 whitespace-nowrap z-50 shadow-xl">
-                  {item.label}
-                </div>
-              )}
-            </button>
-          );
-        })}
+      {/* Nav */}
+      <nav className="sb-scroll flex-1 overflow-y-auto px-3 pb-3 space-y-1">
+        <style>{`.sb-scroll::-webkit-scrollbar{display:none}.sb-scroll{scrollbar-width:none}`}</style>
+        {!collapsed && <p className="px-3 pt-2 pb-1.5 text-[10px] font-bold uppercase tracking-widest text-muted/60">Main</p>}
+        {main.map(renderItem)}
+        {collapsed ? (
+          <div className="my-2 mx-auto w-7 h-px bg-[rgb(var(--ink)/0.08)]" />
+        ) : (
+          <p className="px-3 pt-4 pb-1.5 text-[10px] font-bold uppercase tracking-widest text-muted/60">Workspace</p>
+        )}
+        {workspace.map(renderItem)}
       </nav>
 
-      {/* ============================================== */}
-      {/* STREAK WIDGET - Dynamic from Context */}
-      {/* ============================================== */}
-      <div
-        onClick={() => navigate('/tasks')}
-        className={`px-4 pt-4 flex-shrink-0 cursor-pointer transition-all duration-500 hover:scale-[1.02] active:scale-95 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-      >
-        <div className="p-4 bg-white/10 rounded-2xl border border-white/10 backdrop-blur-sm hover:bg-white/20 transition-colors">
-          <p className="text-[10px] text-white/50 font-black leading-tight uppercase tracking-[2px]">
-            Current Streak
-          </p>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="text-xl animate-bounce">🔥</span>
-            <p className="text-white font-black text-xl">
-              {getStreakDisplay()} {getStreakDisplay() !== 0 && 'Days'}
-            </p>
-          </div>
+      {/* Profile */}
+      <div className="p-3 shrink-0 border-t border-[rgb(var(--ink)/0.07)]">
+        <div className={cx('flex items-center rounded-token-md', collapsed ? 'justify-center' : 'gap-3 p-2 bg-surface-2')}>
+          <span className="w-9 h-9 rounded-xl bg-grad-hero text-on-brand flex items-center justify-center font-black text-xs shrink-0">{initials}</span>
+          {!collapsed && (
+            <>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-ink truncate">{userName || 'User'}</p>
+                <p className="text-[11px] text-muted truncate">{userEmail || 'Member'}</p>
+              </div>
+              <button onClick={() => navigate('/settings')} aria-label="Settings"
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-muted hover:bg-surface hover:text-ink transition-colors shrink-0">
+                <Settings size={16} />
+              </button>
+            </>
+          )}
         </div>
       </div>
-    </div>
+    </aside>
   );
-};
-
-export default Sidebar;
+}

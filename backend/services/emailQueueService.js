@@ -89,11 +89,14 @@ class EmailQueue {
     canSend() {
         this.resetCounters();
         
+        // NOTE: do NOT check queue.length here. During processQueue() the email
+        // being sent is held in a local `batch`, so the queue is momentarily
+        // empty — including queue.length would wrongly block the send and loop
+        // forever. This is a rate-limit check only; the while-loop guards length.
         return (
             this.sentCount.minute < EMAIL_CONFIG.emailsPerMinute &&
             this.sentCount.hour < EMAIL_CONFIG.emailsPerHour &&
-            this.sentCount.day < EMAIL_CONFIG.emailsPerDay &&
-            this.queue.length > 0
+            this.sentCount.day < EMAIL_CONFIG.emailsPerDay
         );
     }
     

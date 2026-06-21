@@ -22,17 +22,17 @@ export default function DailyRoutine() {
         setLoading(true);
         setError(null);
         const token = getToken();
-        if (!token) { 
-          setLoading(false); 
-          return; 
+        if (!token) {
+          setLoading(false);
+          return;
         }
         const routines = await routineAPI.getAll();
         setSchedule(routines);
-      } catch (error) { 
+      } catch (error) {
         console.error('Failed to fetch routines:', error);
         setError(error.message || 'Failed to load routines');
-      } finally { 
-        setLoading(false); 
+      } finally {
+        setLoading(false);
       }
     };
     fetchRoutines();
@@ -55,7 +55,7 @@ export default function DailyRoutine() {
       alert("Please enter activity name and time");
       return;
     }
-    
+
     let newDays;
     if (selectedDays.includes("All Days")) {
       newDays = [...daysOfWeek];
@@ -65,7 +65,7 @@ export default function DailyRoutine() {
       alert("Please select at least one day");
       return;
     }
-    
+
     setIsSubmitting(true);
     try {
       console.log('Adding routine:', { activity, time, repeatOn: newDays });
@@ -88,27 +88,27 @@ export default function DailyRoutine() {
     try {
       await routineAPI.deleteAll();
       setSchedule([]);
-    } catch (error) { 
+    } catch (error) {
       console.error('Failed to reset routine:', error);
-      alert('Failed to reset routine.'); 
+      alert('Failed to reset routine.');
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F1F5F9] flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-focusPurple border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-canvas flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-brand border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#F1F5F9] flex items-center justify-center">
-        <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-center max-w-md">
+      <div className="min-h-screen bg-canvas flex items-center justify-center">
+        <div className="bg-focus/10 border border-focus/30 rounded-token-lg p-6 text-center max-w-md">
           <span className="text-4xl mb-3 block">⚠️</span>
-          <h2 className="text-xl font-black text-red-600 mb-2">Error Loading Routines</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
+          <h2 className="text-xl font-black text-focus mb-2">Error Loading Routines</h2>
+          <p className="text-muted mb-4">{error}</p>
           <button onClick={() => window.location.reload()} className="magic-btn">
             Retry
           </button>
@@ -118,36 +118,36 @@ export default function DailyRoutine() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F1F5F9] py-10 px-4 flex flex-col items-center">
-      
+    <div className="min-h-screen bg-canvas py-10 px-4 flex flex-col items-center">
+
       {/* HEADER */}
       <div className="text-center mb-8">
-        <h1 className="text-4xl font-black text-[#7C3AED]">Create Your Routine</h1>
-        <p className="text-gray-400 text-sm mt-2">Add activities for each day of the week</p>
+        <h1 className="text-4xl font-black text-brand">Create Your Routine</h1>
+        <p className="text-muted text-sm mt-2">Add activities for each day of the week</p>
       </div>
 
       {/* ADD FORM */}
-      <div className="w-full max-w-2xl bg-white p-8 rounded-[40px] shadow-[20px_20px_60px_#d1d9e6,-20px_-20px_60px_#ffffff] mb-8">
-        <h3 className="text-xl font-black text-gray-800 mb-6">✍️ Add New Activity</h3>
-        
+      <div className="w-full max-w-2xl bg-surface p-8 rounded-token-xl shadow-neu mb-8">
+        <h3 className="text-xl font-black text-ink mb-6">✍️ Add New Activity</h3>
+
         <div className="mb-5">
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Select Days:</p>
+          <p className="text-[10px] font-black text-muted uppercase tracking-widest mb-3">Select Days:</p>
           <div className="flex flex-wrap gap-2">
-            <button 
+            <button
               onClick={() => handleDayToggle("All Days")}
-              className={`px-4 py-2 rounded-xl font-bold text-xs transition-all shadow-sm
-                ${selectedDays.includes("All Days") ? "bg-[#7C3AED] text-white shadow-md" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}
+              className={`px-4 py-2 rounded-token-sm font-bold text-xs transition-all
+                ${selectedDays.includes("All Days") ? "bg-grad-hero text-on-brand shadow-neu-sm" : "bg-surface-2 text-muted hover:bg-[rgb(var(--ink)/0.06)]"}`}
             >
               All Days
             </button>
             {daysOfWeek.map(day => (
-              <button 
-                key={day} 
+              <button
+                key={day}
                 disabled={selectedDays.includes("All Days")}
                 onClick={() => handleDayToggle(day)}
-                className={`px-4 py-2 rounded-xl font-bold text-xs transition-all shadow-sm
-                  ${selectedDays.includes("All Days") ? "opacity-40 cursor-not-allowed" : 
-                    selectedDays.includes(day) ? "bg-[#7C3AED] text-white shadow-md" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}
+                className={`px-4 py-2 rounded-token-sm font-bold text-xs transition-all
+                  ${selectedDays.includes("All Days") ? "opacity-40 cursor-not-allowed" :
+                    selectedDays.includes(day) ? "bg-grad-hero text-on-brand shadow-neu-sm" : "bg-surface-2 text-muted hover:bg-[rgb(var(--ink)/0.06)]"}`}
               >
                 {day}
               </button>
@@ -156,20 +156,20 @@ export default function DailyRoutine() {
         </div>
 
         <form onSubmit={addSlot} className="flex flex-wrap gap-3">
-          <input 
-            type="text" 
-            placeholder="e.g. Morning Gym" 
-            value={activity} 
+          <input
+            type="text"
+            placeholder="e.g. Morning Gym"
+            value={activity}
             onChange={(e) => setActivity(e.target.value)}
-            className="flex-1 min-w-[180px] p-4 rounded-2xl bg-[#F1F5F9] shadow-[inset_4px_4px_8px_#d1d9e6,inset_-4px_-4px_8px_#ffffff] outline-none font-bold text-gray-600 text-sm" 
-            required 
+            className="flex-1 min-w-[180px] p-4 rounded-token-md bg-surface-2 shadow-neu-inset outline-none font-bold text-ink text-sm"
+            required
           />
-          <input 
-            type="time" 
-            value={time} 
+          <input
+            type="time"
+            value={time}
             onChange={(e) => setTime(e.target.value)}
-            className="p-4 rounded-2xl bg-[#F1F5F9] shadow-[inset_4px_4px_8px_#d1d9e6,inset_-4px_-4px_8px_#ffffff] outline-none font-bold text-gray-600 text-sm" 
-            required 
+            className="p-4 rounded-token-md bg-surface-2 shadow-neu-inset outline-none font-bold text-ink text-sm"
+            required
           />
           <button type="submit" className="magic-btn" disabled={isSubmitting}>
             {isSubmitting ? "Adding..." : "Add to Routine"}
@@ -182,7 +182,7 @@ export default function DailyRoutine() {
         <button onClick={() => navigate("/routine/view")} className="magic-btn text-sm">
           👁️ View Timeline →
         </button>
-        <p className="text-[10px] text-gray-400">
+        <p className="text-[10px] text-muted">
           {schedule.length} activities in your weekly routine
         </p>
       </div>
@@ -191,7 +191,7 @@ export default function DailyRoutine() {
       <footer className="mt-10 flex gap-4 flex-wrap justify-center">
         <button onClick={() => navigate("/dashboard")} className="magic-btn">🏠 Dashboard</button>
         {schedule.length > 0 && (
-          <button onClick={resetRoutine} className="magic-btn text-red-400">🗑 Reset All</button>
+          <button onClick={resetRoutine} className="magic-btn text-focus">🗑 Reset All</button>
         )}
       </footer>
     </div>

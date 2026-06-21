@@ -1,201 +1,207 @@
-﻿const oracledb = require('oracledb');
+// PostgreSQL (Supabase) connection layer with an Oracle-compatibility shim.
+// Why a shim: the controllers were written for node-oracledb. This layer lets
+// them keep working unchanged by:
+//   1. converting Oracle ":name" / ":1" bind placeholders to pg "$1" positional,
+//      supporting both array (positional) and object (named) bind styles,
+//   2. translating the few deterministic Oracle-isms (NVL, SYSDATE, FROM DUAL),
+//   3. returning row keys UPPER-CASED (Oracle's default) so `row.USER_ID` works,
+//   4. parsing bigint/numeric as JS numbers (pg returns them as strings),
+//   5. exposing getConnection().execute()/close() with the same shape as before.
+
+const { Pool, types } = require('pg');
 require('dotenv').config();
 
-// Set output format to object instead of array
-oracledb.outFormat = oracledb.OUT_FORMAT_OBJECT;
-oracledb.autoCommit = true;
+// pg returns int8 (bigint) and numeric as strings — parse them to numbers so the
+// controllers' arithmetic (COUNT(*) sums, percentages) behaves like it did on Oracle.
+types.setTypeParser(20, (v) => (v === null ? null : parseInt(v, 10)));   // int8 / bigint
+types.setTypeParser(1700, (v) => (v === null ? null : parseFloat(v)));    // numeric / decimal
 
 let pool = null;
 
 const dbConfig = {
-    user: process.env.ORACLE_USER,
-    password: process.env.ORACLE_PASSWORD,
-    connectString: process.env.ORACLE_CONNECTION_STRING || 'localhost:1521/XEPDB1',
-    poolMin: 2,
-    poolMax: 10,
-    poolIncrement: 1,
-    poolTimeout: 60,           // Seconds to wait for connection
-    queueTimeout: 60000,       // Queue timeout in milliseconds
-    enableStatistics: true     // Enable pool statistics for monitoring
+  host: process.env.PGHOST,
+  port: Number(process.env.PGPORT) || 5432,
+  database: process.env.PGDATABASE || 'postgres',
+  user: process.env.PGUSER,
+  password: process.env.PGPASSWORD,
+  ssl: { rejectUnauthorized: false }, // Supabase requires SSL
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 15000,
 };
 
-// ==============================================
-// VALIDATE CONNECTION HEALTH
-// ==============================================
-async function validateConnection(connection) {
-    try {
-        // Simple query to test connection
-        await connection.execute('SELECT 1 FROM DUAL');
-        return true;
-    } catch (err) {
-        console.error('❌ Connection validation failed:', err.message);
-        return false;
-    }
+// ──────────────────────────────────────────────────────────────────────────
+// SQL translation: Oracle-isms → PostgreSQL
+// ──────────────────────────────────────────────────────────────────────────
+function translateSql(sql) {
+  return sql
+    .replace(/\bNVL\s*\(/gi, 'COALESCE(')
+    .replace(/\bSYSTIMESTAMP\b/gi, 'NOW()')
+    .replace(/\bSYSDATE\b/gi, 'NOW()')
+    .replace(/\bFROM\s+DUAL\b/gi, '');
 }
 
-// ==============================================
-// GET HEALTHY CONNECTION WITH RETRY
-// ==============================================
-async function getConnection(retries = 3, delay = 1000) {
-    if (!pool) {
-        await initialize();
-    }
-    
-    let lastError = null;
-    
-    for (let attempt = 1; attempt <= retries; attempt++) {
-        let connection = null;
-        try {
-            // Get connection from pool
-            connection = await pool.getConnection();
-            
-            // Validate connection is alive
-            const isValid = await validateConnection(connection);
-            
-            if (isValid) {
-                if (attempt > 1) {
-                    console.log(`✅ Connection restored after ${attempt} attempts`);
-                }
-                return connection;
-            }
-            
-            // Connection is invalid, close it and try again
-            console.warn(`⚠️ Connection validation failed (attempt ${attempt}/${retries})`);
-            try {
-                await connection.close();
-            } catch (closeErr) {
-                // Ignore close errors
-            }
-            
-        } catch (err) {
-            lastError = err;
-            console.error(`❌ Connection error (attempt ${attempt}/${retries}):`, err.message);
-            
-            if (connection) {
-                try {
-                    await connection.close();
-                } catch (closeErr) {
-                    // Ignore close errors
-                }
-            }
+// Replace :name / :1 placeholders, skipping single-quoted string literals.
+// `repl(name)` returns the replacement token (e.g. "$1").
+function replaceBinds(sql, repl) {
+  let out = '';
+  let inString = false;
+  for (let i = 0; i < sql.length; i++) {
+    const ch = sql[i];
+    if (inString) {
+      out += ch;
+      if (ch === "'") {
+        if (sql[i + 1] === "'") {
+          out += sql[++i]; // escaped quote
+        } else {
+          inString = false;
         }
-        
-        // Wait before retry
-        if (attempt < retries) {
-            console.log(`⏳ Retrying in ${delay}ms...`);
-            await new Promise(resolve => setTimeout(resolve, delay));
-        }
+      }
+      continue;
     }
-    
-    // If we get here, all retries failed
-    console.error('❌ Failed to get healthy database connection after', retries, 'attempts');
-    throw new Error(`Database connection failed: ${lastError ? lastError.message : 'Unknown error'}`);
+    if (ch === "'") {
+      inString = true;
+      out += ch;
+      continue;
+    }
+    if (ch === ':' && /[A-Za-z0-9_]/.test(sql[i + 1] || '')) {
+      let j = i + 1;
+      while (j < sql.length && /[A-Za-z0-9_]/.test(sql[j])) j++;
+      out += repl(sql.slice(i + 1, j));
+      i = j - 1;
+      continue;
+    }
+    out += ch;
+  }
+  return out;
 }
 
-// ==============================================
-// INITIALIZE CONNECTION POOL
-// ==============================================
+function convertBinds(sql, params) {
+  if (Array.isArray(params)) {
+    let i = 0;
+    const text = replaceBinds(sql, () => `$${++i}`);
+    return { text, values: params };
+  }
+  if (params && typeof params === 'object') {
+    const seen = {};
+    const values = [];
+    const text = replaceBinds(sql, (name) => {
+      if (!(name in seen)) {
+        values.push(params[name]);
+        seen[name] = `$${values.length}`;
+      }
+      return seen[name];
+    });
+    return { text, values };
+  }
+  return { text: sql, values: [] };
+}
+
+function upperRow(row) {
+  const out = {};
+  for (const key in row) out[key.toUpperCase()] = row[key];
+  return out;
+}
+
+// Wrap a pg client so callers can use the old oracledb-style API.
+function wrap(client) {
+  return {
+    execute: async (sql, params = []) => {
+      const text = convertBinds(translateSql(sql), params);
+      const res = await client.query(text.text, text.values);
+      return {
+        rows: (res.rows || []).map(upperRow),
+        rowsAffected: res.rowCount,
+        rowCount: res.rowCount,
+      };
+    },
+    commit: async () => client.query('COMMIT'),
+    rollback: async () => client.query('ROLLBACK'),
+    close: async () => client.release(),
+  };
+}
+
+// ──────────────────────────────────────────────────────────────────────────
 async function initialize() {
-    try {
-        pool = await oracledb.createPool(dbConfig);
-        console.log('✅ Oracle Database connection pool created');
-        console.log(`   Pool Min: ${dbConfig.poolMin}, Max: ${dbConfig.poolMax}`);
-        console.log(`   Connection String: ${dbConfig.connectString}`);
-        
-        // Test the pool with a validation query
-        const testConn = await pool.getConnection();
-        await testConn.execute('SELECT 1 FROM DUAL');
-        await testConn.close();
-        console.log('✅ Connection pool validated successfully');
-        
-        return pool;
-    } catch (err) {
-        console.error('❌ Database connection error:', err.message);
-        throw err;
-    }
+  if (!dbConfig.host || !dbConfig.user || !dbConfig.password) {
+    throw new Error('PostgreSQL config missing. Set PGHOST, PGUSER, PGPASSWORD in .env');
+  }
+  pool = new Pool(dbConfig);
+  pool.on('error', (err) => console.error('❌ Idle PG client error:', err.message));
+
+  const test = await pool.connect();
+  await test.query('SELECT 1');
+  test.release();
+  console.log('✅ PostgreSQL (Supabase) connection pool created');
+  console.log(`   Host: ${dbConfig.host}  Pool max: ${dbConfig.max}`);
+  return pool;
 }
 
-// ==============================================
-// GET POOL STATISTICS (for monitoring)
-// ==============================================
+async function getConnection(retries = 3, delay = 1000) {
+  if (!pool) await initialize();
+  let lastError = null;
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const client = await pool.connect();
+      return wrap(client);
+    } catch (err) {
+      lastError = err;
+      console.error(`❌ PG connection error (attempt ${attempt}/${retries}):`, err.message);
+      if (attempt < retries) await new Promise((r) => setTimeout(r, delay));
+    }
+  }
+  throw new Error(`Database connection failed: ${lastError ? lastError.message : 'unknown'}`);
+}
+
+async function validateConnection(connection) {
+  try {
+    await connection.execute('SELECT 1');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function getPoolStats() {
-    if (!pool) {
-        return { status: 'not_initialized' };
-    }
-    
-    try {
-        // Get pool statistics if available
-        const stats = {
-            status: 'active',
-            connectionsInUse: 0,
-            connectionsOpen: 0,
-            poolMin: dbConfig.poolMin,
-            poolMax: dbConfig.poolMax,
-            poolIncrement: dbConfig.poolIncrement
-        };
-        
-        // Try to get actual stats if method exists
-        if (typeof pool.getStatistics === 'function') {
-            const poolStats = pool.getStatistics();
-            stats.connectionsInUse = poolStats.connectionsInUse || 0;
-            stats.connectionsOpen = poolStats.connectionsOpen || 0;
-        }
-        
-        return stats;
-    } catch (err) {
-        return { status: 'error', message: err.message };
-    }
+  if (!pool) return { status: 'not_initialized' };
+  return {
+    status: 'active',
+    total: pool.totalCount,
+    idle: pool.idleCount,
+    waiting: pool.waitingCount,
+    poolMax: dbConfig.max,
+  };
 }
 
-// ==============================================
-// CLOSE CONNECTION POOL
-// ==============================================
 async function closePool() {
-    if (pool) {
-        console.log('🔄 Closing database connection pool...');
-        try {
-            await pool.close();
-            console.log('✅ Database pool closed');
-            pool = null;
-        } catch (err) {
-            console.error('❌ Error closing pool:', err.message);
-            throw err;
-        }
-    }
+  if (pool) {
+    console.log('🔄 Closing PostgreSQL connection pool...');
+    await pool.end();
+    pool = null;
+    console.log('✅ PostgreSQL pool closed');
+  }
 }
 
-// ==============================================
-// HEALTH CHECK FUNCTION (for API endpoints)
-// ==============================================
 async function healthCheck() {
-    let connection;
-    try {
-        connection = await getConnection(1, 0); // Single attempt, no delay
-        await connection.execute('SELECT 1 FROM DUAL');
-        const stats = await getPoolStats();
-        return {
-            healthy: true,
-            timestamp: new Date().toISOString(),
-            pool: stats
-        };
-    } catch (err) {
-        return {
-            healthy: false,
-            error: err.message,
-            timestamp: new Date().toISOString()
-        };
-    } finally {
-        if (connection) {
-            try { await connection.close(); } catch (e) {}
-        }
+  let connection;
+  try {
+    connection = await getConnection(1, 0);
+    await connection.execute('SELECT 1');
+    return { healthy: true, timestamp: new Date().toISOString(), pool: await getPoolStats() };
+  } catch (err) {
+    return { healthy: false, error: err.message, timestamp: new Date().toISOString() };
+  } finally {
+    if (connection) {
+      try { await connection.close(); } catch (e) {}
     }
+  }
 }
 
-module.exports = { 
-    initialize, 
-    getConnection, 
-    closePool,
-    getPoolStats,
-    healthCheck,
-    validateConnection
+module.exports = {
+  initialize,
+  getConnection,
+  closePool,
+  getPoolStats,
+  healthCheck,
+  validateConnection,
 };

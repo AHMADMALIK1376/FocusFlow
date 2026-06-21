@@ -10,8 +10,8 @@ export default function TaskManager() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // ✅ Add a ref to prevent multiple fetches
+
+  // Add a ref to prevent multiple fetches
   const hasFetched = useRef(false);
 
   const [input, setInput] = useState("");
@@ -31,12 +31,11 @@ export default function TaskManager() {
     return `${h}:${minutes} ${ampm}`;
   };
 
-  // ✅ FIXED: Load tasks from API on mount - only once
+  // Load tasks from API on mount - only once
   useEffect(() => {
-    // Prevent multiple fetches
     if (hasFetched.current) return;
     hasFetched.current = true;
-    
+
     const fetchTasks = async () => {
       try {
         setLoading(true);
@@ -46,12 +45,11 @@ export default function TaskManager() {
           setLoading(false);
           return;
         }
-        
+
         console.log('Fetching tasks...');
         const fetchedTasks = await taskAPI.getAll();
         console.log('Tasks fetched:', fetchedTasks.length);
-        
-        // Only update if tasks are different
+
         if (JSON.stringify(tasks) !== JSON.stringify(fetchedTasks)) {
           setTasks(fetchedTasks);
         }
@@ -62,14 +60,14 @@ export default function TaskManager() {
         setLoading(false);
       }
     };
-    
+
     fetchTasks();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // ✅ Empty dependency array - runs only once
+  }, []);
 
   const resetTimeline = async () => {
     if (!window.confirm("Are you sure you want to clear your entire academic timeline?")) return;
-    
+
     try {
       await taskAPI.deleteAll();
       setTasks([]);
@@ -82,7 +80,7 @@ export default function TaskManager() {
 
   const deleteCategory = async (categoryType) => {
     if (!window.confirm(`Remove all pending ${categoryType}s?`)) return;
-    
+
     try {
       await taskAPI.deleteByType(categoryType, false);
       const updated = tasks.filter(task => !(task.type === categoryType && !task.completed));
@@ -96,12 +94,12 @@ export default function TaskManager() {
 
   const addTask = async (e) => {
     e.preventDefault();
-    
+
     if (!input || !date) {
       alert("Please enter task text and date");
       return;
     }
-    
+
     setIsSubmitting(true);
     try {
       console.log('Adding task:', { text: input, date, time, type });
@@ -112,7 +110,7 @@ export default function TaskManager() {
         type: type
       });
       console.log('Task added successfully:', newTask);
-      
+
       setTasks([...tasks, newTask.task]);
       setInput("");
       setDate("");
@@ -130,7 +128,7 @@ export default function TaskManager() {
     try {
       console.log('Toggling task completion:', id);
       await taskAPI.toggleComplete(id);
-      
+
       setTasks(tasks.map(t => {
         if (t.id === id) {
           if (!t.completed) setCompletedGoals(prev => prev + 1);
@@ -151,7 +149,7 @@ export default function TaskManager() {
     return (
       <div className="flex flex-col items-center w-full max-w-[900px] mx-auto py-10 px-4 animate-fadeInUp">
         <div className="flex justify-center items-center h-64">
-          <div className="w-12 h-12 border-4 border-focusPurple border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-12 h-12 border-4 border-brand border-t-transparent rounded-full animate-spin"></div>
         </div>
       </div>
     );
@@ -160,10 +158,10 @@ export default function TaskManager() {
   if (error) {
     return (
       <div className="flex flex-col items-center w-full max-w-[900px] mx-auto py-10 px-4">
-        <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-center max-w-md">
+        <div className="bg-focus/10 border border-focus/30 rounded-token-lg p-6 text-center max-w-md">
           <span className="text-4xl mb-3 block">⚠️</span>
-          <h2 className="text-xl font-black text-red-600 mb-2">Error Loading Tasks</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
+          <h2 className="text-xl font-black text-focus mb-2">Error Loading Tasks</h2>
+          <p className="text-muted mb-4">{error}</p>
           <button onClick={() => window.location.reload()} className="magic-btn">
             Retry
           </button>
@@ -177,32 +175,32 @@ export default function TaskManager() {
 
       {/* HERO */}
       <section className="text-center mb-12">
-        <h1 className="text-[3.5rem] font-black text-gray-800 tracking-tight leading-tight">
-          Task <span className="bg-gradient-to-r from-focusPurple to-purple-400 bg-clip-text text-transparent">Planner</span>
+        <h1 className="text-[3.5rem] font-black text-ink tracking-tight leading-tight">
+          Task <span className="text-brand">Planner</span>
         </h1>
-        <p className="text-xl text-gray-500 font-medium">Design your academic journey.</p>
+        <p className="text-xl text-muted font-medium">Design your academic journey.</p>
       </section>
 
       {/* ADD TASK CARD */}
-      <div className="w-full bg-[#f0f2f5] p-10 rounded-[40px] shadow-[20px_20px_60px_#d1d9e6,-20px_-20px_60px_#ffffff] mb-12 transition-transform hover:-translate-y-1">
-        <h3 className="text-2xl font-black text-gray-800 mb-8">Add New Task</h3>
+      <div className="w-full bg-surface p-10 rounded-token-xl shadow-neu mb-12 transition-transform hover:-translate-y-1">
+        <h3 className="text-2xl font-black text-ink mb-8">Add New Task</h3>
         <form onSubmit={addTask} className="space-y-6">
           <input
             type="text"
-            className="w-full p-5 rounded-2xl bg-[#f0f2f5] shadow-[inset_8px_8px_16px_#d1d9e6,inset_-8px_-8px_16px_#ffffff] outline-none font-semibold focus:shadow-[inset_4px_4px_8px_#d1d9e6,inset_-4px_-4px_8px_#ffffff] transition-all"
+            className="w-full p-5 rounded-token-md bg-surface-2 shadow-neu-inset outline-none font-semibold text-ink focus:shadow-neu transition-all"
             placeholder="e.g. Data Structures Project"
             value={input}
             onChange={(e) => setInput(e.target.value)}
           />
 
           <div className="w-full">
-            <p className="text-xs font-extrabold text-gray-400 uppercase tracking-widest mb-4">Select Category:</p>
+            <p className="text-xs font-extrabold text-muted uppercase tracking-widest mb-4">Select Category:</p>
             <div className="flex flex-wrap gap-3">
               {taskOptions.map((option) => (
                 <div
                   key={option}
-                  className={`px-5 py-2.5 rounded-xl text-sm font-bold cursor-pointer transition-all shadow-[5px_5px_10px_#d1d9e6,-5px_-5px_10px_#ffffff] 
-                    ${type === option ? "text-focusPurple shadow-[inset_4px_4px_8px_#d1d9e6,inset_-4px_-4px_8px_#ffffff]" : "text-gray-500 hover:text-focusPurple hover:-translate-y-0.5"}`}
+                  className={`px-5 py-2.5 rounded-token-sm text-sm font-bold cursor-pointer transition-all shadow-neu-sm
+                    ${type === option ? "text-brand shadow-neu-inset" : "text-muted hover:text-brand hover:-translate-y-0.5"}`}
                   onClick={() => setType(option)}
                 >
                   {option}
@@ -212,17 +210,17 @@ export default function TaskManager() {
           </div>
 
           <div className="flex gap-4">
-            <input 
-              type="time" 
-              className="flex-1 p-4 rounded-2xl bg-[#f0f2f5] shadow-[inset_6px_6px_12px_#d1d9e6,inset_-6px_-6px_12px_#ffffff] outline-none font-bold text-gray-700" 
-              value={time} 
-              onChange={(e) => setTime(e.target.value)} 
+            <input
+              type="time"
+              className="flex-1 p-4 rounded-token-md bg-surface-2 shadow-neu-inset outline-none font-bold text-ink"
+              value={time}
+              onChange={(e) => setTime(e.target.value)}
             />
-            <input 
-              type="date" 
-              className="flex-1 p-4 rounded-2xl bg-[#f0f2f5] shadow-[inset_6px_6px_12px_#d1d9e6,inset_-6px_-6px_12px_#ffffff] outline-none font-bold text-gray-700" 
-              value={date} 
-              onChange={(e) => setDate(e.target.value)} 
+            <input
+              type="date"
+              className="flex-1 p-4 rounded-token-md bg-surface-2 shadow-neu-inset outline-none font-bold text-ink"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
             />
           </div>
 
@@ -234,11 +232,11 @@ export default function TaskManager() {
 
       {/* PENDING LIST */}
       <div className="w-full space-y-12">
-        <h2 className="text-2xl font-black text-gray-800 text-left border-l-4 border-focusPurple pl-4">Pending Roadmap</h2>
+        <h2 className="text-2xl font-black text-ink text-left border-l-4 border-brand pl-4">Pending Roadmap</h2>
 
         {pendingTasks.length === 0 ? (
-          <div className="w-full bg-[#f0f2f5] p-10 rounded-[40px] shadow-[inset_10px_10px_20px_#d1d9e6,inset_-10px_-10px_20px_#ffffff] text-center">
-            <p className="text-gray-400 italic font-bold">All caught up! 🎉</p>
+          <div className="w-full bg-surface p-10 rounded-token-xl shadow-neu-inset text-center">
+            <p className="text-muted italic font-bold">All caught up! 🎉</p>
           </div>
         ) : (
           taskOptions.map((cat) => {
@@ -246,15 +244,15 @@ export default function TaskManager() {
             if (tasksByCategory.length === 0) return null;
 
             return (
-              <div key={cat} className="group w-full bg-[#f0f2f5] p-8 rounded-[40px] shadow-[20px_20px_60px_#d1d9e6,-20px_-20px_60px_#ffffff]">
+              <div key={cat} className="group w-full bg-surface p-8 rounded-token-xl shadow-neu">
                 <div className="flex justify-between items-start mb-6">
                   <div className="flex items-center gap-3">
                     <span className="text-2xl">⏳</span>
-                    <h3 className="text-xl font-black text-gray-800">{cat}s</h3>
+                    <h3 className="text-xl font-black text-ink">{cat}s</h3>
                   </div>
                   <button
                     onClick={() => deleteCategory(cat)}
-                    className="relative text-focusPurple font-extrabold text-sm group/del overflow-hidden h-8 flex items-center"
+                    className="relative text-brand font-extrabold text-sm group/del overflow-hidden h-8 flex items-center"
                   >
                     <span className="group-hover/del:translate-y-[-150%] transition-transform duration-300">Clear Section</span>
                     <span className="absolute inset-0 translate-y-[150%] group-hover/del:translate-y-0 transition-transform duration-300 flex items-center justify-center text-lg">🗑</span>
@@ -263,13 +261,13 @@ export default function TaskManager() {
 
                 <div className="space-y-4">
                   {tasksByCategory.map((task) => (
-                    <div key={task.id} className="flex justify-between items-center bg-[#f0f2f5] p-6 rounded-[24px] shadow-[8px_8px_16px_#d1d9e6,-8px_-8px_16px_#ffffff] hover:scale-[1.01] hover:translate-x-2 transition-all duration-300 border-l-0 hover:border-l-4 border-focusPurple">
+                    <div key={task.id} className="flex justify-between items-center bg-surface p-6 rounded-token-lg shadow-neu-sm hover:scale-[1.01] hover:translate-x-2 transition-all duration-300 border-l-0 hover:border-l-4 border-brand">
                       <div className="text-left">
-                        <p className="text-lg font-black text-gray-800 mb-1">{task.text}</p>
+                        <p className="text-lg font-black text-ink mb-1">{task.text}</p>
                         <div className="flex gap-4">
-                          <span className="text-xs font-bold text-focusPurple tracking-widest uppercase">📅 {task.date}</span>
+                          <span className="text-xs font-bold text-brand tracking-widest uppercase">📅 {task.date}</span>
                           {task.time && (
-                            <span className="text-xs font-bold text-focusPurple tracking-widest uppercase">
+                            <span className="text-xs font-bold text-brand tracking-widest uppercase">
                               ⏰ {formatTimeTo12Hour(task.time)}
                             </span>
                           )}
@@ -277,7 +275,7 @@ export default function TaskManager() {
                       </div>
                       <button
                         onClick={() => toggleComplete(task.id)}
-                        className="px-6 py-2 rounded-xl bg-[#f0f2f5] shadow-[4px_4px_10px_#d1d9e6,-4px_-4px_10px_#ffffff] text-[#00b894] font-black hover:bg-[#00b894] hover:text-white hover:shadow-[0_10px_20px_rgba(0,184,148,0.3)] transition-all"
+                        className="px-6 py-2 rounded-token-sm bg-surface-2 shadow-neu-sm text-success font-black hover:bg-success hover:text-on-brand hover:shadow-neu transition-all"
                       >
                         Done
                       </button>
@@ -300,7 +298,7 @@ export default function TaskManager() {
             🏠 Dashboard
           </button>
           {tasks.length > 0 && (
-            <button onClick={resetTimeline} className="magic-btn text-red-400 flex items-center gap-2">
+            <button onClick={resetTimeline} className="magic-btn text-focus flex items-center gap-2">
               🗑 Delete All Tasks
             </button>
           )}

@@ -59,7 +59,7 @@ app.use(cors({
 // ==============================================
 // ENVIRONMENT VARIABLE VALIDATION
 // ==============================================
-const requiredEnv = ['JWT_SECRET', 'ORACLE_USER', 'ORACLE_PASSWORD', 'EMAIL_USER', 'EMAIL_PASS'];
+const requiredEnv = ['JWT_SECRET', 'PGHOST', 'PGUSER', 'PGPASSWORD', 'EMAIL_USER', 'EMAIL_PASS'];
 const missing = requiredEnv.filter(varName => !process.env[varName]);
 
 if (missing.length > 0) {
@@ -67,10 +67,6 @@ if (missing.length > 0) {
     missing.forEach(varName => console.error(`   - ${varName}`));
     console.error('\nPlease check your .env file and restart the server.');
     process.exit(1);
-}
-
-if (!process.env.ORACLE_CONNECTION_STRING) {
-    console.warn('⚠️ ORACLE_CONNECTION_STRING not set. Using default: localhost:1521/XEPDB1');
 }
 
 if (process.env.JWT_SECRET && process.env.JWT_SECRET.length < 32) {
@@ -246,7 +242,7 @@ let isHourlyRemindersRunning = false;
 async function startServer() {
     try {
         await initialize();
-        console.log('✅ Oracle Database connection pool created');
+        console.log('✅ Database connection pool created');
         
         startReminderScheduler();
         console.log('⏰ Class reminder scheduler started');

@@ -1,11 +1,16 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { Target, Zap, Settings, LogOut, ChevronDown } from "lucide-react";
 import { useUser } from "../auth/UserContext";
 import { useApp } from "../context/AppContext";
-import Logo from "./Logo";
+import { ThemeToggle } from "../ui/ThemeToggle";
+import { LanguageSelect } from "../ui/LanguageSelect";
+import DashboardSwitcher from "../dashboard/DashboardSwitcher";
 
 export default function Navbar() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { userName, logout } = useUser();
   const { pendingCount, pendingRoutine } = useApp();
   const [showDropdown, setShowDropdown] = useState(false);
@@ -29,113 +34,79 @@ export default function Navbar() {
     }
   };
 
-  const getInitials = (name) => {
-    return name ? name.split(" ").map(n => n[0]).join("").toUpperCase().substring(0, 2) : "??";
-  };
+  const getInitials = (name) =>
+    name ? name.split(" ").map((n) => n[0]).join("").toUpperCase().substring(0, 2) : "??";
 
   return (
-    <nav className="sticky top-0 z-[1000] m-5 px-6 py-4 flex items-center justify-between bg-gradient-to-br from-[#6c5ce7] to-[#8271ff] backdrop-blur-xl rounded-[20px] shadow-[0_10px_40px_rgba(108,92,231,0.25)] border border-white/20">
-      
-      <div className="flex items-center gap-5">
-        <div 
-          onClick={() => navigate("/dashboard")} 
-          className="cursor-pointer transition-transform hover:scale-110 active:scale-95 duration-300 drop-shadow-md"
-        >
-          <Logo size="small" showText={false} />
-        </div>
-
-        <div className="flex flex-col items-start leading-tight">
-          <span
-            onClick={() => navigate("/dashboard")}
-            className="text-xl font-black tracking-tighter cursor-pointer select-none text-white drop-shadow-sm"
-          >
-            FOCUS FLOW
-          </span>
-          
-          <ul className="flex gap-4 list-none m-0 p-0 mt-1">
-            <li>
-              <button 
-                onClick={() => navigate("/dashboard")} 
-                className="text-white text-[0.7rem] font-black opacity-80 hover:opacity-100 hover:translate-y-[-1px] transition-all duration-300 uppercase tracking-[1px]"
-              >
-                Dashboard
-              </button>
-            </li>
-            <li>
-              <a 
-                href="#stats" 
-                className="text-white text-[0.7rem] font-black opacity-60 hover:opacity-100 hover:translate-y-[-1px] transition-all duration-300 no-underline uppercase tracking-[1px]"
-              >
-                Analytics
-              </a>
-            </li>
-          </ul>
-        </div>
+    <nav className="sticky top-0 z-[900] h-[66px] px-4 sm:px-6 flex items-center justify-between bg-[rgb(var(--surface)/0.92)] backdrop-blur border-b border-[rgb(var(--ink)/0.07)]">
+      <div className="flex items-center gap-3 min-w-0">
+        <DashboardSwitcher />
       </div>
 
-      <div className="flex items-center gap-4">
-        
-        <div className="hidden sm:flex gap-3 items-center">
-          {/* Pending Cell */}
-          <div className="relative min-w-[115px] px-4 py-1.5 rounded-[15px] bg-white/15 border border-white/20 backdrop-blur-md flex items-center gap-3 transition-all duration-400 hover:-translate-y-1 hover:bg-white/25 group overflow-hidden">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(255,255,255,0.2)_0%,_transparent_75%)] opacity-50"></div>
-            <span className="text-lg z-10 group-hover:scale-110 transition-transform">🎯</span>
-            <div className="flex flex-col z-10">
-              <span className="font-mono text-lg font-black text-white leading-none">
-                {pendingCount.toString().padStart(2, '0')}
-              </span>
-              <span className="text-[0.5rem] font-black text-white/70 tracking-widest uppercase mt-0.5">Pending</span>
-            </div>
+      <div className="flex items-center gap-2 sm:gap-3">
+        {/* Pending / routine cells */}
+        <div className="hidden md:flex gap-2 items-center">
+          <div className="flex items-center gap-2 px-3 h-9 rounded-token-sm bg-surface-2">
+            <Target size={16} className="text-brand" />
+            <span className="font-mono text-sm font-black text-ink leading-none">
+              {(pendingCount ?? 0).toString().padStart(2, "0")}
+            </span>
+            <span className="text-[0.55rem] font-bold text-muted tracking-widest uppercase">
+              {t("nav.pending")}
+            </span>
           </div>
-
-          {/* Routine Cell */}
-          <div className="relative min-w-[115px] px-4 py-1.5 rounded-[15px] bg-white/15 border border-white/20 backdrop-blur-md flex items-center gap-3 transition-all duration-400 hover:-translate-y-1 hover:bg-white/25 group overflow-hidden">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(255,255,255,0.2)_0%,_transparent_75%)] opacity-50"></div>
-            <span className="text-lg z-10 group-hover:scale-110 transition-transform">⚡</span>
-            <div className="flex flex-col z-10">
-              <span className="font-mono text-lg font-black text-white leading-none">
-                {pendingRoutine.toString().padStart(2, '0')}
-              </span>
-              <span className="text-[0.5rem] font-black text-white/70 tracking-widest uppercase mt-0.5">Routine</span>
-            </div>
+          <div className="flex items-center gap-2 px-3 h-9 rounded-token-sm bg-surface-2">
+            <Zap size={16} className="text-info" />
+            <span className="font-mono text-sm font-black text-ink leading-none">
+              {(pendingRoutine ?? 0).toString().padStart(2, "0")}
+            </span>
+            <span className="text-[0.55rem] font-bold text-muted tracking-widest uppercase">
+              {t("nav.routine")}
+            </span>
           </div>
         </div>
 
-        {/* Profile Section */}
-        <div className="relative ml-2" ref={dropdownRef}>
-          <div 
-            className="flex items-center gap-2.5 cursor-pointer group px-2 py-1 rounded-full hover:bg-white/10 transition-all"
-            onClick={() => setShowDropdown(!showDropdown)}
-          >
-            <div className="relative w-10 h-10 rounded-full bg-white text-[#6c5ce7] flex items-center justify-center font-black text-[0.85rem] shadow-xl transition-all duration-300 group-hover:scale-105">
-              {getInitials(userName)}
-              <span className="absolute bottom-0 right-0 w-3 h-3 bg-[#2ecc71] border-2 border-[#6c5ce7] rounded-full shadow-sm"></span>
-            </div>
-            <span className={`text-white/80 text-[0.7rem] transition-transform duration-300 ${showDropdown ? 'rotate-180' : ''}`}>▼</span>
-          </div>
+        <LanguageSelect className="hidden sm:block" />
+        <ThemeToggle />
 
-          {/* Dropdown Popup */}
+        {/* Profile dropdown */}
+        <div className="relative" ref={dropdownRef}>
+          <button
+            onClick={() => setShowDropdown((s) => !s)}
+            aria-label="Account menu"
+            aria-expanded={showDropdown}
+            className="flex items-center gap-1.5 group px-1 py-1 rounded-full hover:bg-surface-2 transition-all"
+          >
+            <span className="w-9 h-9 rounded-xl bg-grad-hero text-on-brand flex items-center justify-center font-black text-[0.8rem]">
+              {getInitials(userName)}
+            </span>
+            <ChevronDown size={15} className={`text-muted transition-transform duration-300 ${showDropdown ? "rotate-180" : ""}`} />
+          </button>
+
           {showDropdown && (
-            <div className="absolute top-[60px] right-0 w-60 bg-[#1e1e24] border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] py-2 z-[2000] animate-in fade-in slide-in-from-top-2">
+            <div className="absolute top-[52px] right-0 w-60 bg-surface border border-[rgb(var(--ink)/0.08)] rounded-token-md shadow-glass py-2 z-[2000]">
               <div className="flex items-center gap-3 px-4 py-3">
-                <div className="w-9 h-9 rounded-xl bg-[#6c5ce7] flex items-center justify-center text-[0.8rem] text-white font-black">
+                <span className="w-9 h-9 rounded-xl bg-grad-hero flex items-center justify-center text-[0.8rem] text-on-brand font-black">
                   {getInitials(userName)}
-                </div>
-                <div className="flex flex-col">
-                  <p className="text-[0.85rem] font-black text-white leading-tight">{userName}</p>
-                  <p className="text-[0.65rem] font-bold text-[#2ecc71] uppercase tracking-tighter">System Active</p>
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[0.85rem] font-bold text-ink leading-tight truncate">{userName || "User"}</p>
+                  <p className="text-[0.65rem] font-bold text-success uppercase tracking-tight">Active</p>
                 </div>
               </div>
-              <div className="h-[1px] bg-white/10 my-1 mx-2"></div>
-              <div className="px-4 py-3 text-[0.8rem] font-bold text-[#dfe6e9] hover:bg-white/5 cursor-pointer transition-colors flex items-center gap-2">
-                <span>⚙️</span> Settings
-              </div>
-              <div 
-                className="px-4 py-3 text-[0.8rem] font-black text-[#ff7675] hover:bg-[#ff7675]/10 cursor-pointer transition-colors flex items-center gap-2"
-                onClick={handleLogout}
+              <div className="h-px bg-[rgb(var(--ink)/0.08)] my-1 mx-2" />
+              <button
+                onClick={() => { navigate("/settings"); setShowDropdown(false); }}
+                className="w-full text-left px-4 py-2.5 text-[0.85rem] font-medium text-ink hover:bg-surface-2 transition-colors flex items-center gap-2.5"
               >
-                <span>🚪</span> Logout System
-              </div>
+                <Settings size={16} className="text-muted" /> {t("nav.settings")}
+              </button>
+              <button
+                onClick={handleLogout}
+                className="w-full text-left px-4 py-2.5 text-[0.85rem] font-semibold text-focus hover:bg-focus/10 transition-colors flex items-center gap-2.5"
+              >
+                <LogOut size={16} /> {t("nav.logout")}
+              </button>
             </div>
           )}
         </div>

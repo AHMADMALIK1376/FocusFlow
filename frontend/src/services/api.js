@@ -308,9 +308,7 @@ export const dashboardAPI = {
     }
 };
 
-// ==============================================
 // ATTENDANCE APIs
-// ==============================================
 export const attendanceAPI = {
     getDashboard: async () => {
         return authFetch('/attendance/dashboard');

@@ -6,7 +6,7 @@ import { routineAPI } from "../../services/api";
 import EditRoutinePopup from "./EditRoutinePopup";
 import DeleteRoutinePopup from "./DeleteRoutinePopup";
 
-// ✅ FIX: Use SHORT day names for backend compatibility
+// Use SHORT day names for backend compatibility
 const daysOfWeek = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 // Helper to convert short day to full for display
@@ -62,7 +62,7 @@ const DonutChart = ({ tasks, activeDay, onToggle, sliceAngle, isLocked, currentD
   const circumference = 2 * Math.PI * radius;
 
   const totalTasks = tasks.length;
-  
+
   const getSliceColor = (task, index) => getTaskColor(task, activeDay, isLocked, currentDayName);
 
   const getStatusText = (task) => {
@@ -100,7 +100,7 @@ const DonutChart = ({ tasks, activeDay, onToggle, sliceAngle, isLocked, currentD
   return (
     <div className="relative flex items-center justify-center">
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        <circle cx={center} cy={center} r={radius} fill="none" stroke="#e5e7eb" strokeWidth={strokeWidth} />
+        <circle cx={center} cy={center} r={radius} fill="none" stroke="rgb(var(--ink)/0.1)" strokeWidth={strokeWidth} />
         {tasks.map((task, i) => {
           const color = getSliceColor(task, i);
           const isHovered = hoveredIndex === i;
@@ -113,7 +113,7 @@ const DonutChart = ({ tasks, activeDay, onToggle, sliceAngle, isLocked, currentD
               onMouseLeave={handleMouseLeave}
               style={{ cursor: (isLocked || isMissed) ? 'not-allowed' : 'pointer' }}
               onClick={() => handleSliceClick(task, i)}>
-              <circle cx={center} cy={center} r={radius} fill="none" stroke={color} 
+              <circle cx={center} cy={center} r={radius} fill="none" stroke={color}
                 strokeWidth={isHovered && !isMissed && !isLocked ? strokeWidth + 6 : strokeWidth}
                 strokeDasharray={dashArray} strokeLinecap="butt"
                 transform={`rotate(${rotation} ${center} ${center})`} opacity={1}
@@ -121,14 +121,14 @@ const DonutChart = ({ tasks, activeDay, onToggle, sliceAngle, isLocked, currentD
             </g>
           );
         })}
-        <circle cx={center} cy={center} r={radius - strokeWidth / 2 - 5} fill="white" />
+        <circle cx={center} cy={center} r={radius - strokeWidth / 2 - 5} fill="rgb(var(--surface))" />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-        <span className="text-2xl font-black text-gray-800">{completedCount}/{totalTasks}</span>
-        <span className="text-[9px] text-gray-400 font-bold uppercase mt-0.5">Done</span>
-        {missedCount > 0 && <span className="text-[8px] text-red-500 font-bold mt-0.5">{missedCount} missed</span>}
+        <span className="text-2xl font-black text-ink">{completedCount}/{totalTasks}</span>
+        <span className="text-[9px] text-muted font-bold uppercase mt-0.5">Done</span>
+        {missedCount > 0 && <span className="text-[8px] text-focus font-bold mt-0.5">{missedCount} missed</span>}
       </div>
-      
+
       {!isLocked && visibleIndex !== null && tasks[visibleIndex] && (() => {
         const task = tasks[visibleIndex];
         const color = getSliceColor(task, visibleIndex);
@@ -141,14 +141,14 @@ const DonutChart = ({ tasks, activeDay, onToggle, sliceAngle, isLocked, currentD
         return (
           <div className={`absolute z-30 pointer-events-none transition-all duration-300 ease-out ${isFading ? 'opacity-0 scale-90' : 'opacity-100 scale-100'}`}
             style={{ left: `${tx}px`, top: `${ty}px`, transform: `translate(-50%, -50%)` }}>
-            <div className="bg-gray-900 text-white rounded-xl px-4 py-3 shadow-2xl min-w-[160px] text-center">
+            <div className="bg-ink text-canvas rounded-token-md px-4 py-3 shadow-glass min-w-[160px] text-center">
               <p className="text-xs font-black truncate">{task.activity}</p>
               <p className="text-lg font-black mt-1" style={{ color }}>
                 {task.time ? (() => { const [h, m] = task.time.split(':'); const hour = parseInt(h); const ampm = hour >= 12 ? 'PM' : 'AM'; return `${hour % 12 || 12}:${m} ${ampm}`; })() : 'N/A'}
               </p>
               <p className="text-[10px] mt-1 font-bold" style={{ color }}>{getStatusText(task)}</p>
             </div>
-            <div className="absolute w-3 h-3 bg-gray-900"
+            <div className="absolute w-3 h-3 bg-ink"
               style={{ left: `${50 - dirX * 45}%`, top: `${50 - dirY * 45}%`, transform: 'translate(-50%, -50%) rotate(45deg)' }} />
           </div>
         );
@@ -202,10 +202,10 @@ export default function RoutineView() {
           const routines = await routineAPI.getAll();
           setSchedule(routines);
           setTimetable(routines);
-        } catch (error) { 
+        } catch (error) {
           console.error('Failed to fetch routines:', error);
-        } finally { 
-          setLoading(false); 
+        } finally {
+          setLoading(false);
         }
       };
       fetchRoutines();
@@ -230,13 +230,13 @@ export default function RoutineView() {
   };
 
   const handleEditSave = async (routineId, updatedData) => {
-    try { 
-      await routineAPI.update(routineId, updatedData); 
-      const routines = await routineAPI.getAll(); 
+    try {
+      await routineAPI.update(routineId, updatedData);
+      const routines = await routineAPI.getAll();
       setSchedule(routines);
       setTimetable(routines);
-      setShowEditPopup(false); 
-      setEditingRoutine(null); 
+      setShowEditPopup(false);
+      setEditingRoutine(null);
     }
     catch (error) { alert('Failed to update routine: ' + error.message); }
   };
@@ -258,11 +258,11 @@ export default function RoutineView() {
         if (newDays.length === 0) {
           await routineAPI.delete(routineId);
         } else {
-          await routineAPI.update(routineId, { 
+          await routineAPI.update(routineId, {
             activity: routine.activity,
             time: routine.time,
             repeatOn: newDays,
-            dayColors: routine.dayColors 
+            dayColors: routine.dayColors
           });
         }
       }
@@ -276,8 +276,6 @@ export default function RoutineView() {
     }
   };
 
-  const isActiveDayLocked = false;
-  
   const dayTasks = schedule.filter(task => task.repeatOn?.includes(activeDay)).sort((a, b) => a.time.localeCompare(b.time));
   const totalTasks = dayTasks.length;
   const sliceAngle = totalTasks > 0 ? 360 / totalTasks : 360;
@@ -290,18 +288,18 @@ export default function RoutineView() {
   const orderedLeftTasks = [...leftSideTasks].reverse();
 
   if (loading) return (
-    <div className="min-h-screen bg-[#F1F5F9] flex items-center justify-center">
-      <div className="w-12 h-12 border-4 border-focusPurple border-t-transparent rounded-full animate-spin"></div>
+    <div className="min-h-screen bg-canvas flex items-center justify-center">
+      <div className="w-12 h-12 border-4 border-brand border-t-transparent rounded-full animate-spin"></div>
     </div>
   );
 
   const formatDayForDisplay = (day) => getFullDayName(day);
 
   return (
-    <div className="min-h-screen bg-[#F1F5F9] py-6 px-4 flex flex-col items-center">
+    <div className="min-h-screen bg-canvas py-6 px-4 flex flex-col items-center">
       <div className="text-center mb-4">
-        <h1 className="text-3xl font-black text-[#7C3AED]">Daily Routine</h1>
-        <p className="text-gray-400 text-sm mt-1">{dateStr}</p>
+        <h1 className="text-3xl font-black text-brand">Daily Routine</h1>
+        <p className="text-muted text-sm mt-1">{dateStr}</p>
       </div>
 
       <div className="flex gap-1.5 mb-6 overflow-x-auto pb-2 max-w-full px-2">
@@ -312,10 +310,10 @@ export default function RoutineView() {
           const displayDay = formatDayForDisplay(day);
           return (
             <button key={day} onClick={() => setActiveDay(day)}
-              className={`px-4 py-2 rounded-2xl font-black text-[11px] uppercase tracking-wider transition-all flex-shrink-0 
-                ${isActive ? 'bg-[#7C3AED] text-white shadow-lg shadow-purple-200' : 
-                  isToday ? 'bg-white text-[#7C3AED] shadow-md ring-2 ring-[#7C3AED]/30' : 
-                  'bg-white text-gray-500 shadow-sm hover:shadow-md'}`}>
+              className={`px-4 py-2 rounded-token-md font-black text-[11px] uppercase tracking-wider transition-all flex-shrink-0
+                ${isActive ? 'bg-grad-hero text-on-brand shadow-neu-sm' :
+                  isToday ? 'bg-surface text-brand shadow-neu ring-2 ring-brand/30' :
+                  'bg-surface text-muted shadow-neu-sm hover:shadow-neu'}`}>
               {displayDay.substring(0, 3)}{count > 0 && <span className="ml-1 opacity-70">{count}</span>}
             </button>
           );
@@ -323,18 +321,18 @@ export default function RoutineView() {
       </div>
 
       <div className="relative w-full max-w-2xl group/card">
-        <div className="bg-white rounded-[40px] shadow-[20px_20px_60px_#d1d9e6,-20px_-20px_60px_#ffffff] p-8 mb-6">
+        <div className="bg-surface rounded-token-xl shadow-neu p-8 mb-6">
           {dayTasks.length === 0 ? (
             <div className="text-center py-10">
               <span className="text-5xl mb-4 block">🌅</span>
-              <p className="text-gray-400 font-bold">No activities for {formatDayForDisplay(activeDay)}</p>
+              <p className="text-muted font-bold">No activities for {formatDayForDisplay(activeDay)}</p>
               <button onClick={() => navigate("/routine")} className="magic-btn mt-4 text-sm">+ Add Activities</button>
             </div>
           ) : (
             <>
               <div className="text-center mb-4">
-                <h2 className="text-lg font-black text-gray-800">{formatDayForDisplay(activeDay)}'s Schedule</h2>
-                <p className="text-[10px] text-gray-400 mt-1">Click slice to complete • Hover for details</p>
+                <h2 className="text-lg font-black text-ink">{formatDayForDisplay(activeDay)}'s Schedule</h2>
+                <p className="text-[10px] text-muted mt-1">Click slice to complete • Hover for details</p>
               </div>
 
               <div className="flex items-center justify-center gap-4">
@@ -348,10 +346,10 @@ export default function RoutineView() {
                       <div key={task.id} className="flex items-center gap-1.5 group justify-end w-full">
                         {!missed && (
                           <button onClick={() => handleEditClick(task)}
-                            className="text-[13px] text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity leading-none mr-0.5">✎</button>
+                            className="text-[13px] text-info opacity-0 group-hover:opacity-100 transition-opacity leading-none mr-0.5">✎</button>
                         )}
-                        {missed && <span className="text-[11px] text-red-500 font-bold mr-0.5">🔒</span>}
-                        <span className={`text-[11px] font-bold text-right leading-tight max-w-[115px] truncate ${completed ? 'text-green-500 line-through' : missed ? 'text-red-500 line-through font-black' : 'text-gray-700'}`}>
+                        {missed && <span className="text-[11px] text-focus font-bold mr-0.5">🔒</span>}
+                        <span className={`text-[11px] font-bold text-right leading-tight max-w-[115px] truncate ${completed ? 'text-success line-through' : missed ? 'text-focus line-through font-black' : 'text-ink'}`}>
                           {task.activity}
                         </span>
                         <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }}></div>
@@ -374,14 +372,14 @@ export default function RoutineView() {
                     return (
                       <div key={task.id} className="flex items-center gap-1.5 group justify-start w-full">
                         <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }}></div>
-                        <span className={`text-[11px] font-bold text-left leading-tight max-w-[115px] truncate ${completed ? 'text-green-500 line-through' : missed ? 'text-red-500 line-through font-black' : 'text-gray-700'}`}>
+                        <span className={`text-[11px] font-bold text-left leading-tight max-w-[115px] truncate ${completed ? 'text-success line-through' : missed ? 'text-focus line-through font-black' : 'text-ink'}`}>
                           {task.activity}
                         </span>
                         {!missed && (
                           <button onClick={() => handleEditClick(task)}
-                            className="text-[13px] text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity leading-none ml-0.5">✎</button>
+                            className="text-[13px] text-info opacity-0 group-hover:opacity-100 transition-opacity leading-none ml-0.5">✎</button>
                         )}
-                        {missed && <span className="text-[11px] text-red-500 font-bold ml-0.5">🔒</span>}
+                        {missed && <span className="text-[11px] text-focus font-bold ml-0.5">🔒</span>}
                       </div>
                     );
                   })}
@@ -389,9 +387,9 @@ export default function RoutineView() {
               </div>
 
               <div className="flex justify-center gap-6 mt-5 text-[9px] font-bold">
-                <span className="text-green-500">🟢 Completed</span>
-                <span className="text-red-500">🔴 Missed</span>
-                <span className="text-gray-400">⚪ Upcoming</span>
+                <span className="text-success">🟢 Completed</span>
+                <span className="text-focus">🔴 Missed</span>
+                <span className="text-muted">⚪ Upcoming</span>
               </div>
             </>
           )}
@@ -402,11 +400,11 @@ export default function RoutineView() {
           <button
             onClick={() => {
               if (dayTasks.length > 0) {
-                setDeletingRoutine(dayTasks[0]); 
+                setDeletingRoutine(dayTasks[0]);
                 setShowDeletePopup(true);
               }
             }}
-            className="pointer-events-auto text-xl text-gray-300 hover:text-red-500 opacity-0 group-hover/card:opacity-100 transition-all duration-300 hover:scale-110 z-10"
+            className="pointer-events-auto text-xl text-muted hover:text-focus opacity-0 group-hover/card:opacity-100 transition-all duration-300 hover:scale-110 z-10"
             title="Delete activities">
             🗑
           </button>
@@ -423,11 +421,11 @@ export default function RoutineView() {
       )}
 
       {showDeletePopup && deletingRoutine && (
-        <DeleteRoutinePopup 
+        <DeleteRoutinePopup
           routine={deletingRoutine}
           allRoutines={dayTasks}
-          onClose={() => { setShowDeletePopup(false); setDeletingRoutine(null); }} 
-          onDelete={handleDeleteRoutine} 
+          onClose={() => { setShowDeletePopup(false); setDeletingRoutine(null); }}
+          onDelete={handleDeleteRoutine}
         />
       )}
     </div>

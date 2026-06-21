@@ -29,7 +29,7 @@ export default function AcadmicCalenAddsection({
   };
 
   return (
-    <div className="w-full max-w-[1000px] bg-[#F1F5F9] p-10 rounded-[40px] shadow-[20px_20px_60px_#d1d9e6,-20px_-20px_60px_#ffffff] mb-6 border border-white/50">
+    <div className="w-full max-w-[1000px] bg-surface p-10 rounded-token-xl shadow-neu mb-6 border border-[rgb(var(--ink)/0.08)]">
 
       {/* Header + New Calendar section */}
       <AcadmicCalenNewCal
@@ -44,18 +44,18 @@ export default function AcadmicCalenAddsection({
           placeholder="e.g. COMPUTER ARCHITECTURE"
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
-          className="w-full p-5 rounded-2xl bg-[#F1F5F9] shadow-[inset_6px_6px_12px_#d1d9e6,inset_-6px_-6px_12px_#ffffff] outline-none font-bold text-gray-500 placeholder:text-gray-300 border-none transition-all"
+          className="w-full p-5 rounded-token-md bg-surface-2 shadow-neu-inset outline-none font-bold text-ink placeholder:text-muted border-none transition-all"
         />
 
         <div className="flex flex-col gap-3">
-          <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Select Days:</p>
+          <p className="text-[10px] font-black text-muted uppercase tracking-[0.2em] ml-1">Select Days:</p>
           <div className="flex flex-wrap gap-3">
             {allDays.map((day) => (
               <button key={day} type="button" onClick={() => toggleDay(day)}
-                className={`px-6 py-2 rounded-xl font-bold text-xs transition-all bg-[#F1F5F9]
+                className={`px-6 py-2 rounded-token-sm font-bold text-xs transition-all
                   ${selectedDays.includes(day)
-                    ? "text-[#7C3AED] shadow-[inset_4px_4px_8px_#d1d9e6,inset_-4px_-4px_8px_#ffffff]"
-                    : "text-gray-400 shadow-[4px_4px_8px_#d1d9e6,-4px_-4px_8px_#ffffff] hover:scale-105"}`}
+                    ? "bg-grad-hero text-on-brand shadow-neu-sm"
+                    : "bg-surface-2 text-muted shadow-neu-sm hover:scale-105"}`}
               >
                 {day}
               </button>
@@ -64,10 +64,10 @@ export default function AcadmicCalenAddsection({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-          <div className="md:col-span-6 flex items-center justify-between bg-[#F1F5F9] shadow-[inset_6px_6px_12px_#d1d9e6,inset_-6px_-6px_12px_#ffffff] rounded-2xl p-4 px-6">
-            <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="bg-transparent font-bold text-gray-500 outline-none cursor-pointer" />
-            <span className="text-gray-300 font-bold text-xs uppercase tracking-widest">to</span>
-            <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="bg-transparent font-bold text-gray-500 outline-none cursor-pointer" />
+          <div className="md:col-span-6 flex items-center justify-between bg-surface-2 shadow-neu-inset rounded-token-md p-4 px-6">
+            <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="bg-transparent font-bold text-ink outline-none cursor-pointer" />
+            <span className="text-muted font-bold text-xs uppercase tracking-widest">to</span>
+            <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="bg-transparent font-bold text-ink outline-none cursor-pointer" />
           </div>
           <div className="md:col-span-3">
             <input
@@ -75,7 +75,7 @@ export default function AcadmicCalenAddsection({
               placeholder="LR / LAB"
               value={lrNo}
               onChange={(e) => setLrNo(e.target.value)}
-              className="w-full p-4 rounded-2xl bg-[#F1F5F9] shadow-[inset_6px_6px_12px_#d1d9e6,inset_-6px_-6px_12px_#ffffff] outline-none font-bold text-gray-500 text-center uppercase border-none"
+              className="w-full p-4 rounded-token-md bg-surface-2 shadow-neu-inset outline-none font-bold text-ink text-center uppercase border-none"
             />
           </div>
           <div className="md:col-span-3">

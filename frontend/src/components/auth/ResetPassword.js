@@ -16,7 +16,6 @@ export default function ResetPassword() {
   useEffect(() => {
     const verifiedEmail = sessionStorage.getItem('verifiedResetEmail');
     const code = sessionStorage.getItem('resetCode');
-    
     if (verifiedEmail && code) {
       setEmail(verifiedEmail);
       setResetCode(code);
@@ -27,32 +26,19 @@ export default function ResetPassword() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (newPassword.length < 6) {
-      setError("Password must be at least 6 characters long");
-      return;
-    }
-    
-    if (newPassword !== confirmPassword) {
-      setError("Passwords do not match");
-      return;
-    }
-    
+    if (newPassword.length < 6) { setError("Password must be at least 6 characters long"); return; }
+    if (newPassword !== confirmPassword) { setError("Passwords do not match"); return; }
     setLoading(true);
     setError("");
     setSuccess("");
-    
     try {
       const data = await authAPI.resetPassword(email, resetCode, newPassword);
-      
       if (data.success) {
         setSuccess(data.message || "Password reset successfully!");
         sessionStorage.removeItem('verifiedResetEmail');
         sessionStorage.removeItem('resetCode');
         sessionStorage.removeItem('resetEmail');
-        setTimeout(() => {
-          navigate('/login');
-        }, 2000);
+        setTimeout(() => { navigate('/login'); }, 2000);
       } else {
         setError(data.error || 'Failed to reset password');
       }
@@ -64,56 +50,58 @@ export default function ResetPassword() {
     }
   };
 
+  const inputCls = "w-[80%] p-4 bg-surface-2 rounded-token-md border border-[rgb(var(--ink)/0.08)] outline-none text-sm text-ink placeholder:text-muted focus:border-brand transition-all";
+
   return (
-    <div className="w-full bg-white flex flex-col items-center p-0">
+    <div className="w-full flex flex-col items-center p-0">
       <form onSubmit={handleSubmit} className="w-full flex flex-col items-center animate-in fade-in slide-in-from-left-4">
-        <h2 className="text-2xl font-black text-gray-800 mb-1">Create New Password</h2>
-        <p className="text-gray-400 text-xs font-bold mb-6 uppercase tracking-widest text-center">
+        <h2 className="text-2xl font-black text-ink mb-1">Create New Password</h2>
+        <p className="text-muted text-xs font-bold mb-6 uppercase tracking-widest text-center">
           Enter your new password
         </p>
-        
+
         {error && (
-          <div className="w-[80%] mb-4 p-3 bg-red-100 border border-red-300 text-red-600 rounded-xl text-sm font-bold text-center">
+          <div className="w-[80%] mb-4 p-3 bg-focus/10 border border-focus/30 text-focus rounded-token-sm text-sm font-bold text-center">
             {error}
           </div>
         )}
-        
+
         {success && (
-          <div className="w-[80%] mb-4 p-3 bg-green-100 border border-green-300 text-green-600 rounded-xl text-sm font-bold text-center">
+          <div className="w-[80%] mb-4 p-3 bg-success/10 border border-success/30 text-success rounded-token-sm text-sm font-bold text-center">
             {success}
           </div>
         )}
-        
+
         <div className="w-full space-y-3 flex flex-col items-center">
-          <input 
-            type="password" 
-            placeholder="New Password (min 6 characters)" 
+          <input
+            type="password"
+            placeholder="New Password (min 6 characters)"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
-            className="w-[80%] p-4 bg-[#f0f2f5] rounded-2xl shadow-neu-pressed outline-none text-sm" 
-            required 
+            className={inputCls}
+            required
             minLength={6}
           />
-          <input 
-            type="password" 
-            placeholder="Confirm New Password" 
+          <input
+            type="password"
+            placeholder="Confirm New Password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            className="w-[80%] p-4 bg-[#f0f2f5] rounded-2xl shadow-neu-pressed outline-none text-sm" 
-            required 
+            className={inputCls}
+            required
           />
         </div>
 
-        <button 
-          type="submit" 
-          className="magic-btn mt-8 w-[80%] tracking-widest text-xs"
+        <button
+          type="submit"
+          className="w-[80%] py-4 mt-8 rounded-token-md bg-grad-hero text-on-brand font-black text-[11px] tracking-widest uppercase shadow-[0_10px_24px_rgb(var(--brand)/0.4)] hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-300 disabled:opacity-60"
           disabled={loading}
         >
           {loading ? "RESETTING..." : "RESET PASSWORD"}
         </button>
-        
+
         <div className="mt-6 text-center">
-          <Link to="/login" className="text-[#6c5ce7] font-bold text-sm hover:underline">
+          <Link to="/login" className="text-brand font-bold text-sm hover:underline">
             Back to Login
           </Link>
         </div>

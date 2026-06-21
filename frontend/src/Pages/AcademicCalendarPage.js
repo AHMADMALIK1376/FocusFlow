@@ -21,10 +21,10 @@ export default function AcademicCalendarPage() {
           setLoading(false);
           return;
         }
-        
+
         const fetchedCalendars = await calendarAPI.getAll();
         setCalendarsRaw(fetchedCalendars);
-        
+
         const activeCal = fetchedCalendars.find(c => c.isActive === true);
         if (activeCal) {
           setActiveCalendarIdRaw(activeCal.id);
@@ -37,7 +37,7 @@ export default function AcademicCalendarPage() {
         setLoading(false);
       }
     };
-    
+
     fetchCalendars();
   }, []);
 
@@ -56,7 +56,7 @@ export default function AcademicCalendarPage() {
     try {
       const result = await calendarAPI.create(title);
       const newCalendar = result.calendar;
-      
+
       setCalendars(prev => [...prev, newCalendar]);
       setActiveCalendarId(newCalendar.id);
     } catch (error) {
@@ -74,7 +74,7 @@ export default function AcademicCalendarPage() {
         lrNo,
         days
       });
-      
+
       setCalendar(prev => [...prev, result.entry]);
     } catch (error) {
       console.error('Failed to add entry:', error);
@@ -84,15 +84,15 @@ export default function AcademicCalendarPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center px-4 pt-10 pb-20 max-w-[1400px] mx-auto min-h-screen bg-[#F1F5F9]">
-        <div className="w-12 h-12 border-4 border-focusPurple border-t-transparent rounded-full animate-spin"></div>
+      <div className="flex flex-col items-center justify-center px-4 pt-10 pb-20 max-w-[1400px] mx-auto min-h-screen bg-canvas">
+        <div className="w-12 h-12 border-4 border-brand border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
   if (calendars.length === 0) {
     return (
-      <div className="flex flex-col items-center px-4 pt-10 pb-20 max-w-[1400px] mx-auto min-h-screen bg-[#F1F5F9]">
+      <div className="flex flex-col items-center px-4 pt-10 pb-20 max-w-[1400px] mx-auto min-h-screen bg-canvas">
         <PageHeader />
         <AcadmicCalenNewCal
           isEmpty
@@ -103,7 +103,7 @@ export default function AcademicCalendarPage() {
   }
 
   return (
-    <div className="flex flex-col items-center px-4 pt-10 pb-20 max-w-[1400px] mx-auto min-h-screen bg-[#F1F5F9]">
+    <div className="flex flex-col items-center px-4 pt-10 pb-20 max-w-[1400px] mx-auto min-h-screen bg-canvas">
       <PageHeader />
 
       <AcadmicCalenAddsection
@@ -127,15 +127,15 @@ export default function AcademicCalendarPage() {
 function PageHeader() {
   return (
     <header className="w-full max-w-[1100px] mb-12 text-center">
-      <h1 className="text-4xl md:text-5xl font-black text-[#7C3AED] tracking-[0.2em] uppercase mb-3 drop-shadow-sm">
+      <h1 className="text-4xl md:text-5xl font-black text-brand tracking-[0.2em] uppercase mb-3 drop-shadow-sm">
         Academic Time Table
       </h1>
       <div className="flex items-center justify-center gap-4">
-        <div className="h-[2px] w-12 bg-gray-300 rounded-full"></div>
-        <p className="text-sm font-bold tracking-[0.3em] text-gray-400 uppercase">
-          Spring <span className="text-[#7C3AED]">( 2026 )</span>
+        <div className="h-[2px] w-12 bg-[rgb(var(--ink)/0.15)] rounded-full"></div>
+        <p className="text-sm font-bold tracking-[0.3em] text-muted uppercase">
+          Spring <span className="text-brand">( 2026 )</span>
         </p>
-        <div className="h-[2px] w-12 bg-gray-300 rounded-full"></div>
+        <div className="h-[2px] w-12 bg-[rgb(var(--ink)/0.15)] rounded-full"></div>
       </div>
     </header>
   );

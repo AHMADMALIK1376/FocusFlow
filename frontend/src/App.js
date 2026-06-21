@@ -1,6 +1,6 @@
 // src/App.js
-import React, { useState, lazy, Suspense } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import React, { useState, lazy, Suspense, useEffect } from "react";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 
 // ==============================================
 // ERROR BOUNDARY
@@ -20,7 +20,11 @@ import Splash from "./components/layout/Splash";
 import { UserProvider } from "./components/auth/UserContext";
 import { AppProvider } from "./components/context/AppContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import RequireOnboarding from "./components/auth/RequireOnboarding";
 import Layout from "./components/layout/Layout";
+import { ThemeProvider } from "./theme/ThemeProvider";
+import { PreferencesProvider } from "./preferences/PreferencesProvider";
+import { ToastProvider } from "./components/ui/Toast";
 
 // ==============================================
 // AUTH PAGES (Load immediately)
@@ -45,82 +49,143 @@ const FocusModePage = lazy(() => import("./Pages/FocusModePage"));
 const AcademicCalendarPage = lazy(() => import("./Pages/AcademicCalendarPage"));
 const AcademicCalendarViewPage = lazy(() => import("./Pages/AcademicCalendarViewPage"));
 const AttendanceTracker = lazy(() => import("./components/attendance/AttendanceTracker"));
+const OnboardingPage = lazy(() => import("./Pages/OnboardingPage"));
+const SettingsPage = lazy(() => import("./Pages/SettingsPage"));
+
+// ======================================================
+// 10 NEW FEATURE PAGES (Lazy loaded)
+// ======================================================
+const NotesPage = lazy(() => import("./Pages/NotesPage"));
+const GoalsPage = lazy(() => import("./Pages/GoalsPage"));
+const HabitsPage = lazy(() => import("./Pages/HabitsPage"));
+const KanbanPage = lazy(() => import("./Pages/KanbanPage"));
+const TimeTrackPage = lazy(() => import("./Pages/TimeTrackPage"));
+const FinancePage = lazy(() => import("./Pages/FinancePage"));
+const ShoppingPage = lazy(() => import("./Pages/ShoppingPage"));
+const MoodPage = lazy(() => import("./Pages/MoodPage"));
+const EventsPage = lazy(() => import("./Pages/EventsPage"));
+const ContactsPage = lazy(() => import("./Pages/ContactsPage"));
+
+// ==============================================
+// SCROLL TO TOP COMPONENT
+// ==============================================
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
+}
 
 // ==============================================
 // PAGE LOADER using LoadingSpinner component
 // ==============================================
 function PageLoader() {
-    return <LoadingSpinner fullScreen message="Loading page..." />;
+  return <LoadingSpinner fullScreen message="Loading page..." />;
 }
 
 // ==============================================
 // MAIN APP COMPONENT
 // ==============================================
 function App() {
-    const [showSplash, setShowSplash] = useState(true);
+  const [showSplash, setShowSplash] = useState(true);
 
-    // Handle splash screen completion
-    const handleSplashComplete = () => {
-        setShowSplash(false);
-    };
+  // Handle splash screen completion
+  const handleSplashComplete = () => {
+    setShowSplash(false);
+  };
 
-    // Show splash screen on initial load
-    if (showSplash) {
-        return <Splash onComplete={handleSplashComplete} />;
-    }
-
-    return (
-        <ErrorBoundary>
+  return (
+    <ThemeProvider>
+      {showSplash ? (
+        <Splash onComplete={handleSplashComplete} />
+      ) : (
+        <PreferencesProvider>
+          <ErrorBoundary>
             <UserProvider>
-                <AppProvider>
-                    <BrowserRouter>
-                        <Suspense fallback={<PageLoader />}>
-                            <Routes>
-                                {/* ============================================== */}
-                                {/* AUTH ROUTES (No layout, no authentication needed) */}
-                                {/* ============================================== */}
-                                <Route element={<AuthPage />}>
-                                    <Route path="/" element={<Navigate to="/login" replace />} />
-                                    <Route path="/login" element={<LoginForm />} />
-                                    <Route path="/signup" element={<RegisterForm />} />
-                                    <Route path="/verify" element={<VerifyForm />} />
-                                    <Route path="/forgot-password" element={<ForgotPasswordForm />} />
-                                    <Route path="/reset-password-verify" element={<ResetPasswordVerify />} />
-                                    <Route path="/reset-password" element={<ResetPassword />} />
-                                </Route>
+              <AppProvider>
+                <ToastProvider>
+                <BrowserRouter>
+                  <ScrollToTop />
+                  <Suspense fallback={<PageLoader />}>
+                    <Routes>
+                      {/* ============================================== */}
+                      {/* AUTH ROUTES (No layout, no authentication needed) */}
+                      {/* ============================================== */}
+                      <Route element={<AuthPage />}>
+                        <Route path="/" element={<Navigate to="/login" replace />} />
+                        <Route path="/login" element={<LoginForm />} />
+                        <Route path="/signup" element={<RegisterForm />} />
+                        <Route path="/verify" element={<VerifyForm />} />
+                        <Route path="/forgot-password" element={<ForgotPasswordForm />} />
+                        <Route path="/reset-password-verify" element={<ResetPasswordVerify />} />
+                        <Route path="/reset-password" element={<ResetPassword />} />
+                      </Route>
 
-                                {/* ============================================== */}
-                                {/* PROTECTED ROUTES (Require authentication + Layout) */}
-                                {/* ============================================== */}
-                                <Route
-                                    element={
-                                        <ProtectedRoute>
-                                            <Layout />
-                                        </ProtectedRoute>
-                                    }
-                                >
-                                    <Route path="/dashboard" element={<Home />} />
-                                    <Route path="/focus-mode" element={<FocusModePage />} />
-                                    <Route path="/tasks" element={<TaskManager />} />
-                                    <Route path="/timeline" element={<TimelinePage />} />
-                                    <Route path="/routine" element={<TimetablePage />} />
-                                    <Route path="/routine/view" element={<RoutineView />} />
-                                    <Route path="/academic" element={<AcademicCalendarPage />} />
-                                    <Route path="/academic/view" element={<AcademicCalendarViewPage />} />
-                                    <Route path="/attendance" element={<AttendanceTracker />} />
-                                </Route>
+                      {/* ============================================== */}
+                      {/* ONBOARDING — protected but no Layout shell */}
+                      {/* ============================================== */}
+                      <Route
+                        path="/onboarding"
+                        element={
+                          <ProtectedRoute>
+                            <OnboardingPage />
+                          </ProtectedRoute>
+                        }
+                      />
 
-                                {/* ============================================== */}
-                                {/* 404 - NOT FOUND ROUTE with Error Boundary */}
-                                {/* ============================================== */}
-                                <Route path="*" element={<ErrorBoundaryRoute />} />
-                            </Routes>
-                        </Suspense>
-                    </BrowserRouter>
-                </AppProvider>
+                      {/* ============================================== */}
+                      {/* PROTECTED ROUTES (Require authentication + onboarding + Layout) */}
+                      {/* ============================================== */}
+                      <Route
+                        element={
+                          <ProtectedRoute>
+                            <RequireOnboarding>
+                              <Layout />
+                            </RequireOnboarding>
+                          </ProtectedRoute>
+                        }
+                      >
+                        <Route path="/dashboard" element={<Home />} />
+                        <Route path="/focus-mode" element={<FocusModePage />} />
+                        <Route path="/tasks" element={<TaskManager />} />
+                        <Route path="/timeline" element={<TimelinePage />} />
+                        <Route path="/routine" element={<TimetablePage />} />
+                        <Route path="/routine/view" element={<RoutineView />} />
+                        <Route path="/academic" element={<AcademicCalendarPage />} />
+                        <Route path="/academic/view" element={<AcademicCalendarViewPage />} />
+                        <Route path="/attendance" element={<AttendanceTracker />} />
+                        <Route path="/settings" element={<SettingsPage />} />
+                        {/* 10 new feature routes */}
+                        <Route path="/notes" element={<NotesPage />} />
+                        <Route path="/goals" element={<GoalsPage />} />
+                        <Route path="/habits" element={<HabitsPage />} />
+                        <Route path="/projects" element={<KanbanPage />} />
+                        <Route path="/time" element={<TimeTrackPage />} />
+                        <Route path="/finance" element={<FinancePage />} />
+                        <Route path="/shopping" element={<ShoppingPage />} />
+                        <Route path="/mood" element={<MoodPage />} />
+                        <Route path="/events" element={<EventsPage />} />
+                        <Route path="/contacts" element={<ContactsPage />} />
+                      </Route>
+
+                      {/* ============================================== */}
+                      {/* 404 - NOT FOUND ROUTE with Error Boundary */}
+                      {/* ============================================== */}
+                      <Route path="*" element={<ErrorBoundaryRoute />} />
+                    </Routes>
+                  </Suspense>
+                </BrowserRouter>
+                </ToastProvider>
+              </AppProvider>
             </UserProvider>
-        </ErrorBoundary>
-    );
+          </ErrorBoundary>
+        </PreferencesProvider>
+      )}
+    </ThemeProvider>
+  );
 }
 
 export default App;

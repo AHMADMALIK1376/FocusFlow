@@ -15,16 +15,13 @@ export default function ForgotPasswordForm() {
     setLoading(true);
     setError("");
     setSuccess("");
-    
+
     try {
       const data = await authAPI.forgotPassword(email);
-      
       if (data.success) {
         setSuccess(data.message || "Reset code sent to your email!");
         sessionStorage.setItem('resetEmail', email);
-        setTimeout(() => {
-          navigate('/reset-password-verify');
-        }, 2000);
+        setTimeout(() => { navigate('/reset-password-verify'); }, 2000);
       } else {
         setError(data.error || 'Failed to send reset code');
       }
@@ -36,47 +33,49 @@ export default function ForgotPasswordForm() {
     }
   };
 
+  const inputCls = "w-[80%] p-4 bg-surface-2 rounded-token-md border border-[rgb(var(--ink)/0.08)] outline-none text-sm text-ink placeholder:text-muted focus:border-brand transition-all";
+
   return (
-    <div className="w-full bg-white flex flex-col items-center p-0">
+    <div className="w-full flex flex-col items-center p-0">
       <form onSubmit={handleSubmit} className="w-full flex flex-col items-center animate-in fade-in slide-in-from-left-4">
-        <h2 className="text-2xl font-black text-gray-800 mb-1">Forgot Password</h2>
-        <p className="text-gray-400 text-xs font-bold mb-6 uppercase tracking-widest text-center">
+        <h2 className="text-2xl font-black text-ink mb-1">Forgot Password</h2>
+        <p className="text-muted text-xs font-bold mb-6 uppercase tracking-widest text-center">
           Enter your email to receive reset code
         </p>
-        
+
         {error && (
-          <div className="w-[80%] mb-4 p-3 bg-red-100 border border-red-300 text-red-600 rounded-xl text-sm font-bold text-center">
+          <div className="w-[80%] mb-4 p-3 bg-focus/10 border border-focus/30 text-focus rounded-token-sm text-sm font-bold text-center">
             {error}
           </div>
         )}
-        
+
         {success && (
-          <div className="w-[80%] mb-4 p-3 bg-green-100 border border-green-300 text-green-600 rounded-xl text-sm font-bold text-center">
+          <div className="w-[80%] mb-4 p-3 bg-success/10 border border-success/30 text-success rounded-token-sm text-sm font-bold text-center">
             {success}
           </div>
         )}
-        
+
         <div className="w-full space-y-3 flex flex-col items-center">
-          <input 
-            type="email" 
-            placeholder="Email Address" 
+          <input
+            type="email"
+            placeholder="Email Address"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-[80%] p-4 bg-[#f0f2f5] rounded-2xl shadow-neu-pressed outline-none text-sm" 
-            required 
+            className={inputCls}
+            required
           />
         </div>
 
-        <button 
-          type="submit" 
-          className="magic-btn mt-8 w-[80%] tracking-widest text-xs"
+        <button
+          type="submit"
+          className="w-[80%] py-4 mt-8 rounded-token-md bg-grad-hero text-on-brand font-black text-[11px] tracking-widest uppercase shadow-[0_10px_24px_rgb(var(--brand)/0.4)] hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-300 disabled:opacity-60"
           disabled={loading}
         >
           {loading ? "SENDING CODE..." : "SEND RESET CODE"}
         </button>
-        
+
         <div className="mt-6 text-center">
-          <Link to="/login" className="text-[#6c5ce7] font-bold text-sm hover:underline">
+          <Link to="/login" className="text-brand font-bold text-sm hover:underline">
             Back to Login
           </Link>
         </div>

@@ -1,4 +1,5 @@
-﻿const express = require('express');
+﻿// backend/routes/authRoutes.js
+const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
 
@@ -42,12 +43,30 @@ router.post('/verify-reset-code', authController.verifyResetCode);
 router.post('/reset-password', authController.resetPassword);
 
 // ==============================================
+// GOOGLE AUTHENTICATION
+// ==============================================
+
+// Google Sign-In endpoint
+router.post('/google', authController.googleAuth);
+
+// ==============================================
 // TEST ROUTES
 // ==============================================
 
 // Test endpoint
 router.get('/test', (req, res) => {
     res.json({ message: 'Auth routes working' });
+});
+
+// Health check endpoint for Google OAuth testing
+router.get('/google-test', (req, res) => {
+    res.json({ 
+        message: 'Google Auth route is configured',
+        status: 'ready',
+        endpoints: {
+            google: 'POST /api/auth/google'
+        }
+    });
 });
 
 module.exports = router;

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const btn = "magic-btn px-8 py-3.5 rounded-2xl bg-[#f0f2f5] shadow-[6px_6px_12px_#d1d9e6,-6px_-6px_12px_#ffffff] text-focusPurple font-bold transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_20px_rgba(108,92,231,0.2)] active:scale-95 active:shadow-inner";
+const btn = "magic-btn px-8 py-3.5 rounded-token-lg font-bold transition-all duration-300 hover:-translate-y-1 active:scale-95";
 
 export default function AcadmicCalenNewCal({ activeCalendar, onCreateNewCalendar, isEmpty = false }) {
   const navigate = useNavigate();
@@ -19,10 +19,10 @@ export default function AcadmicCalenNewCal({ activeCalendar, onCreateNewCalendar
   if (isEmpty) {
     return (
       <>
-        <div className="w-full max-w-[560px] bg-[#F1F5F9] p-10 rounded-[40px] shadow-[20px_20px_60px_#d1d9e6,-20px_-20px_60px_#ffffff] border border-white/50 text-center mt-4">
+        <div className="w-full max-w-[560px] bg-surface p-10 rounded-token-xl shadow-neu border border-[rgb(var(--ink)/0.08)] text-center mt-4">
           <span className="text-5xl mb-5 block">📋</span>
-          <h2 className="text-2xl font-black text-[#1E293B] mb-2">Create a Calendar</h2>
-          <p className="text-gray-400 text-xs font-bold mb-8 uppercase tracking-widest">
+          <h2 className="text-2xl font-black text-ink mb-2">Create a Calendar</h2>
+          <p className="text-muted text-xs font-bold mb-8 uppercase tracking-widest">
             Name your timetable to get started
           </p>
           <input
@@ -31,7 +31,7 @@ export default function AcadmicCalenNewCal({ activeCalendar, onCreateNewCalendar
             value={newCalTitle}
             onChange={(e) => setNewCalTitle(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleCreate()}
-            className="w-full p-5 rounded-2xl bg-[#F1F5F9] shadow-[inset_6px_6px_12px_#d1d9e6,inset_-6px_-6px_12px_#ffffff] outline-none font-bold text-gray-500 placeholder:text-gray-300 border-none mb-5 transition-all"
+            className="w-full p-5 rounded-token-md bg-surface-2 shadow-neu-inset outline-none font-bold text-ink placeholder:text-muted border-none mb-5 transition-all"
           />
           <button onClick={handleCreate} className={`w-full ${btn}`}>
             ✦ Create New Calendar
@@ -53,11 +53,11 @@ export default function AcadmicCalenNewCal({ activeCalendar, onCreateNewCalendar
         <div className="flex items-center gap-3">
           <span className="text-2xl">✍️</span>
           <div>
-            <h2 className="text-2xl font-black text-[#1E293B] tracking-tight leading-none">
+            <h2 className="text-2xl font-black text-ink tracking-tight leading-none">
               Add Subject
             </h2>
             {activeCalendar && (
-              <span className="text-xs font-bold text-[#7C3AED] opacity-70 uppercase tracking-widest">
+              <span className="text-xs font-bold text-brand opacity-70 uppercase tracking-widest">
                 → {activeCalendar.title}
               </span>
             )}
@@ -70,7 +70,7 @@ export default function AcadmicCalenNewCal({ activeCalendar, onCreateNewCalendar
       </div>
 
       {showInput && (
-        <div className="flex gap-3 mt-5 p-5 rounded-2xl bg-[#F1F5F9] shadow-[inset_4px_4px_8px_#d1d9e6,inset_-4px_-4px_8px_#ffffff] border border-white/40">
+        <div className="flex gap-3 mt-5 p-5 rounded-token-md bg-surface-2 shadow-neu-inset border border-[rgb(var(--ink)/0.08)]">
           <span className="text-lg self-center">📋</span>
           <input
             autoFocus
@@ -79,7 +79,7 @@ export default function AcadmicCalenNewCal({ activeCalendar, onCreateNewCalendar
             value={newCalTitle}
             onChange={(e) => setNewCalTitle(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleCreate()}
-            className="flex-1 bg-transparent outline-none font-bold text-gray-600 placeholder:text-gray-300"
+            className="flex-1 bg-transparent outline-none font-bold text-ink placeholder:text-muted"
           />
           <button onClick={handleCreate} className={btn}>
             ✦ Create

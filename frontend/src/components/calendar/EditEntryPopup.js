@@ -1,3 +1,4 @@
+// src/components/calendar/EditEntryPopup.js
 import React, { useState, useEffect } from "react";
 
 const allDays = ["Mon", "Tue", "Wed", "Thu", "Fri"];
@@ -32,13 +33,28 @@ export default function EditEntryPopup({ entry, onClose, onSave }) {
   };
 
   const toggleDay = (day) => {
-    setSelectedDays(prev => prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]);
+    if (day === "All") {
+      if (selectedDays.length === allDays.length) {
+        setSelectedDays([]);
+      } else {
+        setSelectedDays([...allDays]);
+      }
+    } else {
+      setSelectedDays(prev => {
+        let newDays = prev.includes(day)
+          ? prev.filter(d => d !== day)
+          : [...prev, day];
+        return newDays;
+      });
+    }
   };
+
+  const isAllSelected = selectedDays.length === allDays.length;
 
   const handleSave = () => {
     if (!subject.trim()) return alert("Subject name is required!");
     if (selectedDays.length === 0) return alert("Select at least one day!");
-    
+
     onSave(entry.id, {
       subject: subject.trim(),
       startTime,
@@ -50,86 +66,104 @@ export default function EditEntryPopup({ entry, onClose, onSave }) {
   };
 
   return (
-    <div 
+    <div
       className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-300 ease-in-out
         ${isVisible ? 'bg-black/20' : 'bg-transparent'}`}
       onClick={handleClose}
     >
-      <div 
+      <div
         onClick={(e) => e.stopPropagation()}
-        className={`relative bg-[#f0f2f5] rounded-[28px] shadow-[0_20px_60px_rgba(0,0,0,0.15)] p-6 w-full max-w-[500px] z-10
+        className={`relative bg-surface rounded-token-lg shadow-glass p-5 w-full max-w-[450px] z-10
           transition-all duration-400 ease-[cubic-bezier(0.34,1.56,0.64,1)]
           ${isVisible ? 'scale-100 opacity-100 translate-y-0' : 'scale-90 opacity-0 translate-y-8'}`}
       >
         {/* Close button */}
         <button onClick={handleClose}
-          className="absolute top-4 right-4 w-6 h-6 rounded-full bg-red-500 text-white text-xs flex items-center justify-center shadow-lg hover:scale-110 transition-all z-20">✕</button>
+          className="absolute top-3 right-3 w-5 h-5 rounded-full bg-focus text-on-brand text-[10px] flex items-center justify-center shadow-neu-sm hover:scale-110 transition-all z-20">✕</button>
 
-        <div className="text-center mb-5">
-          <span className="text-2xl mb-1 block">✏️</span>
-          <h2 className="text-lg font-black text-gray-800">Edit Class</h2>
-          <p className="text-[10px] text-gray-400 mt-1">Editing: {entry.subject}</p>
+        <div className="text-center mb-3">
+          <span className="text-xl mb-0.5 block">✏️</span>
+          <h2 className="text-base font-black text-ink">Edit Class</h2>
+          <p className="text-[9px] text-muted mt-0.5">Editing: {entry.subject}</p>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           {/* Subject Name */}
           <div>
-            <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider mb-1 block">Subject Name</label>
+            <label className="text-[9px] font-black text-muted uppercase tracking-wider mb-0.5 block">Subject Name</label>
             <input type="text" value={subject} onChange={(e) => setSubject(e.target.value)}
-              className="w-full p-3 rounded-xl bg-white shadow-[inset_3px_3px_6px_#d1d9e6,inset_-3px_-3px_6px_#ffffff] outline-none font-bold text-gray-700 text-sm" />
+              className="w-full p-2.5 rounded-token-sm bg-surface-2 shadow-neu-inset outline-none font-bold text-ink text-sm" />
           </div>
 
           {/* Days */}
           <div>
-            <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider mb-1 block">Days</label>
-            <div className="flex flex-wrap gap-2">
+            <label className="text-[9px] font-black text-muted uppercase tracking-wider mb-1 block">Days</label>
+            <div className="flex flex-wrap gap-1.5">
+              {/* ALL DAYS BUTTON */}
+              <button
+                type="button"
+                onClick={() => toggleDay("All")}
+                className={`px-3 py-1.5 rounded-token-sm font-bold text-[10px] transition-all
+                  ${isAllSelected
+                    ? "bg-grad-hero text-on-brand shadow-neu-sm"
+                    : "bg-surface-2 text-muted hover:shadow-neu-sm border border-[rgb(var(--ink)/0.08)]"}`}
+              >
+                All
+              </button>
+
+              {/* Individual day buttons */}
               {allDays.map((day) => (
                 <button key={day} type="button" onClick={() => toggleDay(day)}
-                  className={`px-4 py-2 rounded-lg font-bold text-xs transition-all
+                  className={`px-3 py-1.5 rounded-token-sm font-bold text-[10px] transition-all
                     ${selectedDays.includes(day)
-                      ? "bg-[#7C3AED] text-white shadow-md"
-                      : "bg-white text-gray-400 shadow-sm hover:shadow-md"}`}
-                >{day}</button>
+                      ? "bg-grad-hero text-on-brand shadow-neu-sm"
+                      : "bg-surface-2 text-muted hover:shadow-neu-sm"}`}
+                >
+                  {day}
+                </button>
               ))}
             </div>
+            {isAllSelected && (
+              <p className="text-[8px] text-brand mt-1">All days selected</p>
+            )}
           </div>
 
           {/* Time */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider mb-1 block">Start Time</label>
+              <label className="text-[9px] font-black text-muted uppercase tracking-wider mb-0.5 block">Start Time</label>
               <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)}
-                className="w-full p-3 rounded-xl bg-white shadow-[inset_3px_3px_6px_#d1d9e6,inset_-3px_-3px_6px_#ffffff] outline-none font-bold text-gray-700 text-sm" />
+                className="w-full p-2 rounded-token-sm bg-surface-2 shadow-neu-inset outline-none font-bold text-ink text-sm" />
             </div>
             <div>
-              <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider mb-1 block">End Time</label>
+              <label className="text-[9px] font-black text-muted uppercase tracking-wider mb-0.5 block">End Time</label>
               <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)}
-                className="w-full p-3 rounded-xl bg-white shadow-[inset_3px_3px_6px_#d1d9e6,inset_-3px_-3px_6px_#ffffff] outline-none font-bold text-gray-700 text-sm" />
+                className="w-full p-2 rounded-token-sm bg-surface-2 shadow-neu-inset outline-none font-bold text-ink text-sm" />
             </div>
           </div>
 
           {/* Room */}
           <div>
-            <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider mb-1 block">Room / Lab</label>
+            <label className="text-[9px] font-black text-muted uppercase tracking-wider mb-0.5 block">Room / Lab</label>
             <input type="text" value={room} onChange={(e) => setRoom(e.target.value)} placeholder="e.g. LR32"
-              className="w-full p-3 rounded-xl bg-white shadow-[inset_3px_3px_6px_#d1d9e6,inset_-3px_-3px_6px_#ffffff] outline-none font-bold text-gray-700 text-sm uppercase" />
+              className="w-full p-2 rounded-token-sm bg-surface-2 shadow-neu-inset outline-none font-bold text-ink text-sm uppercase" />
           </div>
 
           {/* Apply to all upcoming weeks */}
-          <div className="bg-white/60 rounded-xl p-3">
-            <label className="flex items-center gap-3 cursor-pointer">
+          <div className="bg-surface-2 rounded-token-sm p-2">
+            <label className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" checked={applyToAll} onChange={(e) => setApplyToAll(e.target.checked)}
-                className="w-4 h-4 accent-[#7C3AED]" />
+                className="w-3.5 h-3.5 accent-brand" />
               <div>
-                <p className="text-xs font-black text-gray-700">Apply to all upcoming weeks</p>
-                <p className="text-[9px] text-gray-400">If unchecked, changes only apply to this week</p>
+                <p className="text-[10px] font-black text-ink">Apply to all upcoming weeks</p>
+                <p className="text-[8px] text-muted">If unchecked, changes only apply to this week</p>
               </div>
             </label>
           </div>
 
           {/* Save Button */}
           <button onClick={handleSave}
-            className="w-full py-3 rounded-xl bg-[#7C3AED] text-white font-black text-sm hover:bg-[#6d28d9] transition-all shadow-lg hover:shadow-xl">
+            className="w-full py-2 rounded-token-md bg-grad-hero text-on-brand font-black text-xs hover:opacity-90 transition-all shadow-neu-sm hover:shadow-neu">
             💾 Save Changes
           </button>
         </div>

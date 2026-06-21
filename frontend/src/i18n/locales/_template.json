@@ -1,0 +1,3 @@
+{
+  "_README": "Copy en.json, translate the values (keep the keys), save as <code>.json (e.g. de.json), then register it in src/i18n/index.js resources. Nothing else needs to change."
+}

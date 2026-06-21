@@ -85,7 +85,7 @@ const sendResetEmailWithRetry = async (email, code, maxRetries = 3) => {
 };
 
 // ==============================================
-// REGISTER FUNCTION (UPDATED)
+// REGISTER FUNCTION
 // ==============================================
 exports.register = async (req, res) => {
     let connection;
@@ -117,6 +117,7 @@ exports.register = async (req, res) => {
             } else {
                 // User exists but not verified - resend code
                 const verificationCode = generateVerificationCode();
+        if (process.env.NODE_ENV !== 'production') console.log(`🔑 [DEV] Verification code for ${email}: ${verificationCode}`);
                 const expiresAt = new Date(Date.now() + 10 * 60000);
                 const hashedPassword = await bcrypt.hash(password, 10);
                 
@@ -130,7 +131,6 @@ exports.register = async (req, res) => {
                     [verificationCode, expiresAt, hashedPassword, fullName || null, email]
                 );
                 
-                // Send email with retry
                 const emailSent = await sendVerificationEmailWithRetry(email, verificationCode);
                 
                 if (!emailSent) {
@@ -153,6 +153,7 @@ exports.register = async (req, res) => {
         const userId = generateId();
         const hashedPassword = await bcrypt.hash(password, 10);
         const verificationCode = generateVerificationCode();
+        if (process.env.NODE_ENV !== 'production') console.log(`🔑 [DEV] Verification code for ${email}: ${verificationCode}`);
         const expiresAt = new Date(Date.now() + 10 * 60000);
         
         await connection.execute(
@@ -168,11 +169,9 @@ exports.register = async (req, res) => {
             [userId]
         );
         
-        // Send verification email with retry
         const emailSent = await sendVerificationEmailWithRetry(email, verificationCode);
         
         if (!emailSent) {
-            // Rollback user creation if email fails
             await connection.execute(`DELETE FROM USERS WHERE user_id = :userId`, [userId]);
             await connection.execute(`DELETE FROM USER_STATS WHERE user_id = :userId`, [userId]);
             return res.status(500).json({ 
@@ -224,7 +223,6 @@ exports.verifyEmail = async (req, res) => {
         
         const user = result.rows[0];
         
-        // If already verified, just log them in
         if (user.IS_VERIFIED === 1) {
             console.log('✅ User already verified, logging in:', email);
             const token = generateToken(user.USER_ID, email);
@@ -241,7 +239,6 @@ exports.verifyEmail = async (req, res) => {
             });
         }
         
-        // Check verification code
         if (user.VERIFICATION_CODE !== code) {
             console.log('❌ Invalid verification code for:', email);
             return res.status(400).json({ error: 'Invalid verification code.' });
@@ -255,14 +252,12 @@ exports.verifyEmail = async (req, res) => {
             return res.status(400).json({ error: 'Verification code has expired. Please request a new one.' });
         }
         
-        // Mark user as verified
         await connection.execute(
             `UPDATE USERS SET is_verified = 1, verification_code = NULL, verification_code_expires = NULL 
              WHERE email = :email`,
             [email]
         );
         
-        // Generate JWT token for immediate login
         const token = generateToken(user.USER_ID, email);
         
         console.log('✅ Email verified successfully for:', email);
@@ -287,7 +282,7 @@ exports.verifyEmail = async (req, res) => {
 };
 
 // ==============================================
-// RESEND VERIFICATION CODE (UPDATED)
+// RESEND VERIFICATION CODE
 // ==============================================
 exports.resendVerificationCode = async (req, res) => {
     let connection;
@@ -318,6 +313,7 @@ exports.resendVerificationCode = async (req, res) => {
         }
         
         const verificationCode = generateVerificationCode();
+        if (process.env.NODE_ENV !== 'production') console.log(`🔑 [DEV] Verification code for ${email}: ${verificationCode}`);
         const expiresAt = new Date(Date.now() + 10 * 60000);
         
         await connection.execute(
@@ -327,7 +323,6 @@ exports.resendVerificationCode = async (req, res) => {
             [verificationCode, expiresAt, email]
         );
         
-        // Send email with retry
         const emailSent = await sendVerificationEmailWithRetry(email, verificationCode);
         
         if (!emailSent) {
@@ -380,7 +375,6 @@ exports.login = async (req, res) => {
         
         const user = result.rows[0];
         
-        // Check if email is verified
         if (user.IS_VERIFIED === 0) {
             console.log('❌ Unverified email attempt:', email);
             return res.status(401).json({ 
@@ -420,7 +414,7 @@ exports.login = async (req, res) => {
 };
 
 // ==============================================
-// FORGOT PASSWORD (UPDATED)
+// FORGOT PASSWORD
 // ==============================================
 exports.forgotPassword = async (req, res) => {
     let connection;
@@ -435,7 +429,6 @@ exports.forgotPassword = async (req, res) => {
         
         connection = await getConnection();
         
-        // Check if user exists and is verified
         const result = await connection.execute(
             `SELECT user_id, email FROM USERS WHERE email = :email AND is_verified = 1`,
             [email]
@@ -447,15 +440,14 @@ exports.forgotPassword = async (req, res) => {
         
         const user = result.rows[0];
         const resetCode = generateVerificationCode();
+        if (process.env.NODE_ENV !== 'production') console.log(`🔑 [DEV] Password reset code for ${email}: ${resetCode}`);
         const expiresAt = new Date(Date.now() + 10 * 60000);
         
-        // Store reset code in database
         await connection.execute(
             `UPDATE USERS SET reset_code = :code, reset_code_expires = :expires WHERE email = :email`,
             [resetCode, expiresAt, email]
         );
         
-        // Send reset code via email with retry
         const emailSent = await sendResetEmailWithRetry(email, resetCode);
         
         if (!emailSent) {
@@ -560,7 +552,6 @@ exports.resetPassword = async (req, res) => {
         
         connection = await getConnection();
         
-        // Verify reset code
         const result = await connection.execute(
             `SELECT reset_code, reset_code_expires FROM USERS WHERE email = :email`,
             [email]
@@ -583,7 +574,6 @@ exports.resetPassword = async (req, res) => {
             return res.status(400).json({ error: 'Reset code has expired. Please request a new one.' });
         }
         
-        // Hash new password and update
         const hashedPassword = await bcrypt.hash(newPassword, 10);
         
         await connection.execute(
@@ -647,4 +637,103 @@ exports.getMe = async (req, res) => {
 // ==============================================
 exports.logout = async (req, res) => {
     res.json({ success: true, message: 'Logged out successfully.' });
+};
+
+// ==============================================
+// GOOGLE AUTHENTICATION
+// ==============================================
+exports.googleAuth = async (req, res) => {
+    let connection;
+    try {
+        const { access_token } = req.body;
+        
+        console.log('🔐 Google auth request received');
+        
+        if (!access_token) {
+            return res.status(400).json({ error: 'No access token provided' });
+        }
+        
+        // Verify token with Google
+        const googleResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+            headers: {
+                'Authorization': `Bearer ${access_token}`
+            }
+        });
+        
+        if (!googleResponse.ok) {
+            return res.status(400).json({ error: 'Invalid Google token' });
+        }
+        
+        const userInfo = await googleResponse.json();
+        
+        if (!userInfo.email) {
+            return res.status(400).json({ error: 'Could not get email from Google' });
+        }
+        
+        console.log('✅ Google user info:', userInfo.email);
+        
+        connection = await getConnection();
+        
+        // Check if user exists
+        const existingUser = await connection.execute(
+            `SELECT user_id, email, full_name, is_verified FROM USERS WHERE email = :email`,
+            [userInfo.email]
+        );
+        
+        let userId;
+        let fullName = userInfo.name || userInfo.email.split('@')[0];
+        
+        if (existingUser.rows.length === 0) {
+            // Create new user
+            userId = generateId();
+            await connection.execute(
+                `INSERT INTO USERS (user_id, email, password_hash, full_name, is_verified, created_at) 
+                 VALUES (:userId, :email, 'google_auth', :fullName, 1, CURRENT_TIMESTAMP)`,
+                [userId, userInfo.email, fullName]
+            );
+            
+            // Initialize user stats
+            await connection.execute(
+                `INSERT INTO USER_STATS (user_id, current_streak, total_goals_completed) 
+                 VALUES (:userId, 0, 0)`,
+                [userId]
+            );
+            
+            console.log('✅ New user created via Google:', userInfo.email);
+        } else {
+            userId = existingUser.rows[0].USER_ID;
+            fullName = existingUser.rows[0].FULL_NAME || fullName;
+            
+            // If user exists but not verified, mark as verified
+            if (existingUser.rows[0].IS_VERIFIED === 0) {
+                await connection.execute(
+                    `UPDATE USERS SET is_verified = 1 WHERE user_id = :userId`,
+                    [userId]
+                );
+                console.log('✅ Existing unverified user verified via Google:', userInfo.email);
+            }
+            
+            console.log('✅ Existing user logged in via Google:', userInfo.email);
+        }
+        
+        // Generate JWT token
+        const token = generateToken(userId, userInfo.email);
+        
+        res.json({
+            success: true,
+            token,
+            user: {
+                userId,
+                email: userInfo.email,
+                fullName: fullName,
+                picture: userInfo.picture || null
+            }
+        });
+        
+    } catch (err) {
+        console.error('❌ Google auth error:', err);
+        res.status(500).json({ error: 'Google authentication failed: ' + err.message });
+    } finally {
+        if (connection) await connection.close();
+    }
 };

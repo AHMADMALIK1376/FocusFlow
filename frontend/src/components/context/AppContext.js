@@ -107,7 +107,7 @@ export const AppProvider = ({ children }) => {
   // Load data only once on mount
   useEffect(() => {
     loadAllData();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── State setters ────────────────────────────────────────────────
   const setTasks = (val) => {
@@ -175,10 +175,10 @@ export const AppProvider = ({ children }) => {
   // Loading state
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-[#f0f2f5] flex items-center justify-center z-50">
+      <div className="fixed inset-0 bg-canvas flex items-center justify-center z-50">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-12 h-12 border-4 border-focusPurple border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-sm text-gray-500 font-medium animate-pulse">Loading your dashboard...</p>
+          <div className="w-12 h-12 border-4 border-brand border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-sm text-muted font-medium animate-pulse">Loading your dashboard...</p>
         </div>
       </div>
     );

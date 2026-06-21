@@ -16,7 +16,7 @@ export default function Splash({ onComplete }) {
 
   return (
     <div 
-      className={`fixed inset-0 bg-gradient-to-br from-[#6c5ce7] to-[#8271ff] flex justify-center items-center z-[9999] overflow-hidden transition-all duration-[800ms] ease-[cubic-bezier(0.4,0,0.2,1)] 
+      className={`fixed inset-0 bg-grad-hero flex justify-center items-center z-[9999] overflow-hidden transition-all duration-[800ms] ease-[cubic-bezier(0.4,0,0.2,1)]
       ${fadeOut ? "opacity-0 scale-110 blur-[10px]" : "opacity-100"}`}
     >
       {/* Moving Aura Blobs - Tinted to match FocusPurple */}
@@ -31,7 +31,7 @@ export default function Splash({ onComplete }) {
           </div>
         </div>
 
-        <h1 className="text-[3.5rem] font-black text-white tracking-[-2px] uppercase drop-shadow-[0_10px_10px_rgba(0,0,0,0.1)]">
+        <h1 className="text-[3.5rem] font-black text-on-brand tracking-[-2px] uppercase drop-shadow-[0_10px_10px_rgba(0,0,0,0.1)]">
           FOCUS<span> FLOW</span>
         </h1>
 
@@ -40,7 +40,7 @@ export default function Splash({ onComplete }) {
           <div className="h-full bg-white w-[60px] absolute shadow-[0_0_20px_rgba(255,255,255,1)] animate-[shimmer-swipe_2s_infinite_ease-in-out]"></div>
         </div>
 
-        <p className="text-white text-[0.7rem] tracking-[6px] uppercase mt-6 font-black opacity-60">
+        <p className="text-on-brand text-[0.7rem] tracking-[6px] uppercase mt-6 font-black opacity-60">
           Organizing Your Daily Life
         </p> 
       </div>

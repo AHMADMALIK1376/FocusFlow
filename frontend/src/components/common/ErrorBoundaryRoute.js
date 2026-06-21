@@ -15,27 +15,27 @@ function ErrorBoundaryRoute() {
     }
 
     return (
-        <div className="min-h-screen bg-[#f0f2f5] flex items-center justify-center p-6">
-            <div className="bg-white rounded-2xl p-8 max-w-md text-center shadow-xl border border-gray-100">
+        <div className="min-h-screen bg-canvas flex items-center justify-center p-6">
+            <div className="bg-surface rounded-token-lg p-8 max-w-md text-center shadow-neu border border-[rgb(var(--ink)/0.08)]">
                 <div className="text-7xl mb-4">
                     {errorStatus === 404 ? '🔍' : '😵'}
                 </div>
-                <h1 className="text-2xl font-black text-gray-800 mb-2">
+                <h1 className="text-2xl font-black text-ink mb-2">
                     {errorStatus === 404 ? 'Page Not Found' : 'Application Error'}
                 </h1>
-                <p className="text-gray-500 mb-6 text-sm">
+                <p className="text-muted mb-6 text-sm">
                     {errorMessage}
                 </p>
                 <div className="flex gap-3 justify-center">
                     <button
-                        onClick={() => window.location.href = '/dashboard'}
-                        className="magic-btn px-6 py-3 text-sm"
+                        onClick={() => { window.location.href = '/dashboard'; }}
+                        className="px-6 py-3 bg-brand text-on-brand rounded-token-sm font-bold text-sm hover:bg-brand-deep transition-all"
                     >
                         🏠 Go to Dashboard
                     </button>
                     <button
                         onClick={() => window.location.reload()}
-                        className="px-6 py-3 bg-gray-200 text-gray-700 rounded-xl font-bold text-sm hover:bg-gray-300 transition-all"
+                        className="px-6 py-3 bg-surface-2 text-ink rounded-token-sm font-bold text-sm hover:bg-[rgb(var(--ink)/0.08)] transition-all"
                     >
                         🔄 Refresh
                     </button>
