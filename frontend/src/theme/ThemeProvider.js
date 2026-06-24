@@ -7,12 +7,14 @@ import React, {
 } from 'react';
 import storage from '../storage/storageAdapter';
 import { COLOR_SCHEMES, DEFAULT_SCHEME } from '../design/themes';
+import { fontStack } from '../design/fonts';
 
 const ThemeContext = createContext(null);
 
 const KEY_MODE = 'theme.mode';
 const KEY_SCHEME = 'theme.scheme';
 const KEY_ACCENT = 'theme.customAccent';
+const KEY_COLORS = 'theme.customColors';
 
 function systemPrefersDark() {
   return (
@@ -47,6 +49,20 @@ function darken(triple, t) {
   return `${mix(r)} ${mix(g)} ${mix(b)}`;
 }
 
+// Read the persisted active-dashboard font so the splash/auth screens render
+// with the chosen font immediately, before PreferencesProvider mounts.
+function persistedFontStack() {
+  try {
+    const prefs = storage.get('preferences', null);
+    if (!prefs || !Array.isArray(prefs.dashboards)) return null;
+    const active =
+      prefs.dashboards.find((d) => d.id === prefs.activeDashboardId) || prefs.dashboards[0];
+    return active && active.fontFamily ? fontStack(active.fontFamily) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
 export function ThemeProvider({ children }) {
   const [mode, setModeState] = useState(
     () => storage.get(KEY_MODE) || (systemPrefersDark() ? 'dark' : 'light')
@@ -57,30 +73,48 @@ export function ThemeProvider({ children }) {
   const [customAccent, setAccentState] = useState(
     () => storage.get(KEY_ACCENT) || null
   );
+  const [customColors, setColorsState] = useState(
+    () => storage.get(KEY_COLORS) || null
+  );
+
+  // Apply persisted font once on mount (covers splash + auth screens).
+  useEffect(() => {
+    const stack = persistedFontStack();
+    if (stack) document.documentElement.style.setProperty('--font-sans', stack);
+  }, []);
 
   useEffect(() => {
     const root = document.documentElement;
     root.classList.toggle('dark', mode === 'dark');
-    root.setAttribute('data-scheme', customAccent ? 'custom' : colorScheme);
 
-    if (customAccent) {
-      const base = hexToTriple(customAccent);
-      if (base) {
-        root.style.setProperty('--brand', mode === 'dark' ? lighten(base, 0.25) : base);
-        root.style.setProperty('--brand-deep', darken(base, 0.18));
-        root.style.setProperty('--brand-soft', lighten(base, 0.35));
-        // Pick readable text color for ON the accent (luminance-based).
-        const [r, g, b] = base.split(' ').map(Number);
-        const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-        root.style.setProperty('--on-brand', lum > 140 ? '26 26 23' : '255 255 255');
-      }
-    } else {
-      root.style.removeProperty('--brand');
-      root.style.removeProperty('--brand-deep');
-      root.style.removeProperty('--brand-soft');
-      root.style.removeProperty('--on-brand');
+    // Paint a brand + accent pair as inline CSS variables.
+    const applyPair = (brandHex, accentHex) => {
+      const base = hexToTriple(brandHex);
+      if (!base) return false;
+      root.setAttribute('data-scheme', 'custom');
+      root.style.setProperty('--brand', mode === 'dark' ? lighten(base, 0.25) : base);
+      root.style.setProperty('--brand-deep', darken(base, 0.18));
+      const acc = hexToTriple(accentHex);
+      root.style.setProperty('--brand-soft', acc || lighten(base, 0.4));
+      const [r, g, b] = base.split(' ').map(Number);
+      const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+      root.style.setProperty('--on-brand', lum > 150 ? '34 40 49' : '255 255 255');
+      return true;
+    };
+
+    // Priority: 2-colour combo  >  single accent  >  preset scheme.
+    if (customColors && customColors.brand && applyPair(customColors.brand, customColors.accent)) {
+      return;
     }
-  }, [mode, colorScheme, customAccent]);
+    if (customAccent && applyPair(customAccent, null)) {
+      return;
+    }
+    root.setAttribute('data-scheme', colorScheme);
+    root.style.removeProperty('--brand');
+    root.style.removeProperty('--brand-deep');
+    root.style.removeProperty('--brand-soft');
+    root.style.removeProperty('--on-brand');
+  }, [mode, colorScheme, customAccent, customColors]);
 
   const setMode = useCallback((m) => {
     setModeState(m);
@@ -98,13 +132,29 @@ export function ThemeProvider({ children }) {
   const setColorScheme = useCallback((s) => {
     setSchemeState(s);
     setAccentState(null);
+    setColorsState(null);
     storage.set(KEY_SCHEME, s);
     storage.remove(KEY_ACCENT);
+    storage.remove(KEY_COLORS);
   }, []);
 
   const setCustomAccent = useCallback((hex) => {
     setAccentState(hex);
+    setColorsState(null);
     storage.set(KEY_ACCENT, hex);
+    storage.remove(KEY_COLORS);
+  }, []);
+
+  // A two-colour combination: { brand, accent } (both hex strings).
+  const setCustomColors = useCallback((colors) => {
+    setColorsState(colors);
+    setAccentState(null);
+    if (colors) {
+      storage.set(KEY_COLORS, colors);
+      storage.remove(KEY_ACCENT);
+    } else {
+      storage.remove(KEY_COLORS);
+    }
   }, []);
 
   const value = useMemo(
@@ -117,9 +167,21 @@ export function ThemeProvider({ children }) {
       setColorScheme,
       customAccent,
       setCustomAccent,
+      customColors,
+      setCustomColors,
       schemes: COLOR_SCHEMES,
     }),
-    [mode, colorScheme, customAccent, setMode, toggleMode, setColorScheme, setCustomAccent]
+    [
+      mode,
+      colorScheme,
+      customAccent,
+      customColors,
+      setMode,
+      toggleMode,
+      setColorScheme,
+      setCustomAccent,
+      setCustomColors,
+    ]
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

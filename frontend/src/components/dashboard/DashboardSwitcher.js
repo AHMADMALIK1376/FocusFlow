@@ -4,7 +4,7 @@ import { usePreferences } from '../../preferences/usePreferences';
 import { Button, Input } from '../ui';
 import { cx } from '../ui';
 
-export default function DashboardSwitcher() {
+export default function DashboardSwitcher({ triggerClassName } = {}) {
   const { t } = useTranslation();
   const {
     dashboards,
@@ -62,15 +62,18 @@ export default function DashboardSwitcher() {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-token-sm bg-surface-2 border border-[rgb(var(--ink)/0.08)] text-ink text-xs font-bold hover:bg-[rgb(var(--ink)/0.05)] transition-all duration-200 max-w-[140px]"
+        className={cx(
+          'flex items-center gap-1.5 text-xs font-bold transition-all duration-200',
+          triggerClassName ||
+            'px-3 py-1.5 rounded-token-sm bg-surface-2 border border-[rgb(var(--ink)/0.08)] text-ink hover:bg-[rgb(var(--ink)/0.05)] max-w-[140px]'
+        )}
         aria-label={t('dashboards.title', { defaultValue: 'Workspaces' })}
         title={activeDashboard ? activeDashboard.name : 'Workspace'}
       >
-        <span className="truncate hidden sm:inline">
+        <span className="truncate flex-1 text-left">
           {activeDashboard ? activeDashboard.name : 'Workspace'}
         </span>
-        <span className="sm:hidden">🏠</span>
-        <span className={`text-muted text-[0.6rem] transition-transform duration-200 ${open ? 'rotate-180' : ''}`}>
+        <span className={`text-[0.6rem] opacity-70 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}>
           ▼
         </span>
       </button>

@@ -65,6 +65,7 @@ export function makeDashboard(name = 'My Dashboard') {
     palette: {
       scheme: 'indigo',
       customAccent: null,
+      custom: null,
     },
     widgets: {
       order: [...DEFAULT_WIDGET_ORDER],

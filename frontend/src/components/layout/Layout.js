@@ -4,11 +4,9 @@ import Navbar from "./Navbar";
 import MobileTabBar from "./MobileTabBar";
 import Sidebar from "./Sidebar";
 import { useGlobalThemeShortcut } from "../../theme/useGlobalThemeShortcut";
-import { useApplyDashboardTheme } from "../../preferences/useApplyDashboardTheme";
 
 export default function Layout() {
   useGlobalThemeShortcut();
-  useApplyDashboardTheme();
 
   return (
     <div className="min-h-screen bg-canvas text-ink flex">

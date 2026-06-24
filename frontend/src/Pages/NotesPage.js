@@ -1,157 +1,173 @@
-import React, { useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Card, Button, Input, Textarea, EmptyState } from '../components/ui';
-import { useNotes } from '../features/notes/useNotes';
-import { selectSorted, renderInline } from '../features/notes/notesLogic';
+import React, { useMemo, useState } from "react";
+import { FileText, Type, CalendarClock, Sparkles, Plus } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
+import { Button, Input, Textarea, EmptyState } from "../components/ui";
+import { PageShell, PageHeader, StatTile, Panel } from "../components/dashboard/DashKit";
+import ChartBox from "../components/charts/ChartBox";
+import { chartColors, hexToRgba, CHART_TOOLTIP } from "../components/charts/chartColors";
+import { usePreferences } from "../preferences/usePreferences";
+import { useNotes } from "../features/notes/useNotes";
+import { selectSorted, renderInline } from "../features/notes/notesLogic";
+
+const wordCount = (s) => (s ? s.trim().split(/\s+/).filter(Boolean).length : 0);
 
 export default function NotesPage() {
-  const { t } = useTranslation();
   const { state, dispatch } = useNotes();
+  const { activeDashboard } = usePreferences();
+  const { brand } = chartColors(activeDashboard?.palette);
+
   const [selectedId, setSelectedId] = useState(null);
   const [editing, setEditing] = useState(false);
-  const [editTitle, setEditTitle] = useState('');
-  const [editBody, setEditBody] = useState('');
+  const [editTitle, setEditTitle] = useState("");
+  const [editBody, setEditBody] = useState("");
   const [preview, setPreview] = useState(false);
 
   const notes = selectSorted(state);
-  const selected = notes.find(n => n.id === selectedId) || null;
+  const selected = notes.find((n) => n.id === selectedId) || null;
+
+  const totalWords = useMemo(() => notes.reduce((s, n) => s + wordCount(n.body), 0), [notes]);
+  const weekAgo = Date.now() - 7 * 864e5;
+  const thisWeek = notes.filter((n) => new Date(n.updatedAt).getTime() >= weekAgo).length;
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const today = notes.filter((n) => (n.updatedAt || "").slice(0, 10) === todayKey).length;
+
+  const activity = useMemo(() => {
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      days.push({ key: d.toISOString().slice(0, 10), label: d.toLocaleDateString(undefined, { weekday: "short" }), count: 0 });
+    }
+    notes.forEach((n) => {
+      const k = (n.updatedAt || "").slice(0, 10);
+      const day = days.find((d) => d.key === k);
+      if (day) day.count += 1;
+    });
+    return days;
+  }, [notes]);
 
   function startNew() {
-    dispatch({ type: 'ADD', payload: { title: t('notes.untitled', { defaultValue: 'Untitled' }), body: '' } });
-    // Select the newly added note (it will be first after re-render)
-    setTimeout(() => {
-      setSelectedId(null); // will be corrected after re-render
-    }, 0);
+    dispatch({ type: "ADD", payload: { title: "Untitled", body: "" } });
     setEditing(true);
-    setEditTitle(t('notes.untitled', { defaultValue: 'Untitled' }));
-    setEditBody('');
+    setSelectedId(null);
+    setEditTitle("Untitled");
+    setEditBody("");
     setPreview(false);
   }
-
   function selectNote(note) {
-    setSelectedId(note.id);
-    setEditing(false);
-    setEditTitle(note.title);
-    setEditBody(note.body);
-    setPreview(false);
+    setSelectedId(note.id); setEditing(false); setEditTitle(note.title); setEditBody(note.body); setPreview(false);
   }
-
   function startEdit(note) {
-    setSelectedId(note.id);
-    setEditing(true);
-    setEditTitle(note.title);
-    setEditBody(note.body);
-    setPreview(false);
+    setSelectedId(note.id); setEditing(true); setEditTitle(note.title); setEditBody(note.body); setPreview(false);
   }
-
   function saveEdit() {
-    if (!selectedId) return;
-    dispatch({ type: 'UPDATE', payload: { id: selectedId, patch: { title: editTitle, body: editBody } } });
-    setEditing(false);
+    const id = selectedId || (notes[0] && notes[0].id);
+    if (!id) return;
+    dispatch({ type: "UPDATE", payload: { id, patch: { title: editTitle, body: editBody } } });
+    setSelectedId(id); setEditing(false);
   }
-
   function deleteNote(id) {
-    dispatch({ type: 'REMOVE', payload: { id } });
-    if (selectedId === id) {
-      setSelectedId(null);
-      setEditing(false);
-    }
+    dispatch({ type: "REMOVE", payload: { id } });
+    if (selectedId === id) { setSelectedId(null); setEditing(false); }
   }
 
   function renderSegments(segs) {
     return segs.map((seg, i) => {
       switch (seg.type) {
-        case 'heading': return <strong key={i} className="block text-base font-black text-ink">{seg.content}</strong>;
-        case 'bold': return <strong key={i} className="font-bold text-ink">{seg.content}</strong>;
-        case 'italic': return <em key={i} className="italic text-muted">{seg.content}</em>;
-        case 'li': return <span key={i} className="block pl-3 text-ink before:content-['•'] before:mr-2 before:text-brand">{seg.content}</span>;
-        case 'br': return <br key={i} />;
+        case "heading": return <strong key={i} className="block text-base font-black text-ink">{seg.content}</strong>;
+        case "bold": return <strong key={i} className="font-bold text-ink">{seg.content}</strong>;
+        case "italic": return <em key={i} className="italic text-muted">{seg.content}</em>;
+        case "li": return <span key={i} className="block pl-3 text-ink before:content-['•'] before:mr-2 before:text-brand">{seg.content}</span>;
+        case "br": return <br key={i} />;
         default: return <span key={i} className="text-ink">{seg.content}</span>;
       }
     });
   }
 
   return (
-    <div className="p-6 md:p-10 max-w-[1100px] mx-auto">
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-4xl font-black tracking-tight text-ink">{t('notes.title', { defaultValue: 'Notes' })}</h1>
-        <Button variant="primary" onClick={startNew}>
-          {t('notes.add', { defaultValue: '+ New Note' })}
-        </Button>
+    <PageShell>
+      <PageHeader title="Notes" subtitle="Capture ideas, plans and everything in between.">
+        <Button variant="primary" size="md" onClick={startNew} className="gap-2"><Plus size={16} /> New note</Button>
+      </PageHeader>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+        <StatTile primary icon={<FileText size={18} />} label="Total notes" value={notes.length} sub="In this workspace" />
+        <StatTile icon={<Type size={18} />} label="Words written" value={totalWords} sub="Across all notes" />
+        <StatTile icon={<CalendarClock size={18} />} label="This week" value={thisWeek} sub="Recently updated" />
+        <StatTile icon={<Sparkles size={18} />} label="Today" value={today} sub="Touched today" />
       </div>
 
-      <div className="md:grid md:grid-cols-[320px_1fr] gap-6">
-        {/* Left list */}
-        <div className="mb-4 md:mb-0">
-          <Card>
-            {notes.length === 0 ? (
-              <EmptyState icon="📝" title={t('notes.empty', { defaultValue: 'No notes yet' })} description={t('notes.emptyHint', { defaultValue: 'Create your first note' })} />
-            ) : (
-              <ul className="space-y-1">
-                {notes.map(note => (
-                  <li
-                    key={note.id}
-                    onClick={() => selectNote(note)}
-                    className={`rounded-token-md px-3 py-3 cursor-pointer transition-colors duration-200 ${selectedId === note.id ? 'bg-grad-hero text-on-brand' : 'hover:bg-surface-2'}`}
-                  >
-                    <p className={`font-bold text-sm truncate ${selectedId === note.id ? 'text-on-brand' : 'text-ink'}`}>{note.title || t('notes.untitled', { defaultValue: 'Untitled' })}</p>
-                    <p className={`text-xs truncate mt-0.5 ${selectedId === note.id ? 'text-on-brand/80' : 'text-muted'}`}>{note.body?.slice(0, 50) || ''}</p>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Card>
-        </div>
+      <Panel title="Writing activity" subtitle="Notes updated over the last 7 days" className="mb-6">
+        <ChartBox height={170}>
+          {(cw) => (
+            <BarChart width={cw} height={170} data={activity} margin={{ top: 10, right: 8, left: -22, bottom: 0 }}>
+              <defs>
+                <linearGradient id="ffNotes" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={brand} stopOpacity={1} />
+                  <stop offset="100%" stopColor={brand} stopOpacity={0.55} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid vertical={false} strokeDasharray="3 4" stroke={hexToRgba(brand, 0.1)} />
+              <XAxis dataKey="label" axisLine={false} tickLine={false} dy={4} tick={{ fontSize: 11, fontWeight: 700, fill: "#8A93A0" }} />
+              <YAxis axisLine={false} tickLine={false} width={28} allowDecimals={false} tick={{ fontSize: 11, fill: "#8A93A0" }} />
+              <Tooltip cursor={{ fill: hexToRgba(brand, 0.05) }} contentStyle={CHART_TOOLTIP} />
+              <Bar dataKey="count" name="Notes" radius={[6, 6, 0, 0]} fill="url(#ffNotes)" maxBarSize={34} />
+            </BarChart>
+          )}
+        </ChartBox>
+      </Panel>
 
-        {/* Right editor/preview */}
-        <div>
+      <div className="grid lg:grid-cols-[320px_1fr] gap-5">
+        <Panel title="All notes">
+          {notes.length === 0 ? (
+            <EmptyState icon="📝" title="No notes yet" description="Create your first note" />
+          ) : (
+            <ul className="space-y-1 max-h-[520px] overflow-y-auto -mx-2 px-2">
+              {notes.map((note) => (
+                <li
+                  key={note.id}
+                  onClick={() => selectNote(note)}
+                  className={`rounded-token-md px-3 py-3 cursor-pointer transition-colors ${selectedId === note.id ? "bg-grad-hero text-on-brand" : "hover:bg-surface-2"}`}
+                >
+                  <p className={`font-bold text-sm truncate ${selectedId === note.id ? "text-on-brand" : "text-ink"}`}>{note.title || "Untitled"}</p>
+                  <p className={`text-xs truncate mt-0.5 ${selectedId === note.id ? "text-on-brand/80" : "text-muted"}`}>{note.body?.slice(0, 60) || "Empty note"}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
+
+        <Panel>
           {!selected && !editing ? (
-            <Card>
-              <EmptyState icon="📝" title={t('notes.selectHint', { defaultValue: 'Select or create a note' })} />
-            </Card>
+            <EmptyState icon="🖊️" title="Select or create a note" description="Your note appears here" />
           ) : editing ? (
-            <Card>
-              <div className="space-y-3">
-                <Input
-                  value={editTitle}
-                  onChange={e => setEditTitle(e.target.value)}
-                  placeholder={t('notes.titlePlaceholder', { defaultValue: 'Note title' })}
-                />
-                <Textarea
-                  value={editBody}
-                  onChange={e => setEditBody(e.target.value)}
-                  placeholder={t('notes.bodyPlaceholder', { defaultValue: 'Write your note here...' })}
-                  rows={14}
-                />
-                <div className="flex gap-2 justify-end">
-                  <Button variant="ghost" onClick={() => { setEditing(false); setPreview(false); }}>{t('notes.cancel', { defaultValue: 'Cancel' })}</Button>
-                  <Button variant="primary" onClick={saveEdit}>{t('notes.save', { defaultValue: 'Save' })}</Button>
-                </div>
+            <div className="space-y-3">
+              <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="Note title" />
+              <Textarea value={editBody} onChange={(e) => setEditBody(e.target.value)} placeholder="Write your note here… (supports **bold**, *italic*, # heading, - list)" rows={14} />
+              <div className="flex gap-2 justify-end">
+                <Button variant="ghost" onClick={() => { setEditing(false); setPreview(false); }}>Cancel</Button>
+                <Button variant="primary" onClick={saveEdit}>Save</Button>
               </div>
-            </Card>
+            </div>
           ) : selected ? (
-            <Card>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-black text-ink">{selected.title}</h2>
+            <div>
+              <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
+                <h2 className="text-xl font-black text-ink min-w-0 truncate">{selected.title}</h2>
                 <div className="flex gap-2">
-                  <Button variant="ghost" size="sm" onClick={() => setPreview(p => !p)}>
-                    {preview ? t('notes.raw', { defaultValue: 'Raw' }) : t('notes.preview', { defaultValue: 'Preview' })}
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => startEdit(selected)}>{t('notes.edit', { defaultValue: 'Edit' })}</Button>
-                  <Button variant="danger" size="sm" onClick={() => deleteNote(selected.id)}>{t('notes.delete', { defaultValue: 'Delete' })}</Button>
+                  <Button variant="ghost" size="sm" onClick={() => setPreview((p) => !p)}>{preview ? "Raw" : "Preview"}</Button>
+                  <Button variant="ghost" size="sm" onClick={() => startEdit(selected)}>Edit</Button>
+                  <Button variant="danger" size="sm" onClick={() => deleteNote(selected.id)}>Delete</Button>
                 </div>
               </div>
               {preview ? (
-                <div className="prose max-w-none leading-relaxed">
-                  {renderSegments(renderInline(selected.body || ''))}
-                </div>
+                <div className="leading-relaxed text-sm">{renderSegments(renderInline(selected.body || ""))}</div>
               ) : (
-                <pre className="text-ink text-sm font-mono whitespace-pre-wrap bg-surface-2 rounded-token-md p-4">{selected.body}</pre>
+                <pre className="text-ink text-sm font-mono whitespace-pre-wrap bg-surface-2 rounded-token-md p-4 min-h-[160px]">{selected.body || "Empty note"}</pre>
               )}
-            </Card>
+            </div>
           ) : null}
-        </div>
+        </Panel>
       </div>
-    </div>
+    </PageShell>
   );
 }

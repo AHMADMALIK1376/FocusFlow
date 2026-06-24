@@ -9,15 +9,15 @@ const SIZES = {
 
 const VARIANTS = {
   primary:
-    'bg-grad-hero text-on-brand shadow-[0_6px_16px_rgb(var(--brand)/0.22)] hover:-translate-y-0.5 hover:shadow-[0_10px_22px_rgb(var(--brand)/0.30)]',
+    'bg-grad-hero text-on-brand font-black uppercase tracking-wider shadow-[0_10px_24px_rgb(var(--brand)/0.38)] hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgb(var(--brand)/0.50)]',
   neu:
-    'bg-surface text-ink border border-[rgb(var(--ink)/0.07)] shadow-[0_4px_12px_rgb(var(--brand)/0.08)] hover:-translate-y-0.5 hover:shadow-[0_6px_16px_rgb(var(--brand)/0.12)] active:scale-95',
+    'bg-surface text-ink border border-[rgb(var(--ink)/0.07)] shadow-[0_6px_18px_rgb(var(--brand)/0.14)] hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgb(var(--brand)/0.20)] active:scale-95',
   glass:
-    'bg-[rgb(var(--glass-bg)/0.6)] backdrop-blur-glass text-ink border border-[rgb(var(--glass-border)/0.5)] hover:bg-[rgb(var(--glass-bg)/0.8)]',
+    'bg-[rgb(var(--glass-bg)/0.6)] backdrop-blur-glass text-ink border border-[rgb(var(--glass-border)/0.5)] shadow-[0_6px_16px_rgb(var(--brand)/0.10)] hover:bg-[rgb(var(--glass-bg)/0.8)]',
   ghost:
     'bg-transparent text-ink hover:bg-[rgb(var(--ink)/0.06)]',
   danger:
-    'bg-focus text-on-brand hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgb(var(--focus)/0.4)]',
+    'bg-focus text-white font-black uppercase tracking-wider shadow-[0_10px_24px_rgb(var(--focus)/0.35)] hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgb(var(--focus)/0.45)]',
 };
 
 export function Button({

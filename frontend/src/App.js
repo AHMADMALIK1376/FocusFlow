@@ -24,6 +24,7 @@ import RequireOnboarding from "./components/auth/RequireOnboarding";
 import Layout from "./components/layout/Layout";
 import { ThemeProvider } from "./theme/ThemeProvider";
 import { PreferencesProvider } from "./preferences/PreferencesProvider";
+import ThemeApplier from "./preferences/ThemeApplier";
 import { ToastProvider } from "./components/ui/Toast";
 
 // ==============================================
@@ -103,6 +104,7 @@ function App() {
         <Splash onComplete={handleSplashComplete} />
       ) : (
         <PreferencesProvider>
+          <ThemeApplier />
           <ErrorBoundary>
             <UserProvider>
               <AppProvider>

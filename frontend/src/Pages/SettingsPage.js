@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { usePreferences } from "../preferences/usePreferences";
+import { useToast } from "../components/ui/Toast";
 import {
   Card,
   Field,
   Input,
   Button,
-  ThemeToggle,
   LanguageSelect,
 } from "../components/ui";
 import PalettePicker from "../components/dashboard/PalettePicker";
@@ -14,10 +14,11 @@ import FontSelector from "../components/dashboard/FontSelector";
 import WidgetManager from "../components/dashboard/WidgetManager";
 import DashboardSwitcher from "../components/dashboard/DashboardSwitcher";
 
-function Section({ title, children }) {
+function Section({ title, subtitle, children }) {
   return (
     <Card className="mb-6">
-      <h2 className="text-base font-black text-ink mb-5 uppercase tracking-wider">{title}</h2>
+      <h2 className="text-base font-black text-ink uppercase tracking-wider">{title}</h2>
+      {subtitle ? <p className="text-sm text-muted mt-1 mb-5">{subtitle}</p> : <div className="mb-5" />}
       {children}
     </Card>
   );
@@ -26,6 +27,7 @@ function Section({ title, children }) {
 export default function SettingsPage() {
   const { t } = useTranslation();
   const { profile, updateProfile } = usePreferences();
+  const { toast } = useToast();
 
   const [form, setForm] = useState({
     displayName: profile.displayName || "",
@@ -34,6 +36,7 @@ export default function SettingsPage() {
     phone: profile.phone || "",
     university: profile.university || "",
     pronouns: profile.pronouns || "",
+    role: profile.role || "",
   });
 
   function handleChange(e) {
@@ -43,126 +46,81 @@ export default function SettingsPage() {
   function handleSaveProfile(e) {
     e.preventDefault();
     updateProfile(form);
+    toast("Profile saved ✓", { tone: "success" });
   }
 
   return (
-    <div className="p-6 md:p-10 max-w-3xl mx-auto w-full">
-        <h1 className="text-3xl font-black text-ink mb-8">
-          {t("settings.title", "Settings")}
-        </h1>
+    <div className="p-5 md:p-8 max-w-4xl mx-auto w-full">
+      <h1 className="text-3xl font-black text-ink mb-1">{t("settings.title", "Settings")}</h1>
+      <p className="text-muted mb-8">Personalise FocusFlow — your colours, font, features and profile.</p>
 
-        {/* ── Appearance ───────────────────────────────────────────── */}
-        <Section title={t("settings.appearance", "Appearance")}>
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <p className="text-sm font-bold text-ink">{t("settings.theme", "Theme")}</p>
-              <p className="text-xs text-muted">Press "t" anywhere to toggle quickly</p>
-            </div>
-            <ThemeToggle />
-          </div>
+      {/* ── Appearance ───────────────────────────────────────────── */}
+      <Section
+        title={t("settings.appearance", "Appearance")}
+        subtitle="Pick a colour combination and font. Changes apply instantly across the whole app."
+      >
+        <div className="mb-6">
+          <p className="text-sm font-bold text-ink mb-3">{t("settings.colorScheme", "Colour combination")}</p>
+          <PalettePicker />
+        </div>
 
-          <div className="mb-5">
-            <p className="text-sm font-bold text-ink mb-2">
-              {t("settings.colorScheme", "Color scheme")}
-            </p>
-            <PalettePicker />
-          </div>
+        <div className="mb-6">
+          <FontSelector />
+        </div>
 
-          <div>
-            <p className="text-sm font-bold text-ink mb-2">
-              {t("settings.font", "Font")}
-            </p>
-            <FontSelector />
-          </div>
+        <div>
+          <p className="text-sm font-bold text-ink mb-2">{t("settings.language", "Language")}</p>
+          <LanguageSelect />
+        </div>
+      </Section>
 
-          <div className="mt-5">
-            <p className="text-sm font-bold text-ink mb-2">
-              {t("settings.language", "Language")}
-            </p>
-            <LanguageSelect />
-          </div>
-        </Section>
+      {/* ── Dashboard features ───────────────────────────────────── */}
+      <Section
+        title={t("settings.widgets", "Dashboard features")}
+        subtitle="Turn features on to show them on your dashboard. Drag to reorder."
+      >
+        <WidgetManager />
+      </Section>
 
-        {/* ── Dashboards ───────────────────────────────────────────── */}
-        <Section title={t("dashboards.title", "Workspaces")}>
-          <p className="text-sm text-muted mb-4">
-            Switch workspaces from the top bar, or manage them here.
-          </p>
-          <DashboardSwitcher />
-        </Section>
+      {/* ── Workspaces ───────────────────────────────────────────── */}
+      <Section
+        title={t("dashboards.title", "Workspaces")}
+        subtitle="Switch workspaces from the top bar, or manage them here."
+      >
+        <DashboardSwitcher />
+      </Section>
 
-        {/* ── Widgets ──────────────────────────────────────────────── */}
-        <Section title={t("settings.widgets", "Widgets")}>
-          <p className="text-sm text-muted mb-4">
-            Toggle widgets and drag to reorder for the current workspace.
-          </p>
-          <WidgetManager />
-        </Section>
-
-        {/* ── Profile ──────────────────────────────────────────────── */}
-        <Section title={t("settings.profile", "Profile")}>
-          <form onSubmit={handleSaveProfile} className="flex flex-col gap-4">
+      {/* ── Profile ──────────────────────────────────────────────── */}
+      <Section title={t("settings.profile", "Profile")} subtitle="This information personalises your dashboard greeting and profile card.">
+        <form onSubmit={handleSaveProfile} className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Display name" htmlFor="s-displayName">
-              <Input
-                id="s-displayName"
-                name="displayName"
-                value={form.displayName}
-                onChange={handleChange}
-                placeholder="How should we greet you?"
-              />
+              <Input id="s-displayName" name="displayName" value={form.displayName} onChange={handleChange} placeholder="How should we greet you?" />
             </Field>
             <Field label="Username" htmlFor="s-username">
-              <Input
-                id="s-username"
-                name="username"
-                value={form.username}
-                onChange={handleChange}
-                placeholder="@username"
-              />
+              <Input id="s-username" name="username" value={form.username} onChange={handleChange} placeholder="@username" />
             </Field>
-            <Field label="Email" htmlFor="s-email">
-              <Input
-                id="s-email"
-                name="email"
-                type="email"
-                value={form.email}
-                onChange={handleChange}
-                placeholder="you@example.com"
-              />
-            </Field>
-            <Field label="Phone (for WhatsApp reminders)" htmlFor="s-phone">
-              <Input
-                id="s-phone"
-                name="phone"
-                type="tel"
-                value={form.phone}
-                onChange={handleChange}
-                placeholder="+1 555 000 0000"
-              />
-            </Field>
-            <Field label="University / College" htmlFor="s-university">
-              <Input
-                id="s-university"
-                name="university"
-                value={form.university}
-                onChange={handleChange}
-                placeholder="Iqra University"
-              />
+            <Field label="Role / profession" htmlFor="s-role">
+              <Input id="s-role" name="role" value={form.role} onChange={handleChange} placeholder="Student, Designer…" />
             </Field>
             <Field label="Pronouns" htmlFor="s-pronouns">
-              <Input
-                id="s-pronouns"
-                name="pronouns"
-                value={form.pronouns}
-                onChange={handleChange}
-                placeholder="she/her, he/him, they/them…"
-              />
+              <Input id="s-pronouns" name="pronouns" value={form.pronouns} onChange={handleChange} placeholder="she/her, he/him, they/them…" />
             </Field>
-            <Button type="submit" variant="primary" size="md" className="self-start mt-1">
-              {t("common.save", "Save")}
-            </Button>
-          </form>
-        </Section>
+            <Field label="Email" htmlFor="s-email">
+              <Input id="s-email" name="email" type="email" value={form.email} onChange={handleChange} placeholder="you@example.com" />
+            </Field>
+            <Field label="Phone (for WhatsApp reminders)" htmlFor="s-phone">
+              <Input id="s-phone" name="phone" type="tel" value={form.phone} onChange={handleChange} placeholder="+1 555 000 0000" />
+            </Field>
+          </div>
+          <Field label="University / College" htmlFor="s-university">
+            <Input id="s-university" name="university" value={form.university} onChange={handleChange} placeholder="Iqra University" />
+          </Field>
+          <Button type="submit" variant="primary" size="md" className="self-start mt-1">
+            {t("common.save", "Save changes")}
+          </Button>
+        </form>
+      </Section>
     </div>
   );
 }

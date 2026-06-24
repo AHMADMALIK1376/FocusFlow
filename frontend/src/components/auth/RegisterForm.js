@@ -118,13 +118,13 @@ export default function RegisterForm() {
           </div>
         )}
 
-        <div className="w-full space-y-3 flex flex-col items-center">
+        <div className="w-[85%] mx-auto space-y-3">
           <input
             type="text"
             placeholder="Full Name"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
-            className={`${inputCls} w-[85%]`}
+            className={inputCls}
             required
           />
           <input
@@ -132,11 +132,11 @@ export default function RegisterForm() {
             placeholder="Email Address"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className={`${inputCls} w-[85%]`}
+            className={inputCls}
             required
           />
 
-          <div className="relative w-[85%]">
+          <div className="relative w-full">
             <input
               ref={passwordInputRef}
               type="password"
@@ -193,7 +193,7 @@ export default function RegisterForm() {
           </div>
 
           {password && password.length > 0 && password.length < 8 && (
-            <p className="w-[85%] text-[10px] text-focus text-left mt-1">
+            <p className="w-full text-[10px] text-focus text-left mt-1">
               ⚠️ Password must be at least 8 characters
             </p>
           )}

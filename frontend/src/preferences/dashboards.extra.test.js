@@ -243,7 +243,7 @@ describe('makeDashboard — defaults', () => {
 
   it('returns a dashboard with the correct palette default', () => {
     const d = makeDashboard('Test');
-    expect(d.palette).toEqual({ scheme: 'indigo', customAccent: null });
+    expect(d.palette).toEqual({ scheme: 'indigo', customAccent: null, custom: null });
   });
 
   it('widget.order is a copy of DEFAULT_WIDGET_ORDER (not the same reference)', () => {

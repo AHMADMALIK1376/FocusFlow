@@ -38,7 +38,7 @@ describe('makeDashboard', () => {
     const db = makeDashboard('Uni');
     expect(db.name).toBe('Uni');
     expect(db.fontFamily).toBe('poppins');
-    expect(db.palette).toEqual({ scheme: 'indigo', customAccent: null });
+    expect(db.palette).toEqual({ scheme: 'indigo', customAccent: null, custom: null });
     expect(Array.isArray(db.widgets.order)).toBe(true);
     expect(typeof db.widgets.enabled).toBe('object');
     expect(db.id).toBeTruthy();
