@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Target, CheckCircle2, Loader, TrendingUp, Plus } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, LabelList } from "recharts";
-import { Button, Input, EmptyState, ProgressRing } from "../components/ui";
+import { Button, Input, EmptyState, ProgressRing, Checkbox, DeleteButton } from "../components/ui";
 import { PageShell, PageHeader, StatTile, Panel } from "../components/dashboard/DashKit";
 import ChartBox from "../components/charts/ChartBox";
 import { chartColors, hexToRgba, CHART_TOOLTIP } from "../components/charts/chartColors";
@@ -129,7 +129,7 @@ export default function GoalsPage() {
                   <h2 className="text-xl font-black text-ink truncate">{selected.title}</h2>
                   <span className="text-sm text-muted">{goalProgress(selected)}% complete</span>
                 </div>
-                <Button variant="danger" size="sm" onClick={() => { dispatch({ type: "REMOVE_GOAL", payload: { id: selected.id } }); setSelectedId(null); }}>Delete</Button>
+                <DeleteButton onClick={() => { dispatch({ type: "REMOVE_GOAL", payload: { id: selected.id } }); setSelectedId(null); }} title="Delete goal" />
               </div>
 
               <div className="flex gap-2 mb-4">
@@ -143,12 +143,7 @@ export default function GoalsPage() {
                 <ul className="space-y-2">
                   {selected.milestones.map((m) => (
                     <li key={m.id} className="flex items-center gap-3 bg-surface-2 rounded-token-md px-3 py-2.5">
-                      <button
-                        onClick={() => dispatch({ type: "TOGGLE_MILESTONE", payload: { goalId: selected.id, milestoneId: m.id } })}
-                        className={`w-5 h-5 rounded-token-sm border-2 flex-shrink-0 flex items-center justify-center transition-colors ${m.done ? "bg-success border-success text-white" : "border-[rgb(var(--ink)/0.3)]"}`}
-                      >
-                        {m.done && <span className="text-xs">✓</span>}
-                      </button>
+                      <Checkbox checked={m.done} size={22} onChange={() => dispatch({ type: "TOGGLE_MILESTONE", payload: { goalId: selected.id, milestoneId: m.id } })} />
                       <span className={`flex-1 text-sm ${m.done ? "line-through text-muted" : "text-ink"}`}>{m.title}</span>
                       <button onClick={() => dispatch({ type: "REMOVE_MILESTONE", payload: { goalId: selected.id, milestoneId: m.id } })} className="text-muted hover:text-focus text-xs">✕</button>
                     </li>

@@ -2,7 +2,7 @@
 import React, { useMemo, useState, useEffect, useRef, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Camera, Pencil, ArrowUpRight, Plus } from "lucide-react";
+import { Camera, Pencil, Plus } from "lucide-react";
 import {
   ComposedChart, Bar, Line, Area, BarChart, XAxis, YAxis, Tooltip, CartesianGrid, Legend, LabelList,
 } from "recharts";
@@ -173,7 +173,7 @@ export default function Home() {
       </header>
 
       {/* ── BENTO GRID ─────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 auto-rows-min">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 auto-rows-min grid-flow-row-dense">
         {/* Profile card — full-cover image + overlay text */}
         <section className={cx(
           "lg:col-span-4 lg:row-span-2 rounded-token-lg bg-grad-hero p-6 shadow-glass relative overflow-hidden min-h-[340px] flex flex-col",
@@ -364,37 +364,25 @@ export default function Home() {
             <Plus size={16} /> Start a focus session
           </button>
         </section>
+
+        {/* Enabled feature widgets — flow into the SAME grid as the core cards */}
+        <Suspense fallback={null}>
+          {enabledFeatures.map((id) => {
+            const W = WIDGET_BY_ID[id]?.component;
+            return W ? <div key={id} className="lg:col-span-4 min-w-0">{<W />}</div> : null;
+          })}
+        </Suspense>
+
+        {/* Customize tile — manage which feature cards appear */}
+        <button
+          onClick={() => navigate("/settings")}
+          className="lg:col-span-4 min-h-[150px] rounded-token-lg border-2 border-dashed border-[rgb(var(--ink)/0.16)] flex flex-col items-center justify-center gap-1.5 text-muted hover:border-[rgb(var(--brand)/0.5)] hover:text-brand transition-colors"
+        >
+          <span className="w-10 h-10 rounded-xl bg-[rgb(var(--ink)/0.05)] flex items-center justify-center"><Plus size={20} /></span>
+          <span className="text-sm font-bold">Customize features</span>
+          <span className="text-[11px]">Add or remove dashboard cards</span>
+        </button>
       </div>
-
-      {/* ── YOUR WORKSPACE (adaptive — real widgets for enabled features) ── */}
-      <section className="mt-8">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-black uppercase tracking-wider text-ink">
-            <InlineEdit value={lbl("features", "Your workspace")} onSave={(v) => setLbl("features", v)} />
-          </h3>
-          <button onClick={() => navigate("/settings")} className="text-xs font-bold text-brand hover:underline flex items-center gap-1">
-            Manage <ArrowUpRight size={14} />
-          </button>
-        </div>
-
-        {enabledFeatures.length === 0 ? (
-          <div className="rounded-token-lg bg-surface shadow-neu p-8 text-center">
-            <p className="text-sm text-muted">No extra features enabled yet — turn some on and they'll appear here as live cards.</p>
-            <button onClick={() => navigate("/settings")} className="mt-3 inline-flex items-center gap-2 px-5 h-11 rounded-token-md bg-grad-hero text-on-brand text-xs font-black uppercase tracking-wider shadow-[0_10px_24px_rgb(var(--brand)/0.38)] hover:-translate-y-0.5 transition-transform">
-              <Plus size={14} /> Enable features in Settings
-            </button>
-          </div>
-        ) : (
-          <Suspense fallback={<div className="rounded-token-lg bg-surface shadow-neu p-8 text-center text-sm text-muted">Loading your tools…</div>}>
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 auto-rows-min">
-              {enabledFeatures.map((id) => {
-                const W = WIDGET_BY_ID[id]?.component;
-                return W ? <div key={id} className="min-w-0"><W /></div> : null;
-              })}
-            </div>
-          </Suspense>
-        )}
-      </section>
     </div>
   );
 }

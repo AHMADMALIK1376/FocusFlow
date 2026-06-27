@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { FileText, Type, CalendarClock, Sparkles, Plus } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
-import { Button, Input, Textarea, EmptyState } from "../components/ui";
+import { Button, Input, Textarea, EmptyState, DeleteButton } from "../components/ui";
 import { PageShell, PageHeader, StatTile, Panel } from "../components/dashboard/DashKit";
 import ChartBox from "../components/charts/ChartBox";
 import { chartColors, hexToRgba, CHART_TOOLTIP } from "../components/charts/chartColors";
@@ -156,7 +156,7 @@ export default function NotesPage() {
                 <div className="flex gap-2">
                   <Button variant="ghost" size="sm" onClick={() => setPreview((p) => !p)}>{preview ? "Raw" : "Preview"}</Button>
                   <Button variant="ghost" size="sm" onClick={() => startEdit(selected)}>Edit</Button>
-                  <Button variant="danger" size="sm" onClick={() => deleteNote(selected.id)}>Delete</Button>
+                  <DeleteButton onClick={() => deleteNote(selected.id)} title="Delete note" />
                 </div>
               </div>
               {preview ? (

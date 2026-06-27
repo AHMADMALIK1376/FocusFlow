@@ -45,7 +45,7 @@ export default function ShoppingCard() {
           </ul>
         </div>
       )}
-      <Button size="sm" variant="primary" onClick={() => navigate('/shopping')} className="mt-3 w-full">
+      <Button size="sm" variant="soft" onClick={() => navigate('/shopping')} className="mt-3">
         {t('shopping.manage', { defaultValue: 'Manage lists' })}
       </Button>
     </div>

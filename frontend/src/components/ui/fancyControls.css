@@ -1,0 +1,165 @@
+/* Animated trash delete button — Indigo-themed (muted → danger red on hover). */
+.ff-del-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: rgb(var(--ink) / 0.08);
+  border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgb(45 71 89 / 0.12);
+  cursor: pointer;
+  transition-duration: 0.3s;
+  overflow: hidden;
+  position: relative;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.ff-del-btn .ff-bin {
+  width: 11px;
+  transition-duration: 0.3s;
+}
+.ff-del-btn .ff-bin path {
+  fill: rgb(var(--muted));
+  transition-duration: 0.3s;
+}
+.ff-del-btn:hover {
+  background-color: rgb(var(--focus));
+}
+.ff-del-btn:hover .ff-bin path {
+  fill: #fff;
+}
+.ff-del-btn .ff-bin-top {
+  transform-origin: bottom right;
+}
+.ff-del-btn:hover .ff-bin-top {
+  transform: rotate(160deg);
+}
+.ff-del-btn:active {
+  transform: scale(0.9);
+}
+
+/* Expanding logout button — reveals the label on hover. */
+.ff-logout-btn {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition-duration: 0.3s;
+  box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
+  background-color: rgb(var(--focus));
+  flex-shrink: 0;
+}
+.ff-logout-sign {
+  width: 100%;
+  transition-duration: 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ff-logout-sign svg {
+  width: 16px;
+}
+.ff-logout-sign svg path {
+  fill: #fff;
+}
+.ff-logout-text {
+  position: absolute;
+  right: 0;
+  width: 0;
+  opacity: 0;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  white-space: nowrap;
+  transition-duration: 0.3s;
+}
+.ff-logout-btn:hover {
+  width: 120px;
+  border-radius: 40px;
+}
+.ff-logout-btn:hover .ff-logout-sign {
+  width: 30%;
+  padding-left: 18px;
+}
+.ff-logout-btn:hover .ff-logout-text {
+  opacity: 1;
+  width: 70%;
+  padding-right: 12px;
+}
+.ff-logout-btn:active {
+  transform: translate(2px, 2px);
+}
+
+/* Colour palette swatches — 3D hover scale + name tooltip. */
+.ff-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 10px 4px 18px;
+}
+.ff-swatch {
+  position: relative;
+  flex-shrink: 0;
+  width: 34px;
+  height: 42px;
+  border: none;
+  outline: none;
+  background: transparent;
+  cursor: pointer;
+  transition: 450ms cubic-bezier(0.175, 0.885, 0.32, 1.1);
+}
+.ff-swatch::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 42px;
+  height: 42px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, var(--sw, #2d4759), var(--sw2, #d6c6f7));
+  transform: scale(1);
+  pointer-events: none;
+  transition: 450ms cubic-bezier(0.175, 0.885, 0.32, 1.1);
+  box-shadow: 0 4px 10px rgb(45 71 89 / 0.2);
+}
+.ff-swatch::before {
+  content: attr(data-name);
+  position: absolute;
+  left: 50%;
+  bottom: 50px;
+  transform: translateX(-50%);
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+  padding: 3px 8px;
+  background: rgb(var(--ink));
+  color: rgb(var(--surface));
+  border-radius: 6px;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: 300ms;
+  z-index: 50;
+}
+.ff-swatch:hover {
+  transform: scale(1.28);
+  z-index: 50;
+}
+.ff-swatch:hover::before {
+  opacity: 1;
+  visibility: visible;
+}
+.ff-swatch:active::after {
+  transform: scale(0.9);
+}
+.ff-swatch-active::after {
+  box-shadow: 0 0 0 3px rgb(var(--surface)), 0 0 0 5px rgb(var(--brand)), 0 4px 10px rgb(45 71 89 / 0.2);
+}

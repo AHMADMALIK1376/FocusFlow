@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { ShoppingCart, Package, CheckCheck, ListTodo, Plus } from "lucide-react";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, LabelList } from "recharts";
-import { Button, Input, EmptyState } from "../components/ui";
+import { Button, Input, EmptyState, Checkbox, DeleteButton } from "../components/ui";
 import { PageShell, PageHeader, StatTile, Panel } from "../components/dashboard/DashKit";
 import ChartBox from "../components/charts/ChartBox";
 import { chartColors, hexToRgba, CHART_TOOLTIP } from "../components/charts/chartColors";
@@ -140,7 +140,7 @@ export default function ShoppingPage() {
                   <h2 className="text-xl font-black text-ink truncate">{selectedList.name}</h2>
                   <span className="text-sm text-muted">{listProgress(selectedList).checked} of {listProgress(selectedList).total} done</span>
                 </div>
-                <Button variant="danger" size="sm" onClick={() => { dispatch({ type: "REMOVE_LIST", payload: { id: selectedList.id } }); setSelectedListId(null); }}>Delete list</Button>
+                <DeleteButton onClick={() => { dispatch({ type: "REMOVE_LIST", payload: { id: selectedList.id } }); setSelectedListId(null); }} title="Delete list" />
               </div>
               <div className="flex gap-2 mb-4">
                 <Input value={newItem} onChange={(e) => setNewItem(e.target.value)} placeholder="Add item…" onKeyDown={(e) => e.key === "Enter" && addItem()} />
@@ -152,12 +152,7 @@ export default function ShoppingPage() {
                 <ul className="space-y-1.5">
                   {selectedList.items.map((item) => (
                     <li key={item.id} className="flex items-center gap-3 bg-surface-2 rounded-token-md px-3 py-2.5">
-                      <button
-                        onClick={() => dispatch({ type: "TOGGLE_ITEM", payload: { listId: selectedList.id, itemId: item.id } })}
-                        className={`w-5 h-5 rounded-token-sm border-2 flex-shrink-0 flex items-center justify-center transition-colors ${item.checked ? "bg-success border-success text-white" : "border-[rgb(var(--ink)/0.3)]"}`}
-                      >
-                        {item.checked && <span className="text-xs">✓</span>}
-                      </button>
+                      <Checkbox checked={item.checked} size={22} onChange={() => dispatch({ type: "TOGGLE_ITEM", payload: { listId: selectedList.id, itemId: item.id } })} />
                       <span className={`flex-1 text-sm ${item.checked ? "line-through text-muted" : "text-ink"}`}>{item.text}</span>
                       <button onClick={() => dispatch({ type: "REMOVE_ITEM", payload: { listId: selectedList.id, itemId: item.id } })} className="text-muted hover:text-focus text-xs">✕</button>
                     </li>

@@ -16,6 +16,8 @@ const VARIANTS = {
     'bg-[rgb(var(--glass-bg)/0.6)] backdrop-blur-glass text-ink border border-[rgb(var(--glass-border)/0.5)] shadow-[0_6px_16px_rgb(var(--brand)/0.10)] hover:bg-[rgb(var(--glass-bg)/0.8)]',
   ghost:
     'bg-transparent text-ink hover:bg-[rgb(var(--ink)/0.06)]',
+  soft:
+    'bg-[rgb(var(--brand)/0.1)] text-brand hover:bg-[rgb(var(--brand)/0.16)] active:scale-95',
   danger:
     'bg-focus text-white font-black uppercase tracking-wider shadow-[0_10px_24px_rgb(var(--focus)/0.35)] hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgb(var(--focus)/0.45)]',
 };
@@ -35,7 +37,7 @@ export function Button({
         'inline-flex items-center justify-center font-bold rounded-token-md',
         'transition-all duration-300 ease-spring select-none',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
-        'active:scale-[0.97] disabled:opacity-50 disabled:pointer-events-none',
+        'active:scale-[0.96] active:shadow-[inset_0_4px_10px_rgba(0,0,0,0.22)] disabled:opacity-50 disabled:pointer-events-none',
         SIZES[size],
         VARIANTS[variant],
         full && 'w-full',

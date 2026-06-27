@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { cx } from '../ui';
 import { usePreferences } from '../../preferences/usePreferences';
 import { COLOR_COMBOS } from '../../design/themes';
+import '../ui/fancyControls.css';
 
 function ColorField({ label, value, onChange }) {
   return (
@@ -51,35 +52,23 @@ export default function PalettePicker() {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-2.5">
-        {COLOR_COMBOS.map((combo) => {
-          const active = matchesCombo(combo);
-          return (
-            <button
-              key={combo.id}
-              type="button"
-              onClick={() => selectCombo(combo)}
-              title={combo.name}
-              className={cx(
-                'group flex items-center gap-2.5 p-2.5 rounded-token-md border transition-all text-left',
-                active
-                  ? 'border-brand shadow-[0_0_0_3px_rgb(var(--brand)/0.14)]'
-                  : 'border-[rgb(var(--ink)/0.1)] hover:border-[rgb(var(--ink)/0.3)]'
-              )}
-            >
-              <span className="relative w-9 h-9 rounded-lg overflow-hidden shrink-0 ring-1 ring-black/5">
-                <span className="absolute inset-0" style={{ background: combo.brand }} />
-                <span className="absolute bottom-0 right-0 w-1/2 h-full" style={{ background: combo.accent }} />
-              </span>
-              <span className="min-w-0">
-                <span className="block text-xs font-bold text-ink truncate">{combo.name}</span>
-                <span className={cx('block text-[10px] font-semibold', active ? 'text-brand' : 'text-muted')}>
-                  {active ? 'Active' : 'Tap to apply'}
-                </span>
-              </span>
-            </button>
-          );
-        })}
+      <div>
+        <div className="ff-swatches">
+          {COLOR_COMBOS.map((combo) => {
+            const active = matchesCombo(combo);
+            return (
+              <button
+                key={combo.id}
+                type="button"
+                onClick={() => selectCombo(combo)}
+                data-name={combo.name}
+                aria-label={combo.name}
+                className={cx('ff-swatch', active && 'ff-swatch-active')}
+                style={{ '--sw': combo.brand, '--sw2': combo.accent }}
+              />
+            );
+          })}
+        </div>
       </div>
 
       {/* Custom two-colour combination */}

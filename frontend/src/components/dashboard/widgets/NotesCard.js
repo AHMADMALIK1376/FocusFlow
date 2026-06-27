@@ -29,7 +29,7 @@ export default function NotesCard() {
           ))}
         </ul>
       )}
-      <Button size="sm" variant="primary" onClick={() => navigate('/notes')} className="mt-3 w-full">
+      <Button size="sm" variant="soft" onClick={() => navigate('/notes')} className="mt-3">
         {t('notes.add', { defaultValue: '+ New Note' })}
       </Button>
     </div>

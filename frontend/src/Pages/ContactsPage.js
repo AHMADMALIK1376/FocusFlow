@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Users, Tag, Mail, Phone, Plus } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, LabelList } from "recharts";
-import { Button, Input, EmptyState, Avatar, Badge } from "../components/ui";
+import { Button, Input, EmptyState, Avatar, Badge, DeleteButton } from "../components/ui";
 import { PageShell, PageHeader, StatTile, Panel } from "../components/dashboard/DashKit";
 import ChartBox from "../components/charts/ChartBox";
 import { chartColors, hexToRgba, CHART_TOOLTIP } from "../components/charts/chartColors";
@@ -148,7 +148,7 @@ export default function ContactsPage() {
                 </div>
                 <div className="flex gap-2 shrink-0">
                   <Button variant="ghost" size="sm" onClick={() => startEdit(selected)}>Edit</Button>
-                  <Button variant="danger" size="sm" onClick={() => remove(selected.id)}>Delete</Button>
+                  <DeleteButton onClick={() => remove(selected.id)} title="Delete contact" />
                 </div>
               </div>
               <div className="space-y-3">

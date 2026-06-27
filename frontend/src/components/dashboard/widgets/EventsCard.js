@@ -36,7 +36,7 @@ export default function EventsCard() {
         </ul>
       )}
 
-      <Button size="sm" variant="primary" onClick={() => navigate('/events')} className="mt-3 w-full">
+      <Button size="sm" variant="soft" onClick={() => navigate('/events')} className="mt-3">
         {t('eventsx.addEvent', { defaultValue: '+ Add event' })}
       </Button>
     </div>

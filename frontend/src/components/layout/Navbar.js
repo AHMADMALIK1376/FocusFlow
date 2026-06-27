@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Target, Zap, Settings, LogOut, ChevronDown } from "lucide-react";
+import { Target, Zap, Settings, ChevronDown } from "lucide-react";
 import { useUser } from "../auth/UserContext";
 import { useApp } from "../context/AppContext";
+import { LogoutButton } from "../ui/LogoutButton";
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -64,6 +65,8 @@ export default function Navbar() {
           </div>
         </div>
 
+        <LogoutButton onClick={handleLogout} />
+
         {/* Profile dropdown */}
         <div className="relative" ref={dropdownRef}>
           <button
@@ -95,12 +98,6 @@ export default function Navbar() {
                 className="w-full text-left px-4 py-2.5 text-[0.85rem] font-medium text-ink hover:bg-surface-2 transition-colors flex items-center gap-2.5"
               >
                 <Settings size={16} className="text-muted" /> {t("nav.settings")}
-              </button>
-              <button
-                onClick={handleLogout}
-                className="w-full text-left px-4 py-2.5 text-[0.85rem] font-semibold text-focus hover:bg-focus/10 transition-colors flex items-center gap-2.5"
-              >
-                <LogOut size={16} /> {t("nav.logout")}
               </button>
             </div>
           )}
