@@ -41,7 +41,7 @@ export default function GoalsCard() {
           })}
         </ul>
       )}
-      <Button size="sm" variant="soft" onClick={() => navigate('/goals')} className="mt-3">
+      <Button size="sm" variant="primary" onClick={() => navigate('/goals')} className="mt-3">
         {t('goalsx.add', { defaultValue: '+ New Goal' })}
       </Button>
     </div>

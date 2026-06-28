@@ -38,7 +38,7 @@ export default function ContactsCard() {
         </ul>
       )}
 
-      <Button size="sm" variant="soft" onClick={() => navigate('/contacts')} className="mt-3">
+      <Button size="sm" variant="primary" onClick={() => navigate('/contacts')} className="mt-3">
         {t('contacts.add', { defaultValue: '+ Add contact' })}
       </Button>
     </div>
