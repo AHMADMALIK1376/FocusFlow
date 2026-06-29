@@ -16,7 +16,7 @@ import { WIDGET_BY_ID } from "../dashboard/registry";
 import Clock from "../components/dashboard/Clock";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const FEATURE_IDS = ["notes", "goalsx", "habits", "kanban", "timetrack", "finance", "shopping", "mood", "eventsx", "contacts"];
+const FEATURE_IDS = ["notes", "goalsx", "habits", "kanban", "timetrack", "finance"];
 
 // Defensive task field readers (task shape varies across the app)
 const taskTitle = (t) => t.text || t.task_text || t.title || t.activity || "Untitled task";

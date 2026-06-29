@@ -109,34 +109,6 @@ export const WIDGETS = [
     defaultOn: false,
     component: lazy(() => import('../components/dashboard/widgets/FinanceCard')),
   },
-  {
-    id: 'shopping',
-    titleKey: 'widgets.shopping',
-    icon: '🛒',
-    defaultOn: false,
-    component: lazy(() => import('../components/dashboard/widgets/ShoppingCard')),
-  },
-  {
-    id: 'mood',
-    titleKey: 'widgets.mood',
-    icon: '🌤️',
-    defaultOn: false,
-    component: lazy(() => import('../components/dashboard/widgets/MoodCard')),
-  },
-  {
-    id: 'eventsx',
-    titleKey: 'widgets.eventsx',
-    icon: '📆',
-    defaultOn: false,
-    component: lazy(() => import('../components/dashboard/widgets/EventsCard')),
-  },
-  {
-    id: 'contacts',
-    titleKey: 'widgets.contacts',
-    icon: '👤',
-    defaultOn: false,
-    component: lazy(() => import('../components/dashboard/widgets/ContactsCard')),
-  },
 ];
 
 export const WIDGET_BY_ID = Object.fromEntries(WIDGETS.map((w) => [w.id, w]));

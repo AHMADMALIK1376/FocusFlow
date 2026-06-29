@@ -62,10 +62,6 @@ const HabitsPage = lazy(() => import("./Pages/HabitsPage"));
 const KanbanPage = lazy(() => import("./Pages/KanbanPage"));
 const TimeTrackPage = lazy(() => import("./Pages/TimeTrackPage"));
 const FinancePage = lazy(() => import("./Pages/FinancePage"));
-const ShoppingPage = lazy(() => import("./Pages/ShoppingPage"));
-const MoodPage = lazy(() => import("./Pages/MoodPage"));
-const EventsPage = lazy(() => import("./Pages/EventsPage"));
-const ContactsPage = lazy(() => import("./Pages/ContactsPage"));
 
 // ==============================================
 // SCROLL TO TOP COMPONENT
@@ -167,10 +163,6 @@ function App() {
                         <Route path="/projects" element={<KanbanPage />} />
                         <Route path="/time" element={<TimeTrackPage />} />
                         <Route path="/finance" element={<FinancePage />} />
-                        <Route path="/shopping" element={<ShoppingPage />} />
-                        <Route path="/mood" element={<MoodPage />} />
-                        <Route path="/events" element={<EventsPage />} />
-                        <Route path="/contacts" element={<ContactsPage />} />
                       </Route>
 
                       {/* ============================================== */}

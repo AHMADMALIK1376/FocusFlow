@@ -13,8 +13,4 @@ export const NAV_ITEMS = [
   { id: 'kanban', path: '/projects', labelKey: 'nav.kanban', icon: '🗂️' },
   { id: 'timetrack', path: '/time', labelKey: 'nav.timetrack', icon: '⏲️' },
   { id: 'finance', path: '/finance', labelKey: 'nav.finance', icon: '💰' },
-  { id: 'shopping', path: '/shopping', labelKey: 'nav.shopping', icon: '🛒' },
-  { id: 'mood', path: '/mood', labelKey: 'nav.mood', icon: '🌤️' },
-  { id: 'eventsx', path: '/events', labelKey: 'nav.eventsx', icon: '📆' },
-  { id: 'contacts', path: '/contacts', labelKey: 'nav.contacts', icon: '👤' },
 ];
