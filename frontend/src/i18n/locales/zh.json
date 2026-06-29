@@ -31,11 +31,7 @@
     "habits": "习惯",
     "kanban": "项目",
     "timetrack": "时间",
-    "finance": "财务",
-    "shopping": "购物",
-    "mood": "心情",
-    "eventsx": "事件",
-    "contacts": "联系人"
+    "finance": "财务"
   },
   "dashboard": {
     "goodMorning": "早上好",

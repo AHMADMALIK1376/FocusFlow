@@ -31,11 +31,7 @@
     "habits": "Habits",
     "kanban": "Projects",
     "timetrack": "Time",
-    "finance": "Finance",
-    "shopping": "Shopping",
-    "mood": "Mood",
-    "eventsx": "Events",
-    "contacts": "Contacts"
+    "finance": "Finance"
   },
   "dashboard": {
     "goodMorning": "Good Morning",
@@ -63,11 +59,7 @@
     "habits": "Habit Tracker",
     "kanban": "Projects / Kanban",
     "timetrack": "Time Tracking",
-    "finance": "Finance",
-    "shopping": "Shopping Lists",
-    "mood": "Mood & Wellness",
-    "eventsx": "Events Calendar",
-    "contacts": "Contacts"
+    "finance": "Finance"
   },
   "settings": {
     "title": "Settings",
@@ -205,42 +197,5 @@
     "note": "Note",
     "empty": "No entries yet.",
     "byCategory": "By Category"
-  },
-  "shopping": {
-    "title": "Shopping Lists",
-    "newList": "New List",
-    "listNamePlaceholder": "List name…",
-    "newItem": "Add item",
-    "itemPlaceholder": "Item…",
-    "empty": "No lists yet.",
-    "itemsLeft": "items left"
-  },
-  "mood": {
-    "title": "Mood & Wellness",
-    "logMood": "Log today's mood",
-    "note": "Note (optional)",
-    "empty": "No mood logs yet.",
-    "average": "7-day average",
-    "trend": "Trend"
-  },
-  "eventsx": {
-    "title": "Events",
-    "newEvent": "New Event",
-    "titlePlaceholder": "Event title…",
-    "time": "Time",
-    "color": "Color",
-    "empty": "No events. Click a date to add one.",
-    "upcoming": "Upcoming"
-  },
-  "contacts": {
-    "title": "Contacts",
-    "newContact": "New Contact",
-    "name": "Name",
-    "role": "Role",
-    "phone": "Phone",
-    "email": "Email",
-    "tags": "Tags",
-    "empty": "No contacts yet.",
-    "search": "Search contacts…"
   }
 }
