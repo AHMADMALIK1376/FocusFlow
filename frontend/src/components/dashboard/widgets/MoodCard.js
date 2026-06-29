@@ -53,9 +53,11 @@ export default function MoodCard() {
         <EmptyState icon="🌤️" title={t('mood.empty', { defaultValue: 'No mood logs yet' })} />
       )}
 
-      <Button size="sm" variant="primary" onClick={() => navigate('/mood')} className="mt-3">
-        {t('mood.logToday', { defaultValue: "Log today's mood" })}
-      </Button>
+      <div className="mt-3 flex justify-center">
+        <Button size="sm" variant="primary" onClick={() => navigate('/mood')} className="w-4/5">
+          {t('mood.logToday', { defaultValue: "Log today's mood" })}
+        </Button>
+      </div>
     </div>
   );
 }

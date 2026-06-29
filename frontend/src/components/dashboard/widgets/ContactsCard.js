@@ -38,9 +38,11 @@ export default function ContactsCard() {
         </ul>
       )}
 
-      <Button size="sm" variant="primary" onClick={() => navigate('/contacts')} className="mt-3">
-        {t('contacts.add', { defaultValue: '+ Add contact' })}
-      </Button>
+      <div className="mt-3 flex justify-center">
+        <Button size="sm" variant="primary" onClick={() => navigate('/contacts')} className="w-4/5">
+          {t('contacts.add', { defaultValue: '+ Add contact' })}
+        </Button>
+      </div>
     </div>
   );
 }

@@ -22,9 +22,11 @@ export default function FinanceCard() {
         <StatCard icon="🔴" label={t('finance.expenses', { defaultValue: 'Expenses' })} value={`$${expense.toFixed(0)}`} tone="focus" />
         <StatCard icon="💰" label={t('finance.balance', { defaultValue: 'Balance' })} value={`$${balance.toFixed(0)}`} tone={balance >= 0 ? 'brand' : 'warn'} />
       </div>
-      <Button size="sm" variant="primary" onClick={() => navigate('/finance')} className="mt-3">
-        {t('finance.addEntry', { defaultValue: 'Add entry' })}
-      </Button>
+      <div className="mt-3 flex justify-center">
+        <Button size="sm" variant="primary" onClick={() => navigate('/finance')} className="w-4/5">
+          {t('finance.addEntry', { defaultValue: 'Add entry' })}
+        </Button>
+      </div>
     </div>
   );
 }

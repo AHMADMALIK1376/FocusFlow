@@ -45,9 +45,11 @@ export default function ShoppingCard() {
           </ul>
         </div>
       )}
-      <Button size="sm" variant="primary" onClick={() => navigate('/shopping')} className="mt-3">
-        {t('shopping.manage', { defaultValue: 'Manage lists' })}
-      </Button>
+      <div className="mt-3 flex justify-center">
+        <Button size="sm" variant="primary" onClick={() => navigate('/shopping')} className="w-4/5">
+          {t('shopping.manage', { defaultValue: 'Manage lists' })}
+        </Button>
+      </div>
     </div>
   );
 }
