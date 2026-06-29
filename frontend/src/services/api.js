@@ -217,6 +217,17 @@ export const calendarAPI = {
 };
 
 // ==============================================
+// SUBJECT APIs
+// ==============================================
+export const subjectAPI = {
+    getAll: async () => authFetch('/subjects'),
+    get: async (id) => authFetch(`/subjects/${id}`),
+    create: async (data) => authFetch('/subjects', { method: 'POST', body: JSON.stringify(data) }),
+    update: async (id, data) => authFetch(`/subjects/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    remove: async (id) => authFetch(`/subjects/${id}`, { method: 'DELETE' }),
+};
+
+// ==============================================
 // ROUTINE APIs
 // ==============================================
 export const routineAPI = {

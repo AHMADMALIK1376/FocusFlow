@@ -14,6 +14,14 @@
       "runtimeArgs": ["--prefix", "backend", "run", "dev"],
       "port": 5555,
       "autoPort": false
+    },
+    {
+      "name": "preview",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "frontend", "start"],
+      "port": 3025,
+      "autoPort": false,
+      "env": { "PORT": "3025", "BROWSER": "none" }
     }
   ]
 }

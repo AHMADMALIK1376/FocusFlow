@@ -62,6 +62,8 @@ const HabitsPage = lazy(() => import("./Pages/HabitsPage"));
 const KanbanPage = lazy(() => import("./Pages/KanbanPage"));
 const TimeTrackPage = lazy(() => import("./Pages/TimeTrackPage"));
 const FinancePage = lazy(() => import("./Pages/FinancePage"));
+const SubjectsPage = lazy(() => import("./Pages/SubjectsPage"));
+const SubjectHubPage = lazy(() => import("./Pages/SubjectHubPage"));
 
 // ==============================================
 // SCROLL TO TOP COMPONENT
@@ -163,6 +165,8 @@ function App() {
                         <Route path="/projects" element={<KanbanPage />} />
                         <Route path="/time" element={<TimeTrackPage />} />
                         <Route path="/finance" element={<FinancePage />} />
+                        <Route path="/subjects" element={<SubjectsPage />} />
+                        <Route path="/subjects/:id" element={<SubjectHubPage />} />
                       </Route>
 
                       {/* ============================================== */}
