@@ -25,6 +25,7 @@ const routineRoutes = require('./routes/routineRoutes');
 const focusRoutes = require('./routes/focusRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const attendanceRoutes = require('./routes/attendanceRoutes');
+const subjectRoutes = require('./routes/subjectRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -172,6 +173,7 @@ app.use('/api/routines', routineRoutes);
 app.use('/api/focus', focusRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/attendance', attendanceRoutes);
+app.use('/api/subjects', subjectRoutes);
 
 // ==============================================
 // HEALTH CHECK
