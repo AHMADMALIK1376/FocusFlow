@@ -251,6 +251,17 @@ export const examAPI = {
 };
 
 // ==============================================
+// NOTE APIs
+// ==============================================
+export const noteAPI = {
+    getAll: async () => authFetch('/notes'),
+    getForSubject: async (subjectId) => authFetch(`/notes?subjectId=${subjectId}`),
+    create: async (data) => authFetch('/notes', { method: 'POST', body: JSON.stringify(data) }),
+    update: async (id, data) => authFetch(`/notes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    remove: async (id) => authFetch(`/notes/${id}`, { method: 'DELETE' }),
+};
+
+// ==============================================
 // ROUTINE APIs
 // ==============================================
 export const routineAPI = {

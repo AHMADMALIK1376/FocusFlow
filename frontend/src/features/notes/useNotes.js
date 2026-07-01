@@ -1,25 +1,28 @@
-import { useReducer, useEffect } from 'react';
-import storage from '../../storage/storageAdapter';
-import { usePreferences } from '../../preferences/usePreferences';
-import { reducer, EMPTY_STATE } from './notesLogic';
+import { useState, useEffect, useCallback } from 'react';
+import { noteAPI } from '../../services/api';
 
-const keyFor = (id) => `feature:notes:${id}`;
-
+// API-backed notes (migrated from localStorage). Returns notes sorted by the
+// server (pinned first, then most-recently-updated).
 export function useNotes() {
-  const { activeDashboardId } = usePreferences();
-  const [state, dispatch] = useReducer(
-    reducer,
-    activeDashboardId,
-    (id) => storage.get(keyFor(id), EMPTY_STATE)
-  );
+  const [notes, setNotes] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    dispatch({ type: 'HYDRATE', payload: storage.get(keyFor(activeDashboardId), EMPTY_STATE) });
-  }, [activeDashboardId]);
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    try {
+      setNotes(await noteAPI.getAll());
+    } catch {
+      setNotes([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  useEffect(() => {
-    storage.set(keyFor(activeDashboardId), state);
-  }, [activeDashboardId, state]);
+  useEffect(() => { refresh(); }, [refresh]);
 
-  return { state, dispatch };
+  const create = useCallback(async (d) => { const r = await noteAPI.create(d); await refresh(); return r.id; }, [refresh]);
+  const update = useCallback(async (id, d) => { await noteAPI.update(id, d); await refresh(); }, [refresh]);
+  const remove = useCallback(async (id) => { await noteAPI.remove(id); await refresh(); }, [refresh]);
+
+  return { notes, loading, refresh, create, update, remove };
 }
