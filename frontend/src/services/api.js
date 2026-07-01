@@ -228,6 +228,17 @@ export const subjectAPI = {
 };
 
 // ==============================================
+// GRADE APIs
+// ==============================================
+export const gradeAPI = {
+    getForSubject: async (subjectId) => authFetch(`/grades?subjectId=${subjectId}`),
+    getGpa: async () => authFetch('/grades/gpa'),
+    create: async (data) => authFetch('/grades', { method: 'POST', body: JSON.stringify(data) }),
+    update: async (id, data) => authFetch(`/grades/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    remove: async (id) => authFetch(`/grades/${id}`, { method: 'DELETE' }),
+};
+
+// ==============================================
 // ROUTINE APIs
 // ==============================================
 export const routineAPI = {
