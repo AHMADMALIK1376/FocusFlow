@@ -64,6 +64,7 @@ const TimeTrackPage = lazy(() => import("./Pages/TimeTrackPage"));
 const FinancePage = lazy(() => import("./Pages/FinancePage"));
 const SubjectsPage = lazy(() => import("./Pages/SubjectsPage"));
 const SubjectHubPage = lazy(() => import("./Pages/SubjectHubPage"));
+const GradesPage = lazy(() => import("./Pages/GradesPage"));
 
 // ==============================================
 // SCROLL TO TOP COMPONENT
@@ -167,6 +168,7 @@ function App() {
                         <Route path="/finance" element={<FinancePage />} />
                         <Route path="/subjects" element={<SubjectsPage />} />
                         <Route path="/subjects/:id" element={<SubjectHubPage />} />
+                        <Route path="/grades" element={<GradesPage />} />
                       </Route>
 
                       {/* ============================================== */}

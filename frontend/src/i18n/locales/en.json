@@ -19,6 +19,7 @@
   "nav": {
     "dashboard": "Dashboard",
     "subjects": "Subjects",
+    "grades": "Grades",
     "deepWork": "Deep Work",
     "routine": "Daily Routine",
     "tasks": "Daily Streak",
