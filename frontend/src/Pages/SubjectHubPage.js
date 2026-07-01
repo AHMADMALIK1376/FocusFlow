@@ -5,6 +5,7 @@ import { Button, Badge, EmptyState, DeleteButton } from "../components/ui";
 import { PageShell, Panel } from "../components/dashboard/DashKit";
 import { subjectAPI } from "../services/api";
 import GradesPanel from "../components/subjects/GradesPanel";
+import ExamsPanel from "../components/subjects/ExamsPanel";
 
 const DAY_ORDER = { Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6, Sunday: 7 };
 const COMING = [
@@ -97,6 +98,8 @@ export default function SubjectHubPage() {
           </Panel>
 
           <GradesPanel subjectId={id} />
+
+          <ExamsPanel subjectId={id} />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {COMING.map((c) => (
