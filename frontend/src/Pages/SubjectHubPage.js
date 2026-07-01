@@ -4,10 +4,10 @@ import { ArrowLeft, Clock } from "lucide-react";
 import { Button, Badge, EmptyState, DeleteButton } from "../components/ui";
 import { PageShell, Panel } from "../components/dashboard/DashKit";
 import { subjectAPI } from "../services/api";
+import GradesPanel from "../components/subjects/GradesPanel";
 
 const DAY_ORDER = { Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6, Sunday: 7 };
 const COMING = [
-  { key: "grades", icon: "📊", title: "Grades", note: "Record marks and track your grade for this subject — arriving in Phase 2." },
   { key: "attendance", icon: "✅", title: "Attendance", note: "Per-class attendance and percentage — arriving soon." },
   { key: "assignments", icon: "📝", title: "Assignments", note: "Assignments and deadlines for this subject — arriving soon." },
   { key: "notes", icon: "🗒️", title: "Notes", note: "Subject notes — arriving soon." },
@@ -95,6 +95,8 @@ export default function SubjectHubPage() {
               </ul>
             )}
           </Panel>
+
+          <GradesPanel subjectId={id} />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {COMING.map((c) => (
