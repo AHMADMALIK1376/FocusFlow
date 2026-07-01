@@ -239,6 +239,18 @@ export const gradeAPI = {
 };
 
 // ==============================================
+// EXAM APIs
+// ==============================================
+export const examAPI = {
+    getAll: async () => authFetch('/exams'),
+    getForSubject: async (subjectId) => authFetch(`/exams?subjectId=${subjectId}`),
+    create: async (data) => authFetch('/exams', { method: 'POST', body: JSON.stringify(data) }),
+    update: async (id, data) => authFetch(`/exams/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    toggle: async (id) => authFetch(`/exams/${id}/toggle`, { method: 'PUT' }),
+    remove: async (id) => authFetch(`/exams/${id}`, { method: 'DELETE' }),
+};
+
+// ==============================================
 // ROUTINE APIs
 // ==============================================
 export const routineAPI = {
