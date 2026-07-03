@@ -10,7 +10,7 @@ import { useGoals } from "../features/goalsx/useGoals";
 import { goalProgress, overallProgress } from "../features/goalsx/goalsLogic";
 
 export default function GoalsPage() {
-  const { state, dispatch } = useGoals();
+  const { goals, createGoal, removeGoal, createMilestone, toggleMilestone, removeMilestone } = useGoals();
   const { activeDashboard } = usePreferences();
   const { brand } = chartColors(activeDashboard?.palette);
 
@@ -18,22 +18,21 @@ export default function GoalsPage() {
   const [newGoalTitle, setNewGoalTitle] = useState("");
   const [newMilestone, setNewMilestone] = useState("");
 
-  const { goals } = state;
   const selected = goals.find((g) => g.id === selectedId) || null;
-  const overall = overallProgress(state);
+  const overall = overallProgress({ goals });
   const completed = goals.filter((g) => goalProgress(g) === 100).length;
   const inProgress = goals.filter((g) => { const p = goalProgress(g); return p > 0 && p < 100; }).length;
 
   const chartData = goals.map((g) => ({ name: g.title.length > 16 ? g.title.slice(0, 15) + "…" : g.title, value: goalProgress(g) }));
 
-  function addGoal() {
+  async function addGoal() {
     if (!newGoalTitle.trim()) return;
-    dispatch({ type: "ADD_GOAL", payload: { title: newGoalTitle.trim() } });
+    await createGoal(newGoalTitle.trim());
     setNewGoalTitle("");
   }
-  function addMilestone() {
+  async function addMilestone() {
     if (!newMilestone.trim() || !selectedId) return;
-    dispatch({ type: "ADD_MILESTONE", payload: { goalId: selectedId, title: newMilestone.trim() } });
+    await createMilestone(selectedId, newMilestone.trim());
     setNewMilestone("");
   }
 
@@ -129,7 +128,7 @@ export default function GoalsPage() {
                   <h2 className="text-xl font-black text-ink truncate">{selected.title}</h2>
                   <span className="text-sm text-muted">{goalProgress(selected)}% complete</span>
                 </div>
-                <DeleteButton onClick={() => { dispatch({ type: "REMOVE_GOAL", payload: { id: selected.id } }); setSelectedId(null); }} title="Delete goal" />
+                <DeleteButton onClick={() => { removeGoal(selected.id); setSelectedId(null); }} title="Delete goal" />
               </div>
 
               <div className="flex gap-2 mb-4">
@@ -143,9 +142,9 @@ export default function GoalsPage() {
                 <ul className="space-y-2">
                   {selected.milestones.map((m) => (
                     <li key={m.id} className="flex items-center gap-3 bg-surface-2 rounded-token-md px-3 py-2.5">
-                      <Checkbox checked={m.done} size={22} onChange={() => dispatch({ type: "TOGGLE_MILESTONE", payload: { goalId: selected.id, milestoneId: m.id } })} />
+                      <Checkbox checked={m.done} size={22} onChange={() => toggleMilestone(m.id)} />
                       <span className={`flex-1 text-sm ${m.done ? "line-through text-muted" : "text-ink"}`}>{m.title}</span>
-                      <button onClick={() => dispatch({ type: "REMOVE_MILESTONE", payload: { goalId: selected.id, milestoneId: m.id } })} className="text-muted hover:text-focus text-xs">✕</button>
+                      <button onClick={() => removeMilestone(m.id)} className="text-muted hover:text-focus text-xs">✕</button>
                     </li>
                   ))}
                 </ul>

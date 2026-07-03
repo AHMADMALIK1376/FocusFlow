@@ -262,6 +262,19 @@ export const noteAPI = {
 };
 
 // ==============================================
+// GOAL APIs
+// ==============================================
+export const goalAPI = {
+    getAll: async () => authFetch('/goals'),
+    createGoal: async (data) => authFetch('/goals', { method: 'POST', body: JSON.stringify(data) }),
+    updateGoal: async (id, data) => authFetch(`/goals/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    deleteGoal: async (id) => authFetch(`/goals/${id}`, { method: 'DELETE' }),
+    addMilestone: async (goalId, data) => authFetch(`/goals/${goalId}/milestones`, { method: 'POST', body: JSON.stringify(data) }),
+    toggleMilestone: async (milestoneId) => authFetch(`/goals/milestones/${milestoneId}/toggle`, { method: 'PUT' }),
+    removeMilestone: async (milestoneId) => authFetch(`/goals/milestones/${milestoneId}`, { method: 'DELETE' }),
+};
+
+// ==============================================
 // ROUTINE APIs
 // ==============================================
 export const routineAPI = {

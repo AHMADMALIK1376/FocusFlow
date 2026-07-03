@@ -1,25 +1,29 @@
-import { useReducer, useEffect } from 'react';
-import storage from '../../storage/storageAdapter';
-import { usePreferences } from '../../preferences/usePreferences';
-import { reducer, EMPTY_STATE } from './goalsLogic';
+import { useState, useEffect, useCallback } from 'react';
+import { goalAPI } from '../../services/api';
 
-const keyFor = (id) => `feature:goalsx:${id}`;
-
+// API-backed goals + milestones (migrated from localStorage).
 export function useGoals() {
-  const { activeDashboardId } = usePreferences();
-  const [state, dispatch] = useReducer(
-    reducer,
-    activeDashboardId,
-    (id) => storage.get(keyFor(id), EMPTY_STATE)
-  );
+  const [goals, setGoals] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    dispatch({ type: 'HYDRATE', payload: storage.get(keyFor(activeDashboardId), EMPTY_STATE) });
-  }, [activeDashboardId]);
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    try {
+      setGoals(await goalAPI.getAll());
+    } catch {
+      setGoals([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  useEffect(() => {
-    storage.set(keyFor(activeDashboardId), state);
-  }, [activeDashboardId, state]);
+  useEffect(() => { refresh(); }, [refresh]);
 
-  return { state, dispatch };
+  const createGoal = useCallback(async (title) => { await goalAPI.createGoal({ title }); await refresh(); }, [refresh]);
+  const removeGoal = useCallback(async (id) => { await goalAPI.deleteGoal(id); await refresh(); }, [refresh]);
+  const createMilestone = useCallback(async (goalId, title) => { await goalAPI.addMilestone(goalId, { title }); await refresh(); }, [refresh]);
+  const toggleMilestone = useCallback(async (milestoneId) => { await goalAPI.toggleMilestone(milestoneId); await refresh(); }, [refresh]);
+  const removeMilestone = useCallback(async (milestoneId) => { await goalAPI.removeMilestone(milestoneId); await refresh(); }, [refresh]);
+
+  return { goals, loading, refresh, createGoal, removeGoal, createMilestone, toggleMilestone, removeMilestone };
 }
