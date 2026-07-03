@@ -166,7 +166,7 @@ function App() {
                         <Route path="/habits" element={<HabitsPage />} />
                         <Route path="/projects" element={<KanbanPage />} />
                         <Route path="/time" element={<TimeTrackPage />} />
-                        <Route path="/finance" element={<FinancePage />} />
+                        <Route path="/budget" element={<FinancePage />} />
                         <Route path="/subjects" element={<SubjectsPage />} />
                         <Route path="/subjects/:id" element={<SubjectHubPage />} />
                         <Route path="/grades" element={<GradesPage />} />

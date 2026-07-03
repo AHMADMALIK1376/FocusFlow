@@ -275,6 +275,16 @@ export const goalAPI = {
 };
 
 // ==============================================
+// BUDGET APIs
+// ==============================================
+export const budgetAPI = {
+    get: async () => authFetch('/budget'),
+    addEntry: async (data) => authFetch('/budget/entries', { method: 'POST', body: JSON.stringify(data) }),
+    removeEntry: async (id) => authFetch(`/budget/entries/${id}`, { method: 'DELETE' }),
+    saveSettings: async (data) => authFetch('/budget/settings', { method: 'PUT', body: JSON.stringify(data) }),
+};
+
+// ==============================================
 // ROUTINE APIs
 // ==============================================
 export const routineAPI = {

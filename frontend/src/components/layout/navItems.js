@@ -15,5 +15,5 @@ export const NAV_ITEMS = [
   { id: 'habits', path: '/habits', labelKey: 'nav.habits', icon: '🔁' },
   { id: 'kanban', path: '/projects', labelKey: 'nav.kanban', icon: '🗂️' },
   { id: 'timetrack', path: '/time', labelKey: 'nav.timetrack', icon: '⏲️' },
-  { id: 'finance', path: '/finance', labelKey: 'nav.finance', icon: '💰' },
+  { id: 'finance', path: '/budget', labelKey: 'nav.budget', icon: '💰' },
 ];

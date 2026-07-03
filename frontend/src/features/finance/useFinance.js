@@ -1,25 +1,34 @@
-import { useReducer, useEffect } from 'react';
-import storage from '../../storage/storageAdapter';
-import { usePreferences } from '../../preferences/usePreferences';
-import { reducer, EMPTY_STATE } from './financeLogic';
+import { useState, useEffect, useCallback } from 'react';
+import { budgetAPI } from '../../services/api';
 
-const keyFor = (id) => `feature:finance:${id}`;
+const DEFAULT_SETTINGS = { monthlyAllowance: 0, currency: 'PKR', savingsGoal: 0 };
 
+// API-backed Budget (migrated from localStorage Finance). The compat `state`
+// keeps the dashboard FinanceCard (which reads totals(state)) working unchanged.
 export function useFinance() {
-  const { activeDashboardId } = usePreferences();
-  const [state, dispatch] = useReducer(
-    reducer,
-    activeDashboardId,
-    (id) => storage.get(keyFor(id), EMPTY_STATE)
-  );
+  const [entries, setEntries] = useState([]);
+  const [settings, setSettings] = useState(DEFAULT_SETTINGS);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    dispatch({ type: 'HYDRATE', payload: storage.get(keyFor(activeDashboardId), EMPTY_STATE) });
-  }, [activeDashboardId]);
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    try {
+      const d = await budgetAPI.get();
+      setEntries(d.entries || []);
+      setSettings(d.settings || DEFAULT_SETTINGS);
+    } catch {
+      setEntries([]);
+      setSettings(DEFAULT_SETTINGS);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  useEffect(() => {
-    storage.set(keyFor(activeDashboardId), state);
-  }, [activeDashboardId, state]);
+  useEffect(() => { refresh(); }, [refresh]);
 
-  return { state, dispatch };
+  const addEntry = useCallback(async (e) => { await budgetAPI.addEntry(e); await refresh(); }, [refresh]);
+  const removeEntry = useCallback(async (id) => { await budgetAPI.removeEntry(id); await refresh(); }, [refresh]);
+  const saveSettings = useCallback(async (s) => { await budgetAPI.saveSettings(s); await refresh(); }, [refresh]);
+
+  return { state: { entries }, entries, settings, loading, addEntry, removeEntry, saveSettings, refresh };
 }
