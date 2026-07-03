@@ -30,6 +30,7 @@ const gradeRoutes = require('./routes/gradeRoutes');
 const examRoutes = require('./routes/examRoutes');
 const noteRoutes = require('./routes/noteRoutes');
 const goalRoutes = require('./routes/goalRoutes');
+const budgetRoutes = require('./routes/budgetRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -182,6 +183,7 @@ app.use('/api/grades', gradeRoutes);
 app.use('/api/exams', examRoutes);
 app.use('/api/notes', noteRoutes);
 app.use('/api/goals', goalRoutes);
+app.use('/api/budget', budgetRoutes);
 
 // ==============================================
 // HEALTH CHECK
