@@ -8,10 +8,14 @@ function nextBox(box, correct) {
 }
 
 // Due date (YYYY-MM-DD) for a card now in `box`, counting from `from`.
+// Uses local date parts (not toISOString) so it never shifts a day in +offset timezones.
 function dueDate(box, from = new Date()) {
   const days = INTERVALS[box] != null ? INTERVALS[box] : 0;
   const d = new Date(from.getFullYear(), from.getMonth(), from.getDate() + days);
-  return d.toISOString().slice(0, 10);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dd}`;
 }
 
 module.exports = { INTERVALS, nextBox, dueDate };
