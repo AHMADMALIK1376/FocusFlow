@@ -2,7 +2,7 @@ import React from 'react';
 import {
   LayoutGrid, Zap, Clock, Flame, CalendarDays, BarChart3,
   StickyNote, Target, Repeat, KanbanSquare, Timer, Wallet,
-  GraduationCap, Award, CalendarClock,
+  GraduationCap, Award, CalendarClock, Layers,
 } from 'lucide-react';
 
 // Maps a nav item id -> a Lucide line icon (no emojis).
@@ -11,6 +11,7 @@ export const ICON_BY_ID = {
   subjects: GraduationCap,
   grades: Award,
   exams: CalendarClock,
+  flashcards: Layers,
   deepwork: Zap,
   routine: Clock,
   tasks: Flame,

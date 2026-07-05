@@ -4,6 +4,7 @@ export const NAV_ITEMS = [
   { id: 'subjects', path: '/subjects', labelKey: 'nav.subjects', icon: '📚' },
   { id: 'grades', path: '/grades', labelKey: 'nav.grades', icon: '📊' },
   { id: 'exams', path: '/exams', labelKey: 'nav.exams', icon: '⏰' },
+  { id: 'flashcards', path: '/flashcards', labelKey: 'nav.flashcards', icon: '🃏' },
   { id: 'deepwork', path: '/focus-mode', labelKey: 'nav.deepWork', icon: '⚡' },
   { id: 'routine', path: '/routine', labelKey: 'nav.routine', icon: '🕒' },
   { id: 'tasks', path: '/tasks', labelKey: 'nav.tasks', icon: '🔥' },
