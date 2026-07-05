@@ -285,6 +285,21 @@ export const budgetAPI = {
 };
 
 // ==============================================
+// FLASHCARD APIs
+// ==============================================
+export const flashcardAPI = {
+    getDecks: async () => authFetch('/flashcards/decks'),
+    getDecksForSubject: async (subjectId) => authFetch(`/flashcards/decks?subjectId=${subjectId}`),
+    createDeck: async (data) => authFetch('/flashcards/decks', { method: 'POST', body: JSON.stringify(data) }),
+    getDeck: async (id) => authFetch(`/flashcards/decks/${id}`),
+    deleteDeck: async (id) => authFetch(`/flashcards/decks/${id}`, { method: 'DELETE' }),
+    addCard: async (deckId, data) => authFetch(`/flashcards/decks/${deckId}/cards`, { method: 'POST', body: JSON.stringify(data) }),
+    updateCard: async (cardId, data) => authFetch(`/flashcards/cards/${cardId}`, { method: 'PUT', body: JSON.stringify(data) }),
+    deleteCard: async (cardId) => authFetch(`/flashcards/cards/${cardId}`, { method: 'DELETE' }),
+    reviewCard: async (cardId, correct) => authFetch(`/flashcards/cards/${cardId}/review`, { method: 'POST', body: JSON.stringify({ correct }) }),
+};
+
+// ==============================================
 // ROUTINE APIs
 // ==============================================
 export const routineAPI = {
