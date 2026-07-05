@@ -7,10 +7,10 @@ import { subjectAPI } from "../services/api";
 import GradesPanel from "../components/subjects/GradesPanel";
 import ExamsPanel from "../components/subjects/ExamsPanel";
 import FlashcardsPanel from "../components/subjects/FlashcardsPanel";
+import AttendancePanel from "../components/subjects/AttendancePanel";
 
 const DAY_ORDER = { Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6, Sunday: 7 };
 const COMING = [
-  { key: "attendance", icon: "✅", title: "Attendance", note: "Per-class attendance and percentage — arriving soon." },
   { key: "assignments", icon: "📝", title: "Assignments", note: "Assignments and deadlines for this subject — arriving soon." },
   { key: "notes", icon: "🗒️", title: "Notes", note: "Subject notes — arriving soon." },
 ];
@@ -98,6 +98,8 @@ export default function SubjectHubPage() {
           </Panel>
 
           <GradesPanel subjectId={id} />
+
+          <AttendancePanel subjectId={id} />
 
           <ExamsPanel subjectId={id} />
 

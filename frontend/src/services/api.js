@@ -300,6 +300,15 @@ export const flashcardAPI = {
 };
 
 // ==============================================
+// SUBJECT ATTENDANCE APIs
+// ==============================================
+export const subjectAttendanceAPI = {
+    getForSubject: async (subjectId) => authFetch(`/subject-attendance/subjects/${subjectId}`),
+    mark: async (subjectId, data) => authFetch(`/subject-attendance/subjects/${subjectId}`, { method: 'POST', body: JSON.stringify(data) }),
+    removeRecord: async (recordId) => authFetch(`/subject-attendance/records/${recordId}`, { method: 'DELETE' }),
+};
+
+// ==============================================
 // ROUTINE APIs
 // ==============================================
 export const routineAPI = {
