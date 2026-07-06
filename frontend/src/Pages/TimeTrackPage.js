@@ -13,7 +13,7 @@ const TODAY = new Date().toISOString().slice(0, 10);
 const hoursLabel = (secs) => `${(secs / 3600).toFixed(1)}h`;
 
 export default function TimeTrackPage() {
-  const { state, dispatch } = useTimetrack();
+  const { state, start, stop, removeEntry } = useTimetrack();
   const { activeDashboard } = usePreferences();
   const { brand } = chartColors(activeDashboard?.palette);
 
@@ -39,7 +39,7 @@ export default function TimeTrackPage() {
   const total = totalSeconds(state);
   const byLabel = totalsByLabel(state);
   const labelEntries = Object.entries(byLabel).sort((a, b) => b[1] - a[1]);
-  const todaySecs = state.entries.filter((e) => (e.start || "").slice(0, 10) === TODAY).reduce((s, e) => s + (e.seconds || 0), 0);
+  const todaySecs = state.entries.filter((e) => e.date === TODAY).reduce((s, e) => s + (e.seconds || 0), 0);
   const topActivity = labelEntries[0] ? labelEntries[0][0] : "—";
 
   const chartData = useMemo(
@@ -47,12 +47,12 @@ export default function TimeTrackPage() {
     [labelEntries]
   );
 
-  function startTimer() { if (label.trim()) dispatch({ type: "START", payload: { label: label.trim() } }); }
-  function stopTimer() { dispatch({ type: "STOP", payload: { now: new Date().toISOString() } }); setLabel(""); }
+  function startTimer() { if (label.trim()) start(label.trim()); }
+  function stopTimer() { stop(new Date().toISOString()); setLabel(""); }
 
   return (
     <PageShell>
-      <PageHeader title="Time" subtitle="Track where your hours go and stay focused." />
+      <PageHeader title="Study hours" subtitle="Track where your hours go and stay focused." />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
         <StatTile primary icon={<Hourglass size={18} />} label="Total tracked" value={hoursLabel(total)} sub="All time" />
@@ -126,9 +126,9 @@ export default function TimeTrackPage() {
             {state.entries.map((e) => (
               <li key={e.id} className="flex items-center gap-3 bg-surface-2 rounded-token-md px-3 py-2.5">
                 <span className="flex-1 text-sm text-ink font-bold truncate">{e.label}</span>
-                <span className="text-muted text-xs shrink-0">{e.start?.slice(0, 10)}</span>
+                <span className="text-muted text-xs shrink-0">{e.date}</span>
                 <span className="text-brand text-sm font-black tabular-nums shrink-0">{formatHMS(e.seconds)}</span>
-                <button onClick={() => dispatch({ type: "REMOVE_ENTRY", payload: { id: e.id } })} className="text-muted hover:text-focus text-xs shrink-0">✕</button>
+                <button onClick={() => removeEntry(e.id)} className="text-muted hover:text-focus text-xs shrink-0">✕</button>
               </li>
             ))}
           </ul>
