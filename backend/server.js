@@ -33,6 +33,7 @@ const goalRoutes = require('./routes/goalRoutes');
 const budgetRoutes = require('./routes/budgetRoutes');
 const flashcardRoutes = require('./routes/flashcardRoutes');
 const subjectAttendanceRoutes = require('./routes/subjectAttendanceRoutes');
+const assignmentRoutes = require('./routes/assignmentRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -188,6 +189,7 @@ app.use('/api/goals', goalRoutes);
 app.use('/api/budget', budgetRoutes);
 app.use('/api/flashcards', flashcardRoutes);
 app.use('/api/subject-attendance', subjectAttendanceRoutes);
+app.use('/api/assignments', assignmentRoutes);
 
 // ==============================================
 // HEALTH CHECK
