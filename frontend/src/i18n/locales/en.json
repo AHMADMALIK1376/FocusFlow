@@ -33,9 +33,9 @@
     "pending": "Pending",
     "notes": "Notes",
     "goalsx": "Goals",
-    "habits": "Habits",
+    "habits": "Study streaks",
     "kanban": "Assignments",
-    "timetrack": "Time",
+    "timetrack": "Study hours",
     "finance": "Finance"
   },
   "dashboard": {

@@ -10,7 +10,7 @@ const TODAY = new Date().toISOString().slice(0, 10);
 export default function HabitsCard() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { state, dispatch } = useHabits();
+  const { state, toggleDay } = useHabits();
   const { habits } = state;
 
   return (
@@ -29,7 +29,7 @@ export default function HabitsCard() {
             return (
               <li key={habit.id} className="flex items-center gap-3">
                 <button
-                  onClick={() => dispatch({ type: 'TOGGLE_DAY', payload: { id: habit.id, day: TODAY } })}
+                  onClick={() => toggleDay(habit.id, TODAY)}
                   className={`w-6 h-6 rounded-token-sm border-2 flex items-center justify-center flex-shrink-0 transition-colors duration-200 ${done ? 'bg-success border-success' : 'border-[rgb(var(--ink)/0.3)] hover:border-brand'}`}
                 >
                   {done && <span className="text-on-brand text-xs">✓</span>}

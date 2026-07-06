@@ -20,7 +20,7 @@ function getWeekStart() {
 }
 
 export default function HabitsPage() {
-  const { state, dispatch } = useHabits();
+  const { state, addHabit: apiAddHabit, renameHabit, removeHabit, toggleDay } = useHabits();
   const { activeDashboard } = usePreferences();
   const { brand } = chartColors(activeDashboard?.palette);
 
@@ -42,17 +42,17 @@ export default function HabitsPage() {
 
   function addHabit() {
     if (!newName.trim()) return;
-    dispatch({ type: "ADD", payload: { name: newName.trim(), color: newColor } });
+    apiAddHabit(newName.trim(), newColor);
     setNewName("");
   }
   function commitRename(id) {
-    if (renameVal.trim()) dispatch({ type: "RENAME", payload: { id, name: renameVal.trim() } });
+    if (renameVal.trim()) renameHabit(id, renameVal.trim());
     setRenaming(null);
   }
 
   return (
     <PageShell>
-      <PageHeader title="Habits" subtitle="Build streaks and keep your daily habits on track." />
+      <PageHeader title="Study streaks" subtitle="Build streaks and keep your daily habits on track." />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
         <StatTile primary icon={<Repeat size={18} />} label="Habits" value={habits.length} sub="Being tracked" />
@@ -119,7 +119,7 @@ export default function HabitsPage() {
                   <div className="flex items-center gap-1.5 shrink-0">
                     <span className="text-sm font-bold text-ink">🔥 {streak}</span>
                     <button onClick={() => { setRenaming(habit.id); setRenameVal(habit.name); }} className="text-muted hover:text-ink text-xs p-1">✏️</button>
-                    <button onClick={() => dispatch({ type: "REMOVE", payload: { id: habit.id } })} className="text-muted hover:text-focus text-xs p-1">✕</button>
+                    <button onClick={() => removeHabit(habit.id)} className="text-muted hover:text-focus text-xs p-1">✕</button>
                   </div>
                 </div>
 
@@ -131,7 +131,7 @@ export default function HabitsPage() {
                     return (
                       <button
                         key={i}
-                        onClick={() => dispatch({ type: "TOGGLE_DAY", payload: { id: habit.id, day: dayKey } })}
+                        onClick={() => toggleDay(habit.id, dayKey)}
                         title={dayKey}
                         className={`flex flex-col items-center gap-0.5 rounded-token-md p-1.5 w-10 transition-all ${grid[i] ? `${colorClass} shadow-neu-sm` : "bg-surface-2 hover:bg-[rgb(var(--ink)/0.08)]"}`}
                       >
@@ -143,7 +143,7 @@ export default function HabitsPage() {
                 </div>
 
                 <div className="mt-3">
-                  <Button size="sm" variant={habit.log && habit.log[TODAY] ? "primary" : "neu"} onClick={() => dispatch({ type: "TOGGLE_DAY", payload: { id: habit.id, day: TODAY } })}>
+                  <Button size="sm" variant={habit.log && habit.log[TODAY] ? "primary" : "neu"} onClick={() => toggleDay(habit.id, TODAY)}>
                     {habit.log && habit.log[TODAY] ? "✓ Done today" : "Mark today"}
                   </Button>
                 </div>

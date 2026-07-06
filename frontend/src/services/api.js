@@ -321,6 +321,26 @@ export const assignmentAPI = {
 };
 
 // ==============================================
+// STUDY STREAK (HABITS) APIs
+// ==============================================
+export const habitAPI = {
+    getAll: async () => authFetch('/habits'),
+    create: async (data) => authFetch('/habits', { method: 'POST', body: JSON.stringify(data) }),
+    rename: async (id, data) => authFetch(`/habits/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    remove: async (id) => authFetch(`/habits/${id}`, { method: 'DELETE' }),
+    toggleDay: async (id, day) => authFetch(`/habits/${id}/toggle`, { method: 'POST', body: JSON.stringify({ day }) }),
+};
+
+// ==============================================
+// STUDY HOURS APIs
+// ==============================================
+export const studyHoursAPI = {
+    getAll: async () => authFetch('/study-hours'),
+    create: async (data) => authFetch('/study-hours', { method: 'POST', body: JSON.stringify(data) }),
+    remove: async (id) => authFetch(`/study-hours/${id}`, { method: 'DELETE' }),
+};
+
+// ==============================================
 // ROUTINE APIs
 // ==============================================
 export const routineAPI = {
