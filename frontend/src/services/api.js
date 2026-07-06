@@ -309,6 +309,18 @@ export const subjectAttendanceAPI = {
 };
 
 // ==============================================
+// ASSIGNMENT APIs
+// ==============================================
+export const assignmentAPI = {
+    getAll: async () => authFetch('/assignments'),
+    getForSubject: async (subjectId) => authFetch(`/assignments?subjectId=${subjectId}`),
+    create: async (data) => authFetch('/assignments', { method: 'POST', body: JSON.stringify(data) }),
+    update: async (id, data) => authFetch(`/assignments/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    move: async (id, data) => authFetch(`/assignments/${id}/move`, { method: 'PUT', body: JSON.stringify(data) }),
+    remove: async (id) => authFetch(`/assignments/${id}`, { method: 'DELETE' }),
+};
+
+// ==============================================
 // ROUTINE APIs
 // ==============================================
 export const routineAPI = {
