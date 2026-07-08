@@ -217,6 +217,130 @@ export const calendarAPI = {
 };
 
 // ==============================================
+// SUBJECT APIs
+// ==============================================
+export const subjectAPI = {
+    getAll: async () => authFetch('/subjects'),
+    get: async (id) => authFetch(`/subjects/${id}`),
+    create: async (data) => authFetch('/subjects', { method: 'POST', body: JSON.stringify(data) }),
+    update: async (id, data) => authFetch(`/subjects/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    remove: async (id) => authFetch(`/subjects/${id}`, { method: 'DELETE' }),
+};
+
+// ==============================================
+// GRADE APIs
+// ==============================================
+export const gradeAPI = {
+    getForSubject: async (subjectId) => authFetch(`/grades?subjectId=${subjectId}`),
+    getGpa: async () => authFetch('/grades/gpa'),
+    create: async (data) => authFetch('/grades', { method: 'POST', body: JSON.stringify(data) }),
+    update: async (id, data) => authFetch(`/grades/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    remove: async (id) => authFetch(`/grades/${id}`, { method: 'DELETE' }),
+};
+
+// ==============================================
+// EXAM APIs
+// ==============================================
+export const examAPI = {
+    getAll: async () => authFetch('/exams'),
+    getForSubject: async (subjectId) => authFetch(`/exams?subjectId=${subjectId}`),
+    create: async (data) => authFetch('/exams', { method: 'POST', body: JSON.stringify(data) }),
+    update: async (id, data) => authFetch(`/exams/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    toggle: async (id) => authFetch(`/exams/${id}/toggle`, { method: 'PUT' }),
+    remove: async (id) => authFetch(`/exams/${id}`, { method: 'DELETE' }),
+};
+
+// ==============================================
+// NOTE APIs
+// ==============================================
+export const noteAPI = {
+    getAll: async () => authFetch('/notes'),
+    getForSubject: async (subjectId) => authFetch(`/notes?subjectId=${subjectId}`),
+    create: async (data) => authFetch('/notes', { method: 'POST', body: JSON.stringify(data) }),
+    update: async (id, data) => authFetch(`/notes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    remove: async (id) => authFetch(`/notes/${id}`, { method: 'DELETE' }),
+};
+
+// ==============================================
+// GOAL APIs
+// ==============================================
+export const goalAPI = {
+    getAll: async () => authFetch('/goals'),
+    createGoal: async (data) => authFetch('/goals', { method: 'POST', body: JSON.stringify(data) }),
+    updateGoal: async (id, data) => authFetch(`/goals/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    deleteGoal: async (id) => authFetch(`/goals/${id}`, { method: 'DELETE' }),
+    addMilestone: async (goalId, data) => authFetch(`/goals/${goalId}/milestones`, { method: 'POST', body: JSON.stringify(data) }),
+    toggleMilestone: async (milestoneId) => authFetch(`/goals/milestones/${milestoneId}/toggle`, { method: 'PUT' }),
+    removeMilestone: async (milestoneId) => authFetch(`/goals/milestones/${milestoneId}`, { method: 'DELETE' }),
+};
+
+// ==============================================
+// BUDGET APIs
+// ==============================================
+export const budgetAPI = {
+    get: async () => authFetch('/budget'),
+    addEntry: async (data) => authFetch('/budget/entries', { method: 'POST', body: JSON.stringify(data) }),
+    removeEntry: async (id) => authFetch(`/budget/entries/${id}`, { method: 'DELETE' }),
+    saveSettings: async (data) => authFetch('/budget/settings', { method: 'PUT', body: JSON.stringify(data) }),
+};
+
+// ==============================================
+// FLASHCARD APIs
+// ==============================================
+export const flashcardAPI = {
+    getDecks: async () => authFetch('/flashcards/decks'),
+    getDecksForSubject: async (subjectId) => authFetch(`/flashcards/decks?subjectId=${subjectId}`),
+    createDeck: async (data) => authFetch('/flashcards/decks', { method: 'POST', body: JSON.stringify(data) }),
+    getDeck: async (id) => authFetch(`/flashcards/decks/${id}`),
+    deleteDeck: async (id) => authFetch(`/flashcards/decks/${id}`, { method: 'DELETE' }),
+    addCard: async (deckId, data) => authFetch(`/flashcards/decks/${deckId}/cards`, { method: 'POST', body: JSON.stringify(data) }),
+    updateCard: async (cardId, data) => authFetch(`/flashcards/cards/${cardId}`, { method: 'PUT', body: JSON.stringify(data) }),
+    deleteCard: async (cardId) => authFetch(`/flashcards/cards/${cardId}`, { method: 'DELETE' }),
+    reviewCard: async (cardId, correct) => authFetch(`/flashcards/cards/${cardId}/review`, { method: 'POST', body: JSON.stringify({ correct }) }),
+};
+
+// ==============================================
+// SUBJECT ATTENDANCE APIs
+// ==============================================
+export const subjectAttendanceAPI = {
+    getForSubject: async (subjectId) => authFetch(`/subject-attendance/subjects/${subjectId}`),
+    mark: async (subjectId, data) => authFetch(`/subject-attendance/subjects/${subjectId}`, { method: 'POST', body: JSON.stringify(data) }),
+    removeRecord: async (recordId) => authFetch(`/subject-attendance/records/${recordId}`, { method: 'DELETE' }),
+};
+
+// ==============================================
+// ASSIGNMENT APIs
+// ==============================================
+export const assignmentAPI = {
+    getAll: async () => authFetch('/assignments'),
+    getForSubject: async (subjectId) => authFetch(`/assignments?subjectId=${subjectId}`),
+    create: async (data) => authFetch('/assignments', { method: 'POST', body: JSON.stringify(data) }),
+    update: async (id, data) => authFetch(`/assignments/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    move: async (id, data) => authFetch(`/assignments/${id}/move`, { method: 'PUT', body: JSON.stringify(data) }),
+    remove: async (id) => authFetch(`/assignments/${id}`, { method: 'DELETE' }),
+};
+
+// ==============================================
+// STUDY STREAK (HABITS) APIs
+// ==============================================
+export const habitAPI = {
+    getAll: async () => authFetch('/habits'),
+    create: async (data) => authFetch('/habits', { method: 'POST', body: JSON.stringify(data) }),
+    rename: async (id, data) => authFetch(`/habits/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    remove: async (id) => authFetch(`/habits/${id}`, { method: 'DELETE' }),
+    toggleDay: async (id, day) => authFetch(`/habits/${id}/toggle`, { method: 'POST', body: JSON.stringify({ day }) }),
+};
+
+// ==============================================
+// STUDY HOURS APIs
+// ==============================================
+export const studyHoursAPI = {
+    getAll: async () => authFetch('/study-hours'),
+    create: async (data) => authFetch('/study-hours', { method: 'POST', body: JSON.stringify(data) }),
+    remove: async (id) => authFetch(`/study-hours/${id}`, { method: 'DELETE' }),
+};
+
+// ==============================================
 // ROUTINE APIs
 // ==============================================
 export const routineAPI = {

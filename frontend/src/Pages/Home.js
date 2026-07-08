@@ -14,9 +14,10 @@ import ChartBox from "../components/charts/ChartBox";
 import { chartColors, hexToRgba, CHART_TOOLTIP } from "../components/charts/chartColors";
 import { WIDGET_BY_ID } from "../dashboard/registry";
 import Clock from "../components/dashboard/Clock";
+import StudentSnapshot from "../components/dashboard/StudentSnapshot";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const FEATURE_IDS = ["notes", "goalsx", "habits", "kanban", "timetrack", "finance", "shopping", "mood", "eventsx", "contacts"];
+const FEATURE_IDS = ["notes", "goalsx", "habits", "kanban", "timetrack", "finance"];
 
 // Defensive task field readers (task shape varies across the app)
 const taskTitle = (t) => t.text || t.task_text || t.title || t.activity || "Untitled task";
@@ -171,6 +172,8 @@ export default function Home() {
 
         <Clock />
       </header>
+
+      <StudentSnapshot />
 
       {/* ── BENTO GRID ─────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 auto-rows-min grid-flow-row-dense">

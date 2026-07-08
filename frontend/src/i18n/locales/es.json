@@ -31,11 +31,7 @@
     "habits": "Hábitos",
     "kanban": "Proyectos",
     "timetrack": "Tiempo",
-    "finance": "Finanzas",
-    "shopping": "Compras",
-    "mood": "Ánimo",
-    "eventsx": "Eventos",
-    "contacts": "Contactos"
+    "finance": "Finanzas"
   },
   "dashboard": {
     "goodMorning": "Buenos días",

@@ -29,9 +29,11 @@ export default function NotesCard() {
           ))}
         </ul>
       )}
-      <Button size="sm" variant="primary" onClick={() => navigate('/notes')} className="mt-3">
-        {t('notes.add', { defaultValue: '+ New Note' })}
-      </Button>
+      <div className="mt-3 flex justify-center">
+        <Button size="sm" variant="primary" onClick={() => navigate('/notes')} className="w-4/5">
+          {t('notes.add', { defaultValue: '+ New Note' })}
+        </Button>
+      </div>
     </div>
   );
 }

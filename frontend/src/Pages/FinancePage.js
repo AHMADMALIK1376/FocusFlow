@@ -1,7 +1,7 @@
-import React, { useMemo, useState } from "react";
-import { Wallet, TrendingUp, TrendingDown, PiggyBank, Plus } from "lucide-react";
+import React, { useMemo, useState, useEffect } from "react";
+import { Wallet, TrendingUp, TrendingDown, PiggyBank, Plus, Save } from "lucide-react";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from "recharts";
-import { Button, Input, EmptyState } from "../components/ui";
+import { Button, Input, Select, EmptyState } from "../components/ui";
 import { PageShell, PageHeader, StatTile, Panel } from "../components/dashboard/DashKit";
 import ChartBox from "../components/charts/ChartBox";
 import { chartColors, hexToRgba, CHART_TOOLTIP } from "../components/charts/chartColors";
@@ -10,11 +10,13 @@ import { useFinance } from "../features/finance/useFinance";
 import { totals, byCategory } from "../features/finance/financeLogic";
 
 const TODAY = new Date().toISOString().slice(0, 10);
+const MONTH = TODAY.slice(0, 7);
 const INCOME_COLOR = "#22A06B";
 const EXPENSE_COLOR = "#E0606B";
+const CURRENCIES = { PKR: "₨", USD: "$", EUR: "€", GBP: "£", INR: "₹", AED: "AED " };
 
 export default function FinancePage() {
-  const { state, dispatch } = useFinance();
+  const { state, entries, settings, addEntry, removeEntry, saveSettings } = useFinance();
   const { activeDashboard } = usePreferences();
   const { brand, accent } = chartColors(activeDashboard?.palette);
 
@@ -25,14 +27,25 @@ export default function FinancePage() {
   const [date, setDate] = useState(TODAY);
   const [filterType, setFilterType] = useState("all");
 
-  const { income, expense, balance } = totals(state);
-  const savingsRate = income > 0 ? Math.round((balance / income) * 100) : 0;
-  const expenseCats = byCategory(state, "expense");
+  const [allowance, setAllowance] = useState(0);
+  const [savings, setSavings] = useState(0);
+  const [currency, setCurrency] = useState("PKR");
+  useEffect(() => {
+    setAllowance(settings.monthlyAllowance || 0);
+    setSavings(settings.savingsGoal || 0);
+    setCurrency(settings.currency || "PKR");
+  }, [settings]);
 
-  const pieData = useMemo(
-    () => Object.entries(expenseCats).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value),
-    [expenseCats]
-  );
+  const cur = CURRENCIES[currency] || `${currency} `;
+  const fmt = (n) => `${cur}${Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+
+  const { balance } = totals(state);
+  const monthExpense = entries.filter((e) => e.type === "expense" && (e.date || "").slice(0, 7) === MONTH).reduce((s, e) => s + e.amount, 0);
+  const remaining = (settings.monthlyAllowance || 0) - monthExpense;
+  const savingsPct = settings.savingsGoal > 0 ? Math.min(100, Math.round((balance / settings.savingsGoal) * 100)) : 0;
+
+  const expenseCats = byCategory(state, "expense");
+  const pieData = useMemo(() => Object.entries(expenseCats).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value), [expenseCats]);
   const pieColors = [brand, accent, hexToRgba(brand, 0.6), hexToRgba(accent, 0.6), hexToRgba(brand, 0.35), hexToRgba(accent, 0.85)];
 
   const cashFlow = useMemo(() => {
@@ -42,32 +55,49 @@ export default function FinancePage() {
       d.setDate(d.getDate() - i);
       days.push({ key: d.toISOString().slice(0, 10), label: d.toLocaleDateString(undefined, { weekday: "short" }), income: 0, expense: 0 });
     }
-    state.entries.forEach((e) => {
-      const day = days.find((d) => d.key === e.date);
-      if (day) day[e.type] += e.amount;
-    });
+    entries.forEach((e) => { const day = days.find((d) => d.key === e.date); if (day) day[e.type] += e.amount; });
     return days;
-  }, [state.entries]);
+  }, [entries]);
 
-  function addEntry() {
+  async function submitEntry() {
     const amt = parseFloat(amount);
     if (!amt || amt <= 0) return;
-    dispatch({ type: "ADD", payload: { type, amount: amt, category: category || "General", note, date } });
+    await addEntry({ type, amount: amt, category: category || "General", note, date });
     setAmount(""); setCategory(""); setNote(""); setDate(TODAY);
   }
 
-  const filtered = filterType === "all" ? state.entries : state.entries.filter((e) => e.type === filterType);
+  const filtered = filterType === "all" ? entries : entries.filter((e) => e.type === filterType);
 
   return (
     <PageShell>
-      <PageHeader title="Finance" subtitle="Track income, expenses and watch your balance grow." />
+      <PageHeader title="Budget" subtitle="Track your pocket money — allowance in, spending out." />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-        <StatTile primary icon={<Wallet size={18} />} label="Balance" value={`$${balance.toFixed(0)}`} sub="Income − expenses" />
-        <StatTile icon={<TrendingUp size={18} />} label="Income" value={`$${income.toFixed(0)}`} sub="Money in" />
-        <StatTile icon={<TrendingDown size={18} />} label="Expenses" value={`$${expense.toFixed(0)}`} sub="Money out" />
-        <StatTile icon={<PiggyBank size={18} />} label="Savings rate" value={`${savingsRate}%`} sub="Of income kept" />
+        <StatTile primary icon={<Wallet size={18} />} label="Monthly allowance" value={fmt(settings.monthlyAllowance)} sub="This month" />
+        <StatTile icon={<TrendingDown size={18} />} label="Spent this month" value={fmt(monthExpense)} sub="Expenses" />
+        <StatTile icon={<TrendingUp size={18} />} label="Remaining" value={fmt(remaining)} sub="Allowance − spent" />
+        <StatTile icon={<PiggyBank size={18} />} label="Saved" value={fmt(balance)} sub={settings.savingsGoal > 0 ? `${savingsPct}% of goal` : "Income − expenses"} />
       </div>
+
+      <Panel title="Budget settings" subtitle="Your allowance, savings target and currency" className="mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
+          <div>
+            <label className="text-xs font-bold text-muted block mb-1">Monthly allowance</label>
+            <Input type="number" min="0" value={allowance} onChange={(e) => setAllowance(e.target.value)} />
+          </div>
+          <div>
+            <label className="text-xs font-bold text-muted block mb-1">Savings goal</label>
+            <Input type="number" min="0" value={savings} onChange={(e) => setSavings(e.target.value)} />
+          </div>
+          <div>
+            <label className="text-xs font-bold text-muted block mb-1">Currency</label>
+            <Select value={currency} onChange={(e) => setCurrency(e.target.value)}>
+              {Object.keys(CURRENCIES).map((c) => <option key={c} value={c}>{c}</option>)}
+            </Select>
+          </div>
+          <Button variant="primary" onClick={() => saveSettings({ monthlyAllowance: Number(allowance) || 0, currency, savingsGoal: Number(savings) || 0 })} className="gap-1.5"><Save size={16} /> Save</Button>
+        </div>
+      </Panel>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
         <Panel title="Spending by category" subtitle="Where your money goes">
@@ -80,7 +110,7 @@ export default function FinancePage() {
                   <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={48} outerRadius={80} paddingAngle={2} stroke="none" isAnimationActive={false}>
                     {pieData.map((d, i) => <Cell key={i} fill={pieColors[i % pieColors.length]} />)}
                   </Pie>
-                  <Tooltip contentStyle={CHART_TOOLTIP} formatter={(v) => [`$${v.toFixed(2)}`, "Spent"]} />
+                  <Tooltip contentStyle={CHART_TOOLTIP} formatter={(v) => [fmt(v), "Spent"]} />
                   <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, fontWeight: 700 }} />
                 </PieChart>
               )}
@@ -88,14 +118,14 @@ export default function FinancePage() {
           )}
         </Panel>
 
-        <Panel title="Cash flow" subtitle="Income vs expenses, last 7 days" className="lg:col-span-2">
+        <Panel title="Cash flow" subtitle="Money in vs out, last 7 days" className="lg:col-span-2">
           <ChartBox height={210}>
             {(cw) => (
               <BarChart width={cw} height={210} data={cashFlow} margin={{ top: 10, right: 8, left: -18, bottom: 0 }} barGap={2}>
                 <CartesianGrid vertical={false} strokeDasharray="3 4" stroke={hexToRgba(brand, 0.1)} />
                 <XAxis dataKey="label" axisLine={false} tickLine={false} dy={4} tick={{ fontSize: 11, fontWeight: 700, fill: "#8A93A0" }} />
                 <YAxis axisLine={false} tickLine={false} width={34} tick={{ fontSize: 11, fill: "#8A93A0" }} />
-                <Tooltip cursor={{ fill: hexToRgba(brand, 0.05) }} contentStyle={CHART_TOOLTIP} formatter={(v, n) => [`$${v}`, n]} />
+                <Tooltip cursor={{ fill: hexToRgba(brand, 0.05) }} contentStyle={CHART_TOOLTIP} formatter={(v, n) => [fmt(v), n]} />
                 <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, fontWeight: 700, paddingTop: 6 }} />
                 <Bar dataKey="income" name="Income" radius={[5, 5, 0, 0]} fill={INCOME_COLOR} maxBarSize={18} />
                 <Bar dataKey="expense" name="Expense" radius={[5, 5, 0, 0]} fill={EXPENSE_COLOR} maxBarSize={18} />
@@ -110,16 +140,14 @@ export default function FinancePage() {
           <div className="space-y-2.5">
             <div className="flex rounded-token-md overflow-hidden border border-[rgb(var(--ink)/0.12)]">
               {["income", "expense"].map((tp) => (
-                <button key={tp} onClick={() => setType(tp)} className={`flex-1 py-2.5 text-sm font-black uppercase tracking-wide transition-colors ${type === tp ? "bg-grad-hero text-on-brand" : "bg-surface-2 text-muted hover:text-ink"}`}>
-                  {tp}
-                </button>
+                <button key={tp} onClick={() => setType(tp)} className={`flex-1 py-2.5 text-sm font-black uppercase tracking-wide transition-colors ${type === tp ? "bg-grad-hero text-on-brand" : "bg-surface-2 text-muted hover:text-ink"}`}>{tp}</button>
               ))}
             </div>
             <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Amount" min="0" step="0.01" />
             <Input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Category (e.g. Food)" />
             <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Note (optional)" />
             <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-            <Button variant="primary" onClick={addEntry} className="w-full gap-1.5"><Plus size={16} /> Add entry</Button>
+            <Button variant="primary" onClick={submitEntry} className="w-full gap-1.5"><Plus size={16} /> Add entry</Button>
           </div>
         </Panel>
 
@@ -145,8 +173,8 @@ export default function FinancePage() {
                     {e.note && <p className="text-xs text-muted truncate">{e.note}</p>}
                   </div>
                   <span className="text-xs text-muted shrink-0">{e.date}</span>
-                  <span className={`font-black text-sm shrink-0 ${e.type === "income" ? "text-success" : "text-focus"}`}>${e.amount.toFixed(2)}</span>
-                  <button onClick={() => dispatch({ type: "REMOVE", payload: { id: e.id } })} className="text-muted hover:text-focus text-xs shrink-0">✕</button>
+                  <span className={`font-black text-sm shrink-0 ${e.type === "income" ? "text-success" : "text-focus"}`}>{fmt(e.amount)}</span>
+                  <button onClick={() => removeEntry(e.id)} className="text-muted hover:text-focus text-xs shrink-0">✕</button>
                 </li>
               ))}
             </ul>

@@ -1,6 +1,10 @@
 // Shared navigation config used by Sidebar (desktop) and MobileTabBar.
 export const NAV_ITEMS = [
   { id: 'dashboard', path: '/dashboard', labelKey: 'nav.dashboard', icon: '🏠' },
+  { id: 'subjects', path: '/subjects', labelKey: 'nav.subjects', icon: '📚' },
+  { id: 'grades', path: '/grades', labelKey: 'nav.grades', icon: '📊' },
+  { id: 'exams', path: '/exams', labelKey: 'nav.exams', icon: '⏰' },
+  { id: 'flashcards', path: '/flashcards', labelKey: 'nav.flashcards', icon: '🃏' },
   { id: 'deepwork', path: '/focus-mode', labelKey: 'nav.deepWork', icon: '⚡' },
   { id: 'routine', path: '/routine', labelKey: 'nav.routine', icon: '🕒' },
   { id: 'tasks', path: '/tasks', labelKey: 'nav.tasks', icon: '🔥' },
@@ -12,9 +16,5 @@ export const NAV_ITEMS = [
   { id: 'habits', path: '/habits', labelKey: 'nav.habits', icon: '🔁' },
   { id: 'kanban', path: '/projects', labelKey: 'nav.kanban', icon: '🗂️' },
   { id: 'timetrack', path: '/time', labelKey: 'nav.timetrack', icon: '⏲️' },
-  { id: 'finance', path: '/finance', labelKey: 'nav.finance', icon: '💰' },
-  { id: 'shopping', path: '/shopping', labelKey: 'nav.shopping', icon: '🛒' },
-  { id: 'mood', path: '/mood', labelKey: 'nav.mood', icon: '🌤️' },
-  { id: 'eventsx', path: '/events', labelKey: 'nav.eventsx', icon: '📆' },
-  { id: 'contacts', path: '/contacts', labelKey: 'nav.contacts', icon: '👤' },
+  { id: 'finance', path: '/budget', labelKey: 'nav.budget', icon: '💰' },
 ];

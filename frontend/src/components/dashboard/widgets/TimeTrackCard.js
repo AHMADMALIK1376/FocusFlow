@@ -50,9 +50,11 @@ export default function TimeTrackCard() {
         </div>
       )}
 
-      <Button size="sm" variant="primary" onClick={() => navigate('/time')} className="mt-3">
-        {state.running ? t('timetrack.manage', { defaultValue: 'Manage timer' }) : t('timetrack.start', { defaultValue: 'Start Timer' })}
-      </Button>
+      <div className="mt-3 flex justify-center">
+        <Button size="sm" variant="primary" onClick={() => navigate('/time')} className="w-4/5">
+          {state.running ? t('timetrack.manage', { defaultValue: 'Manage timer' }) : t('timetrack.start', { defaultValue: 'Start Timer' })}
+        </Button>
+      </div>
     </div>
   );
 }

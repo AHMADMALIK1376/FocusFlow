@@ -7,12 +7,12 @@ import ChartBox from "../components/charts/ChartBox";
 import { chartColors, hexToRgba, CHART_TOOLTIP } from "../components/charts/chartColors";
 import { usePreferences } from "../preferences/usePreferences";
 import { useNotes } from "../features/notes/useNotes";
-import { selectSorted, renderInline } from "../features/notes/notesLogic";
+import { renderInline } from "../features/notes/notesLogic";
 
 const wordCount = (s) => (s ? s.trim().split(/\s+/).filter(Boolean).length : 0);
 
 export default function NotesPage() {
-  const { state, dispatch } = useNotes();
+  const { notes, create, update, remove } = useNotes();
   const { activeDashboard } = usePreferences();
   const { brand } = chartColors(activeDashboard?.palette);
 
@@ -22,7 +22,6 @@ export default function NotesPage() {
   const [editBody, setEditBody] = useState("");
   const [preview, setPreview] = useState(false);
 
-  const notes = selectSorted(state);
   const selected = notes.find((n) => n.id === selectedId) || null;
 
   const totalWords = useMemo(() => notes.reduce((s, n) => s + wordCount(n.body), 0), [notes]);
@@ -47,10 +46,9 @@ export default function NotesPage() {
   }, [notes]);
 
   function startNew() {
-    dispatch({ type: "ADD", payload: { title: "Untitled", body: "" } });
     setEditing(true);
     setSelectedId(null);
-    setEditTitle("Untitled");
+    setEditTitle("");
     setEditBody("");
     setPreview(false);
   }
@@ -60,14 +58,18 @@ export default function NotesPage() {
   function startEdit(note) {
     setSelectedId(note.id); setEditing(true); setEditTitle(note.title); setEditBody(note.body); setPreview(false);
   }
-  function saveEdit() {
-    const id = selectedId || (notes[0] && notes[0].id);
-    if (!id) return;
-    dispatch({ type: "UPDATE", payload: { id, patch: { title: editTitle, body: editBody } } });
-    setSelectedId(id); setEditing(false);
+  async function saveEdit() {
+    if (selectedId) {
+      await update(selectedId, { title: editTitle, body: editBody });
+      setEditing(false);
+    } else {
+      const id = await create({ title: editTitle || "Untitled", body: editBody });
+      setSelectedId(id);
+      setEditing(false);
+    }
   }
-  function deleteNote(id) {
-    dispatch({ type: "REMOVE", payload: { id } });
+  async function deleteNote(id) {
+    await remove(id);
     if (selectedId === id) { setSelectedId(null); setEditing(false); }
   }
 

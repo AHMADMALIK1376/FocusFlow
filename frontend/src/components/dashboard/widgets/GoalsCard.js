@@ -41,9 +41,11 @@ export default function GoalsCard() {
           })}
         </ul>
       )}
-      <Button size="sm" variant="primary" onClick={() => navigate('/goals')} className="mt-3">
-        {t('goalsx.add', { defaultValue: '+ New Goal' })}
-      </Button>
+      <div className="mt-3 flex justify-center">
+        <Button size="sm" variant="primary" onClick={() => navigate('/goals')} className="w-4/5">
+          {t('goalsx.add', { defaultValue: '+ New Goal' })}
+        </Button>
+      </div>
     </div>
   );
 }

@@ -1,25 +1,29 @@
-import { useReducer, useEffect } from 'react';
-import storage from '../../storage/storageAdapter';
-import { usePreferences } from '../../preferences/usePreferences';
-import { reducer, EMPTY_STATE } from './habitsLogic';
+import { useState, useEffect, useCallback } from 'react';
+import { habitAPI } from '../../services/api';
 
-const keyFor = (id) => `feature:habits:${id}`;
-
+// API-backed study-streak habits (migrated from localStorage). Compat `state`
+// keeps the dashboard HabitsCard working (it reads state.habits).
 export function useHabits() {
-  const { activeDashboardId } = usePreferences();
-  const [state, dispatch] = useReducer(
-    reducer,
-    activeDashboardId,
-    (id) => storage.get(keyFor(id), EMPTY_STATE)
-  );
+  const [habits, setHabits] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    dispatch({ type: 'HYDRATE', payload: storage.get(keyFor(activeDashboardId), EMPTY_STATE) });
-  }, [activeDashboardId]);
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    try {
+      setHabits(await habitAPI.getAll());
+    } catch {
+      setHabits([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  useEffect(() => {
-    storage.set(keyFor(activeDashboardId), state);
-  }, [activeDashboardId, state]);
+  useEffect(() => { refresh(); }, [refresh]);
 
-  return { state, dispatch };
+  const addHabit = useCallback(async (name, color) => { await habitAPI.create({ name, color }); await refresh(); }, [refresh]);
+  const renameHabit = useCallback(async (id, name) => { await habitAPI.rename(id, { name }); await refresh(); }, [refresh]);
+  const removeHabit = useCallback(async (id) => { await habitAPI.remove(id); await refresh(); }, [refresh]);
+  const toggleDay = useCallback(async (id, day) => { await habitAPI.toggleDay(id, day); await refresh(); }, [refresh]);
+
+  return { state: { habits }, loading, addHabit, renameHabit, removeHabit, toggleDay, refresh };
 }

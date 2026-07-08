@@ -15,6 +15,7 @@ import { chartColors, hexToRgba, CHART_TOOLTIP } from "../components/charts/char
 import { usePreferences } from "../preferences/usePreferences";
 import { useKanban } from "../features/kanban/useKanban";
 import { cardsByColumn } from "../features/kanban/kanbanLogic";
+import { useSubjects } from "../features/subjects/useSubjects";
 
 const COLUMN_DOT = { "col-todo": "bg-warn", "col-doing": "bg-info", "col-done": "bg-success" };
 
@@ -30,6 +31,12 @@ function SortableCard({ card, onEdit, onRemove }) {
         <div className="flex-1 min-w-0">
           <p className="text-sm font-bold text-ink break-words">{card.title}</p>
           {card.note && <p className="text-xs text-muted mt-0.5 break-words">{card.note}</p>}
+          {(card.subjectName || card.dueDate) && (
+            <div className="flex items-center gap-2 mt-1.5">
+              {card.subjectName && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand/10 text-brand">{card.subjectName}</span>}
+              {card.dueDate && <span className="text-[10px] text-muted">Due {card.dueDate}</span>}
+            </div>
+          )}
         </div>
         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <button onClick={() => onEdit(card)} className="text-muted hover:text-ink text-xs p-1" aria-label="Edit">✏️</button>
@@ -41,7 +48,8 @@ function SortableCard({ card, onEdit, onRemove }) {
 }
 
 export default function KanbanPage() {
-  const { state, dispatch } = useKanban();
+  const { state, addCard: createCard, updateCard, removeCard, moveCard } = useKanban();
+  const { subjects } = useSubjects();
   const { activeDashboard } = usePreferences();
   const { brand, accent } = chartColors(activeDashboard?.palette);
 
@@ -52,6 +60,7 @@ export default function KanbanPage() {
   const [creating, setCreating] = useState(false);
   const [createTitle, setCreateTitle] = useState("");
   const [createCol, setCreateCol] = useState("col-todo");
+  const [createSubject, setCreateSubject] = useState("");
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
@@ -74,7 +83,7 @@ export default function KanbanPage() {
       const cards = cardsByColumn(state, col.id);
       if (cards.some((c) => c.id === over.id)) {
         const toIndex = cards.findIndex((c) => c.id === over.id);
-        dispatch({ type: "MOVE_CARD", payload: { id: active.id, toColumnId: col.id, toIndex } });
+        moveCard(active.id, col.id, toIndex);
         return;
       }
     }
@@ -83,15 +92,16 @@ export default function KanbanPage() {
   function addCard(colId) {
     const text = (newCardText[colId] || "").trim();
     if (!text) return;
-    dispatch({ type: "ADD_CARD", payload: { columnId: colId, title: text } });
+    createCard(colId, { title: text });
     setNewCardText((prev) => ({ ...prev, [colId]: "" }));
   }
 
   function handleCreate() {
     const title = createTitle.trim();
     if (!title) return;
-    dispatch({ type: "ADD_CARD", payload: { columnId: createCol, title } });
+    createCard(createCol, { title, subjectId: createSubject || null });
     setCreateTitle("");
+    setCreateSubject("");
     setCreating(false);
   }
 
@@ -103,7 +113,7 @@ export default function KanbanPage() {
 
   function saveEdit() {
     if (!editCard) return;
-    dispatch({ type: "UPDATE_CARD", payload: { id: editCard.id, patch: { title: editVal, note: editNote } } });
+    updateCard(editCard.id, { title: editVal, note: editNote });
     setEditCard(null);
   }
 
@@ -112,8 +122,8 @@ export default function KanbanPage() {
       {/* Header */}
       <header className="flex flex-wrap items-end justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl md:text-4xl font-black text-ink tracking-tight">Projects</h1>
-          <p className="text-muted mt-1">Plan, prioritise and ship your work with ease.</p>
+          <h1 className="text-3xl md:text-4xl font-black text-ink tracking-tight">Assignments</h1>
+          <p className="text-muted mt-1">Plan assignments across your subjects — drag between columns.</p>
         </div>
         <Button variant="primary" size="md" onClick={() => setCreating(true)} className="gap-2">
           <Plus size={16} /> Add task
@@ -185,7 +195,7 @@ export default function KanbanPage() {
                         key={card.id}
                         card={card}
                         onEdit={startEdit}
-                        onRemove={(id) => dispatch({ type: "REMOVE_CARD", payload: { id } })}
+                        onRemove={(id) => removeCard(id)}
                       />
                     ))
                   )}
@@ -220,6 +230,14 @@ export default function KanbanPage() {
                 className="w-full rounded-token-md bg-surface text-ink shadow-neu-inset outline-none font-medium py-3 px-4 appearance-none cursor-pointer focus:ring-2 focus:ring-brand/60"
               >
                 {state.columns.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
+              </select>
+              <select
+                value={createSubject}
+                onChange={(e) => setCreateSubject(e.target.value)}
+                className="w-full rounded-token-md bg-surface text-ink shadow-neu-inset outline-none font-medium py-3 px-4 appearance-none cursor-pointer focus:ring-2 focus:ring-brand/60"
+              >
+                <option value="">No subject</option>
+                {subjects.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
               <div className="flex gap-2 justify-end pt-1">
                 <Button variant="ghost" onClick={() => setCreating(false)}>Cancel</Button>
