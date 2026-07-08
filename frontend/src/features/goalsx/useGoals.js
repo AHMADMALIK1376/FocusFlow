@@ -25,5 +25,5 @@ export function useGoals() {
   const toggleMilestone = useCallback(async (milestoneId) => { await goalAPI.toggleMilestone(milestoneId); await refresh(); }, [refresh]);
   const removeMilestone = useCallback(async (milestoneId) => { await goalAPI.removeMilestone(milestoneId); await refresh(); }, [refresh]);
 
-  return { goals, loading, refresh, createGoal, removeGoal, createMilestone, toggleMilestone, removeMilestone };
+  return { state: { goals }, goals, loading, refresh, createGoal, removeGoal, createMilestone, toggleMilestone, removeMilestone };
 }

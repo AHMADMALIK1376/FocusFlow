@@ -24,5 +24,5 @@ export function useNotes() {
   const update = useCallback(async (id, d) => { await noteAPI.update(id, d); await refresh(); }, [refresh]);
   const remove = useCallback(async (id) => { await noteAPI.remove(id); await refresh(); }, [refresh]);
 
-  return { notes, loading, refresh, create, update, remove };
+  return { state: { notes }, notes, loading, refresh, create, update, remove };
 }
