@@ -173,164 +173,186 @@ export default function Home() {
         <Clock />
       </header>
 
-      <StudentSnapshot />
-
       {/* ── BENTO GRID ─────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 auto-rows-min grid-flow-row-dense">
-        {/* Profile card — full-cover image + overlay text */}
-        <section className={cx(
-          "lg:col-span-4 lg:row-span-2 rounded-token-lg bg-grad-hero p-6 shadow-glass relative overflow-hidden min-h-[340px] flex flex-col",
-          avatarUrl ? "text-white" : "text-on-brand"
-        )}>
-          {avatarUrl && <img src={avatarUrl} alt={displayName} className="absolute inset-0 w-full h-full object-cover" />}
-          {avatarUrl
-            ? <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/10" />
-            : <div className="absolute -top-10 -right-10 w-44 h-44 rounded-full bg-[rgb(var(--brand-soft)/0.25)] blur-2xl" />}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        {/* Main column: snapshot + activity */}
+        <div className="lg:col-span-8 flex flex-col gap-5 min-w-0">
+          <StudentSnapshot />
 
-          <div className="flex items-center justify-between relative z-10">
-            <span className="text-[11px] font-bold uppercase tracking-widest opacity-80">Profile</span>
-            <button onClick={() => fileRef.current?.click()} className="flex items-center gap-1.5 text-[11px] font-bold opacity-85 hover:opacity-100 transition-opacity">
-              <Camera size={13} /> {avatarUrl ? "Change" : "Add photo"}
-            </button>
-          </div>
+          {/* Weekly activity — recharts */}
+          <section className="rounded-token-lg bg-surface shadow-neu p-6">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h3 className="text-sm font-black uppercase tracking-wider text-ink">
+                  <InlineEdit value={lbl("activity", "Activity this week")} onSave={(v) => setLbl("activity", v)} />
+                </h3>
+                <p className="text-xs text-muted mt-0.5">Tasks completed per day</p>
+              </div>
+            </div>
+            <ChartBox height={215}>
+              {(cw) => (
+              <ComposedChart width={cw} height={215} data={weekData} margin={{ top: 10, right: 8, left: -18, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="ffBarDone" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={chartBrand} stopOpacity={1} />
+                    <stop offset="100%" stopColor={chartBrand} stopOpacity={0.6} />
+                  </linearGradient>
+                  <linearGradient id="ffTrend" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={chartAccent} stopOpacity={0.45} />
+                    <stop offset="100%" stopColor={chartAccent} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid vertical={false} strokeDasharray="3 4" stroke={hexToRgba(chartBrand, 0.1)} />
+                <XAxis dataKey="label" axisLine={false} tickLine={false} dy={4} tick={{ fontSize: 11, fontWeight: 700, fill: "#8A93A0" }} />
+                <YAxis axisLine={false} tickLine={false} width={28} allowDecimals={false} tick={{ fontSize: 11, fill: "#8A93A0" }} />
+                <Tooltip cursor={{ fill: hexToRgba(chartBrand, 0.05) }} contentStyle={CHART_TOOLTIP} />
+                <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, fontWeight: 700, paddingTop: 8 }} />
+                <Area type="monotone" dataKey="done" name="Trend" legendType="none" stroke="none" fill="url(#ffTrend)" />
+                <Bar dataKey="total" name="Planned" radius={[6, 6, 0, 0]} fill={hexToRgba(chartBrand, 0.14)} maxBarSize={26} />
+                <Bar dataKey="done" name="Completed" radius={[6, 6, 0, 0]} fill="url(#ffBarDone)" maxBarSize={26} />
+                <Line type="monotone" dataKey="done" name="Trend" stroke={chartAccent} strokeWidth={2.5} dot={{ r: 3, fill: chartAccent, strokeWidth: 0 }} activeDot={{ r: 5 }} />
+              </ComposedChart>
+              )}
+            </ChartBox>
+          </section>
+        </div>
 
-          <div className={cx("flex-1 flex flex-col relative z-10", avatarUrl ? "justify-end" : "items-center justify-center text-center")}>
-            {!avatarUrl && (
-              <button onClick={() => fileRef.current?.click()} title="Add a photo"
-                className="w-20 h-20 rounded-2xl bg-[rgb(var(--on-brand)/0.18)] backdrop-blur flex items-center justify-center text-3xl font-black mb-4 hover:bg-[rgb(var(--on-brand)/0.28)] transition-colors">
-                {displayName.slice(0, 1).toUpperCase()}
+        {/* Right rail: profile + schedule */}
+        <div className="lg:col-span-4 flex flex-col gap-5 min-w-0">
+          {/* Profile card — full-cover image + overlay text */}
+          <section className={cx(
+            "rounded-token-lg bg-grad-hero p-6 shadow-glass relative overflow-hidden min-h-[340px] flex flex-col",
+            avatarUrl ? "text-white" : "text-on-brand"
+          )}>
+            {avatarUrl && <img src={avatarUrl} alt={displayName} className="absolute inset-0 w-full h-full object-cover" />}
+            {avatarUrl
+              ? <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/10" />
+              : <div className="absolute -top-10 -right-10 w-44 h-44 rounded-full bg-[rgb(var(--brand-soft)/0.25)] blur-2xl" />}
+
+            <div className="flex items-center justify-between relative z-10">
+              <span className="text-[11px] font-bold uppercase tracking-widest opacity-80">Profile</span>
+              <button onClick={() => fileRef.current?.click()} className="flex items-center gap-1.5 text-[11px] font-bold opacity-85 hover:opacity-100 transition-opacity">
+                <Camera size={13} /> {avatarUrl ? "Change" : "Add photo"}
               </button>
-            )}
-            <h3 className="text-2xl font-black drop-shadow-sm">
-              <InlineEdit value={displayName} onSave={(v) => updateProfile({ displayName: v })} />
-            </h3>
-            <p className="text-sm opacity-85 capitalize mt-0.5">{role}</p>
-            <span className="mt-2 inline-block w-fit px-3 py-1 rounded-full bg-white/16 backdrop-blur text-xs font-bold">
-              {profile?.segment && profile.segment !== "Unknown" ? profile.segment : "FocusFlow Member"}
-            </span>
-          </div>
+            </div>
 
-          <div className="grid grid-cols-3 gap-2 relative z-10 pt-4 mt-4 border-t border-white/20">
-            <div className="text-center"><p className="text-lg font-black">{streak || 0}</p><p className="text-[9px] uppercase tracking-wider opacity-75">Streak</p></div>
-            <div className="text-center"><p className="text-lg font-black">{doneTasks}</p><p className="text-[9px] uppercase tracking-wider opacity-75">Done</p></div>
-            <div className="text-center"><p className="text-lg font-black">{totalFocusSessions || 0}</p><p className="text-[9px] uppercase tracking-wider opacity-75">Focus</p></div>
-          </div>
-          <input ref={fileRef} type="file" accept="image/*" hidden onChange={onPickImage} />
-        </section>
-
-        {/* Weekly activity — recharts */}
-        <section className="lg:col-span-8 rounded-token-lg bg-surface shadow-neu p-6">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <h3 className="text-sm font-black uppercase tracking-wider text-ink">
-                <InlineEdit value={lbl("activity", "Activity this week")} onSave={(v) => setLbl("activity", v)} />
+            <div className={cx("flex-1 flex flex-col relative z-10", avatarUrl ? "justify-end" : "items-center justify-center text-center")}>
+              {!avatarUrl && (
+                <button onClick={() => fileRef.current?.click()} title="Add a photo"
+                  className="w-20 h-20 rounded-2xl bg-[rgb(var(--on-brand)/0.18)] backdrop-blur flex items-center justify-center text-3xl font-black mb-4 hover:bg-[rgb(var(--on-brand)/0.28)] transition-colors">
+                  {displayName.slice(0, 1).toUpperCase()}
+                </button>
+              )}
+              <h3 className="text-2xl font-black drop-shadow-sm">
+                <InlineEdit value={displayName} onSave={(v) => updateProfile({ displayName: v })} />
               </h3>
-              <p className="text-xs text-muted mt-0.5">Tasks completed per day</p>
+              <p className="text-sm opacity-85 capitalize mt-0.5">{role}</p>
+              <span className="mt-2 inline-block w-fit px-3 py-1 rounded-full bg-white/16 backdrop-blur text-xs font-bold">
+                {profile?.segment && profile.segment !== "Unknown" ? profile.segment : "FocusFlow Member"}
+              </span>
             </div>
-          </div>
-          <ChartBox height={215}>
-            {(cw) => (
-            <ComposedChart width={cw} height={215} data={weekData} margin={{ top: 10, right: 8, left: -18, bottom: 0 }}>
-              <defs>
-                <linearGradient id="ffBarDone" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={chartBrand} stopOpacity={1} />
-                  <stop offset="100%" stopColor={chartBrand} stopOpacity={0.6} />
-                </linearGradient>
-                <linearGradient id="ffTrend" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={chartAccent} stopOpacity={0.45} />
-                  <stop offset="100%" stopColor={chartAccent} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid vertical={false} strokeDasharray="3 4" stroke={hexToRgba(chartBrand, 0.1)} />
-              <XAxis dataKey="label" axisLine={false} tickLine={false} dy={4} tick={{ fontSize: 11, fontWeight: 700, fill: "#8A93A0" }} />
-              <YAxis axisLine={false} tickLine={false} width={28} allowDecimals={false} tick={{ fontSize: 11, fill: "#8A93A0" }} />
-              <Tooltip cursor={{ fill: hexToRgba(chartBrand, 0.05) }} contentStyle={CHART_TOOLTIP} />
-              <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, fontWeight: 700, paddingTop: 8 }} />
-              <Area type="monotone" dataKey="done" name="Trend" legendType="none" stroke="none" fill="url(#ffTrend)" />
-              <Bar dataKey="total" name="Planned" radius={[6, 6, 0, 0]} fill={hexToRgba(chartBrand, 0.14)} maxBarSize={26} />
-              <Bar dataKey="done" name="Completed" radius={[6, 6, 0, 0]} fill="url(#ffBarDone)" maxBarSize={26} />
-              <Line type="monotone" dataKey="done" name="Trend" stroke={chartAccent} strokeWidth={2.5} dot={{ r: 3, fill: chartAccent, strokeWidth: 0 }} activeDot={{ r: 5 }} />
-            </ComposedChart>
-            )}
-          </ChartBox>
-        </section>
 
-        {/* Focus ring */}
-        <section className="lg:col-span-4 rounded-token-lg bg-surface shadow-neu p-6 flex flex-col items-center">
-          <div className="w-full flex items-center justify-between mb-2">
-            <h3 className="text-sm font-black uppercase tracking-wider text-ink">
-              <InlineEdit value={lbl("focus", "Focus today")} onSave={(v) => setLbl("focus", v)} />
-            </h3>
-            <button onClick={() => navigate("/focus-mode")} aria-label="Open focus mode" className="w-8 h-8 rounded-full bg-grad-hero text-on-brand flex items-center justify-center shadow-neu-sm hover:scale-105 transition-transform">▶</button>
-          </div>
-          <ProgressRing value={focusRingPct} size={140} stroke={14}>
-            <div className="text-center">
-              <p className="text-3xl font-black text-ink">{focusToday}<span className="text-base text-muted">/{focusGoal}</span></p>
-              <p className="text-[10px] uppercase tracking-widest text-muted">sessions</p>
+            <div className="grid grid-cols-3 gap-2 relative z-10 pt-4 mt-4 border-t border-white/20">
+              <div className="text-center"><p className="text-lg font-black">{streak || 0}</p><p className="text-[9px] uppercase tracking-wider opacity-75">Streak</p></div>
+              <div className="text-center"><p className="text-lg font-black">{doneTasks}</p><p className="text-[9px] uppercase tracking-wider opacity-75">Done</p></div>
+              <div className="text-center"><p className="text-lg font-black">{totalFocusSessions || 0}</p><p className="text-[9px] uppercase tracking-wider opacity-75">Focus</p></div>
             </div>
-          </ProgressRing>
-          <p className="text-xs text-muted mt-3 font-medium text-center">{focusRingPct >= 100 ? "Daily goal reached 🎉" : `${focusGoal - focusToday} more to hit today's goal`}</p>
-        </section>
+            <input ref={fileRef} type="file" accept="image/*" hidden onChange={onPickImage} />
+          </section>
 
-        {/* Today's tasks */}
-        <section className="lg:col-span-4 rounded-token-lg bg-surface shadow-neu p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-black uppercase tracking-wider text-ink">
-              <InlineEdit value={lbl("tasks", "Today's tasks")} onSave={(v) => setLbl("tasks", v)} />
+          {/* Schedule + attendance */}
+          <section className="rounded-token-lg bg-surface shadow-neu p-6 flex flex-col">
+            <h3 className="text-sm font-black uppercase tracking-wider text-ink mb-4">
+              <InlineEdit value={lbl("schedule", "Today's schedule")} onSave={(v) => setLbl("schedule", v)} />
             </h3>
-            <span className="text-xs font-black text-brand">{doneTasks}/{totalTasks || 0}</span>
-          </div>
-          <div className="space-y-2.5">
-            {todaysTasks.length === 0 ? (
-              <p className="text-sm text-muted py-6 text-center">All clear — no pending tasks ✨</p>
-            ) : (
-              todaysTasks.map((tk, i) => (
-                <div key={tk.id || i} className="flex items-center gap-3 p-2.5 rounded-token-md hover:bg-surface-2 transition-colors">
-                  <span className="w-5 h-5 rounded-full border-2 border-[rgb(var(--brand)/0.4)] flex-shrink-0" />
-                  <span className="flex-1 text-sm font-medium text-ink truncate">{taskTitle(tk)}</span>
-                  {taskTime(tk) && <span className="text-[11px] font-bold text-muted">{taskTime(tk)}</span>}
-                </div>
-              ))
-            )}
-          </div>
-          <button onClick={() => navigate("/tasks")} className="w-full mt-4 py-2.5 rounded-token-md bg-surface-2 text-ink text-xs font-black uppercase tracking-wider hover:bg-[rgb(var(--ink)/0.06)] transition-colors">
-            Open task planner
-          </button>
-        </section>
-
-        {/* Schedule + attendance */}
-        <section className="lg:col-span-4 rounded-token-lg bg-surface shadow-neu p-6 flex flex-col">
-          <h3 className="text-sm font-black uppercase tracking-wider text-ink mb-4">
-            <InlineEdit value={lbl("schedule", "Today's schedule")} onSave={(v) => setLbl("schedule", v)} />
-          </h3>
-          <div className="flex-1 space-y-3">
-            {todaysClasses.length === 0 ? (
-              <p className="text-sm text-muted py-6 text-center">No classes scheduled today</p>
-            ) : (
-              todaysClasses.slice(0, 4).map((c, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <div className="w-1 h-10 rounded-full bg-grad-hero" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-ink truncate">{c.subject || c.subject_name || c.name || "Class"}</p>
-                    <p className="text-[11px] text-muted">{c.startTime || c.start_time || ""}{c.room ? ` · ${c.room}` : ""}</p>
+            <div className="flex-1 space-y-3">
+              {todaysClasses.length === 0 ? (
+                <p className="text-sm text-muted py-6 text-center">No classes scheduled today</p>
+              ) : (
+                todaysClasses.slice(0, 4).map((c, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <div className="w-1 h-10 rounded-full bg-grad-hero" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-ink truncate">{c.subject || c.subject_name || c.name || "Class"}</p>
+                      <p className="text-[11px] text-muted">{c.startTime || c.start_time || ""}{c.room ? ` · ${c.room}` : ""}</p>
+                    </div>
                   </div>
-                </div>
-              ))
-            )}
-          </div>
-          <div className="mt-4 pt-4 border-t border-[rgb(var(--ink)/0.08)] flex items-center justify-between">
-            <div>
-              <p className="text-[10px] uppercase tracking-widest text-muted font-bold">Attendance</p>
-              <p className="text-2xl font-black text-ink">{attendancePct}%</p>
+                ))
+              )}
             </div>
-            <ProgressRing value={attendancePct} size={56} stroke={7}>
-              <span className="text-[10px] font-black text-ink">{attendancePct}%</span>
-            </ProgressRing>
-          </div>
-        </section>
+            <div className="mt-4 pt-4 border-t border-[rgb(var(--ink)/0.08)] flex items-center justify-between">
+              <div>
+                <p className="text-[10px] uppercase tracking-widest text-muted font-bold">Attendance</p>
+                <p className="text-2xl font-black text-ink">{attendancePct}%</p>
+              </div>
+              <ProgressRing value={attendancePct} size={56} stroke={7}>
+                <span className="text-[10px] font-black text-ink">{attendancePct}%</span>
+              </ProgressRing>
+            </div>
+          </section>
+        </div>
 
-        {/* Progress overview — recharts horizontal bars */}
-        <section className="lg:col-span-8 rounded-token-lg bg-surface shadow-neu p-6">
+        {/* Focus today / Keep the streak / Today's tasks — full-width row */}
+        <div className="lg:col-span-12 grid grid-cols-1 sm:grid-cols-3 gap-5">
+          {/* Focus ring */}
+          <section className="rounded-token-lg bg-surface shadow-neu p-6 flex flex-col items-center">
+            <div className="w-full flex items-center justify-between mb-2">
+              <h3 className="text-sm font-black uppercase tracking-wider text-ink">
+                <InlineEdit value={lbl("focus", "Focus today")} onSave={(v) => setLbl("focus", v)} />
+              </h3>
+              <button onClick={() => navigate("/focus-mode")} aria-label="Open focus mode" className="w-8 h-8 rounded-full bg-grad-hero text-on-brand flex items-center justify-center shadow-neu-sm hover:scale-105 transition-transform">▶</button>
+            </div>
+            <ProgressRing value={focusRingPct} size={140} stroke={14}>
+              <div className="text-center">
+                <p className="text-3xl font-black text-ink">{focusToday}<span className="text-base text-muted">/{focusGoal}</span></p>
+                <p className="text-[10px] uppercase tracking-widest text-muted">sessions</p>
+              </div>
+            </ProgressRing>
+            <p className="text-xs text-muted mt-3 font-medium text-center">{focusRingPct >= 100 ? "Daily goal reached 🎉" : `${focusGoal - focusToday} more to hit today's goal`}</p>
+          </section>
+
+          {/* Quick add / streak highlight */}
+          <section className="rounded-token-lg bg-grad-hero text-on-brand p-6 shadow-glass relative overflow-hidden flex flex-col justify-between min-h-[170px]">
+            <div className="absolute -bottom-8 -right-6 w-36 h-36 rounded-full bg-[rgb(var(--on-brand)/0.12)] blur-2xl" />
+            <div className="relative z-10">
+              <p className="text-[11px] font-bold uppercase tracking-widest opacity-80">Keep the streak</p>
+              <p className="text-4xl font-black mt-1">{streak || 0} 🔥</p>
+              <p className="text-sm opacity-85 mt-1">days in a row</p>
+            </div>
+            <button onClick={() => navigate("/focus-mode")} className="relative z-10 mt-4 w-full py-2.5 rounded-token-md bg-[rgb(var(--on-brand)/0.18)] hover:bg-[rgb(var(--on-brand)/0.28)] transition-colors text-sm font-black uppercase tracking-wider flex items-center justify-center gap-2">
+              <Plus size={16} /> Start a focus session
+            </button>
+          </section>
+
+          {/* Today's tasks */}
+          <section className="rounded-token-lg bg-surface shadow-neu p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-black uppercase tracking-wider text-ink">
+                <InlineEdit value={lbl("tasks", "Today's tasks")} onSave={(v) => setLbl("tasks", v)} />
+              </h3>
+              <span className="text-xs font-black text-brand">{doneTasks}/{totalTasks || 0}</span>
+            </div>
+            <div className="space-y-2.5">
+              {todaysTasks.length === 0 ? (
+                <p className="text-sm text-muted py-6 text-center">All clear — no pending tasks ✨</p>
+              ) : (
+                todaysTasks.map((tk, i) => (
+                  <div key={tk.id || i} className="flex items-center gap-3 p-2.5 rounded-token-md hover:bg-surface-2 transition-colors">
+                    <span className="w-5 h-5 rounded-full border-2 border-[rgb(var(--brand)/0.4)] flex-shrink-0" />
+                    <span className="flex-1 text-sm font-medium text-ink truncate">{taskTitle(tk)}</span>
+                    {taskTime(tk) && <span className="text-[11px] font-bold text-muted">{taskTime(tk)}</span>}
+                  </div>
+                ))
+              )}
+            </div>
+            <button onClick={() => navigate("/tasks")} className="w-full mt-4 py-2.5 rounded-token-md bg-surface-2 text-ink text-xs font-black uppercase tracking-wider hover:bg-[rgb(var(--ink)/0.06)] transition-colors">
+              Open task planner
+            </button>
+          </section>
+        </div>
+
+        {/* Progress overview — recharts horizontal bars — full width */}
+        <section className="lg:col-span-12 rounded-token-lg bg-surface shadow-neu p-6">
           <h3 className="text-sm font-black uppercase tracking-wider text-ink mb-1">
             <InlineEdit value={lbl("progress", "Progress overview")} onSave={(v) => setLbl("progress", v)} />
           </h3>
@@ -355,36 +377,26 @@ export default function Home() {
           </ChartBox>
         </section>
 
-        {/* Quick add / streak highlight */}
-        <section className="lg:col-span-4 rounded-token-lg bg-grad-hero text-on-brand p-6 shadow-glass relative overflow-hidden flex flex-col justify-between min-h-[170px]">
-          <div className="absolute -bottom-8 -right-6 w-36 h-36 rounded-full bg-[rgb(var(--on-brand)/0.12)] blur-2xl" />
-          <div className="relative z-10">
-            <p className="text-[11px] font-bold uppercase tracking-widest opacity-80">Keep the streak</p>
-            <p className="text-4xl font-black mt-1">{streak || 0} 🔥</p>
-            <p className="text-sm opacity-85 mt-1">days in a row</p>
-          </div>
-          <button onClick={() => navigate("/focus-mode")} className="relative z-10 mt-4 w-full py-2.5 rounded-token-md bg-[rgb(var(--on-brand)/0.18)] hover:bg-[rgb(var(--on-brand)/0.28)] transition-colors text-sm font-black uppercase tracking-wider flex items-center justify-center gap-2">
-            <Plus size={16} /> Start a focus session
+        {/* Feature widgets + customize tile — full-width row */}
+        <div className="lg:col-span-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {/* Enabled feature widgets */}
+          <Suspense fallback={null}>
+            {enabledFeatures.map((id) => {
+              const W = WIDGET_BY_ID[id]?.component;
+              return W ? <div key={id} className="min-w-0">{<W />}</div> : null;
+            })}
+          </Suspense>
+
+          {/* Customize tile — manage which feature cards appear */}
+          <button
+            onClick={() => navigate("/settings")}
+            className="min-h-[150px] rounded-token-lg border-2 border-dashed border-[rgb(var(--ink)/0.16)] flex flex-col items-center justify-center gap-1.5 text-muted hover:border-[rgb(var(--brand)/0.5)] hover:text-brand transition-colors"
+          >
+            <span className="w-10 h-10 rounded-xl bg-[rgb(var(--ink)/0.05)] flex items-center justify-center"><Plus size={20} /></span>
+            <span className="text-sm font-bold">Customize features</span>
+            <span className="text-[11px]">Add or remove dashboard cards</span>
           </button>
-        </section>
-
-        {/* Enabled feature widgets — flow into the SAME grid as the core cards */}
-        <Suspense fallback={null}>
-          {enabledFeatures.map((id) => {
-            const W = WIDGET_BY_ID[id]?.component;
-            return W ? <div key={id} className="lg:col-span-4 min-w-0">{<W />}</div> : null;
-          })}
-        </Suspense>
-
-        {/* Customize tile — manage which feature cards appear */}
-        <button
-          onClick={() => navigate("/settings")}
-          className="lg:col-span-4 min-h-[150px] rounded-token-lg border-2 border-dashed border-[rgb(var(--ink)/0.16)] flex flex-col items-center justify-center gap-1.5 text-muted hover:border-[rgb(var(--brand)/0.5)] hover:text-brand transition-colors"
-        >
-          <span className="w-10 h-10 rounded-xl bg-[rgb(var(--ink)/0.05)] flex items-center justify-center"><Plus size={20} /></span>
-          <span className="text-sm font-bold">Customize features</span>
-          <span className="text-[11px]">Add or remove dashboard cards</span>
-        </button>
+        </div>
       </div>
     </div>
   );
