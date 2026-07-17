@@ -66,6 +66,33 @@ exports.mark = async (req, res) => {
   }
 };
 
+// GET /api/subject-attendance/all — every record for the user, across all subjects,
+// grouped by date (for the dashboard's contribution-style heatmap).
+exports.getAllForUser = async (req, res) => {
+  let connection;
+  try {
+    connection = await getConnection();
+    const result = await connection.execute(
+      `SELECT TO_CHAR(class_date,'YYYY-MM-DD') AS class_date, status
+       FROM SUBJECT_ATTENDANCE WHERE user_id = :userId ORDER BY class_date ASC`,
+      { userId: req.user.userId }
+    );
+    const byDate = new Map();
+    for (const r of result.rows) {
+      const date = r.CLASS_DATE;
+      if (!byDate.has(date)) byDate.set(date, []);
+      byDate.get(date).push({ status: r.STATUS });
+    }
+    const days = [...byDate.entries()].map(([date, records]) => ({ date, ...summarize(records) }));
+    res.json(days);
+  } catch (err) {
+    console.error('Get all attendance error:', err);
+    res.status(500).json({ error: 'Failed to get attendance.' });
+  } finally {
+    if (connection) await connection.close();
+  }
+};
+
 // DELETE /api/subject-attendance/records/:recordId
 exports.remove = async (req, res) => {
   let connection;

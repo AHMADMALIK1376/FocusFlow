@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Camera, Pencil, Plus } from "lucide-react";
 import {
-  ComposedChart, Bar, Line, Area, BarChart, XAxis, YAxis, Tooltip, CartesianGrid, Legend, LabelList,
+  BarChart, Bar, XAxis, YAxis, Tooltip, LabelList,
 } from "recharts";
 import { useUser } from "../components/auth/UserContext";
 import { useApp } from "../components/context/AppContext";
@@ -15,14 +15,13 @@ import { chartColors, hexToRgba, CHART_TOOLTIP } from "../components/charts/char
 import { WIDGET_BY_ID } from "../dashboard/registry";
 import Clock from "../components/dashboard/Clock";
 import StudentSnapshot from "../components/dashboard/StudentSnapshot";
+import AttendanceHeatmap from "../components/dashboard/AttendanceHeatmap";
 
-const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const FEATURE_IDS = ["notes", "goalsx", "habits", "kanban", "timetrack", "finance"];
 
 // Defensive task field readers (task shape varies across the app)
 const taskTitle = (t) => t.text || t.task_text || t.title || t.activity || "Untitled task";
 const taskDone = (t) => Boolean(t.completed || t.is_completed || t.isCompleted);
-const taskDate = (t) => t.date || t.task_date || t.taskDate || t.dueDate || null;
 const taskTime = (t) => t.time || t.task_time || t.taskTime || "";
 
 // ── Inline-editable text ─────────────────────────────────────────────────────
@@ -96,7 +95,7 @@ export default function Home() {
   const setLbl = (key, val) => updateActiveDashboard({ labels: { ...labels, [key]: val } });
 
   // Chart colours derived from the active palette
-  const { brand: chartBrand, accent: chartAccent } = chartColors(activeDashboard?.palette);
+  const { brand: chartBrand } = chartColors(activeDashboard?.palette);
 
   // ── Derived metrics (real data) ──
   const totalTasks = tasks.length;
@@ -106,20 +105,6 @@ export default function Home() {
   const routineDone = Math.max(0, routinePctBase - (pendingRoutine ?? pendingRoutineCount ?? 0));
   const routinePct = routinePctBase ? Math.round((routineDone / routinePctBase) * 100) : 0;
   const attendancePct = Math.round(attendanceSummary?.overallPercentage ?? attendanceSummary?.percentage ?? 0);
-
-  const weekData = useMemo(() => {
-    const map = DAYS.map((label) => ({ label, total: 0, done: 0 }));
-    tasks.forEach((tk) => {
-      const ds = taskDate(tk);
-      if (!ds) return;
-      const d = new Date(ds);
-      if (Number.isNaN(d.getTime())) return;
-      const idx = (d.getDay() + 6) % 7; // Mon=0
-      map[idx].total += 1;
-      if (taskDone(tk)) map[idx].done += 1;
-    });
-    return map;
-  }, [tasks]);
 
   const todaysTasks = useMemo(() => tasks.filter((tk) => !taskDone(tk)).slice(0, 5), [tasks]);
 
@@ -177,41 +162,17 @@ export default function Home() {
             <div className="shrink-0"><Clock /></div>
           </div>
 
-          {/* Weekly activity — recharts */}
+          {/* Attendance heatmap — GitHub-contribution style */}
           <section className="rounded-token-lg bg-surface shadow-neu p-6">
             <div className="flex items-center justify-between mb-3">
               <div>
                 <h3 className="text-sm font-black uppercase tracking-wider text-ink">
-                  <InlineEdit value={lbl("activity", "Activity this week")} onSave={(v) => setLbl("activity", v)} />
+                  <InlineEdit value={lbl("activity", "Attendance heatmap")} onSave={(v) => setLbl("activity", v)} />
                 </h3>
-                <p className="text-xs text-muted mt-0.5">Tasks completed per day</p>
+                <p className="text-xs text-muted mt-0.5">Daily attendance, last 15 weeks</p>
               </div>
             </div>
-            <ChartBox height={215}>
-              {(cw) => (
-              <ComposedChart width={cw} height={215} data={weekData} margin={{ top: 10, right: 8, left: -18, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="ffBarDone" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={chartBrand} stopOpacity={1} />
-                    <stop offset="100%" stopColor={chartBrand} stopOpacity={0.6} />
-                  </linearGradient>
-                  <linearGradient id="ffTrend" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={chartAccent} stopOpacity={0.45} />
-                    <stop offset="100%" stopColor={chartAccent} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid vertical={false} strokeDasharray="3 4" stroke={hexToRgba(chartBrand, 0.1)} />
-                <XAxis dataKey="label" axisLine={false} tickLine={false} dy={4} tick={{ fontSize: 11, fontWeight: 700, fill: "#8A93A0" }} />
-                <YAxis axisLine={false} tickLine={false} width={28} allowDecimals={false} tick={{ fontSize: 11, fill: "#8A93A0" }} />
-                <Tooltip cursor={{ fill: hexToRgba(chartBrand, 0.05) }} contentStyle={CHART_TOOLTIP} />
-                <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, fontWeight: 700, paddingTop: 8 }} />
-                <Area type="monotone" dataKey="done" name="Trend" legendType="none" stroke="none" fill="url(#ffTrend)" />
-                <Bar dataKey="total" name="Planned" radius={[6, 6, 0, 0]} fill={hexToRgba(chartBrand, 0.14)} maxBarSize={26} />
-                <Bar dataKey="done" name="Completed" radius={[6, 6, 0, 0]} fill="url(#ffBarDone)" maxBarSize={26} />
-                <Line type="monotone" dataKey="done" name="Trend" stroke={chartAccent} strokeWidth={2.5} dot={{ r: 3, fill: chartAccent, strokeWidth: 0 }} activeDot={{ r: 5 }} />
-              </ComposedChart>
-              )}
-            </ChartBox>
+            <AttendanceHeatmap />
           </section>
         </div>
 
