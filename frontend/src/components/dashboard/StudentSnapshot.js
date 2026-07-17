@@ -90,16 +90,17 @@ export default function StudentSnapshot() {
         </button>
       ))}
 
-      {/* Budget — compact 3-layer concentric gauge (Total / Remaining / Spent, each hoverable) */}
+      {/* Budget — 3 tri-state indicator boxes (Total / Spent / Remaining) + text */}
       <button
         onClick={() => navigate("/budget")}
-        className="text-left bg-surface rounded-token-lg shadow-neu p-4 hover:-translate-y-0.5 transition-transform flex flex-col items-center"
+        className="text-left bg-surface rounded-token-lg shadow-neu p-5 hover:-translate-y-0.5 transition-transform flex items-center gap-3"
       >
-        <div className="text-center mb-1.5">
-          <p className="text-xs font-bold uppercase tracking-wider text-muted">Budget</p>
-          <p className="text-[10px] text-muted mt-0.5">{MONTH_YEAR}</p>
-        </div>
         <BudgetGauge allowance={b?.allowance ?? 0} remaining={b?.value ?? 0} spent={b?.spent ?? 0} cur={b?.cur ?? ""} />
+        <div className="min-w-0">
+          <p className="text-xs font-bold uppercase tracking-wider text-muted truncate">Budget</p>
+          <p className="text-[11px] text-muted mt-0.5 truncate">{MONTH_YEAR}</p>
+          <p className="text-sm font-black text-ink mt-0.5 truncate">{b ? `${b.cur}${Math.round(b.value).toLocaleString()}` : "—"}</p>
+        </div>
       </button>
     </div>
   );

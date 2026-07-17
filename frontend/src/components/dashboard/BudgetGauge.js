@@ -1,93 +1,68 @@
-// Apple-Watch-style 3-layer concentric ring gauge for the Budget snapshot
-// card. Each ring is its own hoverable layer — outer = Total, middle =
-// Remaining, inner = Spent — with a small white/black tooltip (matching the
-// attendance heatmap's hover style) showing that layer's own amount.
+// Three 14x14 tri-state indicator squares (Total / Spent / Remaining),
+// stacked on the left of the Budget card — full amount = solid dark, a
+// partial amount = light fill, zero = empty. Hovering a square shows its
+// own value in a tooltip that fades in smoothly (attendance-heatmap style).
 import React, { useState } from "react";
 
-const SIZE = 88;
-const STROKE = 7;
-const RING_GAP = 3;
+const BOX = "w-3.5 h-3.5";
 
-function ringGeometry(index) {
-  const r = SIZE / 2 - STROKE / 2 - index * (STROKE + RING_GAP);
-  return { r, circumference: 2 * Math.PI * r };
+function stateFor(value, total) {
+  if (!total || value <= 0) return "empty";
+  if (value >= total) return "full";
+  return "partial";
+}
+
+function stateClass(state) {
+  if (state === "full") return "bg-brand";
+  if (state === "partial") return "bg-brand/30";
+  return "bg-[rgb(var(--ink)/0.08)]";
 }
 
 export default function BudgetGauge({ allowance = 0, remaining = 0, spent = 0, cur = "" }) {
   const [hover, setHover] = useState(null);
 
   const money = (n) => `${cur}${Math.round(n || 0).toLocaleString()}`;
-  const pctOf = (n) => (allowance ? Math.max(0, Math.min(100, (n / allowance) * 100)) : 0);
 
-  const layers = [
-    { key: "total", label: "Total budget", amount: allowance, pct: 100, color: "rgb(var(--info))" },
-    { key: "remaining", label: "Remaining", amount: remaining, pct: pctOf(remaining), color: "rgb(var(--brand))" },
-    { key: "spent", label: "Spent", amount: spent, pct: pctOf(spent), color: "rgb(var(--warn))" },
+  const boxes = [
+    { key: "total", label: "Total budget", amount: allowance, state: stateFor(allowance, allowance) },
+    { key: "spent", label: "Spent", amount: spent, state: stateFor(spent, allowance) },
+    { key: "remaining", label: "Remaining", amount: remaining, state: stateFor(remaining, allowance) },
   ];
 
-  function onEnter(e, layer) {
+  function onEnter(e, box) {
     const rect = e.currentTarget.getBoundingClientRect();
     setHover({
       x: rect.left + rect.width / 2,
       y: rect.top,
-      label: layer.label,
-      value: money(layer.amount),
+      label: box.label,
+      value: money(box.amount),
     });
   }
 
   return (
-    <div className="relative inline-grid place-items-center" style={{ width: SIZE, height: SIZE }}>
-      <svg width={SIZE} height={SIZE} className="-rotate-90">
-        {layers.map((layer, i) => {
-          const { r } = ringGeometry(i);
-          return (
-            <circle
-              key={`${layer.key}-track`}
-              cx={SIZE / 2}
-              cy={SIZE / 2}
-              r={r}
-              fill="none"
-              stroke="rgb(var(--ink) / 0.06)"
-              strokeWidth={STROKE}
-            />
-          );
-        })}
-        {layers.map((layer, i) => {
-          const { r, circumference } = ringGeometry(i);
-          const dash = circumference * (layer.pct / 100);
-          return (
-            <circle
-              key={layer.key}
-              cx={SIZE / 2}
-              cy={SIZE / 2}
-              r={r}
-              fill="none"
-              stroke={layer.color}
-              strokeWidth={STROKE}
-              strokeLinecap="round"
-              strokeDasharray={`${dash} ${circumference}`}
-              onMouseEnter={(e) => onEnter(e, layer)}
-              onMouseLeave={() => setHover(null)}
-              style={{ cursor: "pointer", transition: "stroke-dasharray 500ms var(--ease-spring)" }}
-            />
-          );
-        })}
-      </svg>
-
-      <div className="absolute inset-0 grid place-items-center text-center px-1 pointer-events-none">
-        <p className="text-[11px] font-black text-ink leading-none">{money(remaining)}</p>
-        <p className="text-[7px] uppercase tracking-wide text-muted mt-0.5">Left</p>
-      </div>
-
-      {hover && (
+    <div className="relative flex flex-col gap-1">
+      {boxes.map((box) => (
         <div
-          className="fixed z-[9999] pointer-events-none bg-white text-black rounded-md shadow-lg border border-black/10 px-2.5 py-1.5 whitespace-nowrap"
-          style={{ left: hover.x, top: hover.y, transform: "translate(-50%, -100%) translateY(-8px)" }}
-        >
-          <p className="text-[11px] font-bold">{hover.label}</p>
-          <p className="text-xs font-black">{hover.value}</p>
-        </div>
-      )}
+          key={box.key}
+          onMouseEnter={(e) => onEnter(e, box)}
+          onMouseLeave={() => setHover(null)}
+          className={`${BOX} rounded-sm cursor-pointer transition-colors duration-200 ${stateClass(box.state)}`}
+        />
+      ))}
+
+      <div
+        className={`fixed z-[9999] pointer-events-none bg-white text-black rounded-md shadow-lg border border-black/10 px-2.5 py-1.5 whitespace-nowrap transition-all duration-150 ${
+          hover ? "opacity-100 scale-100" : "opacity-0 scale-95"
+        }`}
+        style={{
+          left: hover?.x ?? -9999,
+          top: hover?.y ?? -9999,
+          transform: "translate(-50%, -100%) translateY(-8px)",
+        }}
+      >
+        <p className="text-[11px] font-bold">{hover?.label}</p>
+        <p className="text-xs font-black">{hover?.value}</p>
+      </div>
     </div>
   );
 }
