@@ -175,7 +175,7 @@ export default function Home() {
         <div className="lg:col-span-8 flex flex-col gap-5 min-w-0">
           <div className="flex flex-col sm:flex-row gap-5">
             <div className="flex-1 min-w-0"><StudentSnapshot /></div>
-            <Clock />
+            <div className="shrink-0"><Clock /></div>
           </div>
 
           {/* Weekly activity — recharts */}
@@ -220,7 +220,7 @@ export default function Home() {
         <div className="lg:col-span-4 flex flex-col gap-5 min-w-0">
           {/* Profile card — full-cover image + overlay text */}
           <section className={cx(
-            "rounded-token-lg bg-grad-hero p-6 shadow-glass relative overflow-hidden min-h-[340px] flex flex-col",
+            "rounded-token-lg bg-grad-hero p-6 shadow-glass relative overflow-hidden min-h-[460px] flex flex-col",
             avatarUrl ? "text-white" : "text-on-brand"
           )}>
             {avatarUrl && <img src={avatarUrl} alt={displayName} className="absolute inset-0 w-full h-full object-cover" />}
