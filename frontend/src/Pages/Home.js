@@ -86,7 +86,6 @@ export default function Home() {
   }, []);
 
   const displayName = profile?.displayName || userName || "there";
-  const role = profile?.role || profile?.segment || "Member";
   const workspace = activeDashboard?.name || "My Workspace";
   const greeting = t(now.getHours() < 12 ? "dashboard.goodMorning" : now.getHours() < 18 ? "dashboard.goodAfternoon" : "dashboard.goodEvening");
   const avatarUrl = profile?.avatarUrl || null;
@@ -156,23 +155,23 @@ export default function Home() {
 
   return (
     <div className="w-full px-3 sm:px-5 md:px-6 pb-10 pt-8 md:pt-10">
-      {/* ── HERO ROW ───────────────────────────────────────────── */}
-      <header className="mb-8 animate-[fadeInUp_0.6s_ease-out]">
-        <p className="text-xs font-bold uppercase tracking-[3px] text-brand mb-2">{workspace}</p>
-        <h1 className="text-4xl md:text-5xl font-black text-ink tracking-tight leading-none">
-          {greeting},{" "}
-          <span className="bg-grad-hero bg-clip-text text-transparent">{displayName}.</span>
-        </h1>
-        <p className="text-muted text-base mt-3 font-medium">
-          {now.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })} · You've completed{" "}
-          <b className="text-ink">{completedGoals || 0}</b> goals so far.
-        </p>
-      </header>
-
       {/* ── BENTO GRID ─────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-        {/* Main column: snapshot+clock, then activity */}
+        {/* Main column: hero header, snapshot+clock, then activity */}
         <div className="lg:col-span-8 flex flex-col gap-5 min-w-0">
+          {/* ── HERO ROW ─────────────────────────────────────── */}
+          <header className="animate-[fadeInUp_0.6s_ease-out]">
+            <p className="text-xs font-bold uppercase tracking-[3px] text-brand mb-2">{workspace}</p>
+            <h1 className="text-4xl md:text-5xl font-black text-ink tracking-tight leading-none">
+              {greeting},{" "}
+              <span className="bg-grad-hero bg-clip-text text-transparent">{displayName}.</span>
+            </h1>
+            <p className="text-muted text-base mt-3 font-medium">
+              {now.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })} · You've completed{" "}
+              <b className="text-ink">{completedGoals || 0}</b> goals so far.
+            </p>
+          </header>
+
           <div className="flex flex-col sm:flex-row gap-5">
             <div className="flex-1 min-w-0"><StudentSnapshot /></div>
             <div className="shrink-0"><Clock /></div>
@@ -220,7 +219,7 @@ export default function Home() {
         <div className="lg:col-span-4 flex flex-col gap-5 min-w-0">
           {/* Profile card — full-cover image + overlay text */}
           <section className={cx(
-            "rounded-token-lg bg-grad-hero p-6 shadow-glass relative overflow-hidden min-h-[460px] flex flex-col",
+            "group rounded-token-lg bg-grad-hero p-6 shadow-glass relative overflow-hidden min-h-[460px] flex flex-col",
             avatarUrl ? "text-white" : "text-on-brand"
           )}>
             {avatarUrl && <img src={avatarUrl} alt={displayName} className="absolute inset-0 w-full h-full object-cover" />}
@@ -228,9 +227,8 @@ export default function Home() {
               ? <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/10" />
               : <div className="absolute -top-10 -right-10 w-44 h-44 rounded-full bg-[rgb(var(--brand-soft)/0.25)] blur-2xl" />}
 
-            <div className="flex items-center justify-between relative z-10">
-              <span className="text-[11px] font-bold uppercase tracking-widest opacity-80">Profile</span>
-              <button onClick={() => fileRef.current?.click()} className="flex items-center gap-1.5 text-[11px] font-bold opacity-85 hover:opacity-100 transition-opacity">
+            <div className="flex items-center justify-end relative z-10">
+              <button onClick={() => fileRef.current?.click()} className="flex items-center gap-1.5 text-[11px] font-bold opacity-0 group-hover:opacity-100 transition-opacity">
                 <Camera size={13} /> {avatarUrl ? "Change" : "Add photo"}
               </button>
             </div>
@@ -242,11 +240,7 @@ export default function Home() {
                   {displayName.slice(0, 1).toUpperCase()}
                 </button>
               )}
-              <h3 className="text-2xl font-black drop-shadow-sm">
-                <InlineEdit value={displayName} onSave={(v) => updateProfile({ displayName: v })} />
-              </h3>
-              <p className="text-sm opacity-85 capitalize mt-0.5">{role}</p>
-              <span className="mt-2 inline-block w-fit px-3 py-1 rounded-full bg-white/16 backdrop-blur text-xs font-bold">
+              <span className="inline-block w-fit px-3 py-1 rounded-full bg-white/16 backdrop-blur text-xs font-bold">
                 {profile?.segment && profile.segment !== "Unknown" ? profile.segment : "FocusFlow Member"}
               </span>
             </div>
