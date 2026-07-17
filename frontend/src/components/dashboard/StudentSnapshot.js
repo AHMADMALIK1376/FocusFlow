@@ -71,8 +71,8 @@ export default function StudentSnapshot() {
         >
           {c.gauge ? (
             <>
-              <ProgressRing value={c.pct} size={64} stroke={7} className="shrink-0">
-                <span className="text-[10px] font-black text-ink leading-none px-1 text-center">{c.value}</span>
+              <ProgressRing value={c.pct} size={96} stroke={10} className="shrink-0">
+                <span className="text-sm font-black text-ink leading-none px-1 text-center">{c.value}</span>
               </ProgressRing>
               <div className="min-w-0">
                 <p className="text-xs font-bold uppercase tracking-wider text-muted truncate">{c.label}</p>
