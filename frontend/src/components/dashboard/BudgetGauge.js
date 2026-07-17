@@ -4,6 +4,7 @@
 // Hovering a bar shows its own value in a tooltip that fades in smoothly
 // (same white-card style as the attendance heatmap).
 import React, { useState } from "react";
+import { createPortal } from "react-dom";
 
 const TRACK_H = 64;
 const BAR_W = 12;
@@ -47,19 +48,22 @@ export default function BudgetGauge({ allowance = 0, remaining = 0, spent = 0, c
         </div>
       ))}
 
-      <div
-        className={`fixed z-[9999] pointer-events-none bg-white text-black rounded-md shadow-lg border border-black/10 px-2.5 py-1.5 whitespace-nowrap transition-all duration-150 ${
-          hover ? "opacity-100 scale-100" : "opacity-0 scale-95"
-        }`}
-        style={{
-          left: hover?.x ?? -9999,
-          top: hover?.y ?? -9999,
-          transform: "translate(-50%, -100%) translateY(-8px)",
-        }}
-      >
-        <p className="text-[11px] font-bold">{hover?.label}</p>
-        <p className="text-xs font-black">{hover?.value}</p>
-      </div>
+      {createPortal(
+        <div
+          className={`fixed z-[9999] pointer-events-none bg-white text-black rounded-md shadow-lg border border-black/10 px-2.5 py-1.5 whitespace-nowrap transition-all duration-150 ${
+            hover ? "opacity-100 scale-100" : "opacity-0 scale-95"
+          }`}
+          style={{
+            left: hover?.x ?? -9999,
+            top: hover?.y ?? -9999,
+            transform: "translate(-50%, -100%) translateY(-8px)",
+          }}
+        >
+          <p className="text-[11px] font-bold">{hover?.label}</p>
+          <p className="text-xs font-black">{hover?.value}</p>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

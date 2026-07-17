@@ -67,7 +67,7 @@ export default function StudentSnapshot() {
         <button
           key={c.key}
           onClick={() => navigate(c.to)}
-          className={`text-left bg-surface rounded-token-lg shadow-neu p-5 hover:-translate-y-0.5 transition-transform ${c.gauge ? "flex items-center gap-3" : ""}`}
+          className={`text-left bg-surface rounded-token-lg shadow-neu p-5 hover:-translate-y-0.5 transition-transform ${c.gauge ? "flex items-center gap-3 min-h-[157px]" : ""}`}
         >
           {c.gauge ? (
             <>
@@ -93,7 +93,7 @@ export default function StudentSnapshot() {
       {/* Budget — 3 tri-state indicator boxes (Total / Spent / Remaining) + text */}
       <button
         onClick={() => navigate("/budget")}
-        className="text-left bg-surface rounded-token-lg shadow-neu p-5 hover:-translate-y-0.5 transition-transform flex items-center gap-3"
+        className="text-left bg-surface rounded-token-lg shadow-neu p-5 hover:-translate-y-0.5 transition-transform flex items-center gap-3 min-h-[157px]"
       >
         <BudgetGauge allowance={b?.allowance ?? 0} remaining={b?.value ?? 0} spent={b?.spent ?? 0} cur={b?.cur ?? ""} />
         <div className="min-w-0">
