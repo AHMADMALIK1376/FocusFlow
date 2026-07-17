@@ -1,53 +1,50 @@
-// Three 14x14 tri-state indicator squares (Total / Spent / Remaining),
-// stacked on the left of the Budget card — full amount = solid dark, a
-// partial amount = light fill, zero = empty. Hovering a square shows its
-// own value in a tooltip that fades in smoothly (attendance-heatmap style).
+// Mini bar chart: 3 rounded-pill bars (Total / Spent / Remaining), each
+// filled from the bottom to a height proportional to its share of the
+// monthly allowance, in progressively lighter shades of the brand colour.
+// Hovering a bar shows its own value in a tooltip that fades in smoothly
+// (same white-card style as the attendance heatmap).
 import React, { useState } from "react";
 
-const BOX = "w-3.5 h-3.5";
-
-function stateFor(value, total) {
-  if (!total || value <= 0) return "empty";
-  if (value >= total) return "full";
-  return "partial";
-}
-
-function stateClass(state) {
-  if (state === "full") return "bg-brand";
-  if (state === "partial") return "bg-brand/30";
-  return "bg-[rgb(var(--ink)/0.08)]";
-}
+const TRACK_H = 64;
+const BAR_W = 12;
 
 export default function BudgetGauge({ allowance = 0, remaining = 0, spent = 0, cur = "" }) {
   const [hover, setHover] = useState(null);
 
   const money = (n) => `${cur}${Math.round(n || 0).toLocaleString()}`;
+  const pctOf = (n) => (allowance ? Math.max(0, Math.min(100, (n / allowance) * 100)) : 0);
 
-  const boxes = [
-    { key: "total", label: "Total budget", amount: allowance, state: stateFor(allowance, allowance) },
-    { key: "spent", label: "Spent", amount: spent, state: stateFor(spent, allowance) },
-    { key: "remaining", label: "Remaining", amount: remaining, state: stateFor(remaining, allowance) },
+  const bars = [
+    { key: "total", label: "Total budget", amount: allowance, pct: 100, color: "rgb(var(--brand))" },
+    { key: "spent", label: "Spent", amount: spent, pct: pctOf(spent), color: "rgb(var(--brand) / 0.55)" },
+    { key: "remaining", label: "Remaining", amount: remaining, pct: pctOf(remaining), color: "rgb(var(--brand) / 0.3)" },
   ];
 
-  function onEnter(e, box) {
+  function onEnter(e, bar) {
     const rect = e.currentTarget.getBoundingClientRect();
     setHover({
       x: rect.left + rect.width / 2,
       y: rect.top,
-      label: box.label,
-      value: money(box.amount),
+      label: bar.label,
+      value: money(bar.amount),
     });
   }
 
   return (
-    <div className="relative flex flex-col gap-1">
-      {boxes.map((box) => (
+    <div className="relative flex items-end gap-1.5">
+      {bars.map((bar) => (
         <div
-          key={box.key}
-          onMouseEnter={(e) => onEnter(e, box)}
+          key={bar.key}
+          onMouseEnter={(e) => onEnter(e, bar)}
           onMouseLeave={() => setHover(null)}
-          className={`${BOX} rounded-sm cursor-pointer transition-colors duration-200 ${stateClass(box.state)}`}
-        />
+          className="relative rounded-full overflow-hidden cursor-pointer bg-[rgb(var(--ink)/0.06)]"
+          style={{ width: BAR_W, height: TRACK_H }}
+        >
+          <div
+            className="absolute bottom-0 left-0 right-0 rounded-full transition-all duration-500"
+            style={{ height: `${bar.pct}%`, backgroundColor: bar.color }}
+          />
+        </div>
       ))}
 
       <div
