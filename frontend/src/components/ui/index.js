@@ -8,7 +8,6 @@ export { DeleteButton } from './DeleteButton';
 export { LogoutButton } from './LogoutButton';
 export { Avatar } from './Avatar';
 export { ProgressRing } from './ProgressRing';
-export { GaugeArc } from './GaugeArc';
 export { StatCard } from './StatCard';
 export { Skeleton } from './Skeleton';
 export { EmptyState } from './EmptyState';

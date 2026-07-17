@@ -13,7 +13,7 @@ const TODAY = new Date().toISOString().slice(0, 10);
 const MONTH = TODAY.slice(0, 7);
 const INCOME_COLOR = "#22A06B";
 const EXPENSE_COLOR = "#E0606B";
-const CURRENCIES = { PKR: "₨", USD: "$", EUR: "€", GBP: "£", INR: "₹", AED: "AED " };
+const CURRENCIES = { PKR: "Rs ", USD: "$", EUR: "€", GBP: "£", INR: "₹", AED: "AED " };
 
 export default function FinancePage() {
   const { state, entries, settings, addEntry, removeEntry, saveSettings } = useFinance();
