@@ -1,9 +1,10 @@
-// Segmented bar chart: 3 columns (Total / Spent / Remaining), each built from
-// small 14x14 rounded-square cells — the exact same cell language as the
-// attendance heatmap (empty = faint ink tint, filled = solid brand). The
-// number of filled cells (from the bottom up) is proportional to that bar's
-// share of the monthly allowance. Hovering a bar shows its value in a
-// tooltip that mounts fresh at the right spot, same as the heatmap's.
+// Segmented bar chart: 4 columns (Total / Spent / Remaining / Savings), each
+// built from small 14x14 rounded-square cells — the exact same cell language
+// as the attendance heatmap (empty = faint ink tint, filled = solid brand).
+// The number of filled cells (from the bottom up) is proportional to that
+// bar's share of its reference amount (allowance for the first three,
+// savings goal for the last). Hovering a bar shows its value in a tooltip
+// that mounts fresh at the right spot, same as the heatmap's.
 import React, { useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -15,16 +16,17 @@ function filledCountFor(pct) {
   return Math.round((Math.max(0, Math.min(100, pct)) / 100) * SEGMENTS);
 }
 
-export default function BudgetGauge({ allowance = 0, remaining = 0, spent = 0, cur = "" }) {
+export default function BudgetGauge({ allowance = 0, remaining = 0, spent = 0, savingsGoal = 0, saved = 0, cur = "" }) {
   const [hover, setHover] = useState(null);
 
   const money = (n) => `${cur}${Math.round(n || 0).toLocaleString()}`;
-  const pctOf = (n) => (allowance ? (n / allowance) * 100 : 0);
+  const pctOf = (n, denom) => (denom ? (n / denom) * 100 : 0);
 
   const bars = [
     { key: "total", label: "Total budget", amount: allowance, pct: 100 },
-    { key: "spent", label: "Spent", amount: spent, pct: pctOf(spent) },
-    { key: "remaining", label: "Remaining", amount: remaining, pct: pctOf(remaining) },
+    { key: "spent", label: "Spent", amount: spent, pct: pctOf(spent, allowance) },
+    { key: "remaining", label: "Remaining", amount: remaining, pct: pctOf(remaining, allowance) },
+    { key: "savings", label: "Savings", amount: saved, pct: pctOf(saved, savingsGoal) },
   ];
 
   function onEnter(e, bar) {
@@ -38,7 +40,7 @@ export default function BudgetGauge({ allowance = 0, remaining = 0, spent = 0, c
   }
 
   return (
-    <div className="flex items-end" style={{ gap: 8 }}>
+    <div className="flex items-end" style={{ gap: 5 }}>
       {bars.map((bar) => {
         const filled = filledCountFor(bar.pct);
         return (

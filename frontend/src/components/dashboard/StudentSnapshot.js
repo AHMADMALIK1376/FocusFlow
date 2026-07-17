@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { CalendarClock, Layers } from "lucide-react";
 import { gradeAPI, examAPI, flashcardAPI, budgetAPI } from "../../services/api";
 import { countdownLabel } from "../../features/exams/examsLogic";
+import { totals } from "../../features/finance/financeLogic";
 import { ProgressRing } from "../ui";
 import BudgetGauge from "./BudgetGauge";
 
@@ -39,10 +40,14 @@ export default function StudentSnapshot() {
           .reduce((s, e) => s + e.amount, 0);
         const allowance = budget.settings.monthlyAllowance || 0;
         const value = allowance - spent;
+        const savingsGoal = budget.settings.savingsGoal || 0;
+        const { balance: saved } = totals({ entries: budget.entries || [] });
         remaining = {
           value,
           spent,
           allowance,
+          savingsGoal,
+          saved,
           cur: CURRENCIES[budget.settings.currency] || "",
           pct: allowance ? Math.round((value / allowance) * 100) : 0,
         };
@@ -90,12 +95,19 @@ export default function StudentSnapshot() {
         </button>
       ))}
 
-      {/* Budget — 3 tri-state indicator boxes (Total / Spent / Remaining) + text */}
+      {/* Budget — segmented bar chart (Total / Spent / Remaining / Savings) + text */}
       <button
         onClick={() => navigate("/budget")}
-        className="text-left bg-surface rounded-token-lg shadow-neu p-5 hover:-translate-y-0.5 transition-transform flex items-center gap-3 min-h-[157px]"
+        className="text-left bg-surface rounded-token-lg shadow-neu p-4 hover:-translate-y-0.5 transition-transform flex items-center gap-2 min-h-[157px]"
       >
-        <BudgetGauge allowance={b?.allowance ?? 0} remaining={b?.value ?? 0} spent={b?.spent ?? 0} cur={b?.cur ?? ""} />
+        <BudgetGauge
+          allowance={b?.allowance ?? 0}
+          remaining={b?.value ?? 0}
+          spent={b?.spent ?? 0}
+          savingsGoal={b?.savingsGoal ?? 0}
+          saved={b?.saved ?? 0}
+          cur={b?.cur ?? ""}
+        />
         <div className="min-w-0">
           <p className="text-xs font-bold uppercase tracking-wider text-muted truncate">Budget</p>
           <p className="text-[11px] text-muted mt-0.5 truncate">{MONTH_YEAR}</p>
