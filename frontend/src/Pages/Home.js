@@ -157,27 +157,26 @@ export default function Home() {
   return (
     <div className="w-full px-3 sm:px-5 md:px-6 pb-10 pt-8 md:pt-10">
       {/* ── HERO ROW ───────────────────────────────────────────── */}
-      <header className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 mb-8 animate-[fadeInUp_0.6s_ease-out]">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-[3px] text-brand mb-2">{workspace}</p>
-          <h1 className="text-4xl md:text-5xl font-black text-ink tracking-tight leading-none">
-            {greeting},{" "}
-            <span className="bg-grad-hero bg-clip-text text-transparent">{displayName}.</span>
-          </h1>
-          <p className="text-muted text-base mt-3 font-medium">
-            {now.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })} · You've completed{" "}
-            <b className="text-ink">{completedGoals || 0}</b> goals so far.
-          </p>
-        </div>
-
-        <Clock />
+      <header className="mb-8 animate-[fadeInUp_0.6s_ease-out]">
+        <p className="text-xs font-bold uppercase tracking-[3px] text-brand mb-2">{workspace}</p>
+        <h1 className="text-4xl md:text-5xl font-black text-ink tracking-tight leading-none">
+          {greeting},{" "}
+          <span className="bg-grad-hero bg-clip-text text-transparent">{displayName}.</span>
+        </h1>
+        <p className="text-muted text-base mt-3 font-medium">
+          {now.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })} · You've completed{" "}
+          <b className="text-ink">{completedGoals || 0}</b> goals so far.
+        </p>
       </header>
 
       {/* ── BENTO GRID ─────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-        {/* Main column: snapshot + activity */}
+        {/* Main column: snapshot+clock, then activity */}
         <div className="lg:col-span-8 flex flex-col gap-5 min-w-0">
-          <StudentSnapshot />
+          <div className="flex flex-col sm:flex-row gap-5">
+            <div className="flex-1 min-w-0"><StudentSnapshot /></div>
+            <Clock />
+          </div>
 
           {/* Weekly activity — recharts */}
           <section className="rounded-token-lg bg-surface shadow-neu p-6">
@@ -292,40 +291,78 @@ export default function Home() {
           </section>
         </div>
 
-        {/* Focus today / Keep the streak / Today's tasks — full-width row */}
-        <div className="lg:col-span-12 grid grid-cols-1 sm:grid-cols-3 gap-5">
-          {/* Focus ring */}
-          <section className="rounded-token-lg bg-surface shadow-neu p-6 flex flex-col items-center">
-            <div className="w-full flex items-center justify-between mb-2">
-              <h3 className="text-sm font-black uppercase tracking-wider text-ink">
-                <InlineEdit value={lbl("focus", "Focus today")} onSave={(v) => setLbl("focus", v)} />
+        {/* Lower main column: Focus/Streak + Progress side by side, then the Assignment board */}
+        <div className="lg:col-span-8 flex flex-col gap-5 min-w-0">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            {/* Focus ring + Keep the streak, stacked */}
+            <div className="flex flex-col gap-5">
+              <section className="rounded-token-lg bg-surface shadow-neu p-5 flex flex-col items-center">
+                <div className="w-full flex items-center justify-between mb-2">
+                  <h3 className="text-sm font-black uppercase tracking-wider text-ink">
+                    <InlineEdit value={lbl("focus", "Focus today")} onSave={(v) => setLbl("focus", v)} />
+                  </h3>
+                  <button onClick={() => navigate("/focus-mode")} aria-label="Open focus mode" className="w-8 h-8 rounded-full bg-grad-hero text-on-brand flex items-center justify-center shadow-neu-sm hover:scale-105 transition-transform">▶</button>
+                </div>
+                <ProgressRing value={focusRingPct} size={110} stroke={12}>
+                  <div className="text-center">
+                    <p className="text-2xl font-black text-ink">{focusToday}<span className="text-sm text-muted">/{focusGoal}</span></p>
+                    <p className="text-[9px] uppercase tracking-widest text-muted">sessions</p>
+                  </div>
+                </ProgressRing>
+                <p className="text-xs text-muted mt-3 font-medium text-center">{focusRingPct >= 100 ? "Daily goal reached 🎉" : `${focusGoal - focusToday} more to hit today's goal`}</p>
+              </section>
+
+              <section className="rounded-token-lg bg-grad-hero text-on-brand p-5 shadow-glass relative overflow-hidden flex flex-col justify-between min-h-[140px]">
+                <div className="absolute -bottom-8 -right-6 w-36 h-36 rounded-full bg-[rgb(var(--on-brand)/0.12)] blur-2xl" />
+                <div className="relative z-10">
+                  <p className="text-[11px] font-bold uppercase tracking-widest opacity-80">Keep the streak</p>
+                  <p className="text-4xl font-black mt-1">{streak || 0} 🔥</p>
+                  <p className="text-sm opacity-85 mt-1">days in a row</p>
+                </div>
+                <button onClick={() => navigate("/focus-mode")} className="relative z-10 mt-4 w-full py-2.5 rounded-token-md bg-[rgb(var(--on-brand)/0.18)] hover:bg-[rgb(var(--on-brand)/0.28)] transition-colors text-sm font-black uppercase tracking-wider flex items-center justify-center gap-2">
+                  <Plus size={16} /> Start a focus session
+                </button>
+              </section>
+            </div>
+
+            {/* Progress overview — recharts horizontal bars */}
+            <section className="rounded-token-lg bg-surface shadow-neu p-5">
+              <h3 className="text-sm font-black uppercase tracking-wider text-ink mb-1">
+                <InlineEdit value={lbl("progress", "Progress overview")} onSave={(v) => setLbl("progress", v)} />
               </h3>
-              <button onClick={() => navigate("/focus-mode")} aria-label="Open focus mode" className="w-8 h-8 rounded-full bg-grad-hero text-on-brand flex items-center justify-center shadow-neu-sm hover:scale-105 transition-transform">▶</button>
-            </div>
-            <ProgressRing value={focusRingPct} size={140} stroke={14}>
-              <div className="text-center">
-                <p className="text-3xl font-black text-ink">{focusToday}<span className="text-base text-muted">/{focusGoal}</span></p>
-                <p className="text-[10px] uppercase tracking-widest text-muted">sessions</p>
-              </div>
-            </ProgressRing>
-            <p className="text-xs text-muted mt-3 font-medium text-center">{focusRingPct >= 100 ? "Daily goal reached 🎉" : `${focusGoal - focusToday} more to hit today's goal`}</p>
-          </section>
+              <p className="text-xs text-muted mb-3">How you're tracking across everything</p>
+              <ChartBox height={280}>
+                {(cw) => (
+                <BarChart width={cw} height={280} layout="vertical" data={progressData} margin={{ top: 0, right: 44, left: 8, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="ffProgress" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor={chartBrand} stopOpacity={0.7} />
+                      <stop offset="100%" stopColor={chartBrand} stopOpacity={1} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis type="number" domain={[0, 100]} hide />
+                  <YAxis type="category" dataKey="label" axisLine={false} tickLine={false} width={84} tick={{ fontSize: 12, fontWeight: 700, fill: "rgb(54 54 54)" }} />
+                  <Tooltip cursor={{ fill: hexToRgba(chartBrand, 0.05) }} contentStyle={CHART_TOOLTIP} formatter={(v) => [`${v}%`, "Progress"]} />
+                  <Bar dataKey="value" radius={[0, 8, 8, 0]} fill="url(#ffProgress)" maxBarSize={20} background={{ fill: hexToRgba(chartBrand, 0.07) }}>
+                    <LabelList dataKey="value" position="right" formatter={(v) => `${v}%`} style={{ fontSize: 12, fontWeight: 800, fill: "rgb(54 54 54)" }} />
+                  </Bar>
+                </BarChart>
+                )}
+              </ChartBox>
+            </section>
+          </div>
 
-          {/* Quick add / streak highlight */}
-          <section className="rounded-token-lg bg-grad-hero text-on-brand p-6 shadow-glass relative overflow-hidden flex flex-col justify-between min-h-[170px]">
-            <div className="absolute -bottom-8 -right-6 w-36 h-36 rounded-full bg-[rgb(var(--on-brand)/0.12)] blur-2xl" />
-            <div className="relative z-10">
-              <p className="text-[11px] font-bold uppercase tracking-widest opacity-80">Keep the streak</p>
-              <p className="text-4xl font-black mt-1">{streak || 0} 🔥</p>
-              <p className="text-sm opacity-85 mt-1">days in a row</p>
-            </div>
-            <button onClick={() => navigate("/focus-mode")} className="relative z-10 mt-4 w-full py-2.5 rounded-token-md bg-[rgb(var(--on-brand)/0.18)] hover:bg-[rgb(var(--on-brand)/0.28)] transition-colors text-sm font-black uppercase tracking-wider flex items-center justify-center gap-2">
-              <Plus size={16} /> Start a focus session
-            </button>
-          </section>
+          {/* Assignment board */}
+          <Suspense fallback={null}>
+            {WIDGET_BY_ID.kanban?.component && enabledFeatures.includes("kanban")
+              ? React.createElement(WIDGET_BY_ID.kanban.component)
+              : null}
+          </Suspense>
+        </div>
 
-          {/* Today's tasks */}
-          <section className="rounded-token-lg bg-surface shadow-neu p-6">
+        {/* Rail: Today's tasks + all remaining feature widgets + customize, stacked */}
+        <div className="lg:col-span-4 flex flex-col gap-5 min-w-0">
+          <section className="rounded-token-lg bg-surface shadow-neu p-5">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-black uppercase tracking-wider text-ink">
                 <InlineEdit value={lbl("tasks", "Today's tasks")} onSave={(v) => setLbl("tasks", v)} />
@@ -349,39 +386,9 @@ export default function Home() {
               Open task planner
             </button>
           </section>
-        </div>
 
-        {/* Progress overview — recharts horizontal bars — full width */}
-        <section className="lg:col-span-12 rounded-token-lg bg-surface shadow-neu p-6">
-          <h3 className="text-sm font-black uppercase tracking-wider text-ink mb-1">
-            <InlineEdit value={lbl("progress", "Progress overview")} onSave={(v) => setLbl("progress", v)} />
-          </h3>
-          <p className="text-xs text-muted mb-3">How you're tracking across everything</p>
-          <ChartBox height={180}>
-            {(cw) => (
-            <BarChart width={cw} height={180} layout="vertical" data={progressData} margin={{ top: 0, right: 44, left: 8, bottom: 0 }}>
-              <defs>
-                <linearGradient id="ffProgress" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor={chartBrand} stopOpacity={0.7} />
-                  <stop offset="100%" stopColor={chartBrand} stopOpacity={1} />
-                </linearGradient>
-              </defs>
-              <XAxis type="number" domain={[0, 100]} hide />
-              <YAxis type="category" dataKey="label" axisLine={false} tickLine={false} width={84} tick={{ fontSize: 12, fontWeight: 700, fill: "rgb(54 54 54)" }} />
-              <Tooltip cursor={{ fill: hexToRgba(chartBrand, 0.05) }} contentStyle={CHART_TOOLTIP} formatter={(v) => [`${v}%`, "Progress"]} />
-              <Bar dataKey="value" radius={[0, 8, 8, 0]} fill="url(#ffProgress)" maxBarSize={20} background={{ fill: hexToRgba(chartBrand, 0.07) }}>
-                <LabelList dataKey="value" position="right" formatter={(v) => `${v}%`} style={{ fontSize: 12, fontWeight: 800, fill: "rgb(54 54 54)" }} />
-              </Bar>
-            </BarChart>
-            )}
-          </ChartBox>
-        </section>
-
-        {/* Feature widgets + customize tile — full-width row */}
-        <div className="lg:col-span-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {/* Enabled feature widgets */}
           <Suspense fallback={null}>
-            {enabledFeatures.map((id) => {
+            {["notes", "timetrack", "goalsx", "habits", "finance"].filter((id) => enabledFeatures.includes(id)).map((id) => {
               const W = WIDGET_BY_ID[id]?.component;
               return W ? <div key={id} className="min-w-0">{<W />}</div> : null;
             })}
@@ -390,7 +397,7 @@ export default function Home() {
           {/* Customize tile — manage which feature cards appear */}
           <button
             onClick={() => navigate("/settings")}
-            className="min-h-[150px] rounded-token-lg border-2 border-dashed border-[rgb(var(--ink)/0.16)] flex flex-col items-center justify-center gap-1.5 text-muted hover:border-[rgb(var(--brand)/0.5)] hover:text-brand transition-colors"
+            className="min-h-[120px] rounded-token-lg border-2 border-dashed border-[rgb(var(--ink)/0.16)] flex flex-col items-center justify-center gap-1.5 text-muted hover:border-[rgb(var(--brand)/0.5)] hover:text-brand transition-colors"
           >
             <span className="w-10 h-10 rounded-xl bg-[rgb(var(--ink)/0.05)] flex items-center justify-center"><Plus size={20} /></span>
             <span className="text-sm font-bold">Customize features</span>
