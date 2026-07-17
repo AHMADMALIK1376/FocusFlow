@@ -3,6 +3,7 @@
 // Intensity is driven by how many classes were attended that day (like commit
 // count on GitHub) — 0 attended renders blank, more attended is darker.
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { subjectAttendanceAPI } from "../../services/api";
 
 const DAYS = 7;
@@ -44,7 +45,17 @@ export default function AttendanceHeatmap() {
   const [byDate, setByDate] = useState({});
   const [year, setYear] = useState(() => new Date().getFullYear());
   const [hover, setHover] = useState(null);
+  const [yearOpen, setYearOpen] = useState(false);
   const scrollRef = useRef(null);
+  const yearRef = useRef(null);
+
+  useEffect(() => {
+    function onClickOutside(e) {
+      if (yearRef.current && !yearRef.current.contains(e.target)) setYearOpen(false);
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -114,13 +125,32 @@ export default function AttendanceHeatmap() {
         <p className="text-xs text-muted font-medium">
           {!hasAnyRecords && "Mark attendance on a subject page to see it here"}
         </p>
-        <select
-          value={year}
-          onChange={(e) => setYear(Number(e.target.value))}
-          className="text-xs font-bold bg-surface-2 border border-[rgb(var(--ink)/0.1)] rounded-token-md px-2 py-1 text-ink cursor-pointer"
-        >
-          {years.map((y) => <option key={y} value={y}>{y}</option>)}
-        </select>
+        <div className="relative" ref={yearRef}>
+          <button
+            type="button"
+            onClick={() => setYearOpen((o) => !o)}
+            className="flex items-center gap-1.5 text-xs font-bold bg-surface-2 border border-[rgb(var(--ink)/0.1)] rounded-full px-3 py-1.5 text-ink hover:bg-[rgb(var(--ink)/0.06)] transition-colors"
+          >
+            {year}
+            <ChevronDown size={13} className={`transition-transform duration-200 ${yearOpen ? "rotate-180" : ""}`} />
+          </button>
+          <div
+            className={`absolute right-0 top-full mt-1.5 w-24 bg-white rounded-xl shadow-lg border border-black/10 py-1 z-20 origin-top transition-all duration-200 ease-out ${
+              yearOpen ? "opacity-100 scale-100 translate-y-0 pointer-events-auto" : "opacity-0 scale-95 -translate-y-1 pointer-events-none"
+            }`}
+          >
+            {years.map((y) => (
+              <button
+                key={y}
+                type="button"
+                onClick={() => { setYear(y); setYearOpen(false); }}
+                className={`w-full text-left px-3 py-1.5 text-xs font-semibold text-black hover:bg-black/5 transition-colors ${y === year ? "bg-black/5" : ""}`}
+              >
+                {y}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       <div ref={scrollRef} className="attendance-scroll overflow-x-auto pb-1">
@@ -185,12 +215,12 @@ export default function AttendanceHeatmap() {
       </div>
 
       <style>{`
-        .attendance-scroll { scrollbar-width: none; -ms-overflow-style: none; }
-        .attendance-scroll::-webkit-scrollbar { height: 0px; }
-        .attendance-scroll:hover { scrollbar-width: thin; }
-        .attendance-scroll:hover::-webkit-scrollbar { height: 6px; }
+        .attendance-scroll { scrollbar-width: thin; scrollbar-color: transparent transparent; }
+        .attendance-scroll::-webkit-scrollbar { height: 6px; }
         .attendance-scroll::-webkit-scrollbar-track { background: transparent; }
-        .attendance-scroll::-webkit-scrollbar-thumb { background: rgb(var(--ink) / 0.2); border-radius: 4px; }
+        .attendance-scroll::-webkit-scrollbar-thumb { background-color: transparent; border-radius: 4px; transition: background-color 0.3s ease; }
+        .attendance-scroll:hover::-webkit-scrollbar-thumb { background-color: rgb(var(--ink) / 0.25); }
+        .attendance-scroll:hover { scrollbar-color: rgb(var(--ink) / 0.25) transparent; }
       `}</style>
     </div>
   );
