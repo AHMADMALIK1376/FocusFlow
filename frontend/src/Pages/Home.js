@@ -163,8 +163,8 @@ export default function Home() {
           </div>
 
           {/* Attendance heatmap — GitHub-contribution style */}
-          <section className="rounded-token-lg bg-surface shadow-neu p-6">
-            <div className="flex items-center justify-between mb-3">
+          <section className="rounded-token-lg bg-surface shadow-neu p-4">
+            <div className="flex items-center justify-between mb-2">
               <div>
                 <h3 className="text-sm font-black uppercase tracking-wider text-ink">
                   <InlineEdit value={lbl("activity", "Attendance heatmap")} onSave={(v) => setLbl("activity", v)} />
