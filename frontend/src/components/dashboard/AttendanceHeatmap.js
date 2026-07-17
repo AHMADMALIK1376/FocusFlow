@@ -112,7 +112,7 @@ export default function AttendanceHeatmap() {
     <div>
       <div className="flex items-center justify-between mb-2">
         <p className="text-xs text-muted font-medium">
-          {hasAnyRecords ? "Attendance across all subjects" : "Mark attendance on a subject page to see it here"}
+          {!hasAnyRecords && "Mark attendance on a subject page to see it here"}
         </p>
         <select
           value={year}
@@ -123,7 +123,7 @@ export default function AttendanceHeatmap() {
         </select>
       </div>
 
-      <div ref={scrollRef} className="overflow-x-auto pb-1">
+      <div ref={scrollRef} className="attendance-scroll overflow-x-auto pb-1">
         {/* Month labels */}
         <div className="relative h-4 mb-1" style={{ marginLeft: CELL_PX + 8, width: weeks.length * (CELL_PX + GAP_PX) }}>
           {monthLabels.map(({ week, label }) => (
@@ -183,6 +183,15 @@ export default function AttendanceHeatmap() {
         ))}
         <span className="text-[10px] text-muted font-bold">More</span>
       </div>
+
+      <style>{`
+        .attendance-scroll { scrollbar-width: none; -ms-overflow-style: none; }
+        .attendance-scroll::-webkit-scrollbar { height: 0px; }
+        .attendance-scroll:hover { scrollbar-width: thin; }
+        .attendance-scroll:hover::-webkit-scrollbar { height: 6px; }
+        .attendance-scroll::-webkit-scrollbar-track { background: transparent; }
+        .attendance-scroll::-webkit-scrollbar-thumb { background: rgb(var(--ink) / 0.2); border-radius: 4px; }
+      `}</style>
     </div>
   );
 }
