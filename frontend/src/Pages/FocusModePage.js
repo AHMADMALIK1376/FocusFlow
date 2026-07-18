@@ -179,10 +179,10 @@ export default function FocusModePage() {
       <div className="w-full max-w-[1100px] flex flex-col lg:flex-row items-stretch gap-8">
         {/* Left: Timer Card */}
         <div className="w-full lg:w-[420px] shrink-0 flex flex-col">
-          <Card ref={timerCardRef} className="flex flex-col items-center w-full h-[600px]">
+          <Card ref={timerCardRef} className="flex flex-col items-center w-full h-[560px]">
             <input
               type="text"
-              className="w-full bg-surface-2 shadow-neu-inset rounded-full px-6 py-3.5 text-left text-sm font-bold text-ink placeholder:text-muted placeholder:font-semibold outline-none focus:ring-2 focus:ring-brand/40 mb-6 shrink-0 disabled:opacity-60"
+              className="w-[70%] bg-surface-2 shadow-neu-inset rounded-full px-5 py-3 text-left text-sm font-bold text-ink placeholder:text-muted placeholder:font-semibold outline-none focus:ring-2 focus:ring-brand/40 mb-6 shrink-0 disabled:opacity-60"
               placeholder="e.g. Morning Gym"
               value={activity}
               onChange={(e) => setActivity(e.target.value)}
@@ -205,7 +205,7 @@ export default function FocusModePage() {
         {/* Right: Focus Roadmap */}
         <div className="w-full flex-1 min-w-0 flex flex-col">
           {history.length > 0 ? (
-            <Card className="h-[600px] flex flex-col">
+            <Card className="h-[560px] flex flex-col">
               <h2 className="text-2xl font-black text-ink mb-4 border-l-4 border-brand pl-4 shrink-0">
                 Focus Roadmap
               </h2>
@@ -243,7 +243,7 @@ export default function FocusModePage() {
               </div>
             </Card>
           ) : (
-            <Card className="h-[600px] flex items-center justify-center text-center">
+            <Card className="h-[560px] flex items-center justify-center text-center">
               <p className="text-muted font-medium">No focus sessions yet — start one to build your roadmap.</p>
             </Card>
           )}

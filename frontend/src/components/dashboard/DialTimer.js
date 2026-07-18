@@ -167,17 +167,17 @@ export default function DialTimer({
             style={{ cursor: "grab" }} onPointerDown={startDrag} />
         )}
 
-        {/* play / pause button */}
+        {/* play / pause button — icon only, no background circle */}
         <g onClick={onPlayPause} style={{ cursor: "pointer" }}>
-          <circle cx={CENTER} cy={CENTER} r={R_PLAY} fill="rgb(var(--brand))" />
+          <circle cx={CENTER} cy={CENTER} r={R_PLAY} fill="transparent" />
           {isActive ? (
-            <g fill="rgb(var(--on-brand))">
-              <rect x={CENTER - 8} y={CENTER - 9} width="5" height="18" rx="1.5" />
-              <rect x={CENTER + 3} y={CENTER - 9} width="5" height="18" rx="1.5" />
+            <g fill="rgb(var(--brand))" stroke="rgb(var(--brand))" strokeWidth="1" strokeLinejoin="round">
+              <rect x={CENTER - 9} y={CENTER - 11} width="6" height="22" rx="2.5" />
+              <rect x={CENTER + 3} y={CENTER - 11} width="6" height="22" rx="2.5" />
             </g>
           ) : (
-            <path d={`M ${CENTER - 7} ${CENTER - 10} L ${CENTER + 11} ${CENTER} L ${CENTER - 7} ${CENTER + 10} Z`}
-              fill="rgb(var(--on-brand))" />
+            <path d={`M ${CENTER - 8} ${CENTER - 12} L ${CENTER + 13} ${CENTER} L ${CENTER - 8} ${CENTER + 12} Z`}
+              fill="rgb(var(--brand))" stroke="rgb(var(--brand))" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
           )}
         </g>
 
@@ -195,18 +195,18 @@ export default function DialTimer({
           type="button"
           aria-label="Edit time"
           onClick={() => { if (editable) { setFocused("m"); minInputRef.current?.focus(); minInputRef.current?.select(); } }}
-          className="w-10 h-10 rounded-full flex items-center justify-center text-brand hover:bg-brand/10 transition-colors disabled:opacity-40"
+          className="w-10 h-10 rounded-full flex items-center justify-center bg-[rgb(20,20,20)] text-white shadow-neu-sm hover:opacity-90 transition-opacity disabled:opacity-40"
           disabled={!editable}
         >
-          <Pencil size={18} />
+          <Pencil size={16} />
         </button>
         <button
           type="button"
           aria-label={isActive || startTime ? "Stop and save" : "Reset"}
           onClick={onReset}
-          className="w-10 h-10 rounded-full flex items-center justify-center text-brand hover:bg-brand/10 transition-colors"
+          className="w-10 h-10 rounded-full flex items-center justify-center bg-[#ff342b] text-white shadow-neu-sm hover:bg-[#e0271f] transition-colors"
         >
-          <RotateCcw size={18} />
+          <RotateCcw size={16} />
         </button>
       </div>
     </div>
