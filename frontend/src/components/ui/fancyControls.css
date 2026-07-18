@@ -164,25 +164,19 @@
   box-shadow: 0 0 0 3px rgb(var(--surface)), 0 0 0 5px rgb(var(--brand)), 0 4px 10px rgb(45 71 89 / 0.2);
 }
 
-/* Repeat / reset button — pale-red pill, refresh icon spins on hover. */
+/* Repeat / reset button — pale-red circle, icon-only, refresh icon spins on hover. */
 .ff-repeat-btn {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 6px 12px;
-  gap: 8px;
+  width: 34px;
   height: 34px;
-  width: 112px;
+  padding: 0;
   border: none;
   background: #ff362b34;
-  border-radius: 20px;
+  border-radius: 50%;
   cursor: pointer;
-}
-.ff-repeat-label {
-  line-height: 20px;
-  font-size: 17px;
-  color: #ff342b;
-  letter-spacing: 1px;
+  flex-shrink: 0;
 }
 .ff-repeat-btn:hover {
   background: #ff362b52;
