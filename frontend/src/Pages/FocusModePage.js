@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useApp } from "../components/context/AppContext";
 import { focusAPI, getToken } from "../services/api";
-import { Card, Button, RepeatButton, ClearHistoryButton, CardDeleteButton } from "../components/ui";
-import WaveformTimer from "../components/dashboard/WaveformTimer";
+import { Card, RepeatButton, ClearHistoryButton, CardDeleteButton } from "../components/ui";
+import DialTimer from "../components/dashboard/DialTimer";
 
 const isCompleted = (status) => (status || "").toLowerCase() === "completed";
 
@@ -111,6 +111,20 @@ export default function FocusModePage() {
     setIsActive(true);
   };
 
+  const handlePlayPause = () => {
+    if (isActive) setIsActive(false);   // pause
+    else handleStart();                 // start (or resume if startTime set)
+  };
+
+  const handleDialReset = () => {
+    if (isActive || startTime) {
+      processSessionEnd(false);          // stop early & save
+    } else {
+      setHours(0); setMinutes(25); setSeconds(0);
+      totalDurationRef.current = 25 * 60;
+    }
+  };
+
   const handleRepeat = (item) => {
     const full = item.totalSeconds || 0;
     setIsActive(false);
@@ -165,54 +179,26 @@ export default function FocusModePage() {
       <div className="w-full max-w-[1100px] flex flex-col lg:flex-row items-stretch gap-8">
         {/* Left: Timer Card */}
         <div className="w-full lg:w-[420px] shrink-0 flex flex-col">
-          <Card ref={timerCardRef} className="flex flex-col items-center w-full h-[600px] justify-between">
-            <div className="w-full flex flex-col items-center">
-              <input
-                type="text"
-                className="w-full bg-surface-2 rounded-token-lg px-4 py-3 text-center text-lg font-bold text-ink placeholder:text-muted placeholder:font-semibold outline-none focus:ring-2 focus:ring-brand/40 mb-8 disabled:opacity-60"
-                placeholder="e.g. Morning Gym"
-                value={activity}
-                onChange={(e) => setActivity(e.target.value)}
-                disabled={isActive}
-              />
+          <Card ref={timerCardRef} className="flex flex-col items-center w-full h-[600px]">
+            <input
+              type="text"
+              className="w-full bg-surface-2 rounded-token-lg px-4 py-3 text-center text-lg font-bold text-ink placeholder:text-muted placeholder:font-semibold outline-none focus:ring-2 focus:ring-brand/40 mb-6 shrink-0 disabled:opacity-60"
+              placeholder="e.g. Morning Gym"
+              value={activity}
+              onChange={(e) => setActivity(e.target.value)}
+              disabled={isActive}
+            />
 
-              <div className={`w-full p-6 rounded-token-lg bg-surface-2 shadow-neu border-2 transition-colors duration-500 flex flex-col items-center justify-center min-h-[140px] ${isActive ? 'border-brand' : 'border-[rgb(var(--ink)/0.08)]'}`}>
-                {isActive ? (
-                  <WaveformTimer
-                    totalSeconds={totalDurationRef.current}
-                    remainingSeconds={(hours * 3600) + (minutes * 60) + seconds}
-                  />
-                ) : (
-                  <div className="flex items-center gap-1">
-                    {[{val: hours, fn: setHours, max: 99}, {val: minutes, fn: setMinutes, max: 59}, {val: seconds, fn: setSeconds, max: 59}].map((timer, i) => (
-                      <React.Fragment key={i}>
-                        <input
-                          type="number"
-                          className="w-14 bg-transparent border-none font-mono text-3xl font-black text-ink text-center outline-none focus:text-brand disabled:cursor-not-allowed [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                          value={String(timer.val).padStart(2, '0')}
-                          onChange={(e) => timer.fn(Math.max(0, Math.min(timer.max, parseInt(e.target.value) || 0)))}
-                          disabled={isActive}
-                        />
-                        {i < 2 && <span className="text-2xl font-black text-muted">:</span>}
-                      </React.Fragment>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="flex gap-4 w-full mt-8">
-              {!isActive ? (
-                <Button variant="primary" full onClick={handleStart}>
-                  {startTime ? "RESUME" : "START SESSION"}
-                </Button>
-              ) : (
-                <div className="flex gap-4 w-full">
-                  <Button variant="ghost" full onClick={() => setIsActive(false)}>PAUSE</Button>
-                  <Button variant="danger" full onClick={() => processSessionEnd(false)}>STOP</Button>
-                </div>
-              )}
-            </div>
+            <DialTimer
+              className="flex-1 w-full"
+              hours={hours} minutes={minutes} seconds={seconds}
+              setHours={setHours} setMinutes={setMinutes} setSeconds={setSeconds}
+              isActive={isActive}
+              startTime={startTime}
+              editable={!isActive && !startTime}
+              onPlayPause={handlePlayPause}
+              onReset={handleDialReset}
+            />
           </Card>
         </div>
 
