@@ -403,6 +403,10 @@ export const focusAPI = {
         });
     },
     
+    deleteSession: async (sessionId) => {
+        return authFetch(`/focus/sessions/${sessionId}`, { method: 'DELETE' });
+    },
+
     deleteAll: async () => {
         return authFetch('/focus/sessions', { method: 'DELETE' });
     }

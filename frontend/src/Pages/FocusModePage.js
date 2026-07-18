@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useApp } from "../components/context/AppContext";
 import { focusAPI, getToken } from "../services/api";
-import { Card, Button, RepeatButton, ClearHistoryButton } from "../components/ui";
+import { Card, Button, RepeatButton, ClearHistoryButton, CardDeleteButton } from "../components/ui";
 import DigitMatrixClock from "../components/dashboard/DigitMatrixClock";
 
 const isCompleted = (status) => (status || "").toLowerCase() === "completed";
@@ -124,6 +124,15 @@ export default function FocusModePage() {
     timerCardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
+  const handleDeleteSession = async (id) => {
+    try {
+      await focusAPI.deleteSession(id);
+      setHistory(prev => prev.filter(h => h.id !== id));
+    } catch (error) {
+      console.error('Failed to delete session:', error);
+    }
+  };
+
   const clearHistory = async () => {
     if (window.confirm("Are you sure you want to delete all history?")) {
       try {
@@ -146,8 +155,8 @@ export default function FocusModePage() {
 
   return (
     <div className="flex flex-col items-center px-5 pt-4 pb-10 max-w-[1200px] mx-auto min-h-screen animate-[fadeInUp_0.8s_ease]">
-      <section className="w-full max-w-[1100px] text-left mb-4">
-        <span className="text-[2.8rem]">💫</span>
+      <section className="w-full max-w-[1100px] mb-4 flex items-center gap-3">
+        <span className="text-[2.8rem] leading-none">💫</span>
         <h1 className="text-4xl font-black text-ink">
           Deep <span className="bg-gradient-to-r from-brand to-brand-soft bg-clip-text text-transparent">Flow</span>
         </h1>
@@ -233,8 +242,9 @@ export default function FocusModePage() {
                             <p className="text-[11px] font-semibold text-muted mt-0.5">{item.date}</p>
                             <p className="text-xs font-bold text-muted mt-1">Goal: {item.durationSet} · Logged: {item.actualDone}</p>
                           </div>
-                          <div className="shrink-0 ml-4">
+                          <div className="shrink-0 ml-4 flex items-center gap-2">
                             <RepeatButton onClick={() => handleRepeat(item)} />
+                            <CardDeleteButton onClick={() => handleDeleteSession(item.id)} />
                           </div>
                         </div>
                       </div>

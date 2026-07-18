@@ -164,7 +164,7 @@
   box-shadow: 0 0 0 3px rgb(var(--surface)), 0 0 0 5px rgb(var(--brand)), 0 4px 10px rgb(45 71 89 / 0.2);
 }
 
-/* Repeat / reset button — pale-red circle, icon-only, refresh icon spins on hover. */
+/* Repeat / reset button — solid-red circle, icon-only, refresh icon spins on hover. */
 .ff-repeat-btn {
   display: flex;
   justify-content: center;
@@ -173,13 +173,13 @@
   height: 34px;
   padding: 0;
   border: none;
-  background: #ff362b34;
+  background: #ff342b;
   border-radius: 50%;
   cursor: pointer;
   flex-shrink: 0;
 }
 .ff-repeat-btn:hover {
-  background: #ff362b52;
+  background: #e0271f;
 }
 .ff-repeat-btn:hover .ff-repeat-icon {
   animation: ff-repeat-spin 2s linear infinite;
