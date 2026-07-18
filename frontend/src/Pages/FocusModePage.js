@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useApp } from "../components/context/AppContext";
 import { focusAPI, getToken } from "../services/api";
 import { Card, Button, RepeatButton, ClearHistoryButton, CardDeleteButton } from "../components/ui";
-import DigitMatrixClock from "../components/dashboard/DigitMatrixClock";
+import HourglassTimer from "../components/dashboard/HourglassTimer";
 
 const isCompleted = (status) => (status || "").toLowerCase() === "completed";
 
@@ -178,7 +178,11 @@ export default function FocusModePage() {
 
               <div className={`w-full p-6 rounded-token-lg bg-surface-2 shadow-neu border-2 transition-colors duration-500 flex flex-col items-center justify-center min-h-[140px] ${isActive ? 'border-brand' : 'border-[rgb(var(--ink)/0.08)]'}`}>
                 {isActive ? (
-                  <DigitMatrixClock hours={hours} minutes={minutes} seconds={seconds} />
+                  <HourglassTimer
+                    totalSeconds={totalDurationRef.current}
+                    remainingSeconds={(hours * 3600) + (minutes * 60) + seconds}
+                    isActive={isActive}
+                  />
                 ) : (
                   <div className="flex items-center gap-1">
                     {[{val: hours, fn: setHours, max: 99}, {val: minutes, fn: setMinutes, max: 59}, {val: seconds, fn: setSeconds, max: 59}].map((timer, i) => (
