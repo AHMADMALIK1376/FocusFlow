@@ -182,7 +182,7 @@ export default function FocusModePage() {
           <Card ref={timerCardRef} className="flex flex-col items-center w-full h-[600px]">
             <input
               type="text"
-              className="w-full bg-surface-2 rounded-token-lg px-4 py-3 text-center text-lg font-bold text-ink placeholder:text-muted placeholder:font-semibold outline-none focus:ring-2 focus:ring-brand/40 mb-6 shrink-0 disabled:opacity-60"
+              className="w-full bg-surface-2 shadow-neu-inset rounded-full px-6 py-3.5 text-left text-sm font-bold text-ink placeholder:text-muted placeholder:font-semibold outline-none focus:ring-2 focus:ring-brand/40 mb-6 shrink-0 disabled:opacity-60"
               placeholder="e.g. Morning Gym"
               value={activity}
               onChange={(e) => setActivity(e.target.value)}
