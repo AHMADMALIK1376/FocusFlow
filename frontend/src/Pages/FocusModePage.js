@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
 import { useApp } from "../components/context/AppContext";
 import { focusAPI, getToken } from "../services/api";
-import { Card, Button } from "../components/ui";
+import { Card, Button, RepeatButton, ClearHistoryButton } from "../components/ui";
+
+const isCompleted = (status) => (status || "").toLowerCase() === "completed";
 
 export default function FocusModePage() {
-  const navigate = useNavigate();
   const { hours, setHours, minutes, setMinutes, seconds, setSeconds, isActive, setIsActive } = useApp();
 
   const [activity, setActivity] = useState("");
@@ -147,8 +147,8 @@ export default function FocusModePage() {
   }
 
   return (
-    <div className="flex flex-col items-center px-5 pt-10 pb-10 max-w-[1200px] mx-auto min-h-screen animate-[fadeInUp_0.8s_ease]">
-      <section className="text-center mb-8">
+    <div className="flex flex-col items-center px-5 pt-4 pb-10 max-w-[1200px] mx-auto min-h-screen animate-[fadeInUp_0.8s_ease]">
+      <section className="w-full max-w-[1100px] text-left mb-4">
         <span className="text-[2.8rem]">💫</span>
         <h1 className="text-4xl font-black text-ink">
           Deep <span className="bg-gradient-to-r from-brand to-brand-soft bg-clip-text text-transparent">Flow</span>
@@ -206,36 +206,41 @@ export default function FocusModePage() {
             Focus Roadmap
           </h2>
           {history.length > 0 ? (
-            <Card>
-              <div className="relative border-l-4 border-[rgb(var(--ink)/0.1)] ml-5 md:ml-8 py-4 space-y-10">
-                {history.map((item) => (
-                  <div key={item.id} className="relative pl-10 group transition-all hover:translate-x-2">
-                    <span className={`absolute -left-[14px] top-1 w-6 h-6 rounded-full border-4 bg-surface z-10
-                      ${item.status === 'Completed' ? 'border-success' : 'border-warn'}`}
-                    ></span>
-                    <div className="mb-2">
-                      <span className="text-xs font-black text-brand uppercase tracking-widest bg-brand/10 px-2 py-1 rounded-token-sm">
-                        {item.date} • 🕒 {item.start} — {item.end}
-                      </span>
-                    </div>
-                    <div className="bg-surface-2 p-5 rounded-token-md shadow-neu-sm flex justify-between items-center">
-                      <div>
-                        <span className={`inline-block px-2 py-1 text-[10px] font-black rounded uppercase mb-2 tracking-tighter
-                          ${item.status === 'Completed' ? 'bg-success/10 text-success' : 'bg-warn/10 text-warn'}`}>
-                          {item.status}
-                        </span>
-                        <p className="font-bold text-ink text-lg">{item.activity}</p>
-                        <p className="text-xs font-bold text-muted mt-1">Goal: {item.durationSet} · Logged: {item.actualDone}</p>
-                      </div>
-                      {item.status !== 'Completed' && (
-                        <div className="flex flex-col gap-2 shrink-0 ml-4">
-                          <Button size="sm" variant="primary" onClick={() => handleContinue(item)}>▶</Button>
-                          <Button size="sm" variant="danger" onClick={() => handleReset(item)}>↺</Button>
+            <Card className="flex flex-col">
+              <div className="ff-roadmap-scroll overflow-y-auto pr-2" style={{ maxHeight: 520 }}>
+                <div className="relative border-l-4 border-[rgb(var(--ink)/0.1)] ml-5 md:ml-8 py-4 space-y-10">
+                  {history.map((item) => {
+                    const done = isCompleted(item.status);
+                    return (
+                      <div key={item.id} className="relative pl-10 group transition-all hover:translate-x-2">
+                        <span className={`absolute -left-[14px] top-1 w-6 h-6 rounded-full border-4 bg-surface z-10 ${done ? 'border-green-500' : 'border-red-500'}`}></span>
+                        <div className="mb-2">
+                          <span className="text-xs font-black text-brand uppercase tracking-widest bg-brand/10 px-2 py-1 rounded-token-sm">
+                            {item.date} • 🕒 {item.start} — {item.end}
+                          </span>
                         </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                        <div className="bg-surface-2 p-5 rounded-token-md shadow-neu-sm flex justify-between items-center">
+                          <div>
+                            <span className={`inline-block px-2 py-1 text-[10px] font-black rounded uppercase mb-2 tracking-tighter ${done ? 'bg-green-500/10 text-green-600' : 'bg-red-500/10 text-red-600'}`}>
+                              {item.status}
+                            </span>
+                            <p className="font-bold text-ink text-lg">{item.activity}</p>
+                            <p className="text-xs font-bold text-muted mt-1">Goal: {item.durationSet} · Logged: {item.actualDone}</p>
+                          </div>
+                          {!done && (
+                            <div className="flex flex-col gap-2 shrink-0 ml-4">
+                              <Button size="sm" variant="primary" onClick={() => handleContinue(item)}>▶</Button>
+                              <RepeatButton onClick={() => handleReset(item)} />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="mt-6 pt-4 border-t border-[rgb(var(--ink)/0.08)] flex justify-center">
+                <ClearHistoryButton onClick={clearHistory} />
               </div>
             </Card>
           ) : (
@@ -246,18 +251,14 @@ export default function FocusModePage() {
         </div>
       </div>
 
-      <footer className="mt-10 mb-20 w-full flex justify-center px-4">
-        <div className="flex flex-row items-center justify-center gap-6">
-          <Button variant="ghost" onClick={() => navigate("/dashboard")}>
-            🏠 Back to Dashboard
-          </Button>
-          {history.length > 0 && (
-            <Button variant="danger" onClick={clearHistory}>
-              🗑️ Clear History
-            </Button>
-          )}
-        </div>
-      </footer>
+      <style>{`
+        .ff-roadmap-scroll { scrollbar-width: thin; scrollbar-color: transparent transparent; }
+        .ff-roadmap-scroll::-webkit-scrollbar { width: 6px; }
+        .ff-roadmap-scroll::-webkit-scrollbar-track { background: transparent; }
+        .ff-roadmap-scroll::-webkit-scrollbar-thumb { background-color: transparent; border-radius: 4px; transition: background-color 0.3s ease; }
+        .ff-roadmap-scroll:hover::-webkit-scrollbar-thumb { background-color: rgb(var(--ink) / 0.25); }
+        .ff-roadmap-scroll:hover { scrollbar-color: rgb(var(--ink) / 0.25) transparent; }
+      `}</style>
     </div>
   );
 }

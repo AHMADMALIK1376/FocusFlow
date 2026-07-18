@@ -6,6 +6,8 @@ export { Badge, Pill } from './Badge';
 export { Switch, Checkbox, SegmentedControl } from './Switch';
 export { DeleteButton } from './DeleteButton';
 export { LogoutButton } from './LogoutButton';
+export { RepeatButton } from './RepeatButton';
+export { ClearHistoryButton } from './ClearHistoryButton';
 export { Avatar } from './Avatar';
 export { ProgressRing } from './ProgressRing';
 export { StatCard } from './StatCard';

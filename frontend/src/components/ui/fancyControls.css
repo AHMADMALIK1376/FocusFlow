@@ -163,3 +163,86 @@
 .ff-swatch-active::after {
   box-shadow: 0 0 0 3px rgb(var(--surface)), 0 0 0 5px rgb(var(--brand)), 0 4px 10px rgb(45 71 89 / 0.2);
 }
+
+/* Repeat / reset button — pale-red pill, refresh icon spins on hover. */
+.ff-repeat-btn {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 6px 12px;
+  gap: 8px;
+  height: 34px;
+  width: 112px;
+  border: none;
+  background: #ff362b34;
+  border-radius: 20px;
+  cursor: pointer;
+}
+.ff-repeat-label {
+  line-height: 20px;
+  font-size: 17px;
+  color: #ff342b;
+  letter-spacing: 1px;
+}
+.ff-repeat-btn:hover {
+  background: #ff362b52;
+}
+.ff-repeat-btn:hover .ff-repeat-icon {
+  animation: ff-repeat-spin 2s linear infinite;
+}
+@keyframes ff-repeat-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(-360deg); }
+}
+
+/* Clear-all button — black circle that expands into a red "Delete" pill. */
+.ff-clearall-btn {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: rgb(20, 20, 20);
+  border: none;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.164);
+  cursor: pointer;
+  transition-duration: 0.3s;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+}
+.ff-clearall-icon {
+  width: 12px;
+  transition-duration: 0.3s;
+}
+.ff-clearall-icon path {
+  fill: white;
+}
+.ff-clearall-btn:hover {
+  width: 140px;
+  border-radius: 50px;
+  transition-duration: 0.3s;
+  background-color: rgb(255, 69, 69);
+  align-items: center;
+}
+.ff-clearall-btn:hover .ff-clearall-icon {
+  width: 50px;
+  transition-duration: 0.3s;
+  transform: translateY(60%);
+}
+.ff-clearall-btn::before {
+  position: absolute;
+  top: -20px;
+  content: "Delete";
+  color: white;
+  transition-duration: 0.3s;
+  font-size: 2px;
+}
+.ff-clearall-btn:hover::before {
+  font-size: 13px;
+  opacity: 1;
+  transform: translateY(30px);
+  transition-duration: 0.3s;
+}
