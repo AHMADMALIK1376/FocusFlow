@@ -232,19 +232,16 @@ export default function FocusModePage() {
                             🕒 {item.start} — {item.end}
                           </span>
                         </div>
-                        <div className="relative bg-surface-2 p-5 rounded-token-md shadow-neu-sm flex justify-between items-center">
-                          <span className={`absolute top-3 right-3 w-2.5 h-2.5 rounded-full ${done ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                          <div>
+                        <div className="relative bg-surface-2 p-5 rounded-token-md shadow-neu-sm">
+                          <CardDeleteButton onClick={() => handleDeleteSession(item.id)} className="absolute top-2 right-2" />
+                          <RepeatButton onClick={() => handleRepeat(item)} className="absolute bottom-2 right-2" />
+                          <div className="pr-10">
                             <span className={`inline-block px-2 py-1 text-[10px] font-black rounded uppercase mb-2 tracking-tighter ${done ? 'bg-green-500/10 text-green-600' : 'bg-red-500/10 text-red-600'}`}>
                               {item.status}
                             </span>
                             <p className="font-bold text-ink text-lg">{item.activity}</p>
                             <p className="text-[11px] font-semibold text-muted mt-0.5">{item.date}</p>
                             <p className="text-xs font-bold text-muted mt-1">Goal: {item.durationSet} · Logged: {item.actualDone}</p>
-                          </div>
-                          <div className="shrink-0 ml-4 flex items-center gap-2">
-                            <RepeatButton onClick={() => handleRepeat(item)} />
-                            <CardDeleteButton onClick={() => handleDeleteSession(item.id)} />
                           </div>
                         </div>
                       </div>
