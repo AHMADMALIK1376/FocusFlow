@@ -155,55 +155,57 @@ export default function FocusModePage() {
         </h1>
       </section>
 
-      <div className="w-full max-w-[850px] flex flex-col items-center">
-        {/* Timer Card */}
-        <Card ref={timerCardRef} className="flex flex-col items-center w-full max-w-[550px] mb-10">
-          <input
-            type="text"
-            className="w-full max-w-[400px] bg-transparent text-center text-3xl font-black text-ink border-b-4 border-brand pb-2 outline-none mb-10 placeholder:text-muted"
-            placeholder="What's the goal?"
-            value={activity}
-            onChange={(e) => setActivity(e.target.value)}
-            disabled={isActive}
-          />
+      <div className="w-full max-w-[1100px] flex flex-col lg:flex-row items-start gap-8">
+        {/* Left: Timer Card */}
+        <div className="w-full lg:w-[420px] shrink-0 flex flex-col items-center">
+          <Card ref={timerCardRef} className="flex flex-col items-center w-full">
+            <input
+              type="text"
+              className="w-full max-w-[400px] bg-transparent text-center text-3xl font-black text-ink border-b-4 border-brand pb-2 outline-none mb-10 placeholder:text-muted"
+              placeholder="What's the goal?"
+              value={activity}
+              onChange={(e) => setActivity(e.target.value)}
+              disabled={isActive}
+            />
 
-          <div className={`relative w-[250px] h-[250px] mb-10 bg-surface-2 rounded-full flex items-center justify-center shadow-neu border-2 transition-all duration-500 ${isActive ? 'border-brand' : 'border-[rgb(var(--ink)/0.08)]'}`}>
-            <div className="flex items-center gap-1 z-10">
-              {[{val: hours, fn: setHours, max: 99}, {val: minutes, fn: setMinutes, max: 59}, {val: seconds, fn: setSeconds, max: 59}].map((timer, i) => (
-                <React.Fragment key={i}>
-                  <input
-                    type="number"
-                    className="w-16 bg-transparent border-none font-mono text-4xl font-black text-ink text-center outline-none focus:text-brand disabled:cursor-not-allowed [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                    value={String(timer.val).padStart(2, '0')}
-                    onChange={(e) => timer.fn(Math.max(0, Math.min(timer.max, parseInt(e.target.value) || 0)))}
-                    disabled={isActive}
-                  />
-                  {i < 2 && <span className="text-3xl font-black text-muted mb-1">:</span>}
-                </React.Fragment>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex gap-4 w-full">
-            {!isActive ? (
-              <Button variant="primary" full onClick={handleStart}>
-                {startTime ? "RESUME" : "START SESSION"}
-              </Button>
-            ) : (
-              <div className="flex gap-4 w-full">
-                <Button variant="ghost" full onClick={() => setIsActive(false)}>PAUSE</Button>
-                <Button variant="danger" full onClick={() => processSessionEnd(false)}>STOP</Button>
+            <div className={`relative w-[250px] h-[250px] mb-10 bg-surface-2 rounded-full flex items-center justify-center shadow-neu border-2 transition-all duration-500 ${isActive ? 'border-brand' : 'border-[rgb(var(--ink)/0.08)]'}`}>
+              <div className="flex items-center gap-1 z-10">
+                {[{val: hours, fn: setHours, max: 99}, {val: minutes, fn: setMinutes, max: 59}, {val: seconds, fn: setSeconds, max: 59}].map((timer, i) => (
+                  <React.Fragment key={i}>
+                    <input
+                      type="number"
+                      className="w-16 bg-transparent border-none font-mono text-4xl font-black text-ink text-center outline-none focus:text-brand disabled:cursor-not-allowed [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      value={String(timer.val).padStart(2, '0')}
+                      onChange={(e) => timer.fn(Math.max(0, Math.min(timer.max, parseInt(e.target.value) || 0)))}
+                      disabled={isActive}
+                    />
+                    {i < 2 && <span className="text-3xl font-black text-muted mb-1">:</span>}
+                  </React.Fragment>
+                ))}
               </div>
-            )}
-          </div>
-        </Card>
+            </div>
 
-        {/* History Section */}
-        {history.length > 0 && (
-          <div className="w-full mb-10">
-            <h2 className="text-2xl font-black text-ink mb-6 border-l-4 border-brand pl-4">
-              Focus Roadmap
-            </h2>
+            <div className="flex gap-4 w-full">
+              {!isActive ? (
+                <Button variant="primary" full onClick={handleStart}>
+                  {startTime ? "RESUME" : "START SESSION"}
+                </Button>
+              ) : (
+                <div className="flex gap-4 w-full">
+                  <Button variant="ghost" full onClick={() => setIsActive(false)}>PAUSE</Button>
+                  <Button variant="danger" full onClick={() => processSessionEnd(false)}>STOP</Button>
+                </div>
+              )}
+            </div>
+          </Card>
+        </div>
+
+        {/* Right: Focus Roadmap */}
+        <div className="w-full flex-1 min-w-0">
+          <h2 className="text-2xl font-black text-ink mb-6 border-l-4 border-brand pl-4">
+            Focus Roadmap
+          </h2>
+          {history.length > 0 ? (
             <Card>
               <div className="relative border-l-4 border-[rgb(var(--ink)/0.1)] ml-5 md:ml-8 py-4 space-y-10">
                 {history.map((item) => (
@@ -236,22 +238,26 @@ export default function FocusModePage() {
                 ))}
               </div>
             </Card>
-          </div>
-        )}
-
-        <footer className="mt-10 mb-20 w-full flex justify-center px-4">
-          <div className="flex flex-row items-center justify-center gap-6">
-            <Button variant="ghost" onClick={() => navigate("/dashboard")}>
-              🏠 Back to Dashboard
-            </Button>
-            {history.length > 0 && (
-              <Button variant="danger" onClick={clearHistory}>
-                🗑️ Clear History
-              </Button>
-            )}
-          </div>
-        </footer>
+          ) : (
+            <Card className="text-center py-10">
+              <p className="text-muted font-medium">No focus sessions yet — start one to build your roadmap.</p>
+            </Card>
+          )}
+        </div>
       </div>
+
+      <footer className="mt-10 mb-20 w-full flex justify-center px-4">
+        <div className="flex flex-row items-center justify-center gap-6">
+          <Button variant="ghost" onClick={() => navigate("/dashboard")}>
+            🏠 Back to Dashboard
+          </Button>
+          {history.length > 0 && (
+            <Button variant="danger" onClick={clearHistory}>
+              🗑️ Clear History
+            </Button>
+          )}
+        </div>
+      </footer>
     </div>
   );
 }
