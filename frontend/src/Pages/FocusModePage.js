@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useApp } from "../components/context/AppContext";
 import { focusAPI, getToken } from "../services/api";
 import { Card, Button, RepeatButton, ClearHistoryButton } from "../components/ui";
+import DigitMatrixClock from "../components/dashboard/DigitMatrixClock";
 
 const isCompleted = (status) => (status || "").toLowerCase() === "completed";
 
@@ -33,10 +34,6 @@ const formatSession = (raw) => {
     totalSeconds: raw.durationSetSeconds || 0,
   };
 };
-
-const GRID_COLS = 8;
-const GRID_ROWS = 5;
-const GRID_CELLS = GRID_COLS * GRID_ROWS;
 
 export default function FocusModePage() {
   const { hours, setHours, minutes, setMinutes, seconds, setSeconds, isActive, setIsActive } = useApp();
@@ -147,11 +144,6 @@ export default function FocusModePage() {
     );
   }
 
-  const currentTotal = totalDurationRef.current || 1;
-  const currentRemaining = (hours * 3600) + (minutes * 60) + seconds;
-  const elapsed = Math.max(0, currentTotal - currentRemaining);
-  const filledCells = (isActive || startTime) ? Math.min(GRID_CELLS, Math.round((elapsed / currentTotal) * GRID_CELLS)) : 0;
-
   return (
     <div className="flex flex-col items-center px-5 pt-4 pb-10 max-w-[1200px] mx-auto min-h-screen animate-[fadeInUp_0.8s_ease]">
       <section className="w-full max-w-[1100px] text-left mb-4">
@@ -175,31 +167,25 @@ export default function FocusModePage() {
                 disabled={isActive}
               />
 
-              <div className={`w-full p-6 rounded-token-lg bg-surface-2 shadow-neu border-2 transition-colors duration-500 flex flex-col items-center ${isActive ? 'border-brand' : 'border-[rgb(var(--ink)/0.08)]'}`}>
-                <div className="flex items-center gap-1 mb-6">
-                  {[{val: hours, fn: setHours, max: 99}, {val: minutes, fn: setMinutes, max: 59}, {val: seconds, fn: setSeconds, max: 59}].map((timer, i) => (
-                    <React.Fragment key={i}>
-                      <input
-                        type="number"
-                        className="w-14 bg-transparent border-none font-mono text-3xl font-black text-ink text-center outline-none focus:text-brand disabled:cursor-not-allowed [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        value={String(timer.val).padStart(2, '0')}
-                        onChange={(e) => timer.fn(Math.max(0, Math.min(timer.max, parseInt(e.target.value) || 0)))}
-                        disabled={isActive}
-                      />
-                      {i < 2 && <span className="text-2xl font-black text-muted">:</span>}
-                    </React.Fragment>
-                  ))}
-                </div>
-
-                {/* GitHub-contribution-style progress grid */}
-                <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${GRID_COLS}, minmax(0, 1fr))` }}>
-                  {Array.from({ length: GRID_CELLS }).map((_, i) => (
-                    <div
-                      key={i}
-                      className={`w-6 h-6 rounded-sm transition-colors duration-300 ${i < filledCells ? 'bg-brand' : 'bg-[rgb(var(--ink)/0.06)]'}`}
-                    />
-                  ))}
-                </div>
+              <div className={`w-full p-6 rounded-token-lg bg-surface-2 shadow-neu border-2 transition-colors duration-500 flex flex-col items-center justify-center min-h-[140px] ${isActive ? 'border-brand' : 'border-[rgb(var(--ink)/0.08)]'}`}>
+                {isActive ? (
+                  <DigitMatrixClock hours={hours} minutes={minutes} seconds={seconds} />
+                ) : (
+                  <div className="flex items-center gap-1">
+                    {[{val: hours, fn: setHours, max: 99}, {val: minutes, fn: setMinutes, max: 59}, {val: seconds, fn: setSeconds, max: 59}].map((timer, i) => (
+                      <React.Fragment key={i}>
+                        <input
+                          type="number"
+                          className="w-14 bg-transparent border-none font-mono text-3xl font-black text-ink text-center outline-none focus:text-brand disabled:cursor-not-allowed [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          value={String(timer.val).padStart(2, '0')}
+                          onChange={(e) => timer.fn(Math.max(0, Math.min(timer.max, parseInt(e.target.value) || 0)))}
+                          disabled={isActive}
+                        />
+                        {i < 2 && <span className="text-2xl font-black text-muted">:</span>}
+                      </React.Fragment>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -234,7 +220,7 @@ export default function FocusModePage() {
                         <span className={`absolute -left-[14px] top-1 w-6 h-6 rounded-full border-4 bg-surface z-10 ${done ? 'border-green-500' : 'border-red-500'}`}></span>
                         <div className="mb-2">
                           <span className="text-xs font-black text-brand uppercase tracking-widest bg-brand/10 px-2 py-1 rounded-token-sm">
-                            {item.date} • 🕒 {item.start} — {item.end}
+                            🕒 {item.start} — {item.end}
                           </span>
                         </div>
                         <div className="relative bg-surface-2 p-5 rounded-token-md shadow-neu-sm flex justify-between items-center">
@@ -244,6 +230,7 @@ export default function FocusModePage() {
                               {item.status}
                             </span>
                             <p className="font-bold text-ink text-lg">{item.activity}</p>
+                            <p className="text-[11px] font-semibold text-muted mt-0.5">{item.date}</p>
                             <p className="text-xs font-bold text-muted mt-1">Goal: {item.durationSet} · Logged: {item.actualDone}</p>
                           </div>
                           <div className="shrink-0 ml-4">
