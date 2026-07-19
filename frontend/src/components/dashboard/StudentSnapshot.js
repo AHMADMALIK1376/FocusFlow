@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Award, CalendarClock, Layers, Wallet } from "lucide-react";
+import { CalendarClock, Layers } from "lucide-react";
 import { gradeAPI, examAPI, flashcardAPI, budgetAPI } from "../../services/api";
 import { countdownLabel } from "../../features/exams/examsLogic";
+import { totals } from "../../features/finance/financeLogic";
+import { ProgressRing } from "../ui";
+import BudgetGauge from "./BudgetGauge";
 
-const CURRENCIES = { PKR: "₨", USD: "$", EUR: "€", GBP: "£", INR: "₹" };
+const CURRENCIES = { PKR: "Rs ", USD: "$", EUR: "€", GBP: "£", INR: "₹" };
 const TODAY = new Date().toISOString().slice(0, 10);
+const MONTH_YEAR = new Date().toLocaleDateString(undefined, { month: "long", year: "numeric" });
 
 // A student-focused snapshot strip: CGPA, next exam, flashcards due, budget left.
 // Each fetch is independent (allSettled) so one failure never blanks the row.
@@ -34,9 +38,18 @@ export default function StudentSnapshot() {
         const spent = (budget.entries || [])
           .filter((e) => e.type === "expense" && (e.date || "").slice(0, 7) === month)
           .reduce((s, e) => s + e.amount, 0);
+        const allowance = budget.settings.monthlyAllowance || 0;
+        const value = allowance - spent;
+        const savingsGoal = budget.settings.savingsGoal || 0;
+        const { balance: saved } = totals({ entries: budget.entries || [] });
         remaining = {
-          value: (budget.settings.monthlyAllowance || 0) - spent,
+          value,
+          spent,
+          allowance,
+          savingsGoal,
+          saved,
           cur: CURRENCIES[budget.settings.currency] || "",
+          pct: allowance ? Math.round((value / allowance) * 100) : 0,
         };
       }
       setData({ cgpa: gpa ? gpa.cgpa : null, exam: upcoming[0] || null, due, budget: remaining });
@@ -44,27 +57,63 @@ export default function StudentSnapshot() {
     return () => { alive = false; };
   }, []);
 
+  const gpaPct = data.cgpa != null ? Math.round((data.cgpa / 4) * 100) : 0;
+  const b = data.budget;
+
   const cards = [
-    { key: "cgpa", icon: <Award size={18} />, label: "CGPA", value: data.cgpa != null ? data.cgpa.toFixed(2) : "—", sub: "Grade average", to: "/grades" },
+    { key: "cgpa", gauge: true, label: "CGPA", value: data.cgpa != null ? data.cgpa.toFixed(2) : "—", pct: gpaPct, sub: "Grade average", to: "/grades" },
     { key: "exam", icon: <CalendarClock size={18} />, label: "Next exam", value: data.exam ? countdownLabel(data.exam.date) : "None", sub: data.exam ? data.exam.title : "You're all clear", to: "/exams" },
     { key: "due", icon: <Layers size={18} />, label: "Cards due", value: data.due, sub: "To review", to: "/flashcards" },
-    { key: "budget", icon: <Wallet size={18} />, label: "Budget left", value: data.budget ? `${data.budget.cur}${Math.round(data.budget.value).toLocaleString()}` : "—", sub: "This month", to: "/budget" },
   ];
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div className="grid grid-cols-2 gap-4 items-start">
       {cards.map((c) => (
         <button
           key={c.key}
           onClick={() => navigate(c.to)}
-          className="text-left bg-surface rounded-token-lg shadow-neu p-5 hover:-translate-y-0.5 transition-transform"
+          className={`text-left bg-surface rounded-token-lg shadow-neu p-5 hover:-translate-y-0.5 transition-transform ${c.gauge ? "flex items-center gap-3 min-h-[157px]" : ""}`}
         >
-          <span className="w-9 h-9 rounded-xl bg-brand/10 text-brand flex items-center justify-center">{c.icon}</span>
-          <p className="text-2xl font-black text-ink mt-3 truncate">{c.value}</p>
-          <p className="text-xs font-bold uppercase tracking-wider text-muted mt-0.5">{c.label}</p>
-          <p className="text-[11px] text-muted mt-0.5 truncate">{c.sub}</p>
+          {c.gauge ? (
+            <>
+              <ProgressRing value={c.pct} size={96} stroke={10} className="shrink-0">
+                <span className="text-sm font-black text-ink leading-none px-1 text-center">{c.value}</span>
+              </ProgressRing>
+              <div className="min-w-0">
+                <p className="text-xs font-bold uppercase tracking-wider text-muted truncate">{c.label}</p>
+                <p className="text-[11px] text-muted mt-0.5 truncate">{c.sub}</p>
+              </div>
+            </>
+          ) : (
+            <>
+              <span className="w-9 h-9 rounded-xl bg-brand/10 text-brand flex items-center justify-center">{c.icon}</span>
+              <p className="text-2xl font-black text-ink mt-3 truncate">{c.value}</p>
+              <p className="text-xs font-bold uppercase tracking-wider text-muted mt-0.5">{c.label}</p>
+              <p className="text-[11px] text-muted mt-0.5 truncate">{c.sub}</p>
+            </>
+          )}
         </button>
       ))}
+
+      {/* Budget — segmented bar chart (Total / Spent / Remaining / Savings) + text */}
+      <button
+        onClick={() => navigate("/budget")}
+        className="text-left bg-surface rounded-token-lg shadow-neu p-4 hover:-translate-y-0.5 transition-transform flex items-center gap-2 min-h-[157px]"
+      >
+        <BudgetGauge
+          allowance={b?.allowance ?? 0}
+          remaining={b?.value ?? 0}
+          spent={b?.spent ?? 0}
+          savingsGoal={b?.savingsGoal ?? 0}
+          saved={b?.saved ?? 0}
+          cur={b?.cur ?? ""}
+        />
+        <div className="min-w-0">
+          <p className="text-xs font-bold uppercase tracking-wider text-muted truncate">Budget</p>
+          <p className="text-[11px] text-muted mt-0.5 truncate">{MONTH_YEAR}</p>
+          <p className="text-sm font-black text-ink mt-0.5 truncate">{b ? `${b.cur}${Math.round(b.value).toLocaleString()}` : "—"}</p>
+        </div>
+      </button>
     </div>
   );
 }

@@ -18,9 +18,9 @@ export default function FinanceCard() {
         <Button size="sm" variant="ghost" onClick={() => navigate('/budget')}>{t('finance.open', { defaultValue: 'Open' })}</Button>
       </div>
       <div className="grid grid-cols-3 gap-2">
-        <StatCard icon="💚" label={t('finance.income', { defaultValue: 'Income' })} value={`₨${income.toFixed(0)}`} tone="success" />
-        <StatCard icon="🔴" label={t('finance.expenses', { defaultValue: 'Expenses' })} value={`₨${expense.toFixed(0)}`} tone="focus" />
-        <StatCard icon="💰" label={t('finance.balance', { defaultValue: 'Balance' })} value={`₨${balance.toFixed(0)}`} tone={balance >= 0 ? 'brand' : 'warn'} />
+        <StatCard icon="💚" label={t('finance.income', { defaultValue: 'Income' })} value={`Rs ${income.toFixed(0)}`} tone="success" />
+        <StatCard icon="🔴" label={t('finance.expenses', { defaultValue: 'Expenses' })} value={`Rs ${expense.toFixed(0)}`} tone="focus" />
+        <StatCard icon="💰" label={t('finance.balance', { defaultValue: 'Balance' })} value={`Rs ${balance.toFixed(0)}`} tone={balance >= 0 ? 'brand' : 'warn'} />
       </div>
       <div className="mt-3 flex justify-center">
         <Button size="sm" variant="primary" onClick={() => navigate('/budget')} className="w-4/5">

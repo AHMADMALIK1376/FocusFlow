@@ -131,6 +131,33 @@ exports.createSession = async (req, res) => {
     }
 };
 
+// Delete a single focus session
+exports.deleteSession = async (req, res) => {
+    let connection;
+    try {
+        const { sessionId } = req.params;
+
+        connection = await getConnection();
+
+        const result = await connection.execute(
+            `DELETE FROM FOCUS_SESSIONS WHERE session_id = :sessionId AND user_id = :userId`,
+            [sessionId, req.user.userId]
+        );
+
+        if (!result.rowsAffected) {
+            return res.status(404).json({ error: 'Session not found.' });
+        }
+
+        res.json({ success: true, message: 'Focus session deleted.' });
+
+    } catch (err) {
+        console.error('Delete session error:', err);
+        res.status(500).json({ error: 'Failed to delete focus session.' });
+    } finally {
+        if (connection) await connection.close();
+    }
+};
+
 // Delete all focus sessions
 exports.deleteAllSessions = async (req, res) => {
     let connection;

@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Target, Zap, Settings, ChevronDown } from "lucide-react";
+import { Target, Zap, Settings, ChevronDown, Camera } from "lucide-react";
 import { useUser } from "../auth/UserContext";
 import { useApp } from "../context/AppContext";
+import { usePreferences } from "../../preferences/usePreferences";
 import { LogoutButton } from "../ui/LogoutButton";
 
 export default function Navbar() {
@@ -11,8 +12,19 @@ export default function Navbar() {
   const { t } = useTranslation();
   const { userName, logout } = useUser();
   const { pendingCount, pendingRoutine } = useApp();
+  const { profile, updateProfile } = usePreferences();
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
+  const fileRef = useRef(null);
+  const avatarUrl = profile?.avatarUrl || null;
+
+  function onPickImage(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => updateProfile({ avatarUrl: reader.result });
+    reader.readAsDataURL(file);
+  }
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -75,8 +87,8 @@ export default function Navbar() {
             aria-expanded={showDropdown}
             className="flex items-center gap-1.5 group px-1 py-1 rounded-full hover:bg-[rgb(var(--on-brand)/0.12)] transition-all"
           >
-            <span className="w-9 h-9 rounded-xl bg-on-brand text-brand flex items-center justify-center font-black text-[0.8rem]">
-              {getInitials(userName)}
+            <span className="w-9 h-9 rounded-xl bg-on-brand text-brand flex items-center justify-center font-black text-[0.8rem] overflow-hidden">
+              {avatarUrl ? <img src={avatarUrl} alt={userName || "User"} className="w-full h-full object-cover" /> : getInitials(userName)}
             </span>
             <ChevronDown size={15} className={`text-[rgb(var(--on-brand)/0.75)] transition-transform duration-300 ${showDropdown ? "rotate-180" : ""}`} />
           </button>
@@ -84,12 +96,25 @@ export default function Navbar() {
           {showDropdown && (
             <div className="absolute top-[52px] right-0 w-60 bg-surface border border-[rgb(var(--ink)/0.08)] rounded-token-md shadow-glass py-2 z-[2000]">
               <div className="flex items-center gap-3 px-4 py-3">
-                <span className="w-9 h-9 rounded-xl bg-grad-hero flex items-center justify-center text-[0.8rem] text-on-brand font-black">
-                  {getInitials(userName)}
-                </span>
+                <button
+                  onClick={() => fileRef.current?.click()}
+                  title="Change profile photo"
+                  className="group/avatar relative w-9 h-9 rounded-xl bg-grad-hero flex items-center justify-center text-[0.8rem] text-on-brand font-black shrink-0 overflow-hidden"
+                >
+                  {avatarUrl ? <img src={avatarUrl} alt={userName || "User"} className="w-full h-full object-cover" /> : getInitials(userName)}
+                  <span className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover/avatar:opacity-100 transition-opacity">
+                    <Camera size={14} className="text-white" />
+                  </span>
+                  <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-surface flex items-center justify-center">
+                    <span className="relative flex w-2 h-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75" />
+                      <span className="relative inline-flex rounded-full w-2 h-2 bg-success" />
+                    </span>
+                  </span>
+                </button>
+                <input ref={fileRef} type="file" accept="image/*" hidden onChange={onPickImage} />
                 <div className="min-w-0">
                   <p className="text-[0.85rem] font-bold text-ink leading-tight truncate">{userName || "User"}</p>
-                  <p className="text-[0.65rem] font-bold text-success uppercase tracking-tight">Active</p>
                 </div>
               </div>
               <div className="h-px bg-[rgb(var(--ink)/0.08)] my-1 mx-2" />
@@ -99,6 +124,9 @@ export default function Navbar() {
               >
                 <Settings size={16} className="text-muted" /> {t("nav.settings")}
               </button>
+              <div className="px-4 py-2.5 flex items-center">
+                <LogoutButton onClick={handleLogout} />
+              </div>
             </div>
           )}
         </div>

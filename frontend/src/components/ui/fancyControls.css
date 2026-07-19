@@ -163,3 +163,143 @@
 .ff-swatch-active::after {
   box-shadow: 0 0 0 3px rgb(var(--surface)), 0 0 0 5px rgb(var(--brand)), 0 4px 10px rgb(45 71 89 / 0.2);
 }
+
+/* Repeat / reset button — solid-red circle, icon-only, refresh icon spins on hover. */
+.ff-repeat-btn {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: none;
+  background: #ff342b;
+  border-radius: 50%;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.ff-repeat-btn:hover {
+  background: #e0271f;
+}
+.ff-repeat-btn:hover .ff-repeat-icon {
+  animation: ff-repeat-spin 2s linear infinite;
+}
+@keyframes ff-repeat-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(-360deg); }
+}
+
+/* Clear-all button — black circle that expands into a red "Delete" pill. */
+.ff-clearall-btn {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: rgb(20, 20, 20);
+  border: none;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.164);
+  cursor: pointer;
+  transition-duration: 0.3s;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+}
+.ff-clearall-icon {
+  width: 12px;
+  transition-duration: 0.3s;
+}
+.ff-clearall-icon path {
+  fill: white;
+}
+.ff-clearall-btn:hover {
+  width: 140px;
+  border-radius: 50px;
+  transition-duration: 0.3s;
+  background-color: rgb(255, 69, 69);
+  align-items: center;
+}
+.ff-clearall-btn:hover .ff-clearall-icon {
+  width: 50px;
+  transition-duration: 0.3s;
+  transform: translateY(60%);
+}
+.ff-clearall-btn::before {
+  position: absolute;
+  top: -20px;
+  content: "Delete";
+  color: white;
+  transition-duration: 0.3s;
+  font-size: 2px;
+}
+.ff-clearall-btn:hover::before {
+  font-size: 13px;
+  opacity: 1;
+  transform: translateY(30px);
+  transition-duration: 0.3s;
+}
+
+/* Small per-card bin button — black circle, lid rotates open + turns red on hover. */
+.ff-cardbin-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background-color: rgb(20, 20, 20);
+  border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.164);
+  cursor: pointer;
+  transition-duration: 0.3s;
+  overflow: hidden;
+  gap: 1px;
+  flex-shrink: 0;
+}
+.ff-cardbin-icon {
+  width: 9px;
+  transition-duration: 0.3s;
+}
+.ff-cardbin-btn:hover {
+  background-color: rgb(255, 69, 69);
+  gap: 0;
+}
+.ff-cardbin-top {
+  transform-origin: bottom right;
+}
+.ff-cardbin-btn:hover .ff-cardbin-top {
+  transition-duration: 0.5s;
+  transform: rotate(160deg);
+}
+
+/* Ghost bin button — same lid-flip animation, no background circle. Icon is
+   black by default and turns red on hover; meant to stay invisible until the
+   parent card is hovered (toggle opacity via a group-hover className). */
+.ff-cardbin-ghost {
+  width: 26px;
+  height: 26px;
+  background: transparent;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  overflow: hidden;
+  gap: 1px;
+  flex-shrink: 0;
+}
+.ff-cardbin-ghost .ff-cardbin-icon path {
+  fill: rgb(20, 20, 20);
+  transition: fill 0.3s;
+}
+.ff-cardbin-ghost:hover .ff-cardbin-icon path {
+  fill: #ff342b;
+}
+.ff-cardbin-ghost:hover .ff-cardbin-top {
+  transition-duration: 0.5s;
+  transform: rotate(160deg);
+}
