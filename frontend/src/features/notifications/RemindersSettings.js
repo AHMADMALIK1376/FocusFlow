@@ -3,6 +3,7 @@ import { BellRing, Mail, MessageCircle, Send } from "lucide-react";
 import { Button, Input, Select, Field, Switch, Badge } from "../../components/ui";
 import { useToast } from "../../components/ui/Toast";
 import { notifyAPI } from "../../services/api";
+import { PanelLoading } from "../../components/common/LoadingSpinner";
 import { pushStatus, enablePush, disablePush } from "./push";
 
 const LEADS = [
@@ -85,7 +86,7 @@ export default function RemindersSettings() {
   }, []);
 
   if (error && !s) return <p className="text-sm text-focus">{error}</p>;
-  if (!s) return <p className="text-sm text-muted">Loading reminders…</p>;
+  if (!s) return <PanelLoading message="Loading reminders…" />;
 
   const set = (k, v) => setS((p) => ({ ...p, [k]: v }));
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;

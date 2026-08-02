@@ -3,13 +3,15 @@ import { Target, CheckCircle2, Loader, TrendingUp, Plus, Pin, ListChecks, X } fr
 import { BarChart, Bar, XAxis, YAxis, Tooltip, LabelList } from "recharts";
 import { Button, Input, EmptyState, ProgressRing, Checkbox, DeleteButton } from "../components/ui";
 import { PageShell, PageHeader, StatTile, Panel } from "../components/dashboard/DashKit";
+import { PageLoading, useFirstLoad } from "../components/common/LoadingSpinner";
 import ChartBox from "../components/charts/ChartBox";
 import { chartColors, hexToRgba, CHART_TOOLTIP } from "../components/charts/chartColors";
 import { useGoals } from "../features/goalsx/useGoals";
 import { goalProgress, overallProgress } from "../features/goalsx/goalsLogic";
 
 export default function GoalsPage() {
-  const { goals, createGoal, removeGoal, createMilestone, toggleMilestone, removeMilestone } = useGoals();
+  const { goals, loading, createGoal, removeGoal, createMilestone, toggleMilestone, removeMilestone } = useGoals();
+  const firstLoad = useFirstLoad(loading);
   const { brand } = chartColors();
 
   const [selectedId, setSelectedId] = useState(null);
@@ -33,6 +35,8 @@ export default function GoalsPage() {
     await createMilestone(selectedId, newMilestone.trim());
     setNewMilestone("");
   }
+
+  if (firstLoad) return <PageShell><PageLoading message="Loading goals…" /></PageShell>;
 
   return (
     <PageShell>

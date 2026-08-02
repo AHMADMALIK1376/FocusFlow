@@ -142,7 +142,7 @@ export default function RoutineView() {
 
   if (loading) return (
     <div className="min-h-screen bg-canvas flex items-center justify-center">
-      <LoadingSpinner message={null} />
+      <LoadingSpinner message="Loading your week…" />
     </div>
   );
 

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Plus, Pencil, Award } from "lucide-react";
 import { Button, Input, Select, Field, Modal, EmptyState, DeleteButton, Badge } from "../ui";
 import { Panel } from "../dashboard/DashKit";
+import { PanelLoading, useFirstLoad } from "../common/LoadingSpinner";
 import { useGrades } from "../../features/grades/useGrades";
 import { subjectGrade } from "../../features/grades/gpa";
 
@@ -10,6 +11,7 @@ const EMPTY = { title: "", category: "Quiz", score: "", maxScore: "", weight: ""
 
 export default function GradesPanel({ subjectId }) {
   const { grades, loading, create, update, remove } = useGrades(subjectId);
+  const firstLoad = useFirstLoad(loading);
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState(EMPTY);
@@ -63,8 +65,8 @@ export default function GradesPanel({ subjectId }) {
         </div>
       }
     >
-      {loading ? (
-        <p className="text-sm text-muted py-4 text-center">Loading grades…</p>
+      {firstLoad ? (
+        <PanelLoading message="Loading grades…" />
       ) : grades.length === 0 ? (
         <EmptyState icon={Award} title="No grades yet" description="Add a quiz, assignment or exam score" />
       ) : (

@@ -3,11 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { Plus, Layers } from "lucide-react";
 import { Button, Input, EmptyState, Badge } from "../ui";
 import { Panel } from "../dashboard/DashKit";
+import { PanelLoading, useFirstLoad } from "../common/LoadingSpinner";
 import { useDecks } from "../../features/flashcards/useFlashcards";
 
 export default function FlashcardsPanel({ subjectId }) {
   const navigate = useNavigate();
   const { decks, loading, createDeck } = useDecks(subjectId);
+  const firstLoad = useFirstLoad(loading);
   const [name, setName] = useState("");
   const [adding, setAdding] = useState(false);
 
@@ -25,8 +27,8 @@ export default function FlashcardsPanel({ subjectId }) {
 
   return (
     <Panel title="Flashcards" className="mb-6" right={<Button size="sm" variant="ghost" onClick={() => navigate("/flashcards")}>All decks</Button>}>
-      {loading ? (
-        <p className="text-sm text-muted py-4 text-center">Loading…</p>
+      {firstLoad ? (
+        <PanelLoading message="Loading decks…" />
       ) : decks.length === 0 ? (
         <EmptyState icon={Layers} title="No decks yet" description="Create a deck for this subject" />
       ) : (

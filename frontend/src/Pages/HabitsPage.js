@@ -3,6 +3,7 @@ import { Repeat, Flame, CalendarCheck, Percent, Plus, Pencil, X, Check } from "l
 import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import { Button, Input, EmptyState } from "../components/ui";
 import { PageShell, PageHeader, StatTile, Panel } from "../components/dashboard/DashKit";
+import { PageLoading, useFirstLoad } from "../components/common/LoadingSpinner";
 import ChartBox from "../components/charts/ChartBox";
 import { chartColors, hexToRgba, CHART_TOOLTIP } from "../components/charts/chartColors";
 import { useHabits } from "../features/habits/useHabits";
@@ -19,7 +20,8 @@ function getWeekStart() {
 }
 
 export default function HabitsPage() {
-  const { state, addHabit: apiAddHabit, renameHabit, removeHabit, toggleDay } = useHabits();
+  const { state, loading, addHabit: apiAddHabit, renameHabit, removeHabit, toggleDay } = useHabits();
+  const firstLoad = useFirstLoad(loading);
   const { brand } = chartColors();
 
   const [newName, setNewName] = useState("");
@@ -47,6 +49,8 @@ export default function HabitsPage() {
     if (renameVal.trim()) renameHabit(id, renameVal.trim());
     setRenaming(null);
   }
+
+  if (firstLoad) return <PageShell><PageLoading message="Loading your streaks…" /></PageShell>;
 
   return (
     <PageShell>

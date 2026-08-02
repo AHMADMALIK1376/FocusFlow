@@ -20,6 +20,7 @@ import { useAccountYears } from '../features/account/useAccountYears';
 import { ChevronDown, TriangleAlert } from "lucide-react";
 import { subjectAttendanceAPI } from "../services/api";
 import { PageShell, Panel } from "../components/dashboard/DashKit";
+import { PanelLoading } from "../components/common/LoadingSpinner";
 
 const DAYS = 7;
 
@@ -603,7 +604,7 @@ export default function AttendanceSkylinePage() {
           {statCurrent}
         </div>
 
-        {loading && <p className="text-sm text-muted text-center py-4">Loading…</p>}
+        {loading && <PanelLoading message="Loading attendance…" />}
         {!loading && stats.classDayCount === 0 && (
           <p className="text-sm text-muted text-center py-4">
             No attendance recorded for {year}. Mark attendance on a subject page to build your skyline.

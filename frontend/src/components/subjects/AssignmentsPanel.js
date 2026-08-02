@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Plus, Check, SquareKanban } from "lucide-react";
 import { Button, Input, Badge, EmptyState, DeleteButton } from "../ui";
 import { Panel } from "../dashboard/DashKit";
+import { PanelLoading, useFirstLoad } from "../common/LoadingSpinner";
 import { useKanban } from "../../features/kanban/useKanban";
 
 const COL_LABEL = { "col-todo": "To do", "col-doing": "In progress", "col-done": "Done" };
@@ -11,6 +12,7 @@ const COL_TONE = { "col-todo": "muted", "col-doing": "info", "col-done": "succes
 export default function AssignmentsPanel({ subjectId }) {
   const navigate = useNavigate();
   const { state, loading, addCard, moveCard, removeCard } = useKanban(subjectId);
+  const firstLoad = useFirstLoad(loading);
   const [title, setTitle] = useState("");
   const [adding, setAdding] = useState(false);
   const cards = state.cards;
@@ -32,8 +34,8 @@ export default function AssignmentsPanel({ subjectId }) {
         <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="New assignment…" onKeyDown={(e) => e.key === "Enter" && add()} className="!py-2 !px-3 text-sm" />
         <Button size="sm" variant="primary" onClick={add} disabled={adding || !title.trim()} className="shrink-0 gap-1"><Plus size={14} /> Add</Button>
       </div>
-      {loading ? (
-        <p className="text-sm text-muted py-4 text-center">Loading…</p>
+      {firstLoad ? (
+        <PanelLoading message="Loading assignments…" />
       ) : cards.length === 0 ? (
         <EmptyState icon={SquareKanban} title="No assignments yet" description="Add one above" />
       ) : (

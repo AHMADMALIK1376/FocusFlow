@@ -65,7 +65,7 @@ export default function AcademicCalendar() {
   if (loading) {
     return (
       <div className="relative bg-surface p-10 rounded-token-xl flex-1 min-w-[320px] max-w-[450px] shadow-neu transition-all duration-500 text-center group hover:-translate-y-2 flex items-center justify-center">
-        <LoadingSpinner message={null} />
+        <LoadingSpinner message="Loading calendar…" />
       </div>
     );
   }

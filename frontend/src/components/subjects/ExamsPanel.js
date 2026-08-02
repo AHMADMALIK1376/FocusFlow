@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Plus, CalendarClock } from "lucide-react";
 import { Button, Input, Select, Field, Modal, EmptyState, DeleteButton, Badge, Checkbox } from "../ui";
 import { Panel } from "../dashboard/DashKit";
+import { PanelLoading, useFirstLoad } from "../common/LoadingSpinner";
 import { useExams } from "../../features/exams/useExams";
 import { countdownLabel } from "../../features/exams/examsLogic";
 
@@ -10,6 +11,7 @@ const EMPTY = { title: "", type: "Exam", date: "", time: "", location: "" };
 
 export default function ExamsPanel({ subjectId }) {
   const { exams, loading, create, toggle, remove } = useExams(subjectId);
+  const firstLoad = useFirstLoad(loading);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(EMPTY);
   const [saving, setSaving] = useState(false);
@@ -36,8 +38,8 @@ export default function ExamsPanel({ subjectId }) {
       className="mb-6"
       right={<Button size="sm" variant="primary" onClick={() => { setForm(EMPTY); setOpen(true); }} className="gap-1"><Plus size={14} /> Add</Button>}
     >
-      {loading ? (
-        <p className="text-sm text-muted py-4 text-center">Loading…</p>
+      {firstLoad ? (
+        <PanelLoading message="Loading exams…" />
       ) : items.length === 0 ? (
         <EmptyState icon={CalendarClock} title="Nothing upcoming" description="Add an exam, quiz or deadline for this subject" />
       ) : (

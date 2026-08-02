@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Plus, GraduationCap, Trash2, ScanText, RotateCcw, ChevronDown } from "lucide-react";
 import { Button, Input, Select, Field, Modal, EmptyState, DeleteButton, useToast } from "../components/ui";
 import { PageShell, PageHeader, Panel } from "../components/dashboard/DashKit";
+import { PageLoading, useFirstLoad } from "../components/common/LoadingSpinner";
 import { useSubjects } from "../features/subjects/useSubjects";
 import TimetableImportModal from "../features/subjects/TimetableImportModal";
 import SubjectTable from "../components/subjects/SubjectTable";
@@ -31,6 +32,7 @@ function mostCommon(arr) {
 export default function SubjectsPage() {
   const navigate = useNavigate();
   const { subjects, archived, loading, error, refresh, create, update, remove, setArchived } = useSubjects();
+  const firstLoad = useFirstLoad(loading);
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState(null);
@@ -91,11 +93,11 @@ export default function SubjectsPage() {
             <Button variant="primary" onClick={openAdd} className="gap-1.5"><Plus size={16} /> Add subject</Button>
           </PageHeader>
         </div>
-        {!loading && !error && <WeekBeads subjects={subjects} />}
+        {!firstLoad && !error && <WeekBeads subjects={subjects} />}
       </div>
 
-      {loading ? (
-        <Panel><p className="text-sm text-muted py-8 text-center">Loading subjects…</p></Panel>
+      {firstLoad ? (
+        <PageLoading message="Loading subjects…" />
       ) : error ? (
         <Panel><div className="py-8 text-center"><p className="text-focus text-sm mb-3">{error}</p><Button variant="soft" onClick={refresh}>Retry</Button></div></Panel>
       ) : subjects.length === 0 ? (
