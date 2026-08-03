@@ -1,9 +1,10 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { Wallet, TrendingUp, TrendingDown, PiggyBank, Plus, Save } from "lucide-react";
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from "recharts";
 import { Button, Input, Select, EmptyState } from "../components/ui";
 import { PageShell, PageHeader, StatTile, Panel } from "../components/dashboard/DashKit";
 import ChartBox from "../components/charts/ChartBox";
+import SpendingPuckStack from "../components/charts/SpendingPuckStack";
 import { chartColors, hexToRgba, CHART_TOOLTIP } from "../components/charts/chartColors";
 import { useFinance } from "../features/finance/useFinance";
 import { totals, byCategory } from "../features/finance/financeLogic";
@@ -16,7 +17,7 @@ const CURRENCIES = { PKR: "Rs ", USD: "$", EUR: "€", GBP: "£", INR: "₹", AE
 
 export default function FinancePage() {
   const { state, entries, settings, addEntry, removeEntry, saveSettings } = useFinance();
-  const { brand, accent } = chartColors();
+  const { brand } = chartColors();
 
   const [type, setType] = useState("expense");
   const [amount, setAmount] = useState("");
@@ -44,7 +45,6 @@ export default function FinancePage() {
 
   const expenseCats = byCategory(state, "expense");
   const pieData = useMemo(() => Object.entries(expenseCats).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value), [expenseCats]);
-  const pieColors = [brand, accent, hexToRgba(brand, 0.6), hexToRgba(accent, 0.6), hexToRgba(brand, 0.35), hexToRgba(accent, 0.85)];
 
   const cashFlow = useMemo(() => {
     const days = [];
@@ -102,17 +102,7 @@ export default function FinancePage() {
           {pieData.length === 0 ? (
             <div className="h-[200px] flex items-center justify-center text-sm text-muted">Add expenses to see the breakdown.</div>
           ) : (
-            <ChartBox height={210}>
-              {(cw) => (
-                <PieChart width={cw} height={210}>
-                  <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={48} outerRadius={80} paddingAngle={2} stroke="none" isAnimationActive={false}>
-                    {pieData.map((d, i) => <Cell key={i} fill={pieColors[i % pieColors.length]} />)}
-                  </Pie>
-                  <Tooltip contentStyle={CHART_TOOLTIP} formatter={(v) => [fmt(v), "Spent"]} />
-                  <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, fontWeight: 700 }} />
-                </PieChart>
-              )}
-            </ChartBox>
+            <SpendingPuckStack data={pieData} formatValue={fmt} />
           )}
         </Panel>
 
