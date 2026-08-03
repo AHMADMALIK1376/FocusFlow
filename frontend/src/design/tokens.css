@@ -1,17 +1,19 @@
 /* ==========================================================================
-   FocusFlow "Wisteria" design tokens — Indigo Night + Wisteria Glow on Cloud Pearl
-   Main colors: #2D4759 (indigo night), #D6C6F7 (wisteria glow),
+   FocusFlow design tokens — single fixed brand palette matching the app logo:
+   deep indigo-blue -> violet -> magenta, on a Cloud Pearl background.
+   Main colors: #6F3FE0 (violet, primary), #2E2A8C (indigo-blue, deep),
+                #E070BF (magenta, soft accent),
                 #F2F5F7 (cloud pearl, background), #363636 (sea grey, text).
-   Light-only for now (dark mode mirrors light → toggle is a no-op).
+   Light-only for now (dark mode mirrors light -> toggle is a no-op).
    Color values are space-separated RGB triplets: rgb(var(--brand) / <alpha-value>)
    ========================================================================== */
 
 :root {
-  /* Brand — indigo night primary, wisteria glow as the soft accent */
-  --brand: 45 71 89;
-  --brand-deep: 31 50 67;
-  --brand-soft: 214 198 247;
-  --on-brand: 242 245 247;
+  /* Brand — logo palette: violet primary, indigo-blue deep, magenta soft accent */
+  --brand: 111 63 224;
+  --brand-deep: 46 42 140;
+  --brand-soft: 224 112 191;
+  --on-brand: 255 255 255;
 
   /* Semantic accents */
   --success: 46 160 110;
@@ -61,10 +63,10 @@
 /* Dark mode intentionally MIRRORS light for now (no dark theme requested).    */
 /* -------------------------------------------------------------------------- */
 .dark {
-  --brand: 45 71 89;
-  --brand-deep: 31 50 67;
-  --brand-soft: 214 198 247;
-  --on-brand: 242 245 247;
+  --brand: 111 63 224;
+  --brand-deep: 46 42 140;
+  --brand-soft: 224 112 191;
+  --on-brand: 255 255 255;
 
   --success: 46 160 110;
   --info: 90 120 180;
@@ -88,15 +90,6 @@
 
   color-scheme: light;
 }
-
-/* -------------------------------------------------------------------------- */
-/* Color schemes — palette picker (default = Indigo). Override brand + on-brand */
-/* -------------------------------------------------------------------------- */
-[data-scheme="indigo"]   { --brand: 45 71 89;    --brand-deep: 31 50 67;   --brand-soft: 214 198 247; --on-brand: 242 245 247; }
-[data-scheme="wisteria"] { --brand: 138 110 214; --brand-deep: 108 80 184; --brand-soft: 214 198 247; --on-brand: 255 255 255; }
-[data-scheme="purple"]   { --brand: 108 92 231;  --brand-deep: 124 58 237; --brand-soft: 162 155 254; --on-brand: 255 255 255; }
-[data-scheme="forest"]   { --brand: 46 160 110;  --brand-deep: 0 120 80;   --brand-soft: 150 220 190; --on-brand: 255 255 255; }
-[data-scheme="coral"]    { --brand: 224 90 90;   --brand-deep: 200 60 60;  --brand-soft: 250 177 160; --on-brand: 255 255 255; }
 
 @media (prefers-reduced-motion: reduce) {
   :root { --dur-fast: 0ms; --dur: 0ms; --dur-slow: 0ms; }

@@ -12,7 +12,6 @@ import { Card, Button, Input, ProgressRing, cx } from "../components/ui";
 import { StatTile } from "../components/dashboard/DashKit";
 import ChartBox from "../components/charts/ChartBox";
 import { chartColors, hexToRgba, CHART_TOOLTIP } from "../components/charts/chartColors";
-import { usePreferences } from "../preferences/usePreferences";
 import { useKanban } from "../features/kanban/useKanban";
 import { cardsByColumn } from "../features/kanban/kanbanLogic";
 import { useSubjects } from "../features/subjects/useSubjects";
@@ -50,8 +49,7 @@ function SortableCard({ card, onEdit, onRemove }) {
 export default function KanbanPage() {
   const { state, addCard: createCard, updateCard, removeCard, moveCard } = useKanban();
   const { subjects } = useSubjects();
-  const { activeDashboard } = usePreferences();
-  const { brand, accent } = chartColors(activeDashboard?.palette);
+  const { brand, accent } = chartColors();
 
   const [newCardText, setNewCardText] = useState({});
   const [editCard, setEditCard] = useState(null);

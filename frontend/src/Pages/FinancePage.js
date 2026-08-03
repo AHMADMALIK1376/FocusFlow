@@ -5,7 +5,6 @@ import { Button, Input, Select, EmptyState } from "../components/ui";
 import { PageShell, PageHeader, StatTile, Panel } from "../components/dashboard/DashKit";
 import ChartBox from "../components/charts/ChartBox";
 import { chartColors, hexToRgba, CHART_TOOLTIP } from "../components/charts/chartColors";
-import { usePreferences } from "../preferences/usePreferences";
 import { useFinance } from "../features/finance/useFinance";
 import { totals, byCategory } from "../features/finance/financeLogic";
 
@@ -17,8 +16,7 @@ const CURRENCIES = { PKR: "Rs ", USD: "$", EUR: "€", GBP: "£", INR: "₹", AE
 
 export default function FinancePage() {
   const { state, entries, settings, addEntry, removeEntry, saveSettings } = useFinance();
-  const { activeDashboard } = usePreferences();
-  const { brand, accent } = chartColors(activeDashboard?.palette);
+  const { brand, accent } = chartColors();
 
   const [type, setType] = useState("expense");
   const [amount, setAmount] = useState("");

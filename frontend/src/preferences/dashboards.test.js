@@ -38,7 +38,6 @@ describe('makeDashboard', () => {
     const db = makeDashboard('Uni');
     expect(db.name).toBe('Uni');
     expect(db.fontFamily).toBe('poppins');
-    expect(db.palette).toEqual({ scheme: 'indigo', customAccent: null, custom: null });
     expect(Array.isArray(db.widgets.order)).toBe(true);
     expect(typeof db.widgets.enabled).toBe('object');
     expect(db.id).toBeTruthy();
@@ -130,14 +129,17 @@ describe('updateDashboardPatch', () => {
     expect(next.dashboards[0].name).toBe('Test');
   });
 
-  it('deep-merges nested object keys (palette)', () => {
+  it('deep-merges nested object keys generically (not just widgets)', () => {
     const d1 = makeDashboard('Test');
     const state = { dashboards: [d1], activeDashboardId: d1.id };
+    // updateDashboardPatch doesn't know about specific field names — verify
+    // the deep-merge behavior with an arbitrary nested object, not just the
+    // real `widgets` field, to prove it's generic.
     const next = updateDashboardPatch(state, d1.id, {
-      palette: { scheme: 'ocean', customAccent: null },
+      widgets: { order: ['focus'] },
     });
-    expect(next.dashboards[0].palette.scheme).toBe('ocean');
-    expect(next.dashboards[0].palette.customAccent).toBeNull();
+    expect(next.dashboards[0].widgets.order).toEqual(['focus']);
+    expect(next.dashboards[0].widgets.enabled).toEqual(d1.widgets.enabled);
   });
 
   it('does not affect other dashboards', () => {

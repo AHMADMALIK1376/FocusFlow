@@ -3,15 +3,11 @@ import React, { useMemo, useState, useEffect, useRef, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Camera, Pencil, Plus } from "lucide-react";
-import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, LabelList,
-} from "recharts";
 import { useUser } from "../components/auth/UserContext";
 import { useApp } from "../components/context/AppContext";
 import { usePreferences } from "../preferences/usePreferences";
 import { ProgressRing, cx } from "../components/ui";
-import ChartBox from "../components/charts/ChartBox";
-import { chartColors, hexToRgba, CHART_TOOLTIP } from "../components/charts/chartColors";
+import ProgressCubeStack from "../components/charts/ProgressCubeStack";
 import { WIDGET_BY_ID } from "../dashboard/registry";
 import Clock from "../components/dashboard/Clock";
 import StudentSnapshot from "../components/dashboard/StudentSnapshot";
@@ -93,9 +89,6 @@ export default function Home() {
   const labels = activeDashboard?.labels || {};
   const lbl = (key, def) => labels[key] || def;
   const setLbl = (key, val) => updateActiveDashboard({ labels: { ...labels, [key]: val } });
-
-  // Chart colours derived from the active palette
-  const { brand: chartBrand } = chartColors(activeDashboard?.palette);
 
   // ── Derived metrics (real data) ──
   const totalTasks = tasks.length;
@@ -277,30 +270,13 @@ export default function Home() {
               </section>
             </div>
 
-            {/* Progress overview — recharts horizontal bars */}
+            {/* Progress overview — 3D extruded bars */}
             <section className="rounded-token-lg bg-surface shadow-neu p-5">
               <h3 className="text-sm font-black uppercase tracking-wider text-ink mb-1">
                 <InlineEdit value={lbl("progress", "Progress overview")} onSave={(v) => setLbl("progress", v)} />
               </h3>
               <p className="text-xs text-muted mb-3">How you're tracking across everything</p>
-              <ChartBox height={280}>
-                {(cw) => (
-                <BarChart width={cw} height={280} layout="vertical" data={progressData} margin={{ top: 0, right: 44, left: 8, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="ffProgress" x1="0" y1="0" x2="1" y2="0">
-                      <stop offset="0%" stopColor={chartBrand} stopOpacity={0.7} />
-                      <stop offset="100%" stopColor={chartBrand} stopOpacity={1} />
-                    </linearGradient>
-                  </defs>
-                  <XAxis type="number" domain={[0, 100]} hide />
-                  <YAxis type="category" dataKey="label" axisLine={false} tickLine={false} width={84} tick={{ fontSize: 12, fontWeight: 700, fill: "rgb(54 54 54)" }} />
-                  <Tooltip cursor={{ fill: hexToRgba(chartBrand, 0.05) }} contentStyle={CHART_TOOLTIP} formatter={(v) => [`${v}%`, "Progress"]} />
-                  <Bar dataKey="value" radius={[0, 8, 8, 0]} fill="url(#ffProgress)" maxBarSize={20} background={{ fill: hexToRgba(chartBrand, 0.07) }}>
-                    <LabelList dataKey="value" position="right" formatter={(v) => `${v}%`} style={{ fontSize: 12, fontWeight: 800, fill: "rgb(54 54 54)" }} />
-                  </Bar>
-                </BarChart>
-                )}
-              </ChartBox>
+              <ProgressCubeStack data={progressData} />
             </section>
           </div>
 

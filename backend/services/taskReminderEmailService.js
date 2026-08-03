@@ -10,15 +10,6 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-const formatTime12h = (time24) => {
-    if (!time24) return 'Time not set';
-    const [hours, minutes] = time24.split(':');
-    let h = parseInt(hours, 10);
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    h = h % 12 || 12;
-    return `${h}:${minutes} ${ampm}`;
-};
-
 const formatDateReadable = (dateStr) => {
     if (!dateStr) return 'Date not set';
     const date = new Date(dateStr);
@@ -43,21 +34,20 @@ const sendTaskReminderEmail = async (userEmail, userName, tasks, reminderType, s
     
     tasks.forEach(task => {
         const dueDate = formatDateReadable(task.TASK_DATE);
-        const dueTime = formatTime12h(task.TASK_TIME);
         const dayOfWeek = getDayOfWeek(task.TASK_DATE);
         const status = task.IS_COMPLETED === 1 ? '✅ Completed' : '⏳ Pending';
-        
+        const subject = task.TASK_TYPE || 'General';
+
         tasksHtml += `
             <div style="background: ${task.IS_COMPLETED === 1 ? '#e8f5e9' : '#fff3e0'}; border-radius: 15px; padding: 15px; margin-bottom: 15px; border-left: 4px solid ${task.IS_COMPLETED === 1 ? '#4caf50' : '#ff9800'};">
                 <h3 style="margin: 0 0 5px 0; color: ${task.IS_COMPLETED === 1 ? '#4caf50' : '#ff9800'};">📋 ${task.TASK_TEXT}</h3>
-                <p style="margin: 5px 0; color: #333;">📅 Date: ${dueDate} (${dayOfWeek})</p>
-                <p style="margin: 5px 0; color: #333;">⏰ Time: ${dueTime}</p>
-                <p style="margin: 5px 0; color: #666;">🏷️ Category: ${task.TASK_TYPE}</p>
+                <p style="margin: 5px 0; color: #333;">📅 Due: ${dueDate} (${dayOfWeek})</p>
+                <p style="margin: 5px 0; color: #666;">🏷️ Subject: ${subject}</p>
                 <p style="margin: 5px 0; font-weight: bold; color: ${task.IS_COMPLETED === 1 ? '#4caf50' : '#ff9800'};">Status: ${status}</p>
             </div>
         `;
-        
-        tasksText += `\n📋 ${task.TASK_TEXT}\n   Date: ${dueDate} (${dayOfWeek})\n   Time: ${dueTime}\n   Category: ${task.TASK_TYPE}\n   Status: ${status}\n`;
+
+        tasksText += `\n📋 ${task.TASK_TEXT}\n   Due: ${dueDate} (${dayOfWeek})\n   Subject: ${subject}\n   Status: ${status}\n`;
     });
     
     const htmlContent = `
@@ -115,14 +105,35 @@ Stay organized, stay ahead!
     }
 };
 
-// FIXED: Using positional bind parameters (no reserved keyword issues)
-const logReminderSent = async (connection, taskId, userId, reminderType, reminderDate) => {
-    const reminderId = require('crypto').randomUUID();
-    await connection.execute(
-        `INSERT INTO TASK_REMINDER_LOG (reminder_id, task_id, user_id, reminder_type, reminder_date) 
-         VALUES (:1, :2, :3, :4, TO_DATE(:5, 'YYYY-MM-DD'))`,
-        [reminderId, taskId, userId, reminderType, reminderDate]
-    );
+// Assignments are the unified to-do/assignment record. They carry a due DATE but
+// no due time, so these summaries are date-based only (the old hourly
+// "due in 1 hour" reminder had no equivalent and was retired with TASKS).
+// Aliased to the legacy TASK_* column names so the email builder is unchanged.
+const ASSIGNMENT_SELECT = `
+    SELECT u.user_id, u.email, u.full_name,
+           a.assignment_id AS task_id,
+           a.title AS task_text,
+           a.due_date AS task_date,
+           COALESCE(s.name, 'General') AS task_type,
+           CASE WHEN a.column_id = 'col-done' THEN 1 ELSE 0 END AS is_completed
+    FROM USERS u
+    JOIN ASSIGNMENTS a ON u.user_id = a.user_id
+    LEFT JOIN SUBJECTS s ON s.subject_id = a.subject_id`;
+
+// Group flat rows into { [userId]: { email, name, tasks: [] } }
+const groupByUser = (rows) => {
+    const byUser = {};
+    for (const row of rows) {
+        if (!byUser[row.USER_ID]) {
+            byUser[row.USER_ID] = {
+                email: row.EMAIL,
+                name: row.FULL_NAME || row.EMAIL.split('@')[0],
+                tasks: [],
+            };
+        }
+        byUser[row.USER_ID].tasks.push(row);
+    }
+    return byUser;
 };
 
 const sendWeeklyTaskSummary = async () => {
@@ -143,19 +154,16 @@ const sendWeeklyTaskSummary = async () => {
         console.log(`📅 Sending weekly task summary for week of ${weekStartStr} to ${weekEndStr}`);
         
         const result = await connection.execute(
-            `SELECT u.user_id, u.email, u.full_name, t.task_id, t.task_text, t.task_date, t.task_time, t.task_type, t.is_completed
-             FROM USERS u JOIN TASKS t ON u.user_id = t.user_id
-             WHERE u.is_verified = 1 AND t.task_date >= TO_DATE(:weekStart, 'YYYY-MM-DD') AND t.task_date <= TO_DATE(:weekEnd, 'YYYY-MM-DD')
-             ORDER BY u.user_id, t.task_date ASC, t.task_time ASC`,
+            `${ASSIGNMENT_SELECT}
+             WHERE u.is_verified = 1
+               AND a.due_date >= TO_DATE(:weekStart, 'YYYY-MM-DD')
+               AND a.due_date <= TO_DATE(:weekEnd, 'YYYY-MM-DD')
+             ORDER BY u.user_id, a.due_date ASC`,
             { weekStart: weekStartStr, weekEnd: weekEndStr }
         );
-        
-        const userTasks = {};
-        for (const row of result.rows) {
-            if (!userTasks[row.USER_ID]) userTasks[row.USER_ID] = { email: row.EMAIL, name: row.FULL_NAME || row.EMAIL.split('@')[0], tasks: [] };
-            userTasks[row.USER_ID].tasks.push(row);
-        }
-        
+
+        const userTasks = groupByUser(result.rows);
+
         for (const userId in userTasks) {
             const user = userTasks[userId];
             await sendTaskReminderEmail(user.email, user.name, user.tasks, 'WEEKLY', `Weekly Task Summary (${weekStartStr} to ${weekEndStr})`);
@@ -174,70 +182,20 @@ const sendDailyTaskSummary = async () => {
         console.log(`📅 Sending daily task summary for ${todayName}, ${todayStr}`);
         
         const result = await connection.execute(
-            `SELECT u.user_id, u.email, u.full_name, t.task_id, t.task_text, t.task_date, t.task_time, t.task_type, t.is_completed
-             FROM USERS u JOIN TASKS t ON u.user_id = t.user_id
-             WHERE u.is_verified = 1 AND t.task_date = TO_DATE(:today, 'YYYY-MM-DD')
-             ORDER BY t.task_time ASC`,
+            `${ASSIGNMENT_SELECT}
+             WHERE u.is_verified = 1 AND a.due_date = TO_DATE(:today, 'YYYY-MM-DD')
+             ORDER BY u.user_id, a.board_order ASC`,
             { today: todayStr }
         );
-        
-        const userTasks = {};
-        for (const row of result.rows) {
-            if (!userTasks[row.USER_ID]) userTasks[row.USER_ID] = { email: row.EMAIL, name: row.FULL_NAME || row.EMAIL.split('@')[0], tasks: [] };
-            userTasks[row.USER_ID].tasks.push(row);
-        }
-        
+
+        const userTasks = groupByUser(result.rows);
+
         for (const userId in userTasks) {
             const user = userTasks[userId];
-            await sendTaskReminderEmail(user.email, user.name, user.tasks, 'DAILY', `Today's Tasks (${todayName})`);
+            await sendTaskReminderEmail(user.email, user.name, user.tasks, 'DAILY', `Today's Assignments (${todayName})`);
         }
     } catch (err) { console.error('Error sending daily summary:', err); }
     finally { if (connection) await connection.close(); }
 };
 
-const sendHourlyTaskReminders = async () => {
-    let connection;
-    try {
-        connection = await getConnection();
-        
-        const now = new Date();
-        const currentHour = now.getHours();
-        const todayStr = now.toISOString().split('T')[0];
-        const targetHour = currentHour + 1;
-        const targetHourFormatted = targetHour.toString().padStart(2, '0');
-        const displayHour = targetHour % 12 || 12;
-        const displayAmPm = targetHour >= 12 ? 'PM' : 'AM';
-        
-        console.log(`⏰ [${now.toLocaleTimeString()}] Checking for tasks due at hour ${displayHour}:00 ${displayAmPm}`);
-        
-        const result = await connection.execute(
-            `SELECT u.user_id, u.email, u.full_name, t.task_id, t.task_text, t.task_date, t.task_time, t.task_type, t.is_completed
-             FROM USERS u JOIN TASKS t ON u.user_id = t.user_id
-             WHERE u.is_verified = 1 AND t.is_completed = 0 AND t.task_date = TO_DATE(:today, 'YYYY-MM-DD')
-             AND SUBSTR(t.task_time, 1, 2) = :targetHour
-             AND NOT EXISTS (SELECT 1 FROM TASK_REMINDER_LOG l WHERE l.task_id = t.task_id AND l.user_id = u.user_id
-             AND l.reminder_type = 'HOURLY' AND l.reminder_date = TO_DATE(:today, 'YYYY-MM-DD'))`,
-            { today: todayStr, targetHour: targetHourFormatted }
-        );
-        
-        if (result.rows.length > 0) {
-            console.log(`📊 Found ${result.rows.length} task(s):`);
-            for (const row of result.rows) console.log(`   📋 ${row.TASK_TEXT} at ${formatTime12h(row.TASK_TIME)}`);
-            
-            const userTasks = {};
-            for (const row of result.rows) {
-                if (!userTasks[row.USER_ID]) userTasks[row.USER_ID] = { email: row.EMAIL, name: row.FULL_NAME || row.EMAIL.split('@')[0], tasks: [] };
-                userTasks[row.USER_ID].tasks.push(row);
-            }
-            
-            for (const userId in userTasks) {
-                const user = userTasks[userId];
-                await sendTaskReminderEmail(user.email, user.name, user.tasks, 'HOURLY', `⏰ Task Reminder - Due in 1 hour!`);
-                for (const task of user.tasks) await logReminderSent(connection, task.TASK_ID, userId, 'HOURLY', todayStr);
-            }
-        }
-    } catch (err) { console.error('Error sending hourly reminders:', err); }
-    finally { if (connection) await connection.close(); }
-};
-
-module.exports = { sendWeeklyTaskSummary, sendDailyTaskSummary, sendHourlyTaskReminders };
+module.exports = { sendWeeklyTaskSummary, sendDailyTaskSummary };

@@ -6,7 +6,6 @@ import workAnim from "../assets/animation/Man Working on Laptop in Office.json";
 import { usePreferences } from "../preferences/usePreferences";
 import { ageFromDOB, segmentFromAge } from "../preferences/segment";
 import { Field, Input, Select, Button, Badge, Pill, useToast } from "../components/ui";
-import PalettePicker from "../components/dashboard/PalettePicker";
 import FontSelector from "../components/dashboard/FontSelector";
 
 const PROFESSION_OPTIONS = [
@@ -37,7 +36,7 @@ const STEP_META = [
   { title: "Tell us about you", sub: "A few details to personalize your experience." },
   { title: "What's your world?", sub: "We'll tune FocusFlow to how you work." },
   { title: "Name your workspace", sub: "Give your dashboard an identity." },
-  { title: "Make it beautiful", sub: "Pick a palette and a font you love." },
+  { title: "Make it yours", sub: "Pick a font you love." },
   { title: "You're ready", sub: "Everything's set — time to focus." },
 ];
 
@@ -190,10 +189,6 @@ export default function OnboardingPage() {
 
     // 4 — Personalize
     <div key="personalize" className="flex flex-col gap-6">
-      <div>
-        <p className="text-sm font-bold text-ink mb-2">Color palette</p>
-        <PalettePicker />
-      </div>
       <div>
         <p className="text-sm font-bold text-ink mb-2">Font</p>
         <FontSelector />

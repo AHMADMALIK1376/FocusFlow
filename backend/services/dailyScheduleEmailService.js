@@ -125,19 +125,20 @@ const sendAllDailySchedules = async () => {
         console.log(`📊 Found ${usersResult.rows.length} verified users`);
         
         for (const user of usersResult.rows) {
-            // Get today's classes for this user
+            // Get today's classes for this user, from the subject schedule.
+            // Aliased to SUBJECT_NAME/ROOM_NUMBER so the email template is unchanged.
             const classesResult = await connection.execute(
-                `SELECT 
-                    ce.subject_name,
-                    ce.start_time,
-                    ce.end_time,
-                    ce.room_number
-                 FROM CALENDAR_ENTRIES ce
-                 JOIN CALENDAR_LIST cl ON ce.calendar_id = cl.calendar_id
-                 JOIN CALENDAR_ENTRY_DAYS ced ON ce.entry_id = ced.entry_id
-                 WHERE cl.user_id = :userId
-                 AND (ced.day_of_week = :todayDay OR ced.day_of_week = :todayShort)
-                 ORDER BY ce.start_time ASC`,
+                `SELECT
+                    s.name AS subject_name,
+                    ss.start_time,
+                    ss.end_time,
+                    ss.room AS room_number
+                 FROM SUBJECT_SCHEDULE ss
+                 JOIN SUBJECTS s ON s.subject_id = ss.subject_id
+                 WHERE s.user_id = :userId
+                   AND s.is_archived = 0
+                   AND (ss.day_of_week = :todayDay OR ss.day_of_week = :todayShort)
+                 ORDER BY ss.start_time ASC`,
                 { userId: user.USER_ID, todayDay: todayDay, todayShort: todayShort }
             );
             

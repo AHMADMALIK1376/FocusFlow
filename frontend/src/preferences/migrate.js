@@ -79,7 +79,6 @@ export function migratePreferences(stored) {
     id,
     name: oldProfile.university || 'My Dashboard',
     fontFamily: 'poppins',
-    palette: { scheme: 'indigo', customAccent: null },
     widgets: {
       order: oldDashboard.order || [...DEFAULT_WIDGET_ORDER],
       enabled: { ...DEFAULT_WIDGET_ENABLED, ...(oldDashboard.enabled || {}) },

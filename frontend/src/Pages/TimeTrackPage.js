@@ -5,7 +5,6 @@ import { EmptyState } from "../components/ui";
 import { PageShell, PageHeader, StatTile, Panel } from "../components/dashboard/DashKit";
 import ChartBox from "../components/charts/ChartBox";
 import { chartColors, hexToRgba, CHART_TOOLTIP } from "../components/charts/chartColors";
-import { usePreferences } from "../preferences/usePreferences";
 import { useTimetrack } from "../features/timetrack/useTimetrack";
 import { totalSeconds, totalsByLabel, formatHMS } from "../features/timetrack/timetrackLogic";
 
@@ -14,8 +13,7 @@ const hoursLabel = (secs) => `${(secs / 3600).toFixed(1)}h`;
 
 export default function TimeTrackPage() {
   const { state, start, stop, removeEntry } = useTimetrack();
-  const { activeDashboard } = usePreferences();
-  const { brand } = chartColors(activeDashboard?.palette);
+  const { brand } = chartColors();
 
   const [label, setLabel] = useState("");
   const [elapsed, setElapsed] = useState(0);

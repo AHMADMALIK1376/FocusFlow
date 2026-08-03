@@ -5,7 +5,6 @@ import { Button, Input, EmptyState } from "../components/ui";
 import { PageShell, PageHeader, StatTile, Panel } from "../components/dashboard/DashKit";
 import ChartBox from "../components/charts/ChartBox";
 import { chartColors, hexToRgba, CHART_TOOLTIP } from "../components/charts/chartColors";
-import { usePreferences } from "../preferences/usePreferences";
 import { useHabits } from "../features/habits/useHabits";
 import { streakFor, weekGrid } from "../features/habits/habitsLogic";
 
@@ -21,8 +20,7 @@ function getWeekStart() {
 
 export default function HabitsPage() {
   const { state, addHabit: apiAddHabit, renameHabit, removeHabit, toggleDay } = useHabits();
-  const { activeDashboard } = usePreferences();
-  const { brand } = chartColors(activeDashboard?.palette);
+  const { brand } = chartColors();
 
   const [newName, setNewName] = useState("");
   const [newColor, setNewColor] = useState("brand");
