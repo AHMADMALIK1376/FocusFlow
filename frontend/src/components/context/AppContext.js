@@ -1,8 +1,21 @@
 // src/components/context/AppContext.js
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { taskAPI, routineAPI, dashboardAPI, focusAPI, attendanceAPI, getToken } from "../../services/api";
+import { assignmentAPI, routineAPI, dashboardAPI, focusAPI, subjectAttendanceAPI, getToken } from "../../services/api";
 
 const AppContext = createContext();
+
+// Assignments replaced the old TASKS table. Dashboard widgets (GoalCard,
+// UniCalendar, TaskScheduleCard) still speak the old task shape, so map to it
+// here rather than touching each widget. Assignments have no due *time*.
+const assignmentToTask = (a) => ({
+  id: a.id,
+  text: a.title,
+  title: a.title,
+  date: a.dueDate,
+  time: null,
+  type: a.subjectName || "General",
+  completed: a.columnId === "col-done",
+});
 
 export const AppProvider = ({ children }) => {
   // ── Timer state ──────────────────────────────────────────────────
@@ -21,7 +34,8 @@ export const AppProvider = ({ children }) => {
   const [pendingRoutineCount, setPendingRoutineCount] = useState(0);
   const [totalFocusSessions, setTotalFocusSessions] = useState(0);
   const [todaysClasses, setTodaysClassesState] = useState([]);
-  const [attendanceSummary, setAttendanceSummary] = useState([]);
+  // Shape: { subjects: [...], overallPercentage, subjectsAtRisk, atRiskBelow }
+  const [attendanceSummary, setAttendanceSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [dataLoaded, setDataLoaded] = useState(false);
 
@@ -42,14 +56,14 @@ export const AppProvider = ({ children }) => {
       
       // Fetch ALL data in parallel with Promise.all
       const [
-        fetchedTasks,
+        fetchedAssignments,
         fetchedRoutines,
         dashboardComplete,
         focusSessions,
         attendance
       ] = await Promise.all([
-        taskAPI.getAll().catch(err => {
-          console.error('Tasks fetch error:', err);
+        assignmentAPI.getAll().catch(err => {
+          console.error('Assignments fetch error:', err);
           return [];
         }),
         routineAPI.getAll().catch(err => {
@@ -64,13 +78,14 @@ export const AppProvider = ({ children }) => {
           console.error('Focus sessions error:', err);
           return [];
         }),
-        attendanceAPI.getSummary().catch(err => {
-          console.error('Attendance summary error:', err);
-          return [];
+        subjectAttendanceAPI.getOverview().catch(err => {
+          console.error('Attendance overview error:', err);
+          return null;
         })
       ]);
-      
+
       // Update all states
+      const fetchedTasks = (fetchedAssignments || []).map(assignmentToTask);
       setTasksState(fetchedTasks);
       setTimetableState(fetchedRoutines);
       
@@ -92,10 +107,10 @@ export const AppProvider = ({ children }) => {
       
       setDataLoaded(true);
       console.log('✅ All data loaded successfully');
-      console.log(`   Tasks: ${fetchedTasks.length}`);
+      console.log(`   Assignments: ${fetchedTasks.length}`);
       console.log(`   Routines: ${fetchedRoutines.length}`);
       console.log(`   Focus Sessions: ${focusSessions.length}`);
-      console.log(`   Attendance Subjects: ${attendance.length}`);
+      console.log(`   Attendance Subjects: ${attendance?.subjects?.length ?? 0}`);
       
     } catch (error) {
       console.error('Failed to load data:', error);

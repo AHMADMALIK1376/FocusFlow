@@ -241,11 +241,6 @@ describe('makeDashboard — defaults', () => {
     expect(d.fontFamily).toBe('poppins');
   });
 
-  it('returns a dashboard with the correct palette default', () => {
-    const d = makeDashboard('Test');
-    expect(d.palette).toEqual({ scheme: 'indigo', customAccent: null, custom: null });
-  });
-
   it('widget.order is a copy of DEFAULT_WIDGET_ORDER (not the same reference)', () => {
     const d = makeDashboard('Test');
     expect(d.widgets.order).toEqual(DEFAULT_WIDGET_ORDER);

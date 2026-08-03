@@ -5,14 +5,12 @@ import { Button, Input, EmptyState, ProgressRing, Checkbox, DeleteButton } from 
 import { PageShell, PageHeader, StatTile, Panel } from "../components/dashboard/DashKit";
 import ChartBox from "../components/charts/ChartBox";
 import { chartColors, hexToRgba, CHART_TOOLTIP } from "../components/charts/chartColors";
-import { usePreferences } from "../preferences/usePreferences";
 import { useGoals } from "../features/goalsx/useGoals";
 import { goalProgress, overallProgress } from "../features/goalsx/goalsLogic";
 
 export default function GoalsPage() {
   const { goals, createGoal, removeGoal, createMilestone, toggleMilestone, removeMilestone } = useGoals();
-  const { activeDashboard } = usePreferences();
-  const { brand } = chartColors(activeDashboard?.palette);
+  const { brand } = chartColors();
 
   const [selectedId, setSelectedId] = useState(null);
   const [newGoalTitle, setNewGoalTitle] = useState("");

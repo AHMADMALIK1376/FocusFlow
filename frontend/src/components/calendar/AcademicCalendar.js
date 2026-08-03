@@ -30,38 +30,22 @@ export default function AcademicCalendar() {
       setClassDetails([]);
     }
 
-    if (attendanceSummary && attendanceSummary.length > 0) {
-      setAttendanceData(attendanceSummary);
+    // attendanceSummary is the /subject-attendance/overview payload: the server
+    // already pools the percentages, so we only tally the safe-subject count.
+    const subjects = attendanceSummary?.subjects || [];
+    if (subjects.length > 0) {
+      setAttendanceData(subjects);
 
-      const totalSubjects = attendanceSummary.length;
-      let totalEarned = 0;
-      let totalPossible = 0;
-      let subjectsAtRisk = 0;
-      let subjectsSafe = 0;
-      let overallPercentageSum = 0;
-
-      attendanceSummary.forEach(subject => {
-        const percentage = subject.percentage || 0;
-        overallPercentageSum += percentage;
-
-        totalEarned += subject.totalPointsEarned || 0;
-        totalPossible += subject.totalPointsPossible || 0;
-
-        if (percentage < 60) {
-          subjectsAtRisk++;
-        } else if (percentage >= 75) {
-          subjectsSafe++;
-        }
-      });
-
-      const overallPercentage = totalSubjects > 0 ? overallPercentageSum / totalSubjects : 0;
+      const subjectsSafe = subjects.filter((s) => (s.percentage ?? 0) >= 75).length;
+      const attended = subjects.reduce((n, s) => n + (s.present || 0) + (s.late || 0), 0);
+      const counted = subjects.reduce((n, s) => n + (s.present || 0) + (s.late || 0) + (s.absent || 0), 0);
 
       setAttendanceStats({
-        overallPercentage: overallPercentage,
-        subjectsAtRisk: subjectsAtRisk,
-        totalSubjects: totalSubjects,
-        totalEarned: totalEarned,
-        totalPossible: totalPossible,
+        overallPercentage: attendanceSummary.overallPercentage || 0,
+        subjectsAtRisk: attendanceSummary.subjectsAtRisk || 0,
+        totalSubjects: subjects.length,
+        totalEarned: attended,
+        totalPossible: counted,
         subjectsSafe: subjectsSafe
       });
     }

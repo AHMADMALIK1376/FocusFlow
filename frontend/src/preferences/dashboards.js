@@ -16,10 +16,6 @@ export const DEFAULT_WIDGET_ORDER = [
   'kanban',
   'timetrack',
   'finance',
-  'shopping',
-  'mood',
-  'eventsx',
-  'contacts',
 ];
 
 export const DEFAULT_WIDGET_ENABLED = {
@@ -28,8 +24,6 @@ export const DEFAULT_WIDGET_ENABLED = {
   dailyTimetable: true,
   academic: true,
   focus: true,
-  tasks: false,
-  attendance: false,
   metrics: true,
   taskSchedule: false,
   progressRing: false,
@@ -41,10 +35,6 @@ export const DEFAULT_WIDGET_ENABLED = {
   kanban: false,
   timetrack: false,
   finance: false,
-  shopping: false,
-  mood: false,
-  eventsx: false,
-  contacts: false,
 };
 
 /**
@@ -62,11 +52,6 @@ export function makeDashboard(name = 'My Dashboard') {
     id: makeId(),
     name,
     fontFamily: 'poppins',
-    palette: {
-      scheme: 'indigo',
-      customAccent: null,
-      custom: null,
-    },
     widgets: {
       order: [...DEFAULT_WIDGET_ORDER],
       enabled: { ...DEFAULT_WIDGET_ENABLED },

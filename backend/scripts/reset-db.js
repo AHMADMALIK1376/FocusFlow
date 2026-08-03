@@ -4,10 +4,19 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 const { Client } = require('pg');
 
+// Explicit list (not just relying on TRUNCATE...CASCADE from `users`) so this
+// stays correct even if a table's FK ever loses ON DELETE CASCADE.
 const TABLES = [
-  'users', 'user_stats', 'calendar_list', 'calendar_entries', 'calendar_entry_days',
+  'users', 'user_stats',
+  // Legacy core
+  'calendar_list', 'calendar_entries', 'calendar_entry_days',
   'tasks', 'daily_routine', 'routine_repeat_days', 'routine_completions',
   'focus_sessions', 'attendance_records', 'attendance_summary', 'task_reminder_log',
+  // Student-pivot tables
+  'subjects', 'subject_schedule', 'subject_attendance', 'assignments',
+  'grades', 'exams_deadlines', 'notes', 'goals', 'goal_milestones',
+  'budget_entries', 'budget_settings', 'flashcard_decks', 'flashcards',
+  'habits', 'habit_log', 'study_hours',
 ];
 
 (async () => {

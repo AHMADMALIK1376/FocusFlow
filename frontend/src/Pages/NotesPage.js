@@ -5,7 +5,6 @@ import { Button, Input, Textarea, EmptyState, DeleteButton } from "../components
 import { PageShell, PageHeader, StatTile, Panel } from "../components/dashboard/DashKit";
 import ChartBox from "../components/charts/ChartBox";
 import { chartColors, hexToRgba, CHART_TOOLTIP } from "../components/charts/chartColors";
-import { usePreferences } from "../preferences/usePreferences";
 import { useNotes } from "../features/notes/useNotes";
 import { renderInline } from "../features/notes/notesLogic";
 
@@ -13,8 +12,7 @@ const wordCount = (s) => (s ? s.trim().split(/\s+/).filter(Boolean).length : 0);
 
 export default function NotesPage() {
   const { notes, create, update, remove } = useNotes();
-  const { activeDashboard } = usePreferences();
-  const { brand } = chartColors(activeDashboard?.palette);
+  const { brand } = chartColors();
 
   const [selectedId, setSelectedId] = useState(null);
   const [editing, setEditing] = useState(false);

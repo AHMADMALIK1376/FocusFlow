@@ -7,8 +7,6 @@ export const NAV_ITEMS = [
   { id: 'flashcards', path: '/flashcards', labelKey: 'nav.flashcards', icon: '🃏' },
   { id: 'deepwork', path: '/focus-mode', labelKey: 'nav.deepWork', icon: '⚡' },
   { id: 'routine', path: '/routine', labelKey: 'nav.routine', icon: '🕒' },
-  { id: 'tasks', path: '/tasks', labelKey: 'nav.tasks', icon: '🔥' },
-  { id: 'timetable', path: '/academic', labelKey: 'nav.timetable', icon: '📅' },
   { id: 'attendance', path: '/attendance', labelKey: 'nav.attendance', icon: '📊' },
   // New feature routes
   { id: 'notes', path: '/notes', labelKey: 'nav.notes', icon: '📝' },

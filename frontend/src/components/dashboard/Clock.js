@@ -3,7 +3,6 @@
 // time passes. Rows = Hours / Minutes / Seconds. Recoloured to the brand theme
 // (Indigo Night panel, Wisteria / Mint / Peach tiles) + live date & temperature.
 import React, { useState, useEffect } from "react";
-import { usePreferences } from "../../preferences/usePreferences";
 import { chartColors } from "../charts/chartColors";
 
 const COLS = 6;
@@ -62,8 +61,7 @@ function Tile({ active, color, delay }) {
 export default function Clock() {
   const [time, setTime] = useState(new Date());
   const [weather, setWeather] = useState(null);
-  const { activeDashboard } = usePreferences();
-  const { accent } = chartColors(activeDashboard?.palette);
+  const { accent } = chartColors();
 
   useEffect(() => {
     const t = setInterval(() => setTime(new Date()), 1000);

@@ -1,19 +1,12 @@
-// Shared chart colour helpers — derive concrete hex/rgba from the active palette
-// so recharts (which can't resolve CSS vars in SVG fills) stays theme-aware.
+// Shared chart colour helpers — concrete hex/rgba for the fixed brand palette
+// (recharts/SVG fills can't resolve CSS custom properties), matching
+// design/tokens.css's --brand / --brand-soft.
 
-const SCHEME_HEX = {
-  indigo: "#2D4759",
-  wisteria: "#8A6ED6",
-  purple: "#6c5ce7",
-  forest: "#2EA06E",
-  coral: "#E05A5A",
-};
+const BRAND_HEX = "#6F3FE0";
+const ACCENT_HEX = "#E070BF";
 
-export function chartColors(palette = {}) {
-  return {
-    brand: palette?.custom?.brand || SCHEME_HEX[palette?.scheme] || "#2D4759",
-    accent: palette?.custom?.accent || "#D6C6F7",
-  };
+export function chartColors() {
+  return { brand: BRAND_HEX, accent: ACCENT_HEX };
 }
 
 export function hexToRgba(hex, a = 1) {

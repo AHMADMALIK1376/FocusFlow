@@ -113,110 +113,6 @@ export const authAPI = {
 };
 
 // ==============================================
-// TASK APIs
-// ==============================================
-export const taskAPI = {
-    getAll: async () => {
-        return authFetch('/tasks');
-    },
-    
-    create: async (taskData) => {
-        return authFetch('/tasks', {
-            method: 'POST',
-            body: JSON.stringify(taskData)
-        });
-    },
-    
-    toggleComplete: async (taskId) => {
-        return authFetch(`/tasks/${taskId}/complete`, {
-            method: 'PUT'
-        });
-    },
-    
-    delete: async (taskId) => {
-        return authFetch(`/tasks/${taskId}`, {
-            method: 'DELETE'
-        });
-    },
-    
-    deleteAll: async () => {
-        return authFetch('/tasks', {
-            method: 'DELETE'
-        });
-    },
-    
-    deleteByType: async (type, completed) => {
-        const url = `/tasks/type/${type}${completed !== undefined ? `?completed=${completed}` : ''}`;
-        return authFetch(url, { method: 'DELETE' });
-    }
-};
-
-// ==============================================
-// CALENDAR APIs
-// ==============================================
-export const calendarAPI = {
-    getAll: async () => {
-        return authFetch('/calendars');
-    },
-    
-    create: async (title, semesterStart, semesterEnd, semesterName) => {
-        return authFetch('/calendars', {
-            method: 'POST',
-            body: JSON.stringify({ title, semesterStart, semesterEnd, semesterName })
-        });
-    },
-    
-    update: async (calendarId, title, semesterStart, semesterEnd, semesterName) => {
-        return authFetch(`/calendars/${calendarId}`, {
-            method: 'PUT',
-            body: JSON.stringify({ title, semesterStart, semesterEnd, semesterName })
-        });
-    },
-    
-    setActive: async (calendarId) => {
-        return authFetch(`/calendars/${calendarId}/activate`, {
-            method: 'PUT'
-        });
-    },
-    
-    delete: async (calendarId) => {
-        return authFetch(`/calendars/${calendarId}`, {
-            method: 'DELETE'
-        });
-    },
-    
-    getEntries: async (calendarId) => {
-        return authFetch(`/calendars/${calendarId}/entries`);
-    },
-    
-    addEntry: async (calendarId, entryData) => {
-        return authFetch(`/calendars/${calendarId}/entries`, {
-            method: 'POST',
-            body: JSON.stringify(entryData)
-        });
-    },
-    
-    updateEntry: async (entryId, entryData) => {
-        return authFetch(`/calendars/entries/${entryId}`, {
-            method: 'PUT',
-            body: JSON.stringify(entryData)
-        });
-    },
-    
-    deleteEntry: async (entryId) => {
-        return authFetch(`/calendars/entries/${entryId}`, {
-            method: 'DELETE'
-        });
-    },
-    
-    toggleEntryDone: async (entryId) => {
-        return authFetch(`/calendars/entries/${entryId}/toggle-done`, {
-            method: 'PUT'
-        });
-    }
-};
-
-// ==============================================
 // SUBJECT APIs
 // ==============================================
 export const subjectAPI = {
@@ -304,6 +200,8 @@ export const flashcardAPI = {
 // ==============================================
 export const subjectAttendanceAPI = {
     getAllForUser: async () => authFetch('/subject-attendance/all'),
+    // Per-subject percentages + overall figure, for the dashboard.
+    getOverview: async () => authFetch('/subject-attendance/overview'),
     getForSubject: async (subjectId) => authFetch(`/subject-attendance/subjects/${subjectId}`),
     mark: async (subjectId, data) => authFetch(`/subject-attendance/subjects/${subjectId}`, { method: 'POST', body: JSON.stringify(data) }),
     removeRecord: async (recordId) => authFetch(`/subject-attendance/records/${recordId}`, { method: 'DELETE' }),
@@ -413,59 +311,16 @@ export const focusAPI = {
 };
 
 // ==============================================
-// DASHBOARD APIs - UPDATED WITH COMBINED ENDPOINT
+// DASHBOARD APIs
 // ==============================================
 export const dashboardAPI = {
-    // NEW: Combined endpoint - ONE CALL instead of multiple!
-    // This reduces rate limiting by 90%+
+    // Combined endpoint - ONE CALL instead of multiple.
     getComplete: async () => {
         return authFetch('/dashboard/complete');
     },
-    
-    // Quick stats for navbar (lightweight)
-    getQuick: async () => {
-        return authFetch('/dashboard/quick');
-    },
-    
-    // Legacy endpoints (kept for backward compatibility)
-    getSummary: async () => {
-        return authFetch('/dashboard/summary');
-    },
-    
+
     getStats: async () => {
         return authFetch('/dashboard/stats');
-    }
-};
-
-// ATTENDANCE APIs
-export const attendanceAPI = {
-    getDashboard: async () => {
-        return authFetch('/attendance/dashboard');
-    },
-    
-    getSummary: async () => {
-        return authFetch('/attendance/summary');
-    },
-    
-    getRecords: async (entryId) => {
-        return authFetch(`/attendance/records/${entryId}`);
-    },
-    
-    getTrend: async (entryId) => {
-        return authFetch(`/attendance/trend/${entryId}`);
-    },
-    
-    updateAttendance: async (entryId, classDate, status, pointsEarned, remarks) => {
-        return authFetch(`/attendance/${entryId}/${classDate}`, {
-            method: 'PUT',
-            body: JSON.stringify({ status, pointsEarned, remarks: remarks || '' })
-        });
-    },
-    
-    generateSessions: async (entryId) => {
-        return authFetch(`/attendance/generate/${entryId}`, {
-            method: 'POST'
-        });
     }
 };
 

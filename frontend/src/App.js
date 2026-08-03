@@ -42,14 +42,10 @@ import ResetPassword from "./components/auth/ResetPassword";
 // PROTECTED PAGES (Lazy loaded - only after login)
 // ==============================================
 const Home = lazy(() => import("./Pages/Home"));
-const TaskManager = lazy(() => import("./components/tasks/TaskManager"));
-const TimelinePage = lazy(() => import("./Pages/TimelinePage"));
 const TimetablePage = lazy(() => import("./Pages/DailyRoutine"));
 const RoutineView = lazy(() => import("./components/routine/RoutineView"));
 const FocusModePage = lazy(() => import("./Pages/FocusModePage"));
-const AcademicCalendarPage = lazy(() => import("./Pages/AcademicCalendarPage"));
-const AcademicCalendarViewPage = lazy(() => import("./Pages/AcademicCalendarViewPage"));
-const AttendanceTracker = lazy(() => import("./components/attendance/AttendanceTracker"));
+const AttendanceSkylinePage = lazy(() => import("./Pages/AttendanceSkylinePage"));
 const OnboardingPage = lazy(() => import("./Pages/OnboardingPage"));
 const SettingsPage = lazy(() => import("./Pages/SettingsPage"));
 
@@ -154,13 +150,9 @@ function App() {
                       >
                         <Route path="/dashboard" element={<Home />} />
                         <Route path="/focus-mode" element={<FocusModePage />} />
-                        <Route path="/tasks" element={<TaskManager />} />
-                        <Route path="/timeline" element={<TimelinePage />} />
                         <Route path="/routine" element={<TimetablePage />} />
                         <Route path="/routine/view" element={<RoutineView />} />
-                        <Route path="/academic" element={<AcademicCalendarPage />} />
-                        <Route path="/academic/view" element={<AcademicCalendarViewPage />} />
-                        <Route path="/attendance" element={<AttendanceTracker />} />
+                        <Route path="/attendance" element={<AttendanceSkylinePage />} />
                         <Route path="/settings" element={<SettingsPage />} />
                         {/* 10 new feature routes */}
                         <Route path="/notes" element={<NotesPage />} />

@@ -10,7 +10,7 @@ import DashboardSwitcher from '../dashboard/DashboardSwitcher';
 import { cx } from '../ui/cx';
 import storage from '../../storage/storageAdapter';
 
-const MAIN_IDS = ['dashboard', 'deepwork', 'routine', 'tasks', 'timetable', 'attendance'];
+const MAIN_IDS = ['dashboard', 'deepwork', 'routine', 'attendance'];
 
 export default function Sidebar() {
   const navigate = useNavigate();

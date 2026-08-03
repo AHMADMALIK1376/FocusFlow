@@ -9,7 +9,6 @@ import {
   Button,
   LanguageSelect,
 } from "../components/ui";
-import PalettePicker from "../components/dashboard/PalettePicker";
 import FontSelector from "../components/dashboard/FontSelector";
 import WidgetManager from "../components/dashboard/WidgetManager";
 import DashboardSwitcher from "../components/dashboard/DashboardSwitcher";
@@ -57,13 +56,8 @@ export default function SettingsPage() {
       {/* ── Appearance ───────────────────────────────────────────── */}
       <Section
         title={t("settings.appearance", "Appearance")}
-        subtitle="Pick a colour combination and font. Changes apply instantly across the whole app."
+        subtitle="Pick a font. Changes apply instantly across the whole app."
       >
-        <div className="mb-6">
-          <p className="text-sm font-bold text-ink mb-3">{t("settings.colorScheme", "Colour combination")}</p>
-          <PalettePicker />
-        </div>
-
         <div className="mb-6">
           <FontSelector />
         </div>

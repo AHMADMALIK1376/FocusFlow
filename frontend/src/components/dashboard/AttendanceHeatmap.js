@@ -3,6 +3,7 @@
 // Intensity is driven by how many classes were attended that day (like commit
 // count on GitHub) — 0 attended renders blank, more attended is darker.
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { ChevronDown } from "lucide-react";
 import { subjectAttendanceAPI } from "../../services/api";
 
@@ -41,13 +42,40 @@ function formatDate(d) {
   return d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", year: "numeric" });
 }
 
+// ── Two counter-travelling swells ───────────────────────────────────────────
+// Every cell runs the same keyframe; only its PHASE differs, which is what makes
+// a wave read as travelling rather than blinking. One animation per element can
+// only carry one phase, so each cell paints two stacked layers (::before and
+// ::after) — wave A rolling left → right, wave B rolling back right → left.
+//
+// A NEGATIVE animation-delay starts a layer mid-cycle, so swells are already on
+// screen at load instead of ramping in from an empty grid. Larger advance =
+// further through the cycle = peaks sooner.
+const WAVE_DURATION = 7;      // seconds for one full pass
+const WAVE_COL_STEP = 0.105;  // → ~67 columns per cycle: one lone swell, big gap behind it
+const WAVE_ROW_STEP = 0.1;    // per-row phase → leans the crest into a diagonal
+const WAVE_B_OFFSET = 3.5;    // half a cycle — starts the two swells far apart
+
+// Wave A — cells further RIGHT peak LATER, so the crest rolls left → right.
+function delayA(w, d, cols) {
+  return `${(-((cols - w) * WAVE_COL_STEP + d * WAVE_ROW_STEP)).toFixed(3)}s`;
+}
+
+// Wave B — cells further RIGHT peak SOONER, so this crest travels back
+// right → left, toward wave A.
+function delayB(w, d) {
+  return `${(-(w * WAVE_COL_STEP + d * WAVE_ROW_STEP + WAVE_B_OFFSET)).toFixed(3)}s`;
+}
+
 export default function AttendanceHeatmap() {
   const [byDate, setByDate] = useState({});
   const [year, setYear] = useState(() => new Date().getFullYear());
   const [hover, setHover] = useState(null);
   const [yearOpen, setYearOpen] = useState(false);
+  const [revealed, setRevealed] = useState(false);
   const scrollRef = useRef(null);
   const yearRef = useRef(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     function onClickOutside(e) {
@@ -123,7 +151,7 @@ export default function AttendanceHeatmap() {
     <div>
       <div className="flex items-center justify-between mb-2">
         <p className="text-xs text-muted font-medium">
-          {!hasAnyRecords && "Mark attendance on a subject page to see it here"}
+          {!revealed ? "Hover to reveal your attendance" : (hasAnyRecords ? "Click to open the 3D skyline" : "Mark attendance on a subject page to see it here")}
         </p>
         <div className="relative" ref={yearRef}>
           <button
@@ -153,7 +181,19 @@ export default function AttendanceHeatmap() {
         </div>
       </div>
 
-      <div ref={scrollRef} className="attendance-scroll overflow-x-auto pb-1">
+      {/* The grid area doubles as the link to the 3D view. The year dropdown sits
+          in the header above, so it never competes with this click target. */}
+      <div
+        ref={scrollRef}
+        role="link"
+        tabIndex={0}
+        aria-label="Open the 3D attendance skyline"
+        onClick={() => navigate("/attendance")}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); navigate("/attendance"); } }}
+        className="attendance-scroll overflow-x-auto pb-1 cursor-pointer rounded-token-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
+        onMouseEnter={() => setRevealed(true)}
+        onMouseLeave={() => { setRevealed(false); setHover(null); }}
+      >
         {/* Month labels */}
         <div className="relative h-4 mb-1" style={{ marginLeft: CELL_PX + 8, width: weeks.length * (CELL_PX + GAP_PX) }}>
           {monthLabels.map(({ week, label }) => (
@@ -181,12 +221,15 @@ export default function AttendanceHeatmap() {
           <div className="flex" style={{ gap: GAP_PX }}>
             {weeks.map((col, w) => (
               <div key={w} className="flex flex-col" style={{ gap: GAP_PX }}>
-                {col.map((cell) => (
+                {col.map((cell, d) => (
                   <div
                     key={cell.key}
-                    onMouseEnter={cell.inYear ? (e) => onEnter(e, cell) : undefined}
-                    onMouseLeave={cell.inYear ? onLeave : undefined}
-                    className={`${CELL} rounded-sm transition-colors duration-150 ${cell.inYear ? intensityClass(cell.level) : "invisible"}`}
+                    onMouseEnter={revealed && cell.inYear ? (e) => onEnter(e, cell) : undefined}
+                    onMouseLeave={revealed && cell.inYear ? onLeave : undefined}
+                    className={`${CELL} rounded-sm transition-colors duration-150 ${
+                      !cell.inYear ? "invisible" : revealed ? intensityClass(cell.level) : "ff-wave-cell"
+                    }`}
+                    style={!revealed && cell.inYear ? { "--wa": delayA(w, d, weeks.length), "--wb": delayB(w, d) } : undefined}
                   />
                 ))}
               </div>
@@ -221,6 +264,40 @@ export default function AttendanceHeatmap() {
         .attendance-scroll::-webkit-scrollbar-thumb { background-color: transparent; border-radius: 4px; transition: background-color 0.3s ease; }
         .attendance-scroll:hover::-webkit-scrollbar-thumb { background-color: rgb(var(--ink) / 0.25); }
         .attendance-scroll:hover { scrollbar-color: rgb(var(--ink) / 0.25) transparent; }
+        /* The cell itself stays dim so the grid is always readable; the two swell
+           layers ride on top of it. Each is a BIG wave — bright across ~30% of the
+           cycle (~20 columns wide) with the other ~70% (~47 columns) empty behind
+           it, so a swell crosses alone with a long gap before the next.
+           Timing is linear on purpose — an eased curve would make the crest speed
+           up and slow down within each cycle and the wave would read as pulsing
+           rather than travelling. The wave shape lives in the keyframe stops. */
+        .ff-wave-cell { position: relative; background-color: rgb(var(--ink) / 0.06); }
+        .ff-wave-cell::before,
+        .ff-wave-cell::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          border-radius: inherit;
+          background-color: rgb(var(--brand));
+          opacity: 0;
+          animation: ff-swell ${WAVE_DURATION}s linear infinite;
+        }
+        .ff-wave-cell::before { animation-delay: var(--wa); }
+        .ff-wave-cell::after  { animation-delay: var(--wb); }
+        @keyframes ff-swell {
+          0%   { opacity: 0;    transform: translateY(0)      scale(0.88); }
+          35%  { opacity: 0.10; transform: translateY(-0.3px) scale(0.96); }
+          42%  { opacity: 0.38; transform: translateY(-1.3px) scale(1.07); }
+          48%  { opacity: 0.75; transform: translateY(-2.5px) scale(1.17); }
+          50%  { opacity: 0.95; transform: translateY(-3px)   scale(1.21); }
+          52%  { opacity: 0.75; transform: translateY(-2.5px) scale(1.17); }
+          58%  { opacity: 0.38; transform: translateY(-1.3px) scale(1.07); }
+          65%  { opacity: 0.10; transform: translateY(-0.3px) scale(0.96); }
+          100% { opacity: 0;    transform: translateY(0)      scale(0.88); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .ff-wave-cell::before, .ff-wave-cell::after { animation: none; opacity: 0.22; }
+        }
       `}</style>
     </div>
   );

@@ -45,23 +45,24 @@ const sendClassReminders = async () => {
         
         console.log(`🔍 Checking for classes at ${displayTime} (1 hour from now)`);
         
-        // Get ALL classes for today (no date filtering in SQL to avoid errors)
+        // Get ALL classes for today (no date filtering in SQL to avoid errors).
+        // Aliased to the old column names so the filtering/email code below is unchanged.
         const result = await connection.execute(
-            `SELECT 
-                ce.entry_id,
-                ce.subject_name,
-                ce.start_time,
-                ce.end_time,
-                ce.room_number,
-                ced.day_of_week,
+            `SELECT
+                ss.schedule_id AS entry_id,
+                s.name AS subject_name,
+                ss.start_time,
+                ss.end_time,
+                ss.room AS room_number,
+                ss.day_of_week,
                 u.user_id,
                 u.email,
                 u.full_name
-             FROM CALENDAR_ENTRIES ce
-             JOIN CALENDAR_LIST cl ON ce.calendar_id = cl.calendar_id
-             JOIN USERS u ON cl.user_id = u.user_id
-             JOIN CALENDAR_ENTRY_DAYS ced ON ce.entry_id = ced.entry_id
-             WHERE (ced.day_of_week = :todayDay OR ced.day_of_week = :todayShort)`,
+             FROM SUBJECT_SCHEDULE ss
+             JOIN SUBJECTS s ON s.subject_id = ss.subject_id
+             JOIN USERS u ON s.user_id = u.user_id
+             WHERE s.is_archived = 0
+               AND (ss.day_of_week = :todayDay OR ss.day_of_week = :todayShort)`,
             { todayDay, todayShort }
         );
         

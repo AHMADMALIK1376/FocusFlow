@@ -8,23 +8,18 @@ const cron = require('node-cron');
 const { initialize, healthCheck: dbHealthCheck, getPoolStats, closePool } = require('./config/database');
 const { startReminderScheduler } = require('./services/reminderService');
 const { sendAllDailySchedules } = require('./services/dailyScheduleEmailService');
-const { 
-    sendWeeklyTaskSummary, 
-    sendDailyTaskSummary, 
-    sendHourlyTaskReminders 
+const {
+    sendWeeklyTaskSummary,
+    sendDailyTaskSummary
 } = require('./services/taskReminderEmailService');
-const { autoMarkAbsent } = require('./services/attendanceService');
 const { sendAllDailyRoutines } = require('./services/dailyRoutineEmailService');
 const { getEmailQueueStats, clearEmailQueue } = require('./services/emailService');
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
-const calendarRoutes = require('./routes/calendarRoutes');
-const taskRoutes = require('./routes/taskRoutes');
 const routineRoutes = require('./routes/routineRoutes');
 const focusRoutes = require('./routes/focusRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
-const attendanceRoutes = require('./routes/attendanceRoutes');
 const subjectRoutes = require('./routes/subjectRoutes');
 const gradeRoutes = require('./routes/gradeRoutes');
 const examRoutes = require('./routes/examRoutes');
@@ -177,12 +172,9 @@ app.use((req, res, next) => {
 // API ROUTES
 // ==============================================
 app.use('/api/auth', authRoutes);
-app.use('/api/calendars', calendarRoutes);
-app.use('/api/tasks', taskRoutes);
 app.use('/api/routines', routineRoutes);
 app.use('/api/focus', focusRoutes);
 app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/attendance', attendanceRoutes);
 app.use('/api/subjects', subjectRoutes);
 app.use('/api/grades', gradeRoutes);
 app.use('/api/exams', examRoutes);
@@ -258,9 +250,6 @@ app.use((err, req, res, next) => {
 // ==============================================
 // CRON JOBS
 // ==============================================
-let isAutoMarking = false;
-let isHourlyRemindersRunning = false;
-
 async function startServer() {
     try {
         await initialize();
@@ -285,35 +274,10 @@ async function startServer() {
         });
         
         cron.schedule('0 8 * * *', () => {
-            console.log('📋 [8:00 AM] Sending daily task summary...');
+            console.log('📋 [8:00 AM] Sending daily assignment summary...');
             sendDailyTaskSummary().catch(err => console.error('Daily summary error:', err));
         });
-        
-        cron.schedule('* * * * *', async () => {
-            if (isHourlyRemindersRunning) return;
-            isHourlyRemindersRunning = true;
-            try {
-                await sendHourlyTaskReminders();
-            } catch (err) {
-                console.error('❌ Hourly reminders error:', err.message);
-            } finally {
-                isHourlyRemindersRunning = false;
-            }
-        });
-        
-        cron.schedule('5 0 * * *', async () => {
-            if (isAutoMarking) return;
-            console.log('🕐 [12:05 AM] Auto-marking past pending classes as absent...');
-            isAutoMarking = true;
-            try {
-                await autoMarkAbsent();
-            } catch (err) {
-                console.error('❌ Auto-mark absent error:', err.message);
-            } finally {
-                isAutoMarking = false;
-            }
-        });
-        
+
         app.listen(PORT, () => {
             console.log('='.repeat(60));
             console.log(`🚀 FocusFlow Backend running on port ${PORT}`);
@@ -337,13 +301,7 @@ async function gracefulShutdown(signal) {
     isShuttingDown = true;
     
     console.log(`\n🛑 Received ${signal}, shutting down gracefully...`);
-    
-    let waitCount = 0;
-    while ((isAutoMarking || isHourlyRemindersRunning) && waitCount < 30) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        waitCount++;
-    }
-    
+
     await closePool();
     console.log('✅ Graceful shutdown complete');
     process.exit(0);

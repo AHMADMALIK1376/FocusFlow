@@ -93,6 +93,62 @@ exports.getAllForUser = async (req, res) => {
   }
 };
 
+// GET /api/subject-attendance/overview — per-subject percentages plus an overall
+// figure, for the dashboard. Replaces the old calendar-entry-based summary.
+const AT_RISK_BELOW = 75;
+
+exports.getOverview = async (req, res) => {
+  let connection;
+  try {
+    connection = await getConnection();
+    const result = await connection.execute(
+      `SELECT s.subject_id, s.name, s.color, sa.status
+       FROM SUBJECTS s
+       LEFT JOIN SUBJECT_ATTENDANCE sa
+         ON sa.subject_id = s.subject_id AND sa.user_id = :userId
+       WHERE s.user_id = :userId AND s.is_archived = 0`,
+      { userId: req.user.userId }
+    );
+
+    const bySubject = new Map();
+    for (const r of result.rows) {
+      if (!bySubject.has(r.SUBJECT_ID)) {
+        bySubject.set(r.SUBJECT_ID, { id: r.SUBJECT_ID, name: r.NAME, color: r.COLOR, records: [] });
+      }
+      // LEFT JOIN yields a null status for subjects with no records yet.
+      if (r.STATUS) bySubject.get(r.SUBJECT_ID).records.push({ status: r.STATUS });
+    }
+
+    const subjects = [...bySubject.values()].map((s) => {
+      const summary = summarize(s.records);
+      return {
+        id: s.id,
+        name: s.name,
+        color: s.color,
+        ...summary,
+        isAtRisk: summary.percentage !== null && summary.percentage < AT_RISK_BELOW,
+      };
+    });
+
+    // Overall = pooled across every subject, not an average of averages.
+    const allRecords = [...bySubject.values()].flatMap((s) => s.records);
+    const overall = summarize(allRecords);
+
+    res.json({
+      subjects,
+      overallPercentage: overall.percentage,
+      totalRecords: overall.total,
+      subjectsAtRisk: subjects.filter((s) => s.isAtRisk).length,
+      atRiskBelow: AT_RISK_BELOW,
+    });
+  } catch (err) {
+    console.error('Get attendance overview error:', err);
+    res.status(500).json({ error: 'Failed to get attendance overview.' });
+  } finally {
+    if (connection) await connection.close();
+  }
+};
+
 // DELETE /api/subject-attendance/records/:recordId
 exports.remove = async (req, res) => {
   let connection;
