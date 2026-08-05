@@ -1,16 +1,12 @@
 // src/components/common/ErrorBoundary.js
+// Catches a crash anywhere below it and shows the 500 page (errors/CrashScreen).
 import React from 'react';
-import { TriangleAlert, RotateCw, House } from "lucide-react";
+import CrashScreen from '../errors/CrashScreen';
 
 class ErrorBoundary extends React.Component {
     constructor(props) {
         super(props);
-        this.state = {
-            hasError: false,
-            error: null,
-            errorInfo: null,
-            showDetails: false
-        };
+        this.state = { hasError: false, error: null, errorInfo: null };
     }
 
     static getDerivedStateFromError(error) {
@@ -21,105 +17,25 @@ class ErrorBoundary extends React.Component {
         console.error('ErrorBoundary caught an error:', error);
         console.error('Component stack:', errorInfo.componentStack);
         this.setState({ errorInfo });
-
-        if (process.env.NODE_ENV === 'production') {
-            this.logErrorToService(error, errorInfo);
-        }
     }
 
-    logErrorToService = async (error, errorInfo) => {
-        try {
-            // placeholder for error tracking service
-            void error;
-            void errorInfo;
-        } catch (e) {
-            console.error('Failed to log error to service:', e);
-        }
-    };
-
     handleReset = () => {
-        this.setState({ hasError: false, error: null, errorInfo: null });
         window.location.reload();
     };
 
     handleGoHome = () => {
-        this.setState({ hasError: false, error: null, errorInfo: null });
         window.location.href = '/dashboard';
-    };
-
-    toggleDetails = () => {
-        this.setState(prev => ({ showDetails: !prev.showDetails }));
     };
 
     render() {
         if (this.state.hasError) {
             return (
-                <div className="min-h-screen bg-canvas flex items-center justify-center p-6">
-                    <div className="bg-surface rounded-token-lg p-8 max-w-md text-center shadow-neu border border-[rgb(var(--ink)/0.08)]">
-                        <span className="mx-auto mb-4 w-20 h-20 rounded-[28px] bg-grad-hero shadow-clay-brand flex items-center justify-center text-on-brand"><TriangleAlert size={38} strokeWidth={1.75} /></span>
-
-                        <h1 className="text-2xl font-black text-ink mb-2">
-                            Something went wrong
-                        </h1>
-
-                        <p className="text-muted mb-6 text-sm">
-                            {this.state.error?.message || 'An unexpected error occurred. Please try again.'}
-                        </p>
-
-                        <div className="flex gap-3 justify-center mb-4">
-                            <button
-                                onClick={this.handleReset}
-                                className="px-6 py-3 bg-brand text-on-brand rounded-token-sm font-bold text-sm hover:bg-brand-deep transition-all"
-                            >
-                                <RotateCw size={15} className="inline -mt-0.5 mr-1.5" />Refresh Page
-                            </button>
-                            <button
-                                onClick={this.handleGoHome}
-                                className="px-6 py-3 bg-surface-2 text-ink rounded-token-sm font-bold text-sm hover:bg-[rgb(var(--ink)/0.08)] transition-all"
-                            >
-                                <House size={15} className="inline -mt-0.5 mr-1.5" />Go Home
-                            </button>
-                        </div>
-
-                        {process.env.NODE_ENV === 'development' && (
-                            <div className="mt-4">
-                                <button
-                                    onClick={this.toggleDetails}
-                                    className="text-xs text-muted hover:text-ink transition-colors"
-                                >
-                                    {this.state.showDetails ? 'Hide Details ▲' : 'Show Details ▼'}
-                                </button>
-
-                                {this.state.showDetails && (
-                                    <div className="mt-3 text-left">
-                                        <div className="bg-surface-2 rounded-token-md p-4 overflow-auto max-h-64 border border-[rgb(var(--ink)/0.08)]">
-                                            <p className="text-xs font-bold text-focus mb-2">
-                                                Error: {this.state.error?.message}
-                                            </p>
-                                            <pre className="text-xs text-muted whitespace-pre-wrap">
-                                                {this.state.error?.stack}
-                                            </pre>
-                                            {this.state.errorInfo && (
-                                                <>
-                                                    <p className="text-xs font-bold text-focus mt-3 mb-2">
-                                                        Component Stack:
-                                                    </p>
-                                                    <pre className="text-xs text-muted whitespace-pre-wrap">
-                                                        {this.state.errorInfo.componentStack}
-                                                    </pre>
-                                                </>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        <p className="text-[10px] text-muted mt-6">
-                            If the problem persists, please contact support.
-                        </p>
-                    </div>
-                </div>
+                <CrashScreen
+                    error={this.state.error}
+                    componentStack={this.state.errorInfo?.componentStack}
+                    onReload={this.handleReset}
+                    onHome={this.handleGoHome}
+                />
             );
         }
 

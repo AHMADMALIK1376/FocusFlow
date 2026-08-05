@@ -17,6 +17,28 @@ const handleResponse = async (response) => {
 
 const SESSION_OVER = ['USER_NOT_FOUND', 'TOKEN_EXPIRED', 'INVALID_TOKEN'];
 
+// A request got no answer, or a 502/503/504 from the host. The connection
+// gate (components/errors/ConnectionGate) hears this, asks /api/health itself,
+// and only then shows the offline or "server unreachable" page.
+export const SERVER_TROUBLE_EVENT = 'ff:server-trouble';
+const reportServerTrouble = () => {
+    if (typeof window !== 'undefined') window.dispatchEvent(new Event(SERVER_TROUBLE_EVENT));
+};
+
+// Is the FocusFlow server answering? true / false within `timeoutMs`.
+export const pingServer = async (timeoutMs = 6000) => {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+    try {
+        const res = await fetch(`${API_URL}/health`, { cache: 'no-store', signal: ctrl.signal });
+        return res.ok;
+    } catch {
+        return false;
+    } finally {
+        clearTimeout(timer);
+    }
+};
+
 // Helper for authorized requests
 const authFetch = async (endpoint, options = {}) => {
     const token = localStorage.getItem('focus_token');
@@ -29,10 +51,20 @@ const authFetch = async (endpoint, options = {}) => {
         headers['Authorization'] = `Bearer ${token}`;
     }
     
-    const response = await fetch(`${API_URL}${endpoint}`, {
-        ...options,
-        headers,
-    });
+    let response;
+    try {
+        response = await fetch(`${API_URL}${endpoint}`, {
+            ...options,
+            headers,
+        });
+    } catch (err) {
+        // No answer at all: offline, or the server is down.
+        reportServerTrouble();
+        throw err;
+    }
+    if (response.status === 502 || response.status === 503 || response.status === 504) {
+        reportServerTrouble();
+    }
 
     // The saved login no longer works (account deleted, token expired or bad):
     // forget it and go to the sign-in page instead of failing every save.
