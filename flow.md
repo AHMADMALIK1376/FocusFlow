@@ -21,7 +21,19 @@ Update this file with every change.
   - `Pages/Authpage.js` is the layout. It renders the form from `components/auth/*` through `<Outlet />`.
 - **App screens (need login):** `/dashboard` (`Pages/Home.js`), `/subjects`, `/subjects/:id`, `/grades`, `/exams`, `/projects` (assignments board), `/routine`, `/attendance`, `/flashcards`, `/notes`, `/goals`, `/habits`, `/time`, `/budget`, `/settings`.
 - Pages are loaded on demand with `React.lazy`.
-- **Any other address** (`*`) shows `components/common/ErrorBoundaryRoute.js`, a "Page Not Found" page. It uses only `useLocation`/`useNavigate`, because `useRouteError` needs a data router and the app uses `<BrowserRouter>`.
+- **Any other address** (`*`) shows `components/common/ErrorBoundaryRoute.js`, the 404 page, built on `components/errors/ErrorScreen.js`. It uses only `useLocation`/`useNavigate`, because `useRouteError` needs a data router and the app uses `<BrowserRouter>`.
+
+### Loading
+- Switching pages: `Suspense` → `PageLoader` (the logo, "Loading page…").
+- Inside a page: `PageLoading` / `PanelLoading` (`components/common/LoadingSpinner.js`). Pages wrap the hook's `loading` in `useFirstLoad()`, so the logo shows only on the first load.
+
+### Errors and lost connection
+- **App crash:** `ErrorBoundary` → `components/errors/CrashScreen.js` (500, or "FocusFlow was updated" for a failed page chunk).
+- **No answer from the API:** `authFetch` in `services/api.js` dispatches `SERVER_TROUBLE_EVENT`. `components/errors/ConnectionGate.js` (mounted last in `App.js`, above everything) calls `pingServer()`, which checks `/api/health`:
+  - If the check fails, it shows the 503 page and retries every 15 s.
+  - When the server answers again, it reloads.
+- **Device offline:** the browser's `offline` event → the gate's offline page. The `online` event → check → reload.
+- **App can't load at all:** `public/sw.js` handles failed page loads (`navigate` requests) by serving the cached `public/offline.html`.
 
 ### Talking to the backend — `services/api.js`
 1. Every page calls a helper such as `subjectAPI.getAll()` or `examAPI.create()`.
