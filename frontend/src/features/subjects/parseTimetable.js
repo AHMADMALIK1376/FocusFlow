@@ -29,7 +29,7 @@ export const SUBJECT_COLORS = [
   "#0D9488", "#B45309",
 ];
 
-function titleCase(str) {
+export function titleCase(str) {
   return str
     .toLowerCase()
     .split(/\s+/)

@@ -127,6 +127,7 @@ export const subjectAPI = {
 // GRADE APIs
 // ==============================================
 export const gradeAPI = {
+    getAll: async () => authFetch('/grades'),
     getForSubject: async (subjectId) => authFetch(`/grades?subjectId=${subjectId}`),
     getGpa: async () => authFetch('/grades/gpa'),
     create: async (data) => authFetch('/grades', { method: 'POST', body: JSON.stringify(data) }),

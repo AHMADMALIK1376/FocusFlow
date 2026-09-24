@@ -335,7 +335,7 @@ export default function DailyRoutine() {
         open={importOpen}
         onClose={() => setImportOpen(false)}
         existing={subjects}
-        onImported={async () => { await refreshSubjects(); toast("Classes imported ✓ — see them on the Subjects page", { tone: "success" }); }}
+        onImported={async (summary) => { await refreshSubjects(); if (summary) toast(`${summary} — see them on the Subjects page`, { tone: "success" }); }}
       />
 
       <div className="w-full flex flex-col gap-8">

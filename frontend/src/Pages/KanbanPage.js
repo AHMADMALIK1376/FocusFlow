@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors,
 } from "@dnd-kit/core";
@@ -6,15 +6,17 @@ import {
   SortableContext, useSortable, verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { FolderKanban, CheckCircle2, Loader, CircleDashed, Plus, GripVertical } from "lucide-react";
+import { FolderKanban, CheckCircle2, Loader, CircleDashed, Plus, GripVertical, ScanText } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Cell, LabelList } from "recharts";
-import { Card, Button, Input, ProgressRing, cx } from "../components/ui";
+import { Card, Button, Input, ProgressRing, cx, useToast } from "../components/ui";
 import { StatTile } from "../components/dashboard/DashKit";
 import ChartBox from "../components/charts/ChartBox";
 import { chartColors, hexToRgba, CHART_TOOLTIP } from "../components/charts/chartColors";
 import { useKanban } from "../features/kanban/useKanban";
 import { cardsByColumn } from "../features/kanban/kanbanLogic";
 import { useSubjects } from "../features/subjects/useSubjects";
+import ScanImportModal from "../features/scanner/ScanImportModal";
+import { assignmentsScan } from "../features/scanner/kinds/assignments";
 
 const COLUMN_DOT = { "col-todo": "bg-warn", "col-doing": "bg-info", "col-done": "bg-success" };
 
@@ -47,8 +49,11 @@ function SortableCard({ card, onEdit, onRemove }) {
 }
 
 export default function KanbanPage() {
-  const { state, addCard: createCard, updateCard, removeCard, moveCard } = useKanban();
+  const { state, addCard: createCard, updateCard, removeCard, moveCard, refresh } = useKanban();
   const { subjects } = useSubjects();
+  const { toast } = useToast();
+  const [scanOpen, setScanOpen] = useState(false);
+  const scanCtx = useMemo(() => ({ subjects, cards: state.cards }), [subjects, state.cards]);
   const { brand, accent } = chartColors();
 
   const [newCardText, setNewCardText] = useState({});
@@ -123,9 +128,14 @@ export default function KanbanPage() {
           <h1 className="text-3xl md:text-4xl font-black text-ink tracking-tight">Assignments</h1>
           <p className="text-muted mt-1">Plan assignments across your subjects — drag between columns.</p>
         </div>
-        <Button variant="primary" size="md" onClick={() => setCreating(true)} className="gap-2">
-          <Plus size={16} /> Add task
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="primary" size="md" onClick={() => setScanOpen(true)} className="gap-2">
+            <ScanText size={16} /> Scan assignments
+          </Button>
+          <Button variant="primary" size="md" onClick={() => setCreating(true)} className="gap-2">
+            <Plus size={16} /> Add task
+          </Button>
+        </div>
       </header>
 
       {/* Stat tiles */}
@@ -262,6 +272,14 @@ export default function KanbanPage() {
           </Card>
         </div>
       )}
+
+      <ScanImportModal
+        open={scanOpen}
+        onClose={() => setScanOpen(false)}
+        kind={assignmentsScan}
+        ctx={scanCtx}
+        onDone={async (summary) => { await refresh(); if (summary) toast(summary, { tone: "success" }); }}
+      />
     </div>
   );
 }

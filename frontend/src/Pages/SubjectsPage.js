@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Pencil, GraduationCap, Clock, BookOpen, CalendarDays, Trash2, ScanText } from "lucide-react";
-import { Button, Input, Select, Field, Modal, EmptyState, CardDeleteButton } from "../components/ui";
+import { Plus, Pencil, GraduationCap, Clock, BookOpen, CalendarDays, Trash2, ScanText, RotateCcw, ChevronDown } from "lucide-react";
+import { Button, Input, Select, Field, Modal, EmptyState, CardDeleteButton, DeleteButton, useToast } from "../components/ui";
 import { PageShell, PageHeader, StatTile, Panel } from "../components/dashboard/DashKit";
 import { useSubjects } from "../features/subjects/useSubjects";
 import TimetableImportModal from "../features/subjects/TimetableImportModal";
@@ -56,12 +56,14 @@ function mostCommon(arr) {
 
 export default function SubjectsPage() {
   const navigate = useNavigate();
-  const { subjects, loading, error, refresh, create, update, remove } = useSubjects();
+  const { subjects, archived, loading, error, refresh, create, update, remove, setArchived } = useSubjects();
+  const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [showPast, setShowPast] = useState(false);
 
   const totalCredits = subjects.reduce((s, x) => s + (Number(x.creditHours) || 0), 0);
   const totalSlots = subjects.reduce((s, x) => s + (x.schedule?.length || 0), 0);
@@ -104,7 +106,7 @@ export default function SubjectsPage() {
   }
 
   async function onDelete(s) {
-    if (!window.confirm(`Delete "${s.name}"? This removes its schedule too.`)) return;
+    if (!window.confirm(`Delete "${s.name}" for good? Its class times, grades and attendance are deleted too.`)) return;
     await remove(s.id);
   }
 
@@ -177,6 +179,35 @@ export default function SubjectsPage() {
         </div>
       )}
 
+      {archived.length > 0 && (
+        <Panel className="mt-6">
+          <button type="button" onClick={() => setShowPast((v) => !v)} className="w-full flex items-center justify-between gap-3 text-left">
+            <div>
+              <h3 className="text-sm font-black uppercase tracking-wider text-ink">Past terms ({archived.length})</h3>
+              <p className="text-xs text-muted mt-0.5">Subjects from earlier timetables. Their grades and attendance are kept and still count toward your CGPA.</p>
+            </div>
+            <ChevronDown size={18} className={`text-muted shrink-0 transition-transform ${showPast ? "rotate-180" : ""}`} />
+          </button>
+          {showPast && (
+            <ul className="divide-y divide-[rgb(var(--ink)/0.07)] mt-3">
+              {archived.map((s) => (
+                <li key={s.id} className="flex items-center gap-3 py-2.5">
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: s.color || "#E86562" }} />
+                  <button type="button" onClick={() => navigate(`/subjects/${s.id}`)} className="flex-1 min-w-0 text-left">
+                    <p className="text-sm font-bold text-ink truncate">{s.code ? `${s.code} · ` : ""}{s.name}</p>
+                    <p className="text-xs text-muted truncate">{[s.term, s.instructor].filter(Boolean).join(" · ") || "No term set"}</p>
+                  </button>
+                  <Button size="sm" variant="soft" onClick={() => setArchived(s, false)} title="Restore to this term" className="gap-1 shrink-0">
+                    <RotateCcw size={14} /> <span className="hidden sm:inline">Restore</span>
+                  </Button>
+                  <DeleteButton onClick={() => onDelete(s)} title="Delete for good" />
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
+      )}
+
       <Modal
         open={open}
         onClose={() => setOpen(false)}
@@ -246,7 +277,12 @@ export default function SubjectsPage() {
         </div>
       </Modal>
 
-      <TimetableImportModal open={importOpen} onClose={() => setImportOpen(false)} existing={subjects} onImported={refresh} />
+      <TimetableImportModal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        existing={subjects}
+        onImported={async (summary) => { await refresh(); if (summary) toast(summary, { tone: "success" }); }}
+      />
     </PageShell>
   );
 }

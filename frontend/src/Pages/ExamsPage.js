@@ -1,11 +1,13 @@
-import React, { useState } from "react";
-import { Plus, Pencil, AlarmClock, CalendarClock, CalendarX, CheckCircle2 } from "lucide-react";
-import { Button, Input, Textarea, Select, Field, Modal, EmptyState, DeleteButton, Badge, Checkbox } from "../components/ui";
+import React, { useMemo, useState } from "react";
+import { Plus, Pencil, AlarmClock, CalendarClock, CalendarX, CheckCircle2, ScanText } from "lucide-react";
+import { Button, Input, Textarea, Select, Field, Modal, EmptyState, DeleteButton, Badge, Checkbox, useToast } from "../components/ui";
 import { PageShell, PageHeader, StatTile, Panel } from "../components/dashboard/DashKit";
 import { useExams } from "../features/exams/useExams";
 import { useSubjects } from "../features/subjects/useSubjects";
 import { groupExams, countdownLabel } from "../features/exams/examsLogic";
 import DeadlineSkyline from "../components/charts/DeadlineSkyline";
+import ScanImportModal from "../features/scanner/ScanImportModal";
+import { examsScan } from "../features/scanner/kinds/exams";
 
 const TYPES = ["Exam", "Quiz", "Test", "Assignment", "Project", "Submission", "Deadline"];
 const TIMED = ["Exam", "Quiz", "Test"]; // things you sit → have a length; marks asked afterwards
@@ -20,8 +22,11 @@ const SECTIONS = [
 ];
 
 export default function ExamsPage() {
-  const { exams, loading, create, update, toggle, remove } = useExams();
+  const { exams, loading, refresh, create, update, toggle, remove } = useExams();
   const { subjects } = useSubjects();
+  const { toast } = useToast();
+  const [scanOpen, setScanOpen] = useState(false);
+  const scanCtx = useMemo(() => ({ subjects, exams }), [subjects, exams]);
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState(EMPTY);
@@ -57,6 +62,7 @@ export default function ExamsPage() {
   return (
     <PageShell>
       <PageHeader title="Exams & Deadlines" subtitle="Everything with a due date — sorted by what's next.">
+        <Button variant="primary" onClick={() => setScanOpen(true)} className="gap-1.5"><ScanText size={16} /> Scan date sheet</Button>
         <Button variant="primary" onClick={openAdd} className="gap-1.5"><Plus size={16} /> Add</Button>
       </PageHeader>
 
@@ -137,6 +143,14 @@ export default function ExamsPage() {
           </div>
         </div>
       </Modal>
+
+      <ScanImportModal
+        open={scanOpen}
+        onClose={() => setScanOpen(false)}
+        kind={examsScan}
+        ctx={scanCtx}
+        onDone={async (summary) => { await refresh(); if (summary) toast(summary, { tone: "success" }); }}
+      />
     </PageShell>
   );
 }
