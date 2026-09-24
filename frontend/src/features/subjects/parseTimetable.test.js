@@ -21,7 +21,7 @@ describe("parseTimetable", () => {
 
   test("title, credits and instructor", () => {
     expect(courses[0]).toMatchObject({ name: "Compiler Construction", creditHours: 2, instructor: "Mr. Basharat Sagheer Kayani" });
-    expect(courses[1].instructor).toBe(""); // TBA
+    expect(courses[1].instructor).toBe("TBA");
     expect(courses[3].name).toBe("HCI & Computer Graphics");
   });
 

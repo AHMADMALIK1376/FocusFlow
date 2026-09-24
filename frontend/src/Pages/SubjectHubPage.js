@@ -5,6 +5,7 @@ import { ArrowLeft, Clock, StickyNote, GraduationCap } from "lucide-react";
 import { Button, Badge, EmptyState, DeleteButton } from "../components/ui";
 import { PageShell, Panel } from "../components/dashboard/DashKit";
 import { subjectAPI } from "../services/api";
+import { fmtRange } from "../features/schedule/todayClasses";
 import GradesPanel from "../components/subjects/GradesPanel";
 import ExamsPanel from "../components/subjects/ExamsPanel";
 import FlashcardsPanel from "../components/subjects/FlashcardsPanel";
@@ -72,7 +73,7 @@ export default function SubjectHubPage() {
                   </div>
                   <h1 className="text-3xl font-black text-ink tracking-tight truncate">{subject.name}</h1>
                   <p className="text-muted mt-1 text-sm">
-                    {[subject.instructor, subject.term, `${subject.creditHours || 0} credit hours`].filter(Boolean).join(" · ")}
+                    {[subject.instructor || "TBA", subject.term, `${subject.creditHours || 0} credit hours`].filter(Boolean).join(" · ")}
                   </p>
                 </div>
                 <DeleteButton onClick={onDelete} title="Delete subject" />
@@ -90,7 +91,7 @@ export default function SubjectHubPage() {
                     <span className="w-9 h-9 rounded-xl bg-brand/10 text-brand flex items-center justify-center shrink-0"><Clock size={16} /></span>
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-ink text-sm">{s.day}</p>
-                      <p className="text-xs text-muted">{[s.start && s.end ? `${s.start} – ${s.end}` : s.start || "", s.room].filter(Boolean).join(" · ") || "—"}</p>
+                      <p className="text-xs text-muted">{[fmtRange(s.start, s.end), s.room].filter(Boolean).join(" · ") || "—"}</p>
                     </div>
                   </li>
                 ))}

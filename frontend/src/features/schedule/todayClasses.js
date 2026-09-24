@@ -13,6 +13,16 @@ export function fmt12(hhmm) {
   return `${h % 12 || 12}:${String(t % 60).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
 }
 
+// ("13:15", "15:20") → "1:15–3:20 PM"; ("11:41", "14:45") → "11:41 AM – 2:45 PM"; no end → "1:15 PM"
+export function fmtRange(start, end) {
+  const a = fmt12(start);
+  const b = fmt12(end);
+  if (!a || !b) return a || b;
+  const [aTime, aMer] = a.split(' ');
+  const [bTime, bMer] = b.split(' ');
+  return aMer === bMer ? `${aTime}–${bTime} ${bMer}` : `${a} – ${b}`;
+}
+
 // classes: [{subject, startTime, endTime, room}], nowMinutes: minutes since midnight
 export function dayProgress(classes, nowMinutes) {
   const list = (classes || [])

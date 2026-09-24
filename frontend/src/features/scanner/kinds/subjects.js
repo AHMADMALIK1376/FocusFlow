@@ -4,7 +4,8 @@ import { Input, Select, Field } from "../../../components/ui";
 import { subjectAPI } from "../../../services/api";
 import { parseTimetable, assignColors } from "../../subjects/parseTimetable";
 import { subjectPayload } from "../../subjects/useSubjects";
-import { sameText, normCode } from "../textParse";
+import { sameText, normCode, similarity } from "../textParse";
+import { fmtRange } from "../../schedule/todayClasses";
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 const DAY_SHORT = { Monday: "Mon", Tuesday: "Tue", Wednesday: "Wed", Thursday: "Thu", Friday: "Fri", Saturday: "Sat", Sunday: "Sun" };
@@ -32,7 +33,7 @@ export function sameSchedule(saved, scanned) {
 }
 
 const scheduleText = (list) =>
-  validSlots(list).map((s) => `${DAY_SHORT[s.day] || s.day} ${s.start}${s.end ? `–${s.end}` : ""}${s.room ? ` ${s.room}` : ""}`).join(", ") || "none";
+  validSlots(list).map((s) => `${DAY_SHORT[s.day] || s.day} ${fmtRange(s.start, s.end)}${s.room ? ` ${s.room}` : ""}`).join(", ") || "none";
 
 // Keep an end time / room the scan missed but the saved slot already had.
 const fillFromSaved = (scanned, saved) =>
@@ -88,7 +89,7 @@ export const subjectsScan = {
   pastePlaceholder: "032610354\tCSC452\tCOMPILER CONSTRUCTION\t2\tMR. ...\tTUE 01:15 03:20 LR26",
   emptyError: "Couldn't find any courses. Make sure the course codes (e.g. CSC452) and class times are visible, or try pasting the text instead.",
   noun: ["course", "courses"],
-  reviewNote: "Screenshots can misread a letter or two, so check names, times and rooms. Times are 24-hour; portal times without AM/PM were read as 8–11 morning, 12–7 afternoon.",
+  reviewNote: "Screenshots can misread a letter or two, so check names, times and rooms. Portal times without AM/PM were read as 8–11 morning, 12–7 afternoon (so 01:15 is 1:15 PM). A missing teacher is saved as TBA.",
   replaceQuestion: "Replace your current subjects with these?",
   replaceExplain: "Your current subjects move to Past terms on the Subjects page. Their grades and attendance are kept and still count toward your CGPA.",
   removeHeading: (n) => `Moving ${n} subject${n === 1 ? "" : "s"} to Past terms`,
@@ -102,19 +103,21 @@ export const subjectsScan = {
   match(s, e) {
     const a = normCode(s.code);
     const b = normCode(e.code);
-    if (a && b) {
-      if (a === b) return 1;
-      return oneCharOff(a, b) && sameText(s.name, e.name) ? 0.9 : 0; // one misread character
-    }
-    return sameText(s.name, e.name) ? 0.8 : 0;
+    if (a && b && a === b) return 1;
+    // Codes differ or are missing — OCR often misreads one ("CSSC332L"), so the
+    // name decides. A lab never matches its theory course (see sameText).
+    if (!sameText(s.name, e.name)) return 0;
+    return a && b && oneCharOff(a, b) ? 0.9 : 0.8;
   },
 
   fields: () => [
-    { key: "code", label: "Code", same: (a, b) => normCode(a) === normCode(b) },
+    // a code a letter off the saved one is a misread, not a renumbering
+    { key: "code", label: "Code", same: (a, b) => normCode(a) === normCode(b) || similarity(normCode(a), normCode(b)) >= 0.85 },
     // already matched by code, so a looser name check — OCR noise isn't a rename
     { key: "name", label: "Name", same: (a, b) => sameText(a, b, 0.75) },
     { key: "creditHours", label: "Credits", same: (a, b) => Number(a) === Number(b) },
-    { key: "instructor", label: "Instructor", same: (a, b) => sameText(a, b) },
+    // "TBA" means the table named nobody — it never overwrites a real name
+    { key: "instructor", label: "Instructor", same: (a, b) => sameText(a, b), blank: (v) => !v || /^\s*(tba|tbd)\s*$/i.test(v) },
     { key: "schedule", label: "Class times", same: sameSchedule, blank: (v) => !validSlots(v).length, format: scheduleText },
   ],
 
