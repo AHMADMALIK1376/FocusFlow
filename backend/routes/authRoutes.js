@@ -1,7 +1,8 @@
-﻿// backend/routes/authRoutes.js
+// backend/routes/authRoutes.js
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
+const authMiddleware = require('../middleware/auth');
 
 // ==============================================
 // REGISTRATION & VERIFICATION
@@ -24,7 +25,7 @@ router.post('/resend-verification', authController.resendVerificationCode);
 router.post('/login', authController.login);
 
 // Get current user
-router.get('/me', authController.getMe);
+router.get('/me', authMiddleware, authController.getMe);
 
 // Logout
 router.post('/logout', authController.logout);
