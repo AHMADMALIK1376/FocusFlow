@@ -26,7 +26,7 @@ describe('fontStack', () => {
 });
 
 describe('DEFAULT_FONT', () => {
-  it('is "poppins"', () => {
-    expect(DEFAULT_FONT).toBe('poppins');
+  it('is "nunito" (rounded, clay theme)', () => {
+    expect(DEFAULT_FONT).toBe('nunito');
   });
 });

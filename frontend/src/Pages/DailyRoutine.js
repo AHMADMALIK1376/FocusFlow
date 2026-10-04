@@ -1,5 +1,6 @@
 // src/Pages/DailyRoutine.js
 import React, { useState, useEffect } from "react";
+import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { AnimatePresence, motion } from "framer-motion";
 import { Plus, Flame, ScanText } from "lucide-react";
 import { useApp } from "../components/context/AppContext";
@@ -297,7 +298,7 @@ export default function DailyRoutine() {
   if (loading) {
     return (
       <div className="min-h-screen bg-canvas flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-brand border-t-transparent rounded-full animate-spin"></div>
+        <LoadingSpinner message={null} />
       </div>
     );
   }

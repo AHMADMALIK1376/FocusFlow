@@ -16,7 +16,8 @@
 // always-visible legend, so identity never rests on colour alone.
 import React, { useEffect, useRef, useState } from "react";
 
-export const SPEND_COLORS = ["#4FA3E3", "#3FC08A", "#9B6BE8", "#EF5F6B", "#2FBFC7", "#E8942A"];
+// Theme palette: coral, sunshine, deep baby blue, mint, navy, peach.
+export const SPEND_COLORS = ["#EC706D", "#F5C842", "#8FCDA6", "#F4A98A", "#9EC3EA", "#D7B98E"]; // coral, sun, sage, peach, powder, mocha
 
 const MIN_RX = 40;          // smallest disk radius at full size
 const RX_RANGE = 62;        // largest disk adds up to this at full size
@@ -88,7 +89,7 @@ export default function SpendingPuckStack({ data, formatValue }) {
       hex: css(rgb),
       glow: css(lighten(rgb, 0.5)),
       mid: css(lighten(rgb, 0.1)),
-      side: css(darken(rgb, 0.58)),
+      side: css(darken(rgb, 0.85)), // soft side face — no dark shading
     };
   });
 
@@ -118,10 +119,10 @@ export default function SpendingPuckStack({ data, formatValue }) {
         <svg width={w} height={height} viewBox={`0 0 ${w} ${height}`}>
           <defs>
             <filter id="tierShadow" x="-60%" y="-60%" width="220%" height="220%">
-              <feDropShadow dx="0" dy="7" stdDeviation="6" floodColor="#1b1b3a" floodOpacity="0.3" />
+              <feDropShadow dx="0" dy="7" stdDeviation="6" floodColor="#BEA07A" floodOpacity="0.3" />
             </filter>
             <filter id="tierShadowHot" x="-70%" y="-70%" width="240%" height="240%">
-              <feDropShadow dx="0" dy="12" stdDeviation="10" floodColor="#1b1b3a" floodOpacity="0.36" />
+              <feDropShadow dx="0" dy="12" stdDeviation="10" floodColor="#BEA07A" floodOpacity="0.38" />
             </filter>
             {pucks.map((p) => (
               <radialGradient key={`g-${p.i}`} id={`tier-${p.i}`} cx="34%" cy="26%" r="82%">

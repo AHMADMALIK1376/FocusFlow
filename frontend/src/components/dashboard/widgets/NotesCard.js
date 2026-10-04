@@ -1,9 +1,13 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Button, EmptyState } from '../../ui';
+import { Button } from '../../ui';
 import { useNotes } from '../../../features/notes/useNotes';
 import { selectSorted } from '../../../features/notes/notesLogic';
+import WidgetShell, { WidgetEmpty } from './WidgetShell';
+
+// Pastel clay sticky notes (sunshine / sage / coral / cream).
+const TINTS = ['bg-[rgb(255_243_196)]', 'bg-[rgb(220_238_226)]', 'bg-[rgb(255_222_220)]', 'bg-[rgb(250_240_225)]'];
 
 export default function NotesCard() {
   const { t } = useTranslation();
@@ -12,28 +16,29 @@ export default function NotesCard() {
   const notes = selectSorted(state).slice(0, 3);
 
   return (
-    <div className="bg-surface text-ink rounded-token-lg shadow-neu p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-black uppercase tracking-wider text-muted">📝 {t('widgets.notes', { defaultValue: 'Notes' })}</h3>
-        <Button size="sm" variant="ghost" onClick={() => navigate('/notes')}>{t('notes.viewAll', { defaultValue: 'View all' })}</Button>
-      </div>
+    <WidgetShell
+      icon="📝"
+      title={t('widgets.notes', { defaultValue: 'Notes' })}
+      linkLabel={t('notes.viewAll', { defaultValue: 'View all' })}
+      onLink={() => navigate('/notes')}
+      footer={<Button size="sm" variant="primary" full onClick={() => navigate('/notes')}>{t('notes.add', { defaultValue: '+ New Note' })}</Button>}
+    >
       {notes.length === 0 ? (
-        <EmptyState icon="📝" title={t('notes.empty', { defaultValue: 'No notes yet' })} />
+        <WidgetEmpty emoji="🗒️" title="No notes yet" hint="Jot down lecture points, formulas or to-dos." />
       ) : (
-        <ul className="space-y-2">
-          {notes.map(note => (
-            <li key={note.id} className="bg-surface-2 rounded-token-md px-3 py-2 cursor-pointer hover:bg-[rgb(var(--ink)/0.06)] transition-colors duration-200" onClick={() => navigate('/notes')}>
-              <p className="text-sm font-bold text-ink truncate">{note.title || t('notes.untitled', { defaultValue: 'Untitled' })}</p>
-              <p className="text-xs text-muted truncate mt-0.5">{note.body?.slice(0, 60)}</p>
-            </li>
+        <div className="space-y-2.5">
+          {notes.map((note, i) => (
+            <button
+              key={note.id}
+              onClick={() => navigate('/notes')}
+              className={`block w-full text-left rounded-token-md px-3.5 py-2.5 shadow-neu-sm hover:-translate-y-0.5 transition-transform ${TINTS[i % TINTS.length]}`}
+            >
+              <p className="text-sm font-black text-ink line-clamp-1">{note.title || t('notes.untitled', { defaultValue: 'Untitled' })}</p>
+              <p className="text-[11px] text-ink/70 mt-0.5 line-clamp-2">{note.body?.slice(0, 120)}</p>
+            </button>
           ))}
-        </ul>
+        </div>
       )}
-      <div className="mt-3 flex justify-center">
-        <Button size="sm" variant="primary" onClick={() => navigate('/notes')} className="w-4/5">
-          {t('notes.add', { defaultValue: '+ New Note' })}
-        </Button>
-      </div>
-    </div>
+    </WidgetShell>
   );
 }

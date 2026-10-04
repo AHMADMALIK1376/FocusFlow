@@ -25,7 +25,7 @@ export default function MobileTabBar() {
         aria-label="Primary"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
-        <div className="mx-2 mb-2 flex items-stretch justify-around rounded-token-lg bg-surface border border-[rgb(var(--ink)/0.08)] shadow-glass">
+        <div className="mx-2 mb-2 flex items-stretch justify-around p-1 gap-0.5 rounded-token-lg bg-grad-hero shadow-clay-brand">
           {primaryItems.map((item) => {
             const active = pathname === item.path;
             return (
@@ -34,8 +34,8 @@ export default function MobileTabBar() {
                 onClick={() => navigate(item.path)}
                 aria-current={active ? 'page' : undefined}
                 className={cx(
-                  'flex-1 flex flex-col items-center gap-1 py-2.5 transition-colors duration-200 rounded-token-md',
-                  active ? 'text-brand' : 'text-muted'
+                  'flex-1 flex flex-col items-center gap-1 py-2 transition-colors duration-200 rounded-token-md',
+                  active ? 'bg-surface text-brand shadow-neu-sm' : 'text-[rgb(var(--on-brand)/0.92)]'
                 )}
               >
                 <NavIcon id={item.id} size={20} />
@@ -47,7 +47,7 @@ export default function MobileTabBar() {
           {overflowItems.length > 0 && (
             <button
               onClick={() => setMoreOpen(true)}
-              className="flex-1 flex flex-col items-center gap-1 py-2.5 text-muted transition-colors rounded-token-md"
+              className="flex-1 flex flex-col items-center gap-1 py-2 text-[rgb(var(--on-brand)/0.92)] transition-colors rounded-token-md"
             >
               <MoreHorizontal size={20} />
               <span className="text-[9px] font-bold tracking-wide leading-none">More</span>

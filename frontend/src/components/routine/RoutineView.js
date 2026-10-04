@@ -1,5 +1,6 @@
 // src/components/routine/RoutineView.js
 import React, { useState, useEffect } from "react";
+import { LoadingSpinner } from '../common/LoadingSpinner';
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import { routineAPI } from "../../services/api";
@@ -139,7 +140,7 @@ export default function RoutineView() {
 
   if (loading) return (
     <div className="min-h-screen bg-canvas flex items-center justify-center">
-      <div className="w-12 h-12 border-4 border-brand border-t-transparent rounded-full animate-spin"></div>
+      <LoadingSpinner message={null} />
     </div>
   );
 

@@ -8,7 +8,7 @@ export const FONT_OPTIONS = [
   { id: 'jetbrains',   name: 'JetBrains Mono',   stack: `'JetBrains Mono', ui-monospace, monospace` },
 ];
 
-export const DEFAULT_FONT = 'poppins';
+export const DEFAULT_FONT = 'nunito'; // rounded, matches the clay theme
 
 export function fontStack(id) {
   return (FONT_OPTIONS.find((f) => f.id === id) || FONT_OPTIONS[0]).stack;

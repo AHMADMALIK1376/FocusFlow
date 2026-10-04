@@ -238,7 +238,7 @@ describe('makeDashboard — defaults', () => {
 
   it('returns a dashboard with the correct fontFamily default', () => {
     const d = makeDashboard('Test');
-    expect(d.fontFamily).toBe('poppins');
+    expect(d.fontFamily).toBe('nunito');
   });
 
   it('widget.order is a copy of DEFAULT_WIDGET_ORDER (not the same reference)', () => {

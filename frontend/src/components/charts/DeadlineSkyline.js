@@ -8,22 +8,23 @@ const WEEK = { x: 16.5, y: 6.6 };   // one step along the week axis
 const DAY = { x: -13.5, y: 7.4 };   // one step along the weekday axis
 const UNIT_H = 16;                  // px per item
 const BASE_H = 3;                   // empty days are a thin slab
-const TILE = 0.84;
+const TILE = 0.7; // leave clear gaps between day tiles
 const PAD = 26;
 // Fewer weeks on a phone so the towers stay big enough to tap.
 const RANGE = { wide: [4, 18], narrow: [2, 10] };
 const DAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
-const EDGE = "rgb(var(--ink) / 0.16)";
-const EMPTY = [223, 227, 232];
+const ROUND = { strokeWidth: 1.2, strokeLinejoin: "round" }; // rounded clay corners
+const EMPTY = [236, 228, 214]; // cream clay slab
 
+// Soft clay palette (coral, peach, sun, powder blue, sage, mint, mocha).
 export const TYPE_COLORS = {
-  Exam: [220, 38, 38],
-  Test: [234, 88, 12],
-  Quiz: [217, 119, 6],
-  Assignment: [37, 99, 235],
-  Project: [124, 58, 237],
-  Submission: [13, 148, 136],
-  Deadline: [71, 85, 105],
+  Exam: [236, 112, 109],
+  Test: [244, 160, 122],
+  Quiz: [245, 200, 66],
+  Assignment: [126, 172, 226],
+  Project: [128, 196, 156],
+  Submission: [112, 196, 196],
+  Deadline: [200, 170, 130],
 };
 const TYPE_ORDER = Object.keys(TYPE_COLORS);
 const colorOf = (type) => TYPE_COLORS[type] || TYPE_COLORS.Deadline;
@@ -120,9 +121,9 @@ export default function DeadlineSkyline({ items }) {
             const base = c.isToday ? [180, 170, 240] : EMPTY;
             return (
               <g key={key}>
-                <polygon points={b.right} fill={shade(base, 0.8)} stroke={EDGE} strokeWidth="0.6" />
-                <polygon points={b.left} fill={shade(base, 0.62)} stroke={EDGE} strokeWidth="0.6" />
-                <polygon points={b.top} fill={shade(base, 1)} stroke={c.isToday ? "rgb(var(--brand))" : EDGE} strokeWidth={c.isToday ? 1.4 : 0.6} />
+                <polygon points={b.right} fill={shade(base, 0.93)} stroke={shade(base, 0.93)} {...ROUND} />
+                <polygon points={b.left} fill={shade(base, 0.86)} stroke={shade(base, 0.86)} {...ROUND} />
+                <polygon points={b.top} fill={shade(base, 1)} stroke={c.isToday ? "rgb(var(--brand))" : shade(base, 1)} strokeWidth={c.isToday ? 1.8 : 1.2} strokeLinejoin="round" />
               </g>
             );
           }
@@ -139,9 +140,9 @@ export default function DeadlineSkyline({ items }) {
                 const a = fade(it);
                 return (
                   <g key={it.id || i}>
-                    <polygon points={b.right} fill={shade(rgb, 0.78, a)} stroke={EDGE} strokeWidth="0.6" />
-                    <polygon points={b.left} fill={shade(rgb, 0.6, a)} stroke={EDGE} strokeWidth="0.6" />
-                    <polygon points={b.top} fill={shade(rgb, 1, a)} stroke={c.isToday && i === c.list.length - 1 ? "rgb(var(--brand))" : EDGE} strokeWidth={c.isToday ? 1.4 : 0.6} />
+                    <polygon points={b.right} fill={shade(rgb, 0.92, a)} stroke={shade(rgb, 0.92, a)} {...ROUND} />
+                    <polygon points={b.left} fill={shade(rgb, 0.84, a)} stroke={shade(rgb, 0.84, a)} {...ROUND} />
+                    <polygon points={b.top} fill={shade(rgb, 1, a)} stroke={c.isToday && i === c.list.length - 1 ? "rgb(var(--brand))" : shade(rgb, 1, a)} strokeWidth={c.isToday ? 1.8 : 1.2} strokeLinejoin="round" />
                   </g>
                 );
               })}

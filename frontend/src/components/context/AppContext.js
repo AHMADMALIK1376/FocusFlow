@@ -1,5 +1,6 @@
 // src/components/context/AppContext.js
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { LoadingSpinner } from '../common/LoadingSpinner';
 import { assignmentAPI, routineAPI, dashboardAPI, focusAPI, subjectAttendanceAPI, getToken } from "../../services/api";
 
 const AppContext = createContext();
@@ -192,8 +193,7 @@ export const AppProvider = ({ children }) => {
     return (
       <div className="fixed inset-0 bg-canvas flex items-center justify-center z-50">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-12 h-12 border-4 border-brand border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-sm text-muted font-medium animate-pulse">Loading your dashboard...</p>
+          <LoadingSpinner message="Loading your dashboard…" />
         </div>
       </div>
     );

@@ -1,5 +1,6 @@
 // src/Pages/Authpage.js
 import React, { useState, useEffect } from "react";
+import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import Lottie from "lottie-react"; 
 
@@ -97,7 +98,7 @@ export default function AuthPage() {
       </div>
 
       {/* MAIN AUTH CARD */}
-      <div className="relative z-10 bg-surface rounded-[50px] shadow-glass w-[900px] max-w-[95%] min-h-[620px] overflow-hidden border border-[rgb(var(--ink)/0.06)] animate-in fade-in duration-500">
+      <div className="relative z-10 bg-surface rounded-[50px] shadow-[0_30px_60px_-24px_rgb(236_112_109/0.38),inset_0_6px_12px_rgb(255_255_255/0.9)] w-[900px] max-w-[95%] min-h-[620px] overflow-hidden border border-[rgb(var(--ink)/0.06)] animate-in fade-in duration-500">
         
         {/* TOP TITLE */}
         <div className="absolute top-10 w-full flex justify-center items-center gap-4 z-[1000] tracking-[4px] pointer-events-none">
@@ -129,7 +130,7 @@ export default function AuthPage() {
                 >
                   {isGoogleLoading ? (
                     <>
-                      <div className="w-5 h-5 border-2 border-muted border-t-transparent rounded-full animate-spin"></div>
+                      <LoadingSpinner size={26} message={null} />
                       <span className="text-[11px] font-black text-muted tracking-widest uppercase">
                         Connecting...
                       </span>

@@ -95,8 +95,8 @@ export default function Clock() {
   const pad = (n) => String(n).padStart(2, "0");
   const w = weather ? weatherFor(weather.code) : null;
 
-  // Tile colours — H uses the live theme accent; M/S are fixed brand-family pastels.
-  const C = { H: accent || "#D6C6F7", M: "#7FD8BE", S: "#FFC59E" };
+  // Tile colours on the coral card: sunshine hours, sage minutes, cream seconds.
+  const C = { H: accent || "#FFD700", M: "#B8DCC4", S: "#FFF3D6" };
   const ROWS = [
     { key: "H", value: h24, color: C.H },
     { key: "M", value: m, color: C.M },
@@ -104,7 +104,7 @@ export default function Clock() {
   ];
 
   return (
-    <div className="rounded-token-lg bg-grad-hero text-on-brand shadow-glass p-5 inline-block relative overflow-hidden">
+    <div className="rounded-token-lg bg-grad-hero text-on-brand shadow-clay-brand p-5 inline-block relative overflow-hidden">
       <div className="absolute -top-12 -right-12 w-36 h-36 rounded-full bg-[rgb(var(--on-brand)/0.10)] blur-2xl" />
 
       {/* Digital readout */}

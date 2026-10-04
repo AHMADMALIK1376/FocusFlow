@@ -142,7 +142,7 @@ export default function AttendanceGraphPopup({ attendanceData, attendanceStats, 
   return (
     <div
       className={`fixed inset-0 z-50 flex items-center justify-center p-6 transition-all duration-300 ease-in-out
-        ${isVisible ? 'bg-black/20' : 'bg-transparent'}`}
+        ${isVisible ? 'bg-[rgb(190_160_122/0.3)]' : 'bg-transparent'}`}
       onClick={handleClose}
     >
       {/* ========== CARD CONTAINER WITH PERSPECTIVE ========== */}

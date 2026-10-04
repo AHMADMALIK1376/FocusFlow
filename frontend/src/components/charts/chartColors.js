@@ -2,8 +2,8 @@
 // (recharts/SVG fills can't resolve CSS custom properties), matching
 // design/tokens.css's --brand / --brand-soft.
 
-const BRAND_HEX = "#6F3FE0";
-const ACCENT_HEX = "#E070BF";
+const BRAND_HEX = "#EC706D"; // coral
+const ACCENT_HEX = "#FFD700"; // sunshine
 
 export function chartColors() {
   return { brand: BRAND_HEX, accent: ACCENT_HEX };

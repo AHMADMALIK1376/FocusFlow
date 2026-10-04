@@ -66,7 +66,7 @@ function Row({ title, hint, checked, onChange, children }) {
 
 function TimeSelect({ value, onChange, options, disabled, fmt, label }) {
   return (
-    <Select aria-label={label} value={value} onChange={(e) => onChange(Number(e.target.value))} disabled={disabled} className="!py-2 !px-3 text-sm w-auto shrink-0">
+    <Select aria-label={label} value={value} onChange={(e) => onChange(Number(e.target.value))} disabled={disabled} className="!py-2 !px-3 text-sm !w-auto shrink-0">
       {withValue(options, value, fmt).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
     </Select>
   );
@@ -177,16 +177,9 @@ export default function RemindersSettings() {
       {/* What to remind about */}
       <div>
         <h3 className="text-sm font-black text-ink uppercase tracking-wider mb-1">What to remind me about</h3>
-        <div className="flex items-center justify-between gap-4 py-2.5">
-          <div className="min-w-0">
-            <p className="text-sm font-bold text-ink">Today's timetable every morning</p>
-            <p className="text-xs text-muted">Classes, exams, deadlines and routine for the day.</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Input type="time" value={s.digestTime} onChange={(e) => set("digestTime", e.target.value)} disabled={!s.digestEnabled} className="!py-2 !px-2 text-sm w-[7.5rem]" />
-            <Switch checked={s.digestEnabled} onChange={(v) => set("digestEnabled", v)} label="Morning timetable" />
-          </div>
-        </div>
+        <Row title="Today's timetable every morning" hint="Classes, exams, deadlines and routine for the day." checked={s.digestEnabled} onChange={(v) => set("digestEnabled", v)}>
+          <Input type="time" aria-label="Morning timetable time" value={s.digestTime} onChange={(e) => set("digestTime", e.target.value)} disabled={!s.digestEnabled} className="!py-2 !px-2 text-sm !w-[7.5rem]" />
+        </Row>
         <Row title="Before each class" hint="With the room number." checked={s.classReminders} onChange={(v) => set("classReminders", v)} />
         <Row title="Exams, quizzes and deadlines" hint="Before timed ones; all of them in the morning list." checked={s.deadlineReminders} onChange={(v) => set("deadlineReminders", v)} />
         <Row title="Daily routine activities" checked={s.routineReminders} onChange={(v) => set("routineReminders", v)} />

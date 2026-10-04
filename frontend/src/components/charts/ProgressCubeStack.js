@@ -16,18 +16,21 @@
 // labelled, so identity is never carried by colour alone.
 import React, { useEffect, useRef, useState } from "react";
 
-const SERIES_COLORS = ["#6F3FE0", "#16B981", "#2E9BF0", "#F59E0B"];
+// Theme palette: coral, sunshine, baby blue (deepened), mint.
+const SERIES_COLORS = ["#EC706D", "#F5C842", "#8FCDA6", "#F4A98A"]; // coral, sun, sage, peach
 
-const BLOCK_W = 118;
+const BLOCK_W_MAX = 118;
+const BLOCK_W_MIN = 64;
+const LABEL_SPACE = 96; // room each side for the callout line + "Attendance"
 const DX = 28;        // isometric depth, x
 const DY = 18;        // isometric depth, y
 const GAP = 8;        // tight stack — only a sliver of each top face shows
 const MIN_H = 30;     // a 0% block still needs to be visible and labelled
 const H_RANGE = 42;   // extra height at 100%
-const LEAD = 26;      // callout line length
+const LEAD = 16;      // callout line length
 const PAD_V = 16;     // room for the drop shadow
-const SEAM = 1;       // hairline same-colour stroke, miter join: seals the gaps
-                      // where faces meet WITHOUT rounding the corners
+const SEAM = 7;       // thick same-colour stroke with ROUND joins: seals the
+                      // face seams and rounds every corner → soft clay blocks
 
 function rgbOf(hex) {
   const h = String(hex).replace("#", "");
@@ -55,6 +58,8 @@ export default function ProgressCubeStack({ data }) {
     return () => ro.disconnect();
   }, []);
 
+  // Cubes shrink in narrow cards so the side labels never get clipped.
+  const BLOCK_W = Math.max(BLOCK_W_MIN, Math.min(BLOCK_W_MAX, w - 2 * LABEL_SPACE - DX));
   const stackX = Math.max(0, (w - BLOCK_W - DX) / 2);
 
   let cursorY = DY + PAD_V;
@@ -71,7 +76,7 @@ export default function ProgressCubeStack({ data }) {
       frontLit: css(lighten(c, 0.38)),
       top: css(lighten(c, 0.34)),
       topLit: css(lighten(c, 0.48)),
-      side: css(darken(c, 0.66)),
+      side: css(darken(c, 0.86)), // soft side face — no dark shading
       onLeft: i % 2 === 0,
     };
   });
@@ -84,7 +89,7 @@ export default function ProgressCubeStack({ data }) {
     const isHot = hovered === b.i;
     // Sharp corners: miter join, no rx. The hairline stroke exists only to hide
     // the sub-pixel seams between the three faces.
-    const seam = { strokeWidth: SEAM, strokeLinejoin: "miter" };
+    const seam = { strokeWidth: SEAM, strokeLinejoin: "round" };
     return (
       <g
         key={b.label}
@@ -112,7 +117,9 @@ export default function ProgressCubeStack({ data }) {
           stroke={b.side}
           {...seam}
         />
-        <rect x={x} y={yb} width={BLOCK_W} height={b.h} fill={`url(#cube-${b.i})`} />
+        <rect x={x} y={yb} width={BLOCK_W} height={b.h} fill={`url(#cube-${b.i})`} stroke={b.front} strokeWidth={SEAM} strokeLinejoin="round" />
+        {/* clay highlight along the top front edge */}
+        <line x1={x + 4} y1={yb + 3} x2={x + BLOCK_W - 4} y2={yb + 3} stroke="#fff" strokeOpacity={0.55} strokeWidth={3} strokeLinecap="round" />
         {/* Diagonal sheen — the plastic/glass highlight from the reference */}
         <polygon
           points={pts([[x, yb], [x + BLOCK_W * 0.52, yb], [x + BLOCK_W * 0.26, yb + b.h], [x, yb + b.h]])}
@@ -130,10 +137,10 @@ export default function ProgressCubeStack({ data }) {
         <svg width={w} height={height} viewBox={`0 0 ${w} ${height}`}>
           <defs>
             <filter id="cubeShadow" x="-40%" y="-40%" width="200%" height="200%">
-              <feDropShadow dx="0" dy="5" stdDeviation="4.5" floodColor="#1b1b3a" floodOpacity="0.26" />
+              <feDropShadow dx="0" dy="5" stdDeviation="4.5" floodColor="#BEA07A" floodOpacity="0.32" />
             </filter>
             <filter id="cubeShadowHot" x="-55%" y="-55%" width="230%" height="230%">
-              <feDropShadow dx="0" dy="10" stdDeviation="9" floodColor="#1b1b3a" floodOpacity="0.34" />
+              <feDropShadow dx="0" dy="10" stdDeviation="9" floodColor="#BEA07A" floodOpacity="0.4" />
             </filter>
             {blocks.map((b) => (
               <linearGradient key={`g-${b.i}`} id={`cube-${b.i}`} x1="0" y1="0" x2="0.3" y2="1">
@@ -162,7 +169,7 @@ export default function ProgressCubeStack({ data }) {
                 <g key={`c-${b.label}`}>
                   <line x1={stackX} y1={cy} x2={x2} y2={cy} stroke={b.hex} strokeWidth={isHot ? 2.25 : 1.5} style={{ transition: "stroke-width 260ms ease-out" }} />
                   <circle cx={x2} cy={cy} r={isHot ? 3.5 : 2.5} fill={b.hex} style={{ transition: "r 260ms ease-out" }} />
-                  <text x={x2 - 8} y={cy - 7} textAnchor="end" dominantBaseline="central" fill={b.hex} fontSize={nameSize} fontWeight={800} style={tr}>
+                  <text x={x2 - 8} y={cy - 7} textAnchor="end" dominantBaseline="central" fill="rgb(var(--muted))" fontSize={nameSize} fontWeight={800} style={tr}>
                     {b.label}
                   </text>
                   <text x={x2 - 8} y={cy + 9} textAnchor="end" dominantBaseline="central" fill="rgb(var(--ink))" fontSize={pctSize} fontWeight={900} style={tr}>
@@ -178,7 +185,7 @@ export default function ProgressCubeStack({ data }) {
               <g key={`c-${b.label}`}>
                 <line x1={x1} y1={cyR} x2={x2} y2={cyR} stroke={b.hex} strokeWidth={isHot ? 2.25 : 1.5} style={{ transition: "stroke-width 260ms ease-out" }} />
                 <circle cx={x2} cy={cyR} r={isHot ? 3.5 : 2.5} fill={b.hex} style={{ transition: "r 260ms ease-out" }} />
-                <text x={x2 + 8} y={cyR - 7} dominantBaseline="central" fill={b.hex} fontSize={nameSize} fontWeight={800} style={tr}>
+                <text x={x2 + 8} y={cyR - 7} dominantBaseline="central" fill="rgb(var(--muted))" fontSize={nameSize} fontWeight={800} style={tr}>
                   {b.label}
                 </text>
                 <text x={x2 + 8} y={cyR + 9} dominantBaseline="central" fill="rgb(var(--ink))" fontSize={pctSize} fontWeight={900} style={tr}>

@@ -13,15 +13,15 @@ export function Switch({ checked, onChange, label, className = '' }) {
       className={cx(
         'relative inline-flex items-center h-[30px] w-[78px] rounded-full transition-colors duration-300 select-none shrink-0',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
-        checked ? 'bg-grad-hero' : 'bg-[rgb(var(--ink)/0.12)]',
+        checked ? 'bg-grad-sage shadow-neu-inset' : 'bg-surface-2 shadow-neu-inset',  // sage = on
         className
       )}
     >
-      <span className={cx('absolute left-3 text-[10px] font-black tracking-wider transition-opacity duration-200', checked ? 'opacity-100 text-[rgb(var(--on-brand)/0.9)]' : 'opacity-0')}>ON</span>
+      <span className={cx('absolute left-3 text-[10px] font-black tracking-wider transition-opacity duration-200', checked ? 'opacity-100 text-on-sage' : 'opacity-0')}>ON</span>
       <span className={cx('absolute right-3 text-[10px] font-black tracking-wider text-muted transition-opacity duration-200', checked ? 'opacity-0' : 'opacity-100')}>OFF</span>
       <span
         className={cx(
-          'absolute top-1 h-[22px] w-[36px] rounded-full bg-white shadow-[0_2px_6px_rgba(0,0,0,0.28)] transition-all duration-300 ease-spring',
+          'absolute top-1 h-[22px] w-[36px] rounded-full bg-white shadow-[0_2px_6px_rgb(190_160_122/0.4)] transition-all duration-300 ease-spring',
           checked ? 'left-[40px]' : 'left-1'
         )}
       />
@@ -43,7 +43,7 @@ export function Checkbox({ checked, onChange, size = 24, className = '', label }
         'relative shrink-0 rounded-full flex items-center justify-center transition-all duration-200 active:scale-90',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
         checked
-          ? 'bg-grad-hero shadow-[0_4px_10px_rgb(var(--brand)/0.4)]'
+          ? 'bg-grad-sage shadow-neu-sm'
           : 'bg-surface-2 border-2 border-[rgb(var(--ink)/0.22)] hover:border-[rgb(var(--brand)/0.6)]',
         className
       )}
@@ -51,7 +51,7 @@ export function Checkbox({ checked, onChange, size = 24, className = '', label }
       <svg
         viewBox="0 0 24 24"
         fill="none"
-        stroke="#fff"
+        stroke="rgb(var(--on-sage))"
         strokeWidth="3.5"
         strokeLinecap="round"
         strokeLinejoin="round"

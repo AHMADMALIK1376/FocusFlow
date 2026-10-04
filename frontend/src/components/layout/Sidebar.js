@@ -40,15 +40,15 @@ export default function Sidebar() {
           'group relative flex items-center h-10 rounded-token-md transition-colors duration-200',
           collapsed ? 'justify-center w-10 mx-auto' : 'gap-3 px-3 w-full',
           active
-            ? 'bg-on-brand text-brand'
-            : 'text-[rgb(var(--on-brand)/0.72)] hover:bg-[rgb(var(--on-brand)/0.12)] hover:text-on-brand'
+            ? 'bg-surface text-brand shadow-neu-sm'  // selected = white clay
+            : 'text-[rgb(var(--on-brand)/0.92)] hover:bg-[rgb(var(--on-brand)/0.16)] hover:text-on-brand'
         )}
       >
         <NavIcon id={item.id} size={19} className="shrink-0" />
         {!collapsed && (
           <span className={cx('text-sm truncate', active && 'font-semibold')}>{t(item.labelKey)}</span>
         )}
-        {!collapsed && active && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-brand" />}
+        {!collapsed && active && <span className="ml-auto w-2 h-2 rounded-full bg-sun shadow-[0_0_0_2px_rgb(var(--brand)/0.25)]" />}
         {collapsed && (
           <span className="absolute left-[54px] px-2.5 py-1 rounded-md bg-on-brand text-brand text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 z-50 shadow-lg">
             {t(item.labelKey)}
@@ -61,7 +61,7 @@ export default function Sidebar() {
   return (
     <aside
       className={cx(
-        'hidden md:flex flex-col flex-shrink-0 sticky top-3 h-[calc(100vh-1.5rem)] m-3 mr-0 rounded-token-xl bg-grad-hero text-on-brand z-40 transition-[width] duration-300 ease-spring shadow-[0_12px_34px_rgb(45_71_89/0.28)]',
+        'hidden md:flex flex-col flex-shrink-0 sticky top-3 h-[calc(100vh-1.5rem)] m-3 mr-0 rounded-token-xl bg-grad-hero text-on-brand z-40 transition-[width] duration-300 ease-spring shadow-clay-brand',
         collapsed ? 'w-[76px]' : 'w-[248px]'
       )}
     >
@@ -103,12 +103,12 @@ export default function Sidebar() {
       {/* Nav */}
       <nav className="sb-scroll flex-1 overflow-y-auto px-3 pb-3 space-y-1">
         <style>{`.sb-scroll::-webkit-scrollbar{display:none}.sb-scroll{scrollbar-width:none}`}</style>
-        {!collapsed && <p className="px-3 pt-2 pb-1.5 text-[10px] font-bold uppercase tracking-widest text-[rgb(var(--on-brand)/0.45)]">Main</p>}
+        {!collapsed && <p className="px-3 pt-2 pb-1.5 text-[10px] font-bold uppercase tracking-widest text-[rgb(var(--on-brand)/0.75)]">Main</p>}
         {main.map(renderItem)}
         {collapsed ? (
           <div className="my-2 mx-auto w-7 h-px bg-[rgb(var(--on-brand)/0.15)]" />
         ) : (
-          <p className="px-3 pt-4 pb-1.5 text-[10px] font-bold uppercase tracking-widest text-[rgb(var(--on-brand)/0.45)]">Workspace</p>
+          <p className="px-3 pt-4 pb-1.5 text-[10px] font-bold uppercase tracking-widest text-[rgb(var(--on-brand)/0.75)]">Workspace</p>
         )}
         {workspace.map(renderItem)}
       </nav>
