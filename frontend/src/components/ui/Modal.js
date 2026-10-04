@@ -1,6 +1,8 @@
 import React, { useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { X } from 'lucide-react';
 import { cx } from './cx';
+import './fancyControls.css';
 
 function useEscape(open, onClose) {
   useEffect(() => {
@@ -13,7 +15,10 @@ function useEscape(open, onClose) {
   }, [open, onClose]);
 }
 
-export function Modal({ open, onClose, title, children, className = '' }) {
+export function Modal({
+  open, onClose, title, children, className = '',
+  maxWidthClassName = 'max-w-lg', noScrollbar = false, showClose = false,
+}) {
   useEscape(open, onClose);
   return (
     <AnimatePresence>
@@ -38,10 +43,22 @@ export function Modal({ open, onClose, title, children, className = '' }) {
             exit={{ scale: 0.95, y: 10, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 300, damping: 26 }}
             className={cx(
-              'relative w-full max-w-lg bg-surface text-ink rounded-token-lg shadow-glass p-6 max-h-[85vh] overflow-y-auto',
+              'relative w-full bg-surface text-ink rounded-token-lg shadow-glass p-6 max-h-[85vh] overflow-y-auto',
+              maxWidthClassName,
+              noScrollbar && 'ff-modal-no-scrollbar',
               className
             )}
           >
+            {showClose && (
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="Close"
+                className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-focus hover:bg-focus/10 transition-colors z-10"
+              >
+                <X size={18} />
+              </button>
+            )}
             {title && <h2 className="text-xl font-black text-ink mb-4">{title}</h2>}
             {children}
           </motion.div>
