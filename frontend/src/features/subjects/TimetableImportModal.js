@@ -231,16 +231,19 @@ export default function TimetableImportModal({ open, onClose, existing = [], onI
           </div>
         </div>
       ) : (
-        <div className="space-y-3">
-          <p className="text-sm text-muted">
+        // Only the course list scrolls; the header and buttons stay inside the frame.
+        <div className="flex flex-col gap-3 max-h-[calc(85vh-6.5rem)]">
+          <p className="text-sm text-muted shrink-0">
             Found {rows.length} course{rows.length === 1 ? "" : "s"}. Check names, times and rooms. Screenshots can misread a letter or two.
             Times are 24-hour; portal times without AM/PM were read as 8–11 morning, 12–7 afternoon.
           </p>
-          <Field label="Term (applies to all)">
-            <Input value={term} onChange={(e) => setTerm(e.target.value)} placeholder="e.g. Fall 2026" />
-          </Field>
+          <div className="shrink-0">
+            <Field label="Term (applies to all)">
+              <Input value={term} onChange={(e) => setTerm(e.target.value)} placeholder="e.g. Fall 2026" className="!py-2.5 !px-4 text-sm" />
+            </Field>
+          </div>
 
-          <div className="space-y-2.5">
+          <div className="space-y-2.5 overflow-y-auto min-h-0 flex-1 ff-modal-no-scrollbar -mx-1 px-1 pb-1">
             {rows.map((r, i) => (
               <div
                 key={i}
@@ -279,9 +282,9 @@ export default function TimetableImportModal({ open, onClose, existing = [], onI
             ))}
           </div>
 
-          {error && <p className="text-sm text-focus">{error}</p>}
+          {error && <p className="text-sm text-focus shrink-0">{error}</p>}
 
-          <div className="flex justify-between gap-2 sticky -bottom-5 -mx-5 px-5 pt-3 pb-5 bg-surface border-t border-[rgb(var(--ink)/0.08)]">
+          <div className="flex justify-between gap-2 shrink-0 pt-3 border-t border-[rgb(var(--ink)/0.08)]">
             <Button variant="ghost" onClick={() => { setStep("input"); setError(""); }} disabled={busy} className="gap-1.5">
               <ArrowLeft size={16} /> Back
             </Button>

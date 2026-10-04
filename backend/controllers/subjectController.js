@@ -1,6 +1,9 @@
 const { getConnection } = require('../config/database');
 const { generateId } = require('../utils/helpers');
 
+// Per-subject reminder override in minutes; blank/null → use Settings.
+const toOverride = (v) => (v === null || v === undefined || v === '' ? null : Math.max(0, Math.min(1440, Math.round(Number(v)) || 0)));
+
 // Map a SUBJECTS row (+ its schedule rows) to the API shape.
 function toSubject(row, scheduleRows) {
   return {
@@ -12,6 +15,8 @@ function toSubject(row, scheduleRows) {
     creditHours: row.CREDIT_HOURS,
     term: row.TERM,
     targetGrade: row.TARGET_GRADE,
+    remindBefore: row.REMIND_BEFORE_MIN,
+    attendanceAfter: row.ATTENDANCE_AFTER_MIN,
     isArchived: row.IS_ARCHIVED === 1,
     createdAt: row.CREATED_AT,
     schedule: (scheduleRows || []).map((s) => ({
@@ -30,7 +35,8 @@ exports.getSubjects = async (req, res) => {
   try {
     connection = await getConnection();
     const subs = await connection.execute(
-      `SELECT subject_id, name, code, color, instructor, credit_hours, term, target_grade, is_archived, created_at
+      `SELECT subject_id, name, code, color, instructor, credit_hours, term, target_grade, is_archived, created_at,
+              remind_before_min, attendance_after_min
        FROM SUBJECTS WHERE user_id = :userId ORDER BY created_at DESC`,
       { userId: req.user.userId }
     );
@@ -60,7 +66,8 @@ exports.getSubject = async (req, res) => {
   try {
     connection = await getConnection();
     const subs = await connection.execute(
-      `SELECT subject_id, name, code, color, instructor, credit_hours, term, target_grade, is_archived, created_at
+      `SELECT subject_id, name, code, color, instructor, credit_hours, term, target_grade, is_archived, created_at,
+              remind_before_min, attendance_after_min
        FROM SUBJECTS WHERE subject_id = :id AND user_id = :userId`,
       { id: req.params.id, userId: req.user.userId }
     );
@@ -83,14 +90,15 @@ exports.getSubject = async (req, res) => {
 exports.createSubject = async (req, res) => {
   let connection;
   try {
-    const { name, code, color, instructor, creditHours, term, targetGrade, schedule } = req.body;
+    const { name, code, color, instructor, creditHours, term, targetGrade, schedule, remindBefore, attendanceAfter } = req.body;
     if (!name || !name.trim()) return res.status(400).json({ error: 'Subject name is required.' });
 
     const subjectId = generateId();
     connection = await getConnection();
     await connection.execute(
-      `INSERT INTO SUBJECTS (subject_id, user_id, name, code, color, instructor, credit_hours, term, target_grade, is_archived)
-       VALUES (:id, :userId, :name, :code, :color, :instructor, :creditHours, :term, :targetGrade, 0)`,
+      `INSERT INTO SUBJECTS (subject_id, user_id, name, code, color, instructor, credit_hours, term, target_grade, is_archived,
+         remind_before_min, attendance_after_min)
+       VALUES (:id, :userId, :name, :code, :color, :instructor, :creditHours, :term, :targetGrade, 0, :remindBefore, :attendanceAfter)`,
       {
         id: subjectId,
         userId: req.user.userId,
@@ -101,6 +109,8 @@ exports.createSubject = async (req, res) => {
         creditHours: creditHours != null ? creditHours : 3,
         term: term || null,
         targetGrade: targetGrade || null,
+        remindBefore: toOverride(remindBefore),
+        attendanceAfter: toOverride(attendanceAfter),
       }
     );
     if (Array.isArray(schedule)) {
@@ -126,6 +136,8 @@ exports.updateSubject = async (req, res) => {
   let connection;
   try {
     const { name, code, color, instructor, creditHours, term, targetGrade, isArchived, schedule } = req.body;
+    // Only touch the reminder overrides when the client sent them.
+    const has = (k) => Object.prototype.hasOwnProperty.call(req.body, k);
     connection = await getConnection();
     const owned = await connection.execute(
       `SELECT subject_id FROM SUBJECTS WHERE subject_id = :id AND user_id = :userId`,
@@ -142,7 +154,9 @@ exports.updateSubject = async (req, res) => {
          credit_hours = COALESCE(:creditHours, credit_hours),
          term = :term,
          target_grade = :targetGrade,
-         is_archived = COALESCE(:isArchived, is_archived)
+         is_archived = COALESCE(:isArchived, is_archived),
+         remind_before_min = CASE WHEN :setRB = 1 THEN CAST(:remindBefore AS INTEGER) ELSE remind_before_min END,
+         attendance_after_min = CASE WHEN :setAA = 1 THEN CAST(:attendanceAfter AS INTEGER) ELSE attendance_after_min END
        WHERE subject_id = :id AND user_id = :userId`,
       {
         name: name != null ? name.trim() : null,
@@ -153,6 +167,10 @@ exports.updateSubject = async (req, res) => {
         term: term != null ? term : null,
         targetGrade: targetGrade != null ? targetGrade : null,
         isArchived: isArchived != null ? (isArchived ? 1 : 0) : null,
+        setRB: has('remindBefore') ? 1 : 0,
+        remindBefore: toOverride(req.body.remindBefore),
+        setAA: has('attendanceAfter') ? 1 : 0,
+        attendanceAfter: toOverride(req.body.attendanceAfter),
         id: req.params.id,
         userId: req.user.userId,
       }

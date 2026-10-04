@@ -242,6 +242,15 @@ export const studyHoursAPI = {
 // ==============================================
 // ROUTINE APIs
 // ==============================================
+// Reminders: settings, phone push subscription, test sends.
+export const notifyAPI = {
+    getSettings: async () => authFetch('/notify/settings'),
+    saveSettings: async (data) => authFetch('/notify/settings', { method: 'PUT', body: JSON.stringify(data) }),
+    subscribe: async (subscription) => authFetch('/notify/subscribe', { method: 'POST', body: JSON.stringify({ subscription }) }),
+    unsubscribe: async (endpoint) => authFetch('/notify/unsubscribe', { method: 'POST', body: JSON.stringify({ endpoint }) }),
+    sendTest: async (kind = 'basic') => authFetch('/notify/test', { method: 'POST', body: JSON.stringify({ kind }) }),
+};
+
 export const routineAPI = {
     getAll: async () => {
         return authFetch('/routines');

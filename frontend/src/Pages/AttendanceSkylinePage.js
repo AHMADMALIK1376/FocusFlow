@@ -181,6 +181,53 @@ const Tower = React.memo(function Tower({ dataKey, pointsTop, pointsRight, point
   );
 });
 
+// Per-subject attended / missed / % (same numbers as the attendance report
+// sent after each "Did you attend?" answer).
+function SubjectBreakdown() {
+  const [data, setData] = useState(null);
+  useEffect(() => {
+    let alive = true;
+    subjectAttendanceAPI.getOverview().then((d) => alive && setData(d)).catch(() => alive && setData({ subjects: [] }));
+    return () => { alive = false; };
+  }, []);
+  if (!data) return null;
+  const rows = (data.subjects || []).slice().sort((a, b) => a.name.localeCompare(b.name));
+  return (
+    <Panel className="mt-5">
+      <div className="flex items-baseline justify-between gap-3 mb-3">
+        <h2 className="text-base font-black text-ink uppercase tracking-wider">By subject</h2>
+        <span className="text-sm text-muted">
+          Overall <b className="text-ink">{data.overallPercentage == null ? "—" : `${data.overallPercentage}%`}</b>
+        </span>
+      </div>
+      {rows.length === 0 ? (
+        <p className="text-sm text-muted">Add subjects to track attendance per course.</p>
+      ) : (
+        <div className="divide-y divide-[rgb(var(--ink)/0.07)]">
+          {rows.map((s) => {
+            const attended = (s.present || 0) + (s.late || 0);
+            const pct = s.percentage;
+            return (
+              <div key={s.id} className="py-2.5 grid grid-cols-[1fr_auto] sm:grid-cols-[minmax(0,1fr)_9rem_8rem] items-center gap-x-4 gap-y-1">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: s.color || "rgb(var(--brand))" }} />
+                  <span className="text-sm font-bold text-ink truncate">{s.name}</span>
+                </div>
+                <span className={`text-sm font-black text-right sm:order-3 ${pct == null ? "text-muted" : s.isAtRisk ? "text-focus" : "text-ink"}`}>
+                  {pct == null ? "No classes yet" : `${pct}%${s.isAtRisk ? " ⚠️" : ""}`}
+                </span>
+                <span className="text-xs text-muted col-span-2 sm:col-span-1 sm:order-2">
+                  {pct == null ? "" : `${attended} attended · ${s.absent || 0} missed`}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </Panel>
+  );
+}
+
 export default function AttendanceSkylinePage() {
   const [byDate, setByDate] = useState({});
   const [year, setYear] = useState(() => new Date().getFullYear());
@@ -560,6 +607,8 @@ export default function AttendanceSkylinePage() {
           </p>
         )}
       </Panel>
+
+      <SubjectBreakdown />
 
       {hover && (
         <div

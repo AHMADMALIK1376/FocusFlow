@@ -1,18 +1,11 @@
-﻿require('dotenv').config();
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
-const cron = require('node-cron');
 const { initialize, healthCheck: dbHealthCheck, getPoolStats, closePool } = require('./config/database');
-const { startReminderScheduler } = require('./services/reminderService');
-const { sendAllDailySchedules } = require('./services/dailyScheduleEmailService');
-const {
-    sendWeeklyTaskSummary,
-    sendDailyTaskSummary
-} = require('./services/taskReminderEmailService');
-const { sendAllDailyRoutines } = require('./services/dailyRoutineEmailService');
+const { startNotificationScheduler } = require('./services/notificationScheduler');
 const { getEmailQueueStats, clearEmailQueue } = require('./services/emailService');
 
 // Import routes
@@ -31,6 +24,7 @@ const subjectAttendanceRoutes = require('./routes/subjectAttendanceRoutes');
 const assignmentRoutes = require('./routes/assignmentRoutes');
 const habitRoutes = require('./routes/habitRoutes');
 const studyHoursRoutes = require('./routes/studyHoursRoutes');
+const notifyRoutes = require('./routes/notifyRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -186,6 +180,7 @@ app.use('/api/subject-attendance', subjectAttendanceRoutes);
 app.use('/api/assignments', assignmentRoutes);
 app.use('/api/habits', habitRoutes);
 app.use('/api/study-hours', studyHoursRoutes);
+app.use('/api/notify', notifyRoutes);
 
 // ==============================================
 // HEALTH CHECK
@@ -255,28 +250,8 @@ async function startServer() {
         await initialize();
         console.log('✅ Database connection pool created');
         
-        startReminderScheduler();
-        console.log('⏰ Class reminder scheduler started');
-        
-        cron.schedule('0 6 * * *', () => {
-            console.log('📅 [6:00 AM] Sending daily class schedule emails...');
-            sendAllDailySchedules().catch(err => console.error('Daily schedule error:', err));
-        });
-        
-        cron.schedule('0 7 * * *', () => {
-            console.log('🕒 [7:00 AM] Sending daily routine emails...');
-            sendAllDailyRoutines().catch(err => console.error('Daily routine error:', err));
-        });
-        
-        cron.schedule('0 7 * * 1', () => {
-            console.log('📋 [Monday 7:00 AM] Sending weekly task summary...');
-            sendWeeklyTaskSummary().catch(err => console.error('Weekly summary error:', err));
-        });
-        
-        cron.schedule('0 8 * * *', () => {
-            console.log('📋 [8:00 AM] Sending daily assignment summary...');
-            sendDailyTaskSummary().catch(err => console.error('Daily summary error:', err));
-        });
+        // Class / exam / routine reminders, morning digest and attendance prompts.
+        startNotificationScheduler();
 
         app.listen(PORT, () => {
             console.log('='.repeat(60));

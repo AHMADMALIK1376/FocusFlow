@@ -397,3 +397,48 @@ CREATE TABLE IF NOT EXISTS STUDY_HOURS (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_studyhours_user ON STUDY_HOURS(user_id, entry_date);
+
+-- Reminders & notifications ---------------------------------------------
+-- One settings row per user; a missing row means "use the defaults".
+CREATE TABLE IF NOT EXISTS NOTIFICATION_SETTINGS (
+  user_id            VARCHAR(50) PRIMARY KEY REFERENCES USERS(user_id) ON DELETE CASCADE,
+  timezone           VARCHAR(60),
+  digest_enabled     SMALLINT DEFAULT 1,
+  digest_time        VARCHAR(5) DEFAULT '07:00',
+  class_reminders    SMALLINT DEFAULT 1,
+  deadline_reminders SMALLINT DEFAULT 1,
+  routine_reminders  SMALLINT DEFAULT 1,
+  attendance_prompts SMALLINT DEFAULT 1,
+  lead_minutes       INTEGER DEFAULT 60,
+  email_enabled      SMALLINT DEFAULT 1,
+  whatsapp_enabled   SMALLINT DEFAULT 0,
+  whatsapp_phone     VARCHAR(30),
+  whatsapp_apikey    VARCHAR(60),
+  updated_at         TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+-- Browser/phone push subscriptions (one per installed device).
+CREATE TABLE IF NOT EXISTS PUSH_SUBSCRIPTIONS (
+  endpoint   VARCHAR(1000) PRIMARY KEY,
+  user_id    VARCHAR(50) NOT NULL REFERENCES USERS(user_id) ON DELETE CASCADE,
+  p256dh     VARCHAR(200) NOT NULL,
+  auth       VARCHAR(100) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_push_user ON PUSH_SUBSCRIPTIONS(user_id);
+-- Every reminder sent, keyed so the same one is never sent twice.
+CREATE TABLE IF NOT EXISTS NOTIFICATION_LOG (
+  user_id   VARCHAR(50) NOT NULL REFERENCES USERS(user_id) ON DELETE CASCADE,
+  notif_key VARCHAR(200) NOT NULL,
+  sent_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (user_id, notif_key)
+);
+
+-- Reminder follow-ups (submit / quiz marks / attendance delay) + per-subject overrides
+ALTER TABLE NOTIFICATION_SETTINGS ADD COLUMN IF NOT EXISTS attendance_delay_min INTEGER DEFAULT 0;
+ALTER TABLE NOTIFICATION_SETTINGS ADD COLUMN IF NOT EXISTS submit_prompts      SMALLINT DEFAULT 1;
+ALTER TABLE NOTIFICATION_SETTINGS ADD COLUMN IF NOT EXISTS submit_lead_min     INTEGER DEFAULT 180;
+ALTER TABLE NOTIFICATION_SETTINGS ADD COLUMN IF NOT EXISTS quiz_followups      SMALLINT DEFAULT 1;
+ALTER TABLE NOTIFICATION_SETTINGS ADD COLUMN IF NOT EXISTS quiz_followup_min   INTEGER DEFAULT 20;
+ALTER TABLE SUBJECTS ADD COLUMN IF NOT EXISTS remind_before_min    INTEGER;  -- NULL = use settings
+ALTER TABLE SUBJECTS ADD COLUMN IF NOT EXISTS attendance_after_min INTEGER;  -- NULL = use settings
+ALTER TABLE EXAMS_DEADLINES ADD COLUMN IF NOT EXISTS duration_min  INTEGER;  -- quiz/exam length

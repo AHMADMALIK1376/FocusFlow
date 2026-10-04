@@ -8,7 +8,12 @@ import TimetableImportModal from "../features/subjects/TimetableImportModal";
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 const DAY_SHORT = { Monday: "Mon", Tuesday: "Tue", Wednesday: "Wed", Thursday: "Thu", Friday: "Fri", Saturday: "Sat", Sunday: "Sun" };
-const EMPTY_FORM = { name: "", code: "", color: "#2D4759", instructor: "", creditHours: 3, term: "", targetGrade: "", schedule: [] };
+const EMPTY_FORM = { name: "", code: "", color: "#2D4759", instructor: "", creditHours: 3, term: "", targetGrade: "", remindBefore: "", attendanceAfter: "", schedule: [] };
+
+// Per-subject reminder times ("" = use the default from Settings → Reminders).
+const REMIND_BEFORE = [["", "Default (Settings)"], [0, "When it starts"], [5, "5 min before"], [10, "10 min before"], [15, "15 min before"], [30, "30 min before"], [45, "45 min before"], [60, "1 hour before"], [90, "1½ hours before"], [120, "2 hours before"]];
+const ASK_AFTER = [["", "Default (Settings)"], [0, "When it ends"], [5, "5 min after"], [10, "10 min after"], [15, "15 min after"], [30, "30 min after"], [60, "1 hour after"]];
+const fieldCls = "!py-2 !px-3.5 text-sm";
 
 // Every subject already carries its own custom `color` (set via the picker in
 // the edit form) — cards use a light pastel TINT of that same color as their
@@ -69,6 +74,7 @@ export default function SubjectsPage() {
       name: s.name || "", code: s.code || "", color: s.color || "#2D4759",
       instructor: s.instructor || "", creditHours: s.creditHours ?? 3,
       term: s.term || "", targetGrade: s.targetGrade || "",
+      remindBefore: s.remindBefore ?? "", attendanceAfter: s.attendanceAfter ?? "",
       schedule: (s.schedule || []).map((x) => ({ day: x.day || "Monday", start: x.start || "", end: x.end || "", room: x.room || "" })),
     });
     setOpen(true);
@@ -86,6 +92,8 @@ export default function SubjectsPage() {
         name: form.name.trim(), code: form.code.trim() || null, color: form.color,
         instructor: form.instructor.trim() || null, creditHours: Number(form.creditHours) || 0,
         term: form.term.trim() || null, targetGrade: form.targetGrade.trim() || null,
+        remindBefore: form.remindBefore === "" ? null : Number(form.remindBefore),
+        attendanceAfter: form.attendanceAfter === "" ? null : Number(form.attendanceAfter),
         schedule: form.schedule.filter((s) => s.day),
       };
       if (editId) await update(editId, payload); else await create(payload);
@@ -103,7 +111,7 @@ export default function SubjectsPage() {
   return (
     <PageShell>
       <PageHeader title="Subjects" subtitle="Your courses this term — schedule, grades, attendance and more in one place.">
-        <Button variant="soft" onClick={() => setImportOpen(true)} className="gap-1.5"><ScanText size={16} /> Import timetable</Button>
+        <Button variant="primary" onClick={() => setImportOpen(true)} className="gap-1.5"><ScanText size={16} /> Import timetable</Button>
         <Button variant="primary" onClick={openAdd} className="gap-1.5"><Plus size={16} /> Add subject</Button>
       </PageHeader>
 
@@ -173,30 +181,37 @@ export default function SubjectsPage() {
         open={open}
         onClose={() => setOpen(false)}
         title={editId ? "Edit subject" : "Add subject"}
-        maxWidthClassName="max-w-md"
+        maxWidthClassName="max-w-2xl"
         noScrollbar
         showClose
         className="p-5"
       >
-        <div className="space-y-3">
-          <Field label="Subject name">
-            <Input value={form.name} onChange={(e) => setField("name", e.target.value)} placeholder="e.g. Data Structures" autoFocus />
-          </Field>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Code"><Input value={form.code} onChange={(e) => setField("code", e.target.value)} placeholder="CS201" /></Field>
-            <Field label="Credit hours"><Input type="number" min="0" step="0.5" value={form.creditHours} onChange={(e) => setField("creditHours", e.target.value)} /></Field>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Instructor"><Input value={form.instructor} onChange={(e) => setField("instructor", e.target.value)} placeholder="Dr. Khan" /></Field>
-            <Field label="Term"><Input value={form.term} onChange={(e) => setField("term", e.target.value)} placeholder="Fall 2026" /></Field>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Target grade"><Input value={form.targetGrade} onChange={(e) => setField("targetGrade", e.target.value)} placeholder="A" /></Field>
+        <div className="space-y-2">
+          <div className="grid grid-cols-[1fr_7rem_auto] gap-3">
+            <Field label="Subject name">
+              <Input value={form.name} onChange={(e) => setField("name", e.target.value)} placeholder="e.g. Data Structures" autoFocus className={fieldCls} />
+            </Field>
+            <Field label="Code"><Input value={form.code} onChange={(e) => setField("code", e.target.value)} placeholder="CS201" className={fieldCls} /></Field>
             <Field label="Colour">
-              <div className="flex items-center gap-2">
-                <input type="color" value={form.color} onChange={(e) => setField("color", e.target.value)} className="w-12 h-11 rounded-token-md border-0 bg-transparent cursor-pointer" />
-                <span className="text-xs text-muted font-mono">{form.color}</span>
-              </div>
+              <input type="color" value={form.color} onChange={(e) => setField("color", e.target.value)} className="w-11 h-[38px] rounded-token-md border-0 bg-transparent cursor-pointer" title={form.color} />
+            </Field>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-[2fr_1.3fr_1fr_1fr] gap-3">
+            <Field label="Instructor"><Input value={form.instructor} onChange={(e) => setField("instructor", e.target.value)} placeholder="Dr. Khan" className={fieldCls} /></Field>
+            <Field label="Term"><Input value={form.term} onChange={(e) => setField("term", e.target.value)} placeholder="Fall 2026" className={fieldCls} /></Field>
+            <Field label="Credits"><Input type="number" min="0" step="0.5" value={form.creditHours} onChange={(e) => setField("creditHours", e.target.value)} className={fieldCls} /></Field>
+            <Field label="Target"><Input value={form.targetGrade} onChange={(e) => setField("targetGrade", e.target.value)} placeholder="A" className={fieldCls} /></Field>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Remind me">
+              <Select value={form.remindBefore} onChange={(e) => setField("remindBefore", e.target.value)} className={fieldCls}>
+                {REMIND_BEFORE.map(([v, l]) => <option key={l} value={v}>{l}</option>)}
+              </Select>
+            </Field>
+            <Field label="Ask “Did you attend?”">
+              <Select value={form.attendanceAfter} onChange={(e) => setField("attendanceAfter", e.target.value)} className={fieldCls}>
+                {ASK_AFTER.map(([v, l]) => <option key={l} value={v}>{l}</option>)}
+              </Select>
             </Field>
           </div>
 
@@ -210,13 +225,13 @@ export default function SubjectsPage() {
             ) : (
               <div className="space-y-1.5">
                 {form.schedule.map((slot, i) => (
-                  <div key={i} className="grid grid-cols-[1fr_auto_auto_1fr_auto] gap-2 items-center">
-                    <Select value={slot.day} onChange={(e) => setSlot(i, "day", e.target.value)} className="!py-2 !px-3 text-sm">
+                  <div key={i} className="grid grid-cols-[4.5rem_1fr_1fr_1fr_auto] gap-1.5 items-center">
+                    <Select value={slot.day} onChange={(e) => setSlot(i, "day", e.target.value)} className="!py-2 !px-2.5 text-sm">
                       {DAYS.map((d) => <option key={d} value={d}>{DAY_SHORT[d]}</option>)}
                     </Select>
                     <Input type="time" value={slot.start} onChange={(e) => setSlot(i, "start", e.target.value)} className="!py-2 !px-2 text-sm" />
                     <Input type="time" value={slot.end} onChange={(e) => setSlot(i, "end", e.target.value)} className="!py-2 !px-2 text-sm" />
-                    <Input value={slot.room} onChange={(e) => setSlot(i, "room", e.target.value)} placeholder="Room" className="!py-2 !px-3 text-sm" />
+                    <Input value={slot.room} onChange={(e) => setSlot(i, "room", e.target.value)} placeholder="Room" className="!py-2 !px-2.5 text-sm" />
                     <button onClick={() => removeSlot(i)} className="p-1.5 text-muted hover:text-focus" title="Remove slot"><Trash2 size={15} /></button>
                   </div>
                 ))}

@@ -5,7 +5,7 @@ import { Panel } from "../dashboard/DashKit";
 import { useExams } from "../../features/exams/useExams";
 import { countdownLabel } from "../../features/exams/examsLogic";
 
-const TYPES = ["Exam", "Quiz", "Deadline", "Submission", "Assignment"];
+const TYPES = ["Exam", "Quiz", "Test", "Assignment", "Project", "Submission", "Deadline"];
 const EMPTY = { title: "", type: "Exam", date: "", time: "", location: "" };
 
 export default function ExamsPanel({ subjectId }) {
