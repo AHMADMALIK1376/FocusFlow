@@ -53,10 +53,10 @@ export default function TimeTrackPage() {
       <PageHeader title="Study hours" subtitle="Track where your hours go and stay focused." />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-        <StatTile primary icon={<Hourglass size={18} />} label="Total tracked" value={hoursLabel(total)} sub="All time" />
-        <StatTile icon={<Timer size={18} />} label="Today" value={hoursLabel(todaySecs)} sub="Tracked today" />
-        <StatTile icon={<ListChecks size={18} />} label="Sessions" value={state.entries.length} sub="Logged" />
-        <StatTile icon={<Trophy size={18} />} label="Top activity" value={topActivity} sub="Most time spent" />
+        <StatTile tone="coral" icon={<Hourglass size={18} />} label="Total tracked" value={hoursLabel(total)} sub="All time" />
+        <StatTile tone="plain" icon={<Timer size={18} />} label="Today" value={hoursLabel(todaySecs)} sub="Tracked today" />
+        <StatTile tone="sage" icon={<ListChecks size={18} />} label="Sessions" value={state.entries.length} sub="Logged" />
+        <StatTile tone="plain" icon={<Trophy size={18} />} label="Top activity" value={topActivity} sub="Most time spent" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">

@@ -61,10 +61,10 @@ export default function ExamsPage() {
       </PageHeader>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatTile primary icon={<CalendarClock size={18} />} label="Upcoming" value={upcomingCount} sub="Not done" />
-        <StatTile icon={<AlarmClock size={18} />} label="This week" value={g.today.length + g.week.length} sub="Next 7 days" />
-        <StatTile icon={<CalendarX size={18} />} label="Overdue" value={g.overdue.length} sub="Past due" />
-        <StatTile icon={<CheckCircle2 size={18} />} label="Done" value={g.done.length} sub="Completed" />
+        <StatTile tone="coral" icon={<CalendarClock size={18} />} label="Upcoming" value={upcomingCount} sub="Not done" />
+        <StatTile tone="plain" icon={<AlarmClock size={18} />} label="This week" value={g.today.length + g.week.length} sub="Next 7 days" />
+        <StatTile tone="sage" icon={<CalendarX size={18} />} label="Overdue" value={g.overdue.length} sub="Past due" />
+        <StatTile tone="plain" icon={<CheckCircle2 size={18} />} label="Done" value={g.done.length} sub="Completed" />
       </div>
 
       {exams.length > 0 && (

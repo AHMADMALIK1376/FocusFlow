@@ -53,10 +53,10 @@ export default function HabitsPage() {
       <PageHeader title="Study streaks" subtitle="Build streaks and keep your daily habits on track." />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-        <StatTile primary icon={<Repeat size={18} />} label="Habits" value={habits.length} sub="Being tracked" />
-        <StatTile icon={<CalendarCheck size={18} />} label="Done today" value={`${doneToday}/${habits.length || 0}`} sub="Completed today" />
-        <StatTile icon={<Flame size={18} />} label="Best streak" value={bestStreak} sub="Days in a row" />
-        <StatTile icon={<Percent size={18} />} label="This week" value={`${weekPct}%`} sub="Completion rate" />
+        <StatTile tone="coral" icon={<Repeat size={18} />} label="Habits" value={habits.length} sub="Being tracked" />
+        <StatTile tone="plain" icon={<CalendarCheck size={18} />} label="Done today" value={`${doneToday}/${habits.length || 0}`} sub="Completed today" />
+        <StatTile tone="sage" icon={<Flame size={18} />} label="Best streak" value={bestStreak} sub="Days in a row" />
+        <StatTile tone="plain" icon={<Percent size={18} />} label="This week" value={`${weekPct}%`} sub="Completion rate" />
       </div>
 
       <Panel title="Weekly activity" subtitle="Habits completed each day this week" className="mb-6">

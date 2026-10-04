@@ -19,17 +19,20 @@ export function PageHeader({ title, subtitle, children }) {
   );
 }
 
-// Headline stat tile (first one can be `primary` → gradient).
-export function StatTile({ icon, label, value, sub, primary }) {
+// Headline stat tile. tone: "coral" (navbar colour), "sage" or "plain".
+// Pages lay four of them out as: coral, white, sage, white.
+export function StatTile({ icon, label, value, sub, primary, tone }) {
+  const t = tone || (primary ? "coral" : "plain");
+  primary = t === "coral";
   return (
     <div className={cx(
-      "rounded-token-lg p-5 shadow-neu relative overflow-hidden",
-      primary ? "bg-grad-hero text-on-brand" : "bg-surface text-ink"
+      "rounded-token-lg p-5 relative overflow-hidden",
+      t === "coral" ? "bg-grad-hero text-on-brand shadow-clay-brand" : t === "sage" ? "bg-grad-sage-card text-ink shadow-neu" : "bg-surface text-ink shadow-neu"
     )}>
       {primary && <div className="absolute -top-8 -right-8 w-28 h-28 rounded-full bg-[rgb(var(--on-brand)/0.12)] blur-2xl" />}
       <span className={cx(
         "w-9 h-9 rounded-xl flex items-center justify-center relative z-10",
-        primary ? "bg-[rgb(var(--on-brand)/0.2)]" : "bg-brand/10 text-brand"
+        primary ? "bg-[rgb(var(--on-brand)/0.2)]" : t === "sage" ? "bg-surface text-on-sage shadow-neu-sm" : "bg-grad-sage text-on-sage shadow-neu-sm"
       )}>{icon}</span>
       <p className="text-3xl font-black mt-3 relative z-10">{value}</p>
       <p className={cx("text-xs font-bold uppercase tracking-wider mt-0.5 relative z-10", primary ? "opacity-90" : "text-muted")}>{label}</p>

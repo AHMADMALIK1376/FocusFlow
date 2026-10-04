@@ -1,5 +1,6 @@
 // src/Pages/Home.js — FocusFlow dashboard (editable, image profile card, live graphs)
 import React, { useMemo, useState, useEffect, useRef, Suspense } from "react";
+import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Camera, Pencil, Plus } from "lucide-react";
@@ -12,6 +13,7 @@ import { WIDGET_BY_ID } from "../dashboard/registry";
 import Clock from "../components/dashboard/Clock";
 import StudentSnapshot from "../components/dashboard/StudentSnapshot";
 import AttendanceHeatmap from "../components/dashboard/AttendanceHeatmap";
+import BudgetSnapshotCard from "../components/dashboard/BudgetSnapshotCard";
 
 const FEATURE_IDS = ["notes", "goalsx", "habits", "kanban", "timetrack", "finance"];
 
@@ -64,7 +66,6 @@ export default function Home() {
     streak,
     completedGoals,
     totalFocusSessions,
-    todaysClasses = [],
     attendanceSummary,
     progress,
     pendingRoutineCount,
@@ -126,7 +127,7 @@ export default function Home() {
   if (contextLoading) {
     return (
       <div className="p-6 flex items-center justify-center min-h-[60vh]">
-        <div className="w-10 h-10 border-4 border-brand border-t-transparent rounded-full animate-spin" />
+        <LoadingSpinner message={null} />
       </div>
     );
   }
@@ -170,13 +171,12 @@ export default function Home() {
         <div className="lg:col-span-4 flex flex-col gap-5 min-w-0">
           {/* Profile card — full-cover image + overlay text */}
           <section className={cx(
-            "group rounded-token-lg bg-grad-hero p-6 shadow-glass relative overflow-hidden min-h-[460px] flex flex-col",
+            "group rounded-token-lg bg-grad-hero p-6 shadow-glass relative overflow-hidden min-h-[260px] lg:min-h-[460px] flex flex-col",
             avatarUrl ? "text-white" : "text-on-brand"
           )}>
             {avatarUrl && <img src={avatarUrl} alt={displayName} className="absolute inset-0 w-full h-full object-cover" />}
-            {avatarUrl
-              ? <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-black/10" />
-              : <div className="absolute -top-10 -right-10 w-44 h-44 rounded-full bg-[rgb(var(--brand-soft)/0.25)] blur-2xl" />}
+            {/* Coral (not black) fade under the text when a photo is set */}
+            {avatarUrl && <div className="absolute inset-0 bg-gradient-to-t from-[rgb(var(--brand)/0.9)] via-[rgb(var(--brand)/0.35)] to-transparent" />}
 
             <div className="flex items-center justify-end relative z-10">
               <button onClick={() => fileRef.current?.click()} className="flex items-center gap-1.5 text-[11px] font-bold opacity-0 group-hover:opacity-100 transition-opacity">
@@ -204,36 +204,8 @@ export default function Home() {
             <input ref={fileRef} type="file" accept="image/*" hidden onChange={onPickImage} />
           </section>
 
-          {/* Schedule + attendance */}
-          <section className="rounded-token-lg bg-surface shadow-neu p-6 flex flex-col">
-            <h3 className="text-sm font-black uppercase tracking-wider text-ink mb-4">
-              <InlineEdit value={lbl("schedule", "Today's schedule")} onSave={(v) => setLbl("schedule", v)} />
-            </h3>
-            <div className="flex-1 space-y-3">
-              {todaysClasses.length === 0 ? (
-                <p className="text-sm text-muted py-6 text-center">No classes scheduled today</p>
-              ) : (
-                todaysClasses.slice(0, 4).map((c, i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <div className="w-1 h-10 rounded-full bg-grad-hero" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-ink truncate">{c.subject || c.subject_name || c.name || "Class"}</p>
-                      <p className="text-[11px] text-muted">{c.startTime || c.start_time || ""}{c.room ? ` · ${c.room}` : ""}</p>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-            <div className="mt-4 pt-4 border-t border-[rgb(var(--ink)/0.08)] flex items-center justify-between">
-              <div>
-                <p className="text-[10px] uppercase tracking-widest text-muted font-bold">Attendance</p>
-                <p className="text-2xl font-black text-ink">{attendancePct}%</p>
-              </div>
-              <ProgressRing value={attendancePct} size={56} stroke={7}>
-                <span className="text-[10px] font-black text-ink">{attendancePct}%</span>
-              </ProgressRing>
-            </div>
-          </section>
+          {/* Budget — this month at a glance (today's classes are in the snapshot tile) */}
+          <BudgetSnapshotCard />
         </div>
 
         {/* Lower main column: Focus/Streak + Progress side by side, then the Assignment board */}
@@ -241,7 +213,7 @@ export default function Home() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             {/* Focus ring + Keep the streak, stacked */}
             <div className="flex flex-col gap-5">
-              <section className="rounded-token-lg bg-surface shadow-neu p-5 flex flex-col items-center">
+              <section className="rounded-token-lg bg-grad-sage-card shadow-neu p-5 flex flex-col items-center">
                 <div className="w-full flex items-center justify-between mb-2">
                   <h3 className="text-sm font-black uppercase tracking-wider text-ink">
                     <InlineEdit value={lbl("focus", "Focus today")} onSave={(v) => setLbl("focus", v)} />
@@ -288,9 +260,9 @@ export default function Home() {
           </Suspense>
         </div>
 
-        {/* Rail: Today's tasks + all remaining feature widgets + customize, stacked */}
+        {/* Rail beside the board: today's tasks + study time */}
         <div className="lg:col-span-4 flex flex-col gap-5 min-w-0">
-          <section className="rounded-token-lg bg-surface shadow-neu p-5">
+          <section className="tone-coral rounded-token-lg bg-grad-hero shadow-clay-brand p-5">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-black uppercase tracking-wider text-ink">
                 <InlineEdit value={lbl("tasks", "Today's tasks")} onSave={(v) => setLbl("tasks", v)} />
@@ -302,36 +274,47 @@ export default function Home() {
                 <p className="text-sm text-muted py-6 text-center">All clear — no pending tasks ✨</p>
               ) : (
                 todaysTasks.map((tk, i) => (
-                  <div key={tk.id || i} className="flex items-center gap-3 p-2.5 rounded-token-md hover:bg-surface-2 transition-colors">
-                    <span className="w-5 h-5 rounded-full border-2 border-[rgb(var(--brand)/0.4)] flex-shrink-0" />
+                  <div key={tk.id || i} className="flex items-center gap-3 p-2.5 rounded-token-md hover:bg-surface/60 transition-colors">
+                    <span className="w-5 h-5 rounded-full bg-surface shadow-neu-inset flex-shrink-0" />
                     <span className="flex-1 text-sm font-medium text-ink truncate">{taskTitle(tk)}</span>
                     {taskTime(tk) && <span className="text-[11px] font-bold text-muted">{taskTime(tk)}</span>}
                   </div>
                 ))
               )}
             </div>
-            <button onClick={() => navigate("/tasks")} className="w-full mt-4 py-2.5 rounded-token-md bg-surface-2 text-ink text-xs font-black uppercase tracking-wider hover:bg-[rgb(var(--ink)/0.06)] transition-colors">
-              Open task planner
+            <button onClick={() => navigate("/projects")} className="w-full mt-4 py-2.5 rounded-token-md bg-surface text-ink shadow-neu-sm text-xs font-black uppercase tracking-wider hover:-translate-y-0.5 transition-transform">
+              Open assignment board
             </button>
           </section>
 
           <Suspense fallback={null}>
-            {["notes", "timetrack", "goalsx", "habits", "finance"].filter((id) => enabledFeatures.includes(id)).map((id) => {
+            {enabledFeatures.includes("timetrack") && WIDGET_BY_ID.timetrack?.component
+              ? React.createElement(WIDGET_BY_ID.timetrack.component)
+              : null}
+          </Suspense>
+        </div>
+
+        {/* Under the board: remaining feature cards in an even grid, so each
+            row lines up instead of one long column down the right side. */}
+        <div className="lg:col-span-12 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 items-stretch">
+          <Suspense fallback={null}>
+            {["goalsx", "habits", "notes", "finance"].filter((id) => enabledFeatures.includes(id)).map((id) => {
               const W = WIDGET_BY_ID[id]?.component;
               return W ? <div key={id} className="min-w-0">{<W />}</div> : null;
             })}
           </Suspense>
 
-          {/* Customize tile — manage which feature cards appear */}
-          <button
-            onClick={() => navigate("/settings")}
-            className="min-h-[120px] rounded-token-lg border-2 border-dashed border-[rgb(var(--ink)/0.16)] flex flex-col items-center justify-center gap-1.5 text-muted hover:border-[rgb(var(--brand)/0.5)] hover:text-brand transition-colors"
-          >
-            <span className="w-10 h-10 rounded-xl bg-[rgb(var(--ink)/0.05)] flex items-center justify-center"><Plus size={20} /></span>
-            <span className="text-sm font-bold">Customize features</span>
-            <span className="text-[11px]">Add or remove dashboard cards</span>
-          </button>
         </div>
+
+        {/* Customize — a slim bar under the grid (never an orphan tile) */}
+        <button
+          onClick={() => navigate("/settings")}
+          className="lg:col-span-12 h-14 rounded-token-lg border-2 border-dashed border-[rgb(var(--ink)/0.2)] flex items-center justify-center gap-3 text-muted hover:border-[rgb(var(--brand)/0.6)] hover:text-brand transition-colors"
+        >
+          <span className="w-8 h-8 rounded-xl bg-surface shadow-neu-sm flex items-center justify-center"><Plus size={16} /></span>
+          <span className="text-sm font-bold">Customize features</span>
+          <span className="text-[11px] hidden sm:inline">· add or remove dashboard cards</span>
+        </button>
       </div>
     </div>
   );

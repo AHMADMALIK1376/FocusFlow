@@ -91,10 +91,10 @@ export default function NotesPage() {
       </PageHeader>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-        <StatTile primary icon={<FileText size={18} />} label="Total notes" value={notes.length} sub="In this workspace" />
-        <StatTile icon={<Type size={18} />} label="Words written" value={totalWords} sub="Across all notes" />
-        <StatTile icon={<CalendarClock size={18} />} label="This week" value={thisWeek} sub="Recently updated" />
-        <StatTile icon={<Sparkles size={18} />} label="Today" value={today} sub="Touched today" />
+        <StatTile tone="coral" icon={<FileText size={18} />} label="Total notes" value={notes.length} sub="In this workspace" />
+        <StatTile tone="plain" icon={<Type size={18} />} label="Words written" value={totalWords} sub="Across all notes" />
+        <StatTile tone="sage" icon={<CalendarClock size={18} />} label="This week" value={thisWeek} sub="Recently updated" />
+        <StatTile tone="plain" icon={<Sparkles size={18} />} label="Today" value={today} sub="Touched today" />
       </div>
 
       <Panel title="Writing activity" subtitle="Notes updated over the last 7 days" className="mb-6">

@@ -3,6 +3,7 @@
 // Intensity is driven by how many classes were attended that day (like commit
 // count on GitHub) — 0 attended renders blank, more attended is darker.
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useAccountYears } from '../../features/account/useAccountYears';
 import { useNavigate } from "react-router-dom";
 import { ChevronDown } from "lucide-react";
 import { subjectAttendanceAPI } from "../../services/api";
@@ -98,8 +99,7 @@ export default function AttendanceHeatmap() {
     return () => { alive = false; };
   }, []);
 
-  const currentYear = new Date().getFullYear();
-  const years = [currentYear, currentYear - 1, currentYear - 2];
+  const years = useAccountYears(); // only years since the account was created
 
   const { weeks, monthLabels, hasAnyRecords } = useMemo(() => {
     const today = new Date();
@@ -157,7 +157,7 @@ export default function AttendanceHeatmap() {
           <button
             type="button"
             onClick={() => setYearOpen((o) => !o)}
-            className="flex items-center gap-1.5 text-xs font-bold bg-surface-2 border border-[rgb(var(--ink)/0.1)] rounded-full px-3 py-1.5 text-ink hover:bg-[rgb(var(--ink)/0.06)] transition-colors"
+            className="flex items-center gap-1.5 text-xs font-bold bg-grad-hero shadow-clay-brand rounded-full px-3.5 py-1.5 text-on-brand hover:brightness-105 transition"
           >
             {year}
             <ChevronDown size={13} className={`transition-transform duration-200 ${yearOpen ? "rotate-180" : ""}`} />

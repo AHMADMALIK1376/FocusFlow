@@ -16,6 +16,7 @@
 // mount-time container rect instead of a DOM measurement per hover, and
 // (4) each tower memoized so only the previously/now-hovered pair re-render.
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useAccountYears } from '../features/account/useAccountYears';
 import { ChevronDown } from "lucide-react";
 import { subjectAttendanceAPI } from "../services/api";
 import { PageShell, Panel } from "../components/dashboard/DashKit";
@@ -29,19 +30,20 @@ const WEEK = { x: 16.5, y: 6.6 };
 const DAY = { x: -13.5, y: 7.4 };
 const UNIT_H = 18;    // px of bar height per class attended
 const BASE_H = 3.5;   // every tile is a thin slab, so empty days still read as blocks
-const TILE = 0.86;    // shrink each tile inside its cell to leave visible gaps
+const TILE = 0.7;     // shrink each tile inside its cell to leave clear gaps
 const PAD = 28;
 
 // Faces are the same colour at different brightness — that shading is what sells
 // the 3D. Top catches the most light, the two visible sides progressively less.
 const FACE_TOP = 1;
-const FACE_RIGHT = 0.78;
-const FACE_LEFT = 0.6;
+const FACE_RIGHT = 0.92;
+const FACE_LEFT = 0.84;
 
-const EMPTY_RGB = [223, 227, 232];
+const EMPTY_RGB = [236, 228, 214]; // cream clay
 const RISE_PX = 6; // how far a tower lifts off the slab on hover
-const EDGE_STROKE = "rgb(var(--ink) / 0.16)"; // thin permanent outline on every face, for definition
-const EDGE_WIDTH = 0.75;
+// Each face is stroked in its OWN colour with round joins → soft, rounded
+// clay towers (no outlines at all).
+const EDGE_WIDTH = 1.2;
 
 // ── Axes ────────────────────────────────────────────────────────────────────
 // Month/weekday labels float above their edge of the slab, with a single
@@ -145,13 +147,13 @@ function computeStreaks(classDays) {
 
 // Overlaid stat block, laid out like the reference: label, then a big figure with
 // its unit and date range stacked beside it.
-function Stat({ label, value, unit, sub, align = "left" }) {
+function Stat({ label, value, unit, sub, align = "left", sage = false }) {
   const right = align === "right";
   return (
     <div className={right ? "text-right" : ""}>
       <p className="text-sm text-muted mb-0.5">{label}</p>
       <div className={`flex items-baseline gap-2 ${right ? "justify-end" : ""}`}>
-        <span className="text-5xl font-black text-brand leading-none tabular-nums">{value}</span>
+        <span className={`text-5xl font-black leading-none tabular-nums ${sage ? "text-sage-deep" : "text-brand"}`}>{value}</span>
         <span className="text-left">
           <span className="block text-sm font-bold text-ink leading-tight">{unit}</span>
           <span className="block text-[11px] text-muted leading-tight">{sub}</span>
@@ -174,9 +176,9 @@ const Tower = React.memo(function Tower({ dataKey, pointsTop, pointsRight, point
         transition: "transform 140ms ease-out",
       }}
     >
-      <polygon points={pointsRight} fill={fillRight} stroke={EDGE_STROKE} strokeWidth={EDGE_WIDTH} />
-      <polygon points={pointsLeft} fill={fillLeft} stroke={EDGE_STROKE} strokeWidth={EDGE_WIDTH} />
-      <polygon points={pointsTop} fill={fillTop} stroke={EDGE_STROKE} strokeWidth={EDGE_WIDTH} strokeLinejoin="round" />
+      <polygon points={pointsRight} fill={fillRight} stroke={fillRight} strokeWidth={EDGE_WIDTH} strokeLinejoin="round" />
+      <polygon points={pointsLeft} fill={fillLeft} stroke={fillLeft} strokeWidth={EDGE_WIDTH} strokeLinejoin="round" />
+      <polygon points={pointsTop} fill={fillTop} stroke={fillTop} strokeWidth={EDGE_WIDTH} strokeLinejoin="round" />
     </g>
   );
 });
@@ -260,8 +262,7 @@ export default function AttendanceSkylinePage() {
     return () => { alive = false; };
   }, []);
 
-  const currentYear = new Date().getFullYear();
-  const years = [currentYear, currentYear - 1, currentYear - 2];
+  const years = useAccountYears(); // only years since the account was created
 
   const { renderCells, cellByKey, stats, width, height, monthTicks, wallLift, weekToTick, totalWeeks, originX, originY } = useMemo(() => {
     const today = new Date();
@@ -446,6 +447,7 @@ export default function AttendanceSkylinePage() {
   const statBusiest = (
     <Stat
       align="right"
+      sage
       label="Busiest day"
       value={stats.busiest.attended}
       unit="classes"
@@ -454,6 +456,7 @@ export default function AttendanceSkylinePage() {
   );
   const statLongest = (
     <Stat
+      sage
       label="Longest streak"
       value={stats.longest.len}
       unit="days"
@@ -482,7 +485,7 @@ export default function AttendanceSkylinePage() {
           <button
             type="button"
             onClick={() => setYearOpen((o) => !o)}
-            className="flex items-center gap-1.5 text-xs font-bold bg-surface-2 border border-[rgb(var(--ink)/0.1)] rounded-full px-3 py-1.5 text-ink hover:bg-[rgb(var(--ink)/0.06)] transition-colors"
+            className="flex items-center gap-1.5 text-xs font-bold bg-grad-hero shadow-clay-brand rounded-full px-3.5 py-1.5 text-on-brand hover:brightness-105 transition"
           >
             {year}
             <ChevronDown size={13} className={`transition-transform duration-200 ${yearOpen ? "rotate-180" : ""}`} />

@@ -53,10 +53,10 @@ export default function GradesPage() {
             </Panel>
 
             <div className="lg:col-span-2 grid grid-cols-2 gap-4 content-start">
-              <StatTile primary icon={<Award size={18} />} label="CGPA" value={cgpa != null ? cgpa.toFixed(2) : "—"} sub="Cumulative" />
-              <StatTile icon={<BookOpen size={18} />} label="Graded credits" value={data?.totalCredits || 0} sub="Counted toward CGPA" />
-              <StatTile icon={<GraduationCap size={18} />} label="Subjects graded" value={graded.length} sub={`of ${subjects.length}`} />
-              <StatTile icon={<Award size={18} />} label="Top grade" value={topGrade} sub="Best subject" />
+              <StatTile tone="coral" icon={<Award size={18} />} label="CGPA" value={cgpa != null ? cgpa.toFixed(2) : "—"} sub="Cumulative" />
+              <StatTile tone="plain" icon={<BookOpen size={18} />} label="Graded credits" value={data?.totalCredits || 0} sub="Counted toward CGPA" />
+              <StatTile tone="sage" icon={<GraduationCap size={18} />} label="Subjects graded" value={graded.length} sub={`of ${subjects.length}`} />
+              <StatTile tone="plain" icon={<Award size={18} />} label="Top grade" value={topGrade} sub="Best subject" />
             </div>
           </div>
 

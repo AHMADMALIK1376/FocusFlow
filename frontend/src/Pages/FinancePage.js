@@ -71,10 +71,10 @@ export default function FinancePage() {
       <PageHeader title="Budget" subtitle="Track your pocket money — allowance in, spending out." />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-        <StatTile primary icon={<Wallet size={18} />} label="Monthly allowance" value={fmt(settings.monthlyAllowance)} sub="This month" />
-        <StatTile icon={<TrendingDown size={18} />} label="Spent this month" value={fmt(monthExpense)} sub="Expenses" />
-        <StatTile icon={<TrendingUp size={18} />} label="Remaining" value={fmt(remaining)} sub="Allowance − spent" />
-        <StatTile icon={<PiggyBank size={18} />} label="Saved" value={fmt(balance)} sub={settings.savingsGoal > 0 ? `${savingsPct}% of goal` : "Income − expenses"} />
+        <StatTile tone="coral" icon={<Wallet size={18} />} label="Monthly allowance" value={fmt(settings.monthlyAllowance)} sub="This month" />
+        <StatTile tone="plain" icon={<TrendingDown size={18} />} label="Spent this month" value={fmt(monthExpense)} sub="Expenses" />
+        <StatTile tone="sage" icon={<TrendingUp size={18} />} label="Remaining" value={fmt(remaining)} sub="Allowance − spent" />
+        <StatTile tone="plain" icon={<PiggyBank size={18} />} label="Saved" value={fmt(balance)} sub={settings.savingsGoal > 0 ? `${savingsPct}% of goal` : "Income − expenses"} />
       </div>
 
       <Panel title="Budget settings" subtitle="Your allowance, savings target and currency" className="mb-6">
@@ -112,7 +112,7 @@ export default function FinancePage() {
               <BarChart width={cw} height={210} data={cashFlow} margin={{ top: 10, right: 8, left: -18, bottom: 0 }} barGap={2}>
                 <CartesianGrid vertical={false} strokeDasharray="3 4" stroke={hexToRgba(brand, 0.1)} />
                 <XAxis dataKey="label" axisLine={false} tickLine={false} dy={4} tick={{ fontSize: 11, fontWeight: 700, fill: "#8A93A0" }} />
-                <YAxis axisLine={false} tickLine={false} width={34} tick={{ fontSize: 11, fill: "#8A93A0" }} />
+                <YAxis axisLine={false} tickLine={false} width={40} tickFormatter={(v) => (Math.abs(v) >= 1000 ? `${+(v / 1000).toFixed(1)}k` : v)} tick={{ fontSize: 11, fill: "#8A93A0" }} />
                 <Tooltip cursor={{ fill: hexToRgba(brand, 0.05) }} contentStyle={CHART_TOOLTIP} formatter={(v, n) => [fmt(v), n]} />
                 <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, fontWeight: 700, paddingTop: 6 }} />
                 <Bar dataKey="income" name="Income" radius={[5, 5, 0, 0]} fill={INCOME_COLOR} maxBarSize={18} />

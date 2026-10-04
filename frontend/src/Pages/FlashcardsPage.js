@@ -39,9 +39,9 @@ export default function FlashcardsPage() {
       </PageHeader>
 
       <div className="grid grid-cols-3 gap-4 mb-6">
-        <StatTile primary icon={<Layers size={18} />} label="Decks" value={decks.length} sub="Collections" />
-        <StatTile icon={<GraduationCap size={18} />} label="Cards" value={totalCards} sub="Total" />
-        <StatTile icon={<CalendarClock size={18} />} label="Due today" value={dueTotal} sub="To review" />
+        <StatTile tone="coral" icon={<Layers size={18} />} label="Decks" value={decks.length} sub="Collections" />
+        <StatTile tone="plain" icon={<GraduationCap size={18} />} label="Cards" value={totalCards} sub="Total" />
+        <StatTile tone="sage" icon={<CalendarClock size={18} />} label="Due today" value={dueTotal} sub="To review" />
       </div>
 
       {loading ? (

@@ -8,7 +8,7 @@ import TimetableImportModal from "../features/subjects/TimetableImportModal";
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 const DAY_SHORT = { Monday: "Mon", Tuesday: "Tue", Wednesday: "Wed", Thursday: "Thu", Friday: "Fri", Saturday: "Sat", Sunday: "Sun" };
-const EMPTY_FORM = { name: "", code: "", color: "#2D4759", instructor: "", creditHours: 3, term: "", targetGrade: "", remindBefore: "", attendanceAfter: "", schedule: [] };
+const EMPTY_FORM = { name: "", code: "", color: "#E86562", instructor: "", creditHours: 3, term: "", targetGrade: "", remindBefore: "", attendanceAfter: "", schedule: [] };
 
 // Per-subject reminder times ("" = use the default from Settings → Reminders).
 const REMIND_BEFORE = [["", "Default (Settings)"], [0, "When it starts"], [5, "5 min before"], [10, "10 min before"], [15, "15 min before"], [30, "30 min before"], [45, "45 min before"], [60, "1 hour before"], [90, "1½ hours before"], [120, "2 hours before"]];
@@ -22,9 +22,9 @@ const fieldCls = "!py-2 !px-3.5 text-sm";
 // stored colors (see the screenshot's left-border strips), so tinting them
 // keeps "each card a different colour" without fighting the existing picker.
 function hexToRgb(hex) {
-  const h = String(hex || "#2D4759").replace("#", "");
+  const h = String(hex || "#E86562").replace("#", "");
   const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
-  const n = parseInt(full, 16) || 0x2d4759;
+  const n = parseInt(full, 16) || 0xe86562;
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
 const mixWhite = (rgb, t) => rgb.map((c) => Math.round(c + (255 - c) * t));
@@ -71,7 +71,7 @@ export default function SubjectsPage() {
   function openEdit(s) {
     setEditId(s.id);
     setForm({
-      name: s.name || "", code: s.code || "", color: s.color || "#2D4759",
+      name: s.name || "", code: s.code || "", color: s.color || "#E86562",
       instructor: s.instructor || "", creditHours: s.creditHours ?? 3,
       term: s.term || "", targetGrade: s.targetGrade || "",
       remindBefore: s.remindBefore ?? "", attendanceAfter: s.attendanceAfter ?? "",
@@ -116,10 +116,10 @@ export default function SubjectsPage() {
       </PageHeader>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatTile primary icon={<GraduationCap size={18} />} label="Subjects" value={subjects.length} sub="This term" />
-        <StatTile icon={<BookOpen size={18} />} label="Credit hours" value={totalCredits} sub="Total load" />
-        <StatTile icon={<Clock size={18} />} label="Classes / week" value={totalSlots} sub="Scheduled slots" />
-        <StatTile icon={<CalendarDays size={18} />} label="Term" value={term || "—"} sub="Active" />
+        <StatTile tone="coral" icon={<GraduationCap size={18} />} label="Subjects" value={subjects.length} sub="This term" />
+        <StatTile tone="plain" icon={<BookOpen size={18} />} label="Credit hours" value={totalCredits} sub="Total load" />
+        <StatTile tone="sage" icon={<Clock size={18} />} label="Classes / week" value={totalSlots} sub="Scheduled slots" />
+        <StatTile tone="plain" icon={<CalendarDays size={18} />} label="Term" value={term || "—"} sub="Active" />
       </div>
 
       {loading ? (
