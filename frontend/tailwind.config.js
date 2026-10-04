@@ -16,6 +16,12 @@ module.exports = {
           soft: rgb('--brand-soft'),
         },
         'on-brand': rgb('--on-brand'),
+        sun: rgb('--sun'),
+        'on-sun': rgb('--on-sun'),
+        sage: rgb('--sage'),
+        'on-sage': rgb('--on-sage'),
+        'sage-deep': rgb('--sage-deep'),
+        blush: rgb('--blush'),
         success: rgb('--success'),
         info: rgb('--info'),
         warn: rgb('--warn'),
@@ -36,6 +42,10 @@ module.exports = {
       backgroundImage: {
         'grad-hero': 'var(--grad-hero)',
         'grad-aurora': 'var(--grad-aurora)',
+        'grad-sun': 'var(--grad-sun)',
+        'grad-sage': 'var(--grad-sage)',
+        'grad-blush': 'var(--grad-blush)',
+        'grad-sage-card': 'var(--grad-sage-card)',
       },
       borderRadius: {
         'token-sm': 'var(--radius-sm)',
@@ -126,6 +136,7 @@ module.exports = {
         'neu-sm': 'var(--shadow-neu-sm)',
         'neu-inset': 'var(--shadow-neu-inset)',
         glass: 'var(--shadow-glass)',
+        'clay-brand': 'var(--shadow-clay-brand)',
         // Legacy presets (kept for not-yet-redesigned screens)
         'neu-flat': '20px 20px 60px #d1d9e6, -20px -20px 60px #ffffff',
         'neu-pressed': 'inset 6px 6px 12px #d1d9e6, inset -6px -6px 12px #ffffff',

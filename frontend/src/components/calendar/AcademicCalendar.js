@@ -1,5 +1,6 @@
 // src/components/calendar/AcademicCalendar.js
 import React, { useState, useEffect } from "react";
+import { LoadingSpinner } from '../common/LoadingSpinner';
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import Lottie from "lottie-react";
@@ -63,7 +64,7 @@ export default function AcademicCalendar() {
   if (loading) {
     return (
       <div className="relative bg-surface p-10 rounded-token-xl flex-1 min-w-[320px] max-w-[450px] shadow-neu transition-all duration-500 text-center group hover:-translate-y-2 flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-brand border-t-transparent rounded-full animate-spin"></div>
+        <LoadingSpinner message={null} />
       </div>
     );
   }

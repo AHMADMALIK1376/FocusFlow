@@ -1,3 +1,8 @@
+/* Scrollable modal content with the scrollbar track/thumb hidden — the
+   content can still scroll if it overflows, it just never shows a bar. */
+.ff-modal-no-scrollbar { scrollbar-width: none; }
+.ff-modal-no-scrollbar::-webkit-scrollbar { display: none; }
+
 /* Animated trash delete button — Indigo-themed (muted → danger red on hover). */
 .ff-del-btn {
   width: 40px;
@@ -54,8 +59,9 @@
   position: relative;
   overflow: hidden;
   transition-duration: 0.3s;
-  box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
-  background-color: rgb(var(--focus));
+  /* coral clay — same pink as the navbar */
+  box-shadow: var(--shadow-clay-brand);
+  background: var(--grad-hero);
   flex-shrink: 0;
 }
 .ff-logout-sign {

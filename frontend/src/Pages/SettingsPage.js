@@ -12,6 +12,7 @@ import {
 import FontSelector from "../components/dashboard/FontSelector";
 import WidgetManager from "../components/dashboard/WidgetManager";
 import DashboardSwitcher from "../components/dashboard/DashboardSwitcher";
+import RemindersSettings from "../features/notifications/RemindersSettings";
 
 function Section({ title, subtitle, children }) {
   return (
@@ -52,6 +53,14 @@ export default function SettingsPage() {
     <div className="p-5 md:p-8 max-w-4xl mx-auto w-full">
       <h1 className="text-3xl font-black text-ink mb-1">{t("settings.title", "Settings")}</h1>
       <p className="text-muted mb-8">Personalise FocusFlow — your colours, font, features and profile.</p>
+
+      {/* ── Reminders ────────────────────────────────────────────── */}
+      <Section
+        title="Reminders"
+        subtitle="Class alarms, your morning timetable, exam and deadline reminders, and attendance check-ins."
+      >
+        <RemindersSettings />
+      </Section>
 
       {/* ── Appearance ───────────────────────────────────────────── */}
       <Section

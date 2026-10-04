@@ -51,7 +51,7 @@ export function makeDashboard(name = 'My Dashboard') {
   return {
     id: makeId(),
     name,
-    fontFamily: 'poppins',
+    fontFamily: 'nunito',
     widgets: {
       order: [...DEFAULT_WIDGET_ORDER],
       enabled: { ...DEFAULT_WIDGET_ENABLED },

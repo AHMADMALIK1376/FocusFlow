@@ -164,3 +164,4 @@ exports.remove = async (req, res) => {
     if (connection) await connection.close();
   }
 };
+exports.summarize = summarize;

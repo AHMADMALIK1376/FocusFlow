@@ -214,7 +214,6 @@ export default function OnboardingPage() {
     <div className="min-h-screen flex bg-canvas">
       {/* LEFT — navy brand panel */}
       <aside className="hidden md:flex md:w-2/5 lg:w-[38%] bg-grad-hero text-on-brand relative overflow-hidden flex-col justify-between p-10">
-        <div className="absolute -top-20 -right-16 w-72 h-72 rounded-full bg-[rgb(var(--brand-soft)/0.25)] blur-3xl" />
         <div className="absolute -bottom-24 -left-10 w-72 h-72 rounded-full bg-[rgb(var(--on-brand)/0.08)] blur-3xl" />
 
         <div className="relative z-10">

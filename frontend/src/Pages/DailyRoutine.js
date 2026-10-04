@@ -1,10 +1,14 @@
 // src/Pages/DailyRoutine.js
 import React, { useState, useEffect } from "react";
+import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { AnimatePresence, motion } from "framer-motion";
-import { Plus, Flame } from "lucide-react";
+import { Plus, Flame, ScanText } from "lucide-react";
 import { useApp } from "../components/context/AppContext";
 import { routineAPI, getToken } from "../services/api";
-import { Card, CardDeleteButton, Modal } from "../components/ui";
+import { Card, CardDeleteButton, Modal, Button } from "../components/ui";
+import { useToast } from "../components/ui/Toast";
+import { useSubjects } from "../features/subjects/useSubjects";
+import TimetableImportModal from "../features/subjects/TimetableImportModal";
 import DonutChart, { daysOfWeek, getFullDayName, isTaskCompleted, isTaskMissed, getTaskColor, formatTime12h } from "../components/routine/DonutChart";
 import EditRoutinePopup from "../components/routine/EditRoutinePopup";
 import DeleteRoutinePopup from "../components/routine/DeleteRoutinePopup";
@@ -73,6 +77,9 @@ export default function DailyRoutine() {
   const [activeDay, setActiveDay] = useState(null);
   const [currentDayName, setCurrentDayName] = useState("");
   const [hoveredDay, setHoveredDay] = useState(null);
+  const [importOpen, setImportOpen] = useState(false);
+  const { subjects, refresh: refreshSubjects } = useSubjects();
+  const { toast } = useToast();
   const [now, setNow] = useState(() => new Date());
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditPopup, setShowEditPopup] = useState(false);
@@ -291,7 +298,7 @@ export default function DailyRoutine() {
   if (loading) {
     return (
       <div className="min-h-screen bg-canvas flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-brand border-t-transparent rounded-full animate-spin"></div>
+        <LoadingSpinner message={null} />
       </div>
     );
   }
@@ -315,10 +322,21 @@ export default function DailyRoutine() {
     <div className="min-h-screen bg-canvas py-10 px-4 md:px-10 flex flex-col">
 
       {/* HEADER — left-aligned, flush against the sidebar edge */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-black text-brand">Create Your Routine</h1>
-        <p className="text-muted text-sm mt-2">Add activities for each day of the week</p>
+      <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-4xl font-black text-brand">Create Your Routine</h1>
+          <p className="text-muted text-sm mt-2">Add activities for each day of the week</p>
+        </div>
+        <Button variant="primary" onClick={() => setImportOpen(true)} className="gap-1.5">
+          <ScanText size={16} /> Import timetable
+        </Button>
       </div>
+      <TimetableImportModal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        existing={subjects}
+        onImported={async () => { await refreshSubjects(); toast("Classes imported ✓ — see them on the Subjects page", { tone: "success" }); }}
+      />
 
       <div className="w-full flex flex-col gap-8">
         <div className="w-full">

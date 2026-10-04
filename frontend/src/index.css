@@ -17,6 +17,30 @@ body {
   transition: background-color var(--dur) ease, color var(--dur) ease;
 }
 
+/* --- Clay text: rounded, soft --- */
+/* Headings and bold UI text use Fredoka (round, puffy letterforms) whatever
+   body font is picked in Settings, so the clay look is consistent. */
+h1, h2, h3, h4,
+.font-black, .font-extrabold {
+  font-family: 'Fredoka', var(--font-sans, 'Nunito'), sans-serif;
+  letter-spacing: 0.01em;
+}
+/* Big headings get a soft clay highlight + light-blue drop (no dark shadow). */
+h1 {
+  text-shadow: 0 2px 0 rgb(255 255 255 / 0.85), 0 6px 14px rgb(190 160 122 / 0.28);
+}
+/* Gradient-filled text is transparent — a text-shadow would show through it. */
+.bg-clip-text { text-shadow: none; }
+
+/* Coral clay cards: text turns white — except inside cream elements on them
+   (buttons, chips, inputs), which keep their normal dark text. */
+.tone-coral .text-ink:not(.bg-surface *, .bg-surface),
+.tone-coral .text-muted:not(.bg-surface *, .bg-surface),
+.tone-coral .text-brand:not(.bg-surface *, .bg-surface) {
+  color: rgb(var(--on-brand));
+}
+.tone-coral .text-muted:not(.bg-surface *, .bg-surface) { opacity: 0.85; }
+
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;

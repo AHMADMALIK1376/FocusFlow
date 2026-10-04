@@ -78,7 +78,7 @@ export function migratePreferences(stored) {
   const firstDb = {
     id,
     name: oldProfile.university || 'My Dashboard',
-    fontFamily: 'poppins',
+    fontFamily: 'nunito',
     widgets: {
       order: oldDashboard.order || [...DEFAULT_WIDGET_ORDER],
       enabled: { ...DEFAULT_WIDGET_ENABLED, ...(oldDashboard.enabled || {}) },

@@ -1,6 +1,7 @@
 // controllers/dashboardController.js
 const { getConnection } = require('../config/database');
-const { today, getDayOfWeek } = require('../utils/helpers');
+const { localParts } = require('../utils/reminders');
+const { loadSettings } = require('../services/notificationScheduler');
 
 // ==============================================
 // NEW: COMBINED DASHBOARD ENDPOINT - ONE CALL INSTEAD OF 15+
@@ -11,8 +12,12 @@ exports.getCompleteDashboard = async (req, res) => {
     try {
         connection = await getConnection();
         const userId = req.user.userId;
-        const todayStr = today();
-        const todayName = getDayOfWeek();
+        // "Today" in the student's own timezone — the server clock is UTC on
+        // most hosts, which would show yesterday's classes after midnight.
+        const settings = await loadSettings(connection, userId);
+        const now = localParts(new Date(), settings.timezone);
+        const todayStr = now.date;
+        const todayName = now.weekday;
         const todayShort = todayName.substring(0, 3);
         
         console.log('='.repeat(50));

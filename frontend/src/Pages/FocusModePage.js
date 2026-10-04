@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { useApp } from "../components/context/AppContext";
 import { focusAPI, getToken } from "../services/api";
 import { Card, RepeatButton, ClearHistoryButton, CardDeleteButton } from "../components/ui";
@@ -162,7 +163,7 @@ export default function FocusModePage() {
   if (loading) {
     return (
       <div className="flex flex-col items-center px-5 pt-20 pb-10 max-w-[1200px] mx-auto min-h-screen justify-center">
-        <div className="w-12 h-12 border-4 border-brand border-t-transparent rounded-full animate-spin"></div>
+        <LoadingSpinner message={null} />
       </div>
     );
   }
@@ -170,9 +171,8 @@ export default function FocusModePage() {
   return (
     <div className="flex flex-col items-center px-5 pt-4 pb-10 max-w-[1200px] mx-auto min-h-screen animate-[fadeInUp_0.8s_ease]">
       <section className="w-full max-w-[1100px] mb-4 flex items-center gap-3">
-        <span className="text-[2.8rem] leading-none">💫</span>
         <h1 className="text-4xl font-black text-ink">
-          Deep <span className="bg-gradient-to-r from-brand to-brand-soft bg-clip-text text-transparent">Flow</span>
+          Deep <span className="text-brand">Flow</span>
         </h1>
       </section>
 

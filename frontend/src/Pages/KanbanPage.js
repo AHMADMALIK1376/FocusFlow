@@ -130,10 +130,10 @@ export default function KanbanPage() {
 
       {/* Stat tiles */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-        <StatTile primary icon={<FolderKanban size={18} />} label="Total tasks" value={total} sub="Across the board" />
-        <StatTile icon={<CheckCircle2 size={18} />} label="Ended" value={done.length} sub="Completed" />
-        <StatTile icon={<Loader size={18} />} label="Running" value={doing.length} sub="In progress" />
-        <StatTile icon={<CircleDashed size={18} />} label="Pending" value={todo.length} sub="Still to do" />
+        <StatTile tone="coral" icon={<FolderKanban size={18} />} label="Total tasks" value={total} sub="Across the board" />
+        <StatTile tone="plain" icon={<CheckCircle2 size={18} />} label="Ended" value={done.length} sub="Completed" />
+        <StatTile tone="sage" icon={<Loader size={18} />} label="Running" value={doing.length} sub="In progress" />
+        <StatTile tone="plain" icon={<CircleDashed size={18} />} label="Pending" value={todo.length} sub="Still to do" />
       </div>
 
       {/* Analytics + progress */}

@@ -91,8 +91,8 @@ export default function DialTimer({
               <div
                 className={`relative w-16 h-14 rounded-token-lg flex items-center justify-center transition-all ${
                   hot
-                    ? "bg-brand text-on-brand shadow-[0_8px_20px_rgb(var(--brand)/0.4)]"
-                    : "bg-surface text-ink border border-[rgb(var(--ink)/0.12)]"
+                    ? "bg-grad-hero text-on-brand shadow-clay-brand"
+                    : "bg-grad-sage text-on-sage shadow-neu-sm"
                 }`}
               >
                 {editable ? (
@@ -107,7 +107,7 @@ export default function DialTimer({
                 ) : (
                   <span className="text-2xl font-black">{two(s.val)}</span>
                 )}
-                <span className={`absolute bottom-1 right-2 text-[9px] font-black ${hot ? "text-on-brand/70" : "text-muted"}`}>
+                <span className={`absolute bottom-1 right-2 text-[9px] font-black ${hot ? "text-on-brand/70" : "text-on-sage/70"}`}>
                   {s.label}
                 </span>
               </div>
@@ -183,9 +183,9 @@ export default function DialTimer({
 
         {/* knob */}
         <g onPointerDown={startDrag} style={{ cursor: editable ? "grab" : "default" }}>
-          <circle cx={kx} cy={ky} r={R_KNOB} fill="rgb(var(--ink))" stroke="rgb(var(--surface))" strokeWidth="2" />
+          <circle cx={kx} cy={ky} r={R_KNOB} fill="rgb(var(--sage))" stroke="rgb(var(--surface))" strokeWidth="2" />
           <text x={kx} y={ky} textAnchor="middle" dominantBaseline="central"
-            className="fill-white" style={{ fontSize: 9, fontWeight: 900 }}>M</text>
+            className="fill-[rgb(var(--on-sage))]" style={{ fontSize: 9, fontWeight: 900 }}>M</text>
         </g>
       </svg>
 
@@ -195,7 +195,7 @@ export default function DialTimer({
           type="button"
           aria-label="Edit time"
           onClick={() => { if (editable) { setFocused("m"); minInputRef.current?.focus(); minInputRef.current?.select(); } }}
-          className="w-10 h-10 rounded-full flex items-center justify-center bg-[rgb(20,20,20)] text-white shadow-neu-sm hover:opacity-90 transition-opacity disabled:opacity-40"
+          className="w-10 h-10 rounded-full flex items-center justify-center bg-grad-sage text-on-sage shadow-neu-sm hover:-translate-y-0.5 transition disabled:opacity-40"
           disabled={!editable}
         >
           <Pencil size={16} />
@@ -204,7 +204,7 @@ export default function DialTimer({
           type="button"
           aria-label={isActive || startTime ? "Stop and save" : "Reset"}
           onClick={onReset}
-          className="w-10 h-10 rounded-full flex items-center justify-center bg-[#ff342b] text-white shadow-neu-sm hover:bg-[#e0271f] transition-colors"
+          className="w-10 h-10 rounded-full flex items-center justify-center bg-grad-hero text-white shadow-clay-brand hover:-translate-y-0.5 transition"
         >
           <RotateCcw size={16} />
         </button>

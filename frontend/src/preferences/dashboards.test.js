@@ -37,7 +37,7 @@ describe('makeDashboard', () => {
   it('returns a dashboard with expected default shape', () => {
     const db = makeDashboard('Uni');
     expect(db.name).toBe('Uni');
-    expect(db.fontFamily).toBe('poppins');
+    expect(db.fontFamily).toBe('nunito');
     expect(Array.isArray(db.widgets.order)).toBe(true);
     expect(typeof db.widgets.enabled).toBe('object');
     expect(db.id).toBeTruthy();
@@ -147,7 +147,7 @@ describe('updateDashboardPatch', () => {
     const d2 = makeDashboard('Second');
     const state = { dashboards: [d1, d2], activeDashboardId: d1.id };
     const next = updateDashboardPatch(state, d1.id, { fontFamily: 'roboto' });
-    expect(next.dashboards[1].fontFamily).toBe('poppins');
+    expect(next.dashboards[1].fontFamily).toBe('nunito');
   });
 });
 

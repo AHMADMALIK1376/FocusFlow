@@ -1,51 +1,57 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Button, EmptyState, ProgressRing } from '../../ui';
+import { Button, ProgressRing } from '../../ui';
 import { useGoals } from '../../../features/goalsx/useGoals';
 import { goalProgress, overallProgress } from '../../../features/goalsx/goalsLogic';
+import WidgetShell, { WidgetEmpty, ClayBar } from './WidgetShell';
 
 export default function GoalsCard() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { state } = useGoals();
-  const top2 = state.goals.slice(0, 2);
+  const goals = state.goals.slice(0, 3);
   const overall = overallProgress(state);
 
   return (
-    <div className="bg-surface text-ink rounded-token-lg shadow-neu p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-black uppercase tracking-wider text-muted">🎯 {t('widgets.goalsx', { defaultValue: 'Goals' })}</h3>
-        <div className="flex items-center gap-2">
-          <ProgressRing progress={overall} size={36} stroke={4} />
-          <Button size="sm" variant="ghost" onClick={() => navigate('/goals')}>{t('goalsx.viewAll', { defaultValue: 'View all' })}</Button>
-        </div>
-      </div>
-      {top2.length === 0 ? (
-        <EmptyState icon="🎯" title={t('goalsx.empty', { defaultValue: 'No goals yet' })} />
+    <WidgetShell
+      tone="coral"
+      icon="🎯"
+      title={t('widgets.goalsx', { defaultValue: 'Goals' })}
+      linkLabel={t('goalsx.viewAll', { defaultValue: 'View all' })}
+      onLink={() => navigate('/goals')}
+      footer={<Button size="sm" variant="neu" full onClick={() => navigate('/goals')}>{t('goalsx.add', { defaultValue: '+ New Goal' })}</Button>}
+    >
+      {goals.length === 0 ? (
+        <WidgetEmpty emoji="🎯" title="No goals yet" hint="Set an academic goal, like a GPA target or finishing a course." />
       ) : (
-        <ul className="space-y-3">
-          {top2.map(goal => {
-            const pct = goalProgress(goal);
-            return (
-              <li key={goal.id} className="cursor-pointer" onClick={() => navigate('/goals')}>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="font-bold text-ink truncate max-w-[75%]">{goal.title}</span>
-                  <span className="text-muted">{pct}%</span>
-                </div>
-                <div className="bg-surface-2 rounded-token-sm h-1.5">
-                  <div className="bg-brand h-1.5 rounded-token-sm" style={{ width: `${pct}%` }} />
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <span className="rounded-full bg-surface shadow-neu-sm p-1">
+              <ProgressRing value={overall} size={54} stroke={7}>
+                <span className="text-[11px] font-black text-ink">{overall}%</span>
+              </ProgressRing>
+            </span>
+            <p className="text-xs text-muted">
+              <b className="text-ink">{state.goals.length}</b> goal{state.goals.length === 1 ? '' : 's'} · overall progress
+            </p>
+          </div>
+          <ul className="space-y-3">
+            {goals.map((goal) => {
+              const pct = goalProgress(goal);
+              return (
+                <li key={goal.id} className="cursor-pointer" onClick={() => navigate('/goals')}>
+                  <div className="flex justify-between gap-2 text-sm mb-1.5">
+                    <span className="font-bold text-ink truncate">{goal.title}</span>
+                    {pct >= 100 && <span aria-label="done">🏆</span>}
+                  </div>
+                  <ClayBar value={pct} height="h-3" fillClassName={pct >= 100 ? 'bg-grad-sage' : 'bg-grad-hero'} />
+                </li>
+              );
+            })}
+          </ul>
+        </div>
       )}
-      <div className="mt-3 flex justify-center">
-        <Button size="sm" variant="primary" onClick={() => navigate('/goals')} className="w-4/5">
-          {t('goalsx.add', { defaultValue: '+ New Goal' })}
-        </Button>
-      </div>
-    </div>
+    </WidgetShell>
   );
 }

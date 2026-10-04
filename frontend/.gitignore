@@ -176,7 +176,6 @@ lerna-debug.log*
 
 # Gatsby
 .cache/
-/public
 
 # Vite
 /vite.config.js.timestamp-*
@@ -276,7 +275,7 @@ jspm_packages/
 
 # Gatsby files
 .cache/
-public
+# (not ignoring public/ — in Create React App it holds real source: index.html, manifest, sw.js)
 
 # Storybook build output
 storybook-static
@@ -328,6 +327,8 @@ dump.rdb
 # Service worker
 sw.js
 sw.js.map
+# …but ours is hand-written source (push notifications)
+!/public/sw.js
 
 # Webpack
 stats.json

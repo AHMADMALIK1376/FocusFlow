@@ -11,12 +11,16 @@ function toExam(r) {
     type: r.TYPE,
     date: r.EVENT_DATE,
     time: r.EVENT_TIME,
+    duration: r.DURATION_MIN,
     location: r.LOCATION,
     notes: r.NOTES,
     isDone: r.IS_DONE === 1,
     createdAt: r.CREATED_AT,
   };
 }
+
+// Quiz/exam length in minutes (blank → unknown; reminders then assume 60).
+const toDuration = (v) => (Number(v) > 0 ? Math.round(Number(v)) : null);
 
 // GET /api/exams  (optional ?subjectId= , ?upcoming=1)
 exports.getExams = async (req, res) => {
@@ -30,7 +34,7 @@ exports.getExams = async (req, res) => {
     if (upcoming) { where.push('e.event_date >= CURRENT_DATE'); where.push('e.is_done = 0'); }
     const sql =
       `SELECT e.item_id, e.subject_id, e.title, e.type,
-              TO_CHAR(e.event_date,'YYYY-MM-DD') AS event_date, e.event_time,
+              TO_CHAR(e.event_date,'YYYY-MM-DD') AS event_date, e.event_time, e.duration_min,
               e.location, e.notes, e.is_done, e.created_at,
               s.name AS subject_name, s.color AS subject_color
        FROM EXAMS_DEADLINES e
@@ -51,7 +55,7 @@ exports.getExams = async (req, res) => {
 exports.createExam = async (req, res) => {
   let connection;
   try {
-    const { subjectId, title, type, date, time, location, notes } = req.body;
+    const { subjectId, title, type, date, time, duration, location, notes } = req.body;
     if (!title || !title.trim()) return res.status(400).json({ error: 'Title is required.' });
     if (!date) return res.status(400).json({ error: 'Date is required.' });
     connection = await getConnection();
@@ -64,12 +68,12 @@ exports.createExam = async (req, res) => {
     }
     const itemId = generateId();
     await connection.execute(
-      `INSERT INTO EXAMS_DEADLINES (item_id, user_id, subject_id, title, type, event_date, event_time, location, notes, is_done)
-       VALUES (:id, :userId, :subjectId, :title, :type, :date, :time, :location, :notes, 0)`,
+      `INSERT INTO EXAMS_DEADLINES (item_id, user_id, subject_id, title, type, event_date, event_time, duration_min, location, notes, is_done)
+       VALUES (:id, :userId, :subjectId, :title, :type, :date, :time, :duration, :location, :notes, 0)`,
       {
         id: itemId, userId: req.user.userId, subjectId: subjectId || null,
         title: title.trim(), type: type || 'deadline', date,
-        time: time || null, location: location || null, notes: notes || null,
+        time: time || null, duration: toDuration(duration), location: location || null, notes: notes || null,
       }
     );
     res.status(201).json({ success: true, id: itemId });
@@ -85,7 +89,7 @@ exports.createExam = async (req, res) => {
 exports.updateExam = async (req, res) => {
   let connection;
   try {
-    const { subjectId, title, type, date, time, location, notes } = req.body;
+    const { subjectId, title, type, date, time, duration, location, notes } = req.body;
     connection = await getConnection();
     const owned = await connection.execute(
       `SELECT item_id FROM EXAMS_DEADLINES WHERE item_id = :id AND user_id = :userId`,
@@ -99,6 +103,7 @@ exports.updateExam = async (req, res) => {
          type = :type,
          event_date = COALESCE(:date, event_date),
          event_time = :time,
+         duration_min = :duration,
          location = :location,
          notes = :notes
        WHERE item_id = :id AND user_id = :userId`,
@@ -108,6 +113,7 @@ exports.updateExam = async (req, res) => {
         type: type != null ? type : null,
         date: date != null ? date : null,
         time: time != null ? time : null,
+        duration: toDuration(duration),
         location: location != null ? location : null,
         notes: notes != null ? notes : null,
         id: req.params.id, userId: req.user.userId,

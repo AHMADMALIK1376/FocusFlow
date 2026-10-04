@@ -39,10 +39,10 @@ export default function GoalsPage() {
       <PageHeader title="Goals" subtitle="Set goals, break them into milestones and watch them progress." />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-        <StatTile primary icon={<Target size={18} />} label="Total goals" value={goals.length} sub="Being tracked" />
-        <StatTile icon={<CheckCircle2 size={18} />} label="Completed" value={completed} sub="100% done" />
-        <StatTile icon={<Loader size={18} />} label="In progress" value={inProgress} sub="Underway" />
-        <StatTile icon={<TrendingUp size={18} />} label="Overall" value={`${overall}%`} sub="Average progress" />
+        <StatTile tone="coral" icon={<Target size={18} />} label="Total goals" value={goals.length} sub="Being tracked" />
+        <StatTile tone="plain" icon={<CheckCircle2 size={18} />} label="Completed" value={completed} sub="100% done" />
+        <StatTile tone="sage" icon={<Loader size={18} />} label="In progress" value={inProgress} sub="Underway" />
+        <StatTile tone="plain" icon={<TrendingUp size={18} />} label="Overall" value={`${overall}%`} sub="Average progress" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
