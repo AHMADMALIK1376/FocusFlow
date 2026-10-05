@@ -15,6 +15,8 @@ const handleResponse = async (response) => {
     return data;
 };
 
+const SESSION_OVER = ['USER_NOT_FOUND', 'TOKEN_EXPIRED', 'INVALID_TOKEN'];
+
 // Helper for authorized requests
 const authFetch = async (endpoint, options = {}) => {
     const token = localStorage.getItem('focus_token');
@@ -31,7 +33,19 @@ const authFetch = async (endpoint, options = {}) => {
         ...options,
         headers,
     });
-    
+
+    // The saved login no longer works (account deleted, token expired or bad):
+    // forget it and go to the sign-in page instead of failing every save.
+    if (response.status === 401 && token) {
+        const body = await response.clone().json().catch(() => ({}));
+        if (SESSION_OVER.includes(body.code)) {
+            clearAllUserData();
+            if (!/^\/(login|signup|verify|forgot-password|reset-password)/.test(window.location.pathname)) {
+                window.location.assign('/login');
+            }
+        }
+    }
+
     return handleResponse(response);
 };
 

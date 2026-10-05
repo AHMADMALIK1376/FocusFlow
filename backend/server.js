@@ -3,7 +3,6 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const compression = require('compression');
-const rateLimit = require('express-rate-limit');
 const { initialize, healthCheck: dbHealthCheck, getPoolStats, closePool } = require('./config/database');
 const { startNotificationScheduler } = require('./services/notificationScheduler');
 const { getEmailQueueStats, clearEmailQueue } = require('./services/emailService');
@@ -96,31 +95,19 @@ app.use(compression({
 }));
 
 // ==============================================
-// RATE LIMITING - TEMPORARILY DISABLED FOR TESTING
+// RATE LIMITING
 // ==============================================
+// Behind Render's proxy every request arrives from the proxy's address; trusting
+// one hop makes the limiter see the real client IP instead of counting all
+// users together.
+app.set('trust proxy', 1);
 
-// const globalLimiter = rateLimit({
-//     windowMs: 15 * 60 * 1000,
-//     max: 100,
-//     message: { error: 'Too many requests, please try again later.' },
-//     standardHeaders: true,
-//     legacyHeaders: false,
-// });
+const { globalLimiter, loginLimiter, emailLimiter, codeLimiter } = require('./middleware/rateLimiters');
 
-// const authLimiter = rateLimit({
-//     windowMs: 60 * 1000,
-//     max: 5,
-//     message: { error: 'Too many login attempts, please try again later.' },
-//     skipSuccessfulRequests: true,
-// });
-
-// app.use('/api/', globalLimiter);
-// app.use('/api/auth/login', authLimiter);
-// app.use('/api/auth/register', authLimiter);
-// app.use('/api/auth/forgot-password', authLimiter);
-// app.use('/api/auth/reset-password', authLimiter);
-
-console.log('⚠️ Rate limiting is DISABLED for testing');
+app.use('/api/', globalLimiter);
+app.use('/api/auth/login', loginLimiter);
+app.use(['/api/auth/register', '/api/auth/resend-verification', '/api/auth/forgot-password'], emailLimiter);
+app.use(['/api/auth/verify-email', '/api/auth/verify-reset-code', '/api/auth/reset-password'], codeLimiter);
 
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
@@ -192,7 +179,7 @@ app.get('/api/health', (req, res) => {
         version: '2.2.0',
         uptime: process.uptime(),
         cors: 'enabled',
-        rateLimiting: 'disabled (testing)'
+        rateLimiting: 'enabled'
     });
 });
 
@@ -209,7 +196,7 @@ app.get('/api/health/detailed', async (req, res) => {
         pool: poolStats,
         emailQueue: emailStats,
         cors: 'enabled',
-        rateLimiting: 'disabled (testing)'
+        rateLimiting: 'enabled'
     });
 });
 
@@ -258,7 +245,7 @@ async function startServer() {
             console.log(`🚀 FocusFlow Backend running on port ${PORT}`);
             console.log(`📍 Health: http://localhost:${PORT}/api/health`);
             console.log(`📍 CORS Enabled for http://localhost:3000`);
-            console.log(`⚠️ Rate limiting is DISABLED for testing`);
+            console.log('🛡️ Rate limiting is ON');
             console.log('='.repeat(60));
         });
         

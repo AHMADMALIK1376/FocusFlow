@@ -1,4 +1,33 @@
 ﻿const jwt = require('jsonwebtoken');
+const { getConnection } = require('../config/database');
+
+// A token stays valid after its account is deleted, so every request also
+// checks the user still exists. Found users are remembered for a minute so this
+// is not a query on every call.
+const USER_CACHE_MS = 60 * 1000;
+const knownUsers = new Map(); // userId -> expiry time
+
+async function userExists(userId) {
+    const until = knownUsers.get(userId);
+    if (until && until > Date.now()) return true;
+    let connection;
+    try {
+        connection = await getConnection();
+        const result = await connection.execute('SELECT 1 FROM USERS WHERE user_id = :userId', [userId]);
+        if (result.rows.length === 0) {
+            knownUsers.delete(userId);
+            return false;
+        }
+        knownUsers.set(userId, Date.now() + USER_CACHE_MS);
+        return true;
+    } catch (err) {
+        // The database being briefly unreachable must not sign everyone out.
+        console.error(`❌ Could not check user ${userId}: ${err.message}`);
+        return true;
+    } finally {
+        if (connection) await connection.close();
+    }
+}
 
 // ==============================================
 // JWT SECURITY HELPER - Validates JWT_SECRET exists
@@ -23,7 +52,7 @@ const getJWTSecret = () => {
 // ==============================================
 // JWT VERIFICATION MIDDLEWARE
 // ==============================================
-module.exports = (req, res, next) => {
+module.exports = async (req, res, next) => {
     // Get authorization header
     const authHeader = req.header('Authorization');
     
@@ -66,6 +95,14 @@ module.exports = (req, res, next) => {
             console.log(`ℹ️ Token for user ${decoded.email || decoded.userId} expires in ${Math.floor(timeLeft / 3600)} hours`);
         }
         
+        if (!(await userExists(decoded.userId))) {
+            console.warn(`⚠️ Token for a deleted account (user ${decoded.userId}) on ${req.method} ${req.path}`);
+            return res.status(401).json({
+                error: 'This account no longer exists. Please sign in again.',
+                code: 'USER_NOT_FOUND'
+            });
+        }
+
         next();
         
     } catch (err) {
@@ -113,3 +150,4 @@ module.exports = (req, res, next) => {
         });
     }
 };
+module.exports.clearUserCache = () => knownUsers.clear();
