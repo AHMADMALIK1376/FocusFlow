@@ -1,0 +1,34 @@
+{
+  "about": "Line icons used in emails and answer pages (lucide, same as the app's nav). Regenerate with: python frontend/scripts/make-email-icons.py",
+  "tones": {
+    "white": "#FFFFFF",
+    "coral": "#EC706D",
+    "sage": "#284634",
+    "sun": "#28344E",
+    "blush": "#B8403D"
+  },
+  "names": [
+    "alarm-clock",
+    "award",
+    "book-open",
+    "calendar-clock",
+    "calendar-days",
+    "chart-column",
+    "check",
+    "circle-check",
+    "circle-x",
+    "clock",
+    "globe",
+    "graduation-cap",
+    "hourglass",
+    "key-round",
+    "map-pin",
+    "send",
+    "shield-check",
+    "sun",
+    "triangle-alert",
+    "user-check",
+    "x",
+    "bell"
+  ]
+}

@@ -130,7 +130,7 @@ export default function SubjectsPage() {
         <Panel><div className="py-8 text-center"><p className="text-focus text-sm mb-3">{error}</p><Button variant="soft" onClick={refresh}>Retry</Button></div></Panel>
       ) : subjects.length === 0 ? (
         <Panel>
-          <EmptyState icon="📚" title="No subjects yet" description="Import your timetable from a screenshot, or add courses one by one" />
+          <EmptyState icon={GraduationCap} title="No subjects yet" description="Import your timetable from a screenshot, or add courses one by one" />
           <div className="flex justify-center pb-6">
             <Button variant="primary" onClick={() => setImportOpen(true)} className="gap-1.5"><ScanText size={16} /> Import timetable</Button>
           </div>

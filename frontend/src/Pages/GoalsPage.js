@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Target, CheckCircle2, Loader, TrendingUp, Plus } from "lucide-react";
+import { Target, CheckCircle2, Loader, TrendingUp, Plus, Pin, ListChecks, X } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, LabelList } from "recharts";
 import { Button, Input, EmptyState, ProgressRing, Checkbox, DeleteButton } from "../components/ui";
 import { PageShell, PageHeader, StatTile, Panel } from "../components/dashboard/DashKit";
@@ -93,7 +93,7 @@ export default function GoalsPage() {
       <div className="grid lg:grid-cols-[320px_1fr] gap-5">
         <Panel title="Your goals">
           {goals.length === 0 ? (
-            <EmptyState icon="🎯" title="No goals yet" description="Add one above to get started" />
+            <EmptyState icon={Target} title="No goals yet" description="Add one above to get started" />
           ) : (
             <ul className="space-y-2 max-h-[460px] overflow-y-auto -mx-1 px-1">
               {goals.map((goal) => {
@@ -118,7 +118,7 @@ export default function GoalsPage() {
 
         <Panel>
           {!selected ? (
-            <EmptyState icon="📌" title="Select a goal" description="View and manage its milestones" />
+            <EmptyState icon={Pin} title="Select a goal" description="View and manage its milestones" />
           ) : (
             <div>
               <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
@@ -135,14 +135,14 @@ export default function GoalsPage() {
               </div>
 
               {selected.milestones.length === 0 ? (
-                <EmptyState icon="📌" title="No milestones yet" description="Break this goal into steps" />
+                <EmptyState icon={ListChecks} title="No milestones yet" description="Break this goal into steps" />
               ) : (
                 <ul className="space-y-2">
                   {selected.milestones.map((m) => (
                     <li key={m.id} className="flex items-center gap-3 bg-surface-2 rounded-token-md px-3 py-2.5">
                       <Checkbox checked={m.done} size={22} onChange={() => toggleMilestone(m.id)} />
                       <span className={`flex-1 text-sm ${m.done ? "line-through text-muted" : "text-ink"}`}>{m.title}</span>
-                      <button onClick={() => removeMilestone(m.id)} className="text-muted hover:text-focus text-xs">✕</button>
+                      <button onClick={() => removeMilestone(m.id)} className="text-muted hover:text-focus" aria-label="Delete"><X size={15} /></button>
                     </li>
                   ))}
                 </ul>

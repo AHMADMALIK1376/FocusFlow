@@ -1,5 +1,6 @@
 import React from 'react';
 import { cx } from './cx';
+import { renderIcon } from './renderIcon';
 
 const TONES = {
   brand: 'bg-brand/10 text-brand',
@@ -24,7 +25,7 @@ export function StatCard({ icon, label, value, tone = 'brand', className = '' })
             TONES[tone] || TONES.brand
           )}
         >
-          {icon}
+          {renderIcon(icon, { size: 20 })}
         </div>
       )}
       <div className="min-w-0">

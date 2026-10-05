@@ -1,39 +1,44 @@
 import { lazy } from 'react';
+import {
+  CalendarDays, CalendarRange, CircleDot, ClipboardList, Clock, Grid3x3, Repeat, SquareKanban, StickyNote, Target, Timer, TrendingUp, Wallet, Zap,
+} from 'lucide-react';
+
+// Widget icons are lucide line icons, like the nav bar.
 
 export const WIDGETS = [
   // Existing widgets
   {
     id: 'goals',
     titleKey: 'widgets.goals',
-    icon: '🎯',
+    icon: Target,
     defaultOn: true,
     component: lazy(() => import('../components/dashboard/GoalCard')),
   },
   {
     id: 'uniCalendar',
     titleKey: 'widgets.uniCalendar',
-    icon: '🗓️',
+    icon: CalendarRange,
     defaultOn: true,
     component: lazy(() => import('../components/dashboard/UniCalendar')),
   },
   {
     id: 'dailyTimetable',
     titleKey: 'widgets.dailyTimetable',
-    icon: '⏱️',
+    icon: Clock,
     defaultOn: true,
     component: lazy(() => import('../components/dashboard/DailyTimetableCard')),
   },
   {
     id: 'academic',
     titleKey: 'widgets.academic',
-    icon: '📅',
+    icon: CalendarDays,
     defaultOn: true,
     component: lazy(() => import('../components/calendar/AcademicCalendar')),
   },
   {
     id: 'focus',
     titleKey: 'widgets.focus',
-    icon: '⚡',
+    icon: Zap,
     defaultOn: true,
     component: lazy(() => import('../components/dashboard/FocusTimer')),
   },
@@ -41,28 +46,28 @@ export const WIDGETS = [
   {
     id: 'metrics',
     titleKey: 'widgets.metrics',
-    icon: '📈',
+    icon: TrendingUp,
     defaultOn: true,
     component: lazy(() => import('../components/dashboard/widgets/MetricsCard')),
   },
   {
     id: 'taskSchedule',
     titleKey: 'widgets.taskSchedule',
-    icon: '🗒️',
+    icon: ClipboardList,
     defaultOn: false,
     component: lazy(() => import('../components/dashboard/widgets/TaskScheduleCard')),
   },
   {
     id: 'progressRing',
     titleKey: 'widgets.progressRing',
-    icon: '🟣',
+    icon: CircleDot,
     defaultOn: false,
     component: lazy(() => import('../components/dashboard/widgets/ProgressRingCard')),
   },
   {
     id: 'activityGrid',
     titleKey: 'widgets.activityGrid',
-    icon: '🟩',
+    icon: Grid3x3,
     defaultOn: false,
     component: lazy(() => import('../components/dashboard/widgets/ActivityGridCard')),
   },
@@ -70,42 +75,42 @@ export const WIDGETS = [
   {
     id: 'notes',
     titleKey: 'widgets.notes',
-    icon: '📝',
+    icon: StickyNote,
     defaultOn: false,
     component: lazy(() => import('../components/dashboard/widgets/NotesCard')),
   },
   {
     id: 'goalsx',
     titleKey: 'widgets.goalsx',
-    icon: '🎯',
+    icon: Target,
     defaultOn: false,
     component: lazy(() => import('../components/dashboard/widgets/GoalsCard')),
   },
   {
     id: 'habits',
     titleKey: 'widgets.habits',
-    icon: '🔁',
+    icon: Repeat,
     defaultOn: false,
     component: lazy(() => import('../components/dashboard/widgets/HabitsCard')),
   },
   {
     id: 'kanban',
     titleKey: 'widgets.kanban',
-    icon: '🗂️',
+    icon: SquareKanban,
     defaultOn: false,
     component: lazy(() => import('../components/dashboard/widgets/KanbanCard')),
   },
   {
     id: 'timetrack',
     titleKey: 'widgets.timetrack',
-    icon: '⏲️',
+    icon: Timer,
     defaultOn: false,
     component: lazy(() => import('../components/dashboard/widgets/TimeTrackCard')),
   },
   {
     id: 'finance',
     titleKey: 'widgets.finance',
-    icon: '💰',
+    icon: Wallet,
     defaultOn: false,
     component: lazy(() => import('../components/dashboard/widgets/FinanceCard')),
   },

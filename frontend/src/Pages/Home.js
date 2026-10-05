@@ -3,7 +3,7 @@ import React, { useMemo, useState, useEffect, useRef, Suspense } from "react";
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Camera, Pencil, Plus } from "lucide-react";
+import { Camera, Pencil, Plus, Flame } from "lucide-react";
 import { useUser } from "../components/auth/UserContext";
 import { useApp } from "../components/context/AppContext";
 import { usePreferences } from "../preferences/usePreferences";
@@ -226,14 +226,14 @@ export default function Home() {
                     <p className="text-[9px] uppercase tracking-widest text-muted">sessions</p>
                   </div>
                 </ProgressRing>
-                <p className="text-xs text-muted mt-3 font-medium text-center">{focusRingPct >= 100 ? "Daily goal reached 🎉" : `${focusGoal - focusToday} more to hit today's goal`}</p>
+                <p className="text-xs text-muted mt-3 font-medium text-center">{focusRingPct >= 100 ? "Daily goal reached — nice work!" : `${focusGoal - focusToday} more to hit today's goal`}</p>
               </section>
 
               <section className="rounded-token-lg bg-grad-hero text-on-brand p-5 shadow-glass relative overflow-hidden flex flex-col justify-between min-h-[140px]">
                 <div className="absolute -bottom-8 -right-6 w-36 h-36 rounded-full bg-[rgb(var(--on-brand)/0.12)] blur-2xl" />
                 <div className="relative z-10">
                   <p className="text-[11px] font-bold uppercase tracking-widest opacity-80">Keep the streak</p>
-                  <p className="text-4xl font-black mt-1">{streak || 0} 🔥</p>
+                  <p className="text-4xl font-black mt-1 flex items-center gap-2">{streak || 0} <Flame size={30} strokeWidth={2} /></p>
                   <p className="text-sm opacity-85 mt-1">days in a row</p>
                 </div>
                 <button onClick={() => navigate("/focus-mode")} className="relative z-10 mt-4 w-full py-2.5 rounded-token-md bg-[rgb(var(--on-brand)/0.18)] hover:bg-[rgb(var(--on-brand)/0.28)] transition-colors text-sm font-black uppercase tracking-wider flex items-center justify-center gap-2">
@@ -271,7 +271,7 @@ export default function Home() {
             </div>
             <div className="space-y-2.5">
               {todaysTasks.length === 0 ? (
-                <p className="text-sm text-muted py-6 text-center">All clear — no pending tasks ✨</p>
+                <p className="text-sm text-muted py-6 text-center">All clear — no pending tasks</p>
               ) : (
                 todaysTasks.map((tk, i) => (
                   <div key={tk.id || i} className="flex items-center gap-3 p-2.5 rounded-token-md hover:bg-surface/60 transition-colors">

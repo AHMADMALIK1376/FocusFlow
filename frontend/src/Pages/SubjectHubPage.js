@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { renderIcon } from "../components/ui/renderIcon";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Clock } from "lucide-react";
+import { ArrowLeft, Clock, StickyNote, GraduationCap } from "lucide-react";
 import { Button, Badge, EmptyState, DeleteButton } from "../components/ui";
 import { PageShell, Panel } from "../components/dashboard/DashKit";
 import { subjectAPI } from "../services/api";
@@ -12,7 +13,7 @@ import AssignmentsPanel from "../components/subjects/AssignmentsPanel";
 
 const DAY_ORDER = { Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6, Sunday: 7 };
 const COMING = [
-  { key: "notes", icon: "🗒️", title: "Notes", note: "Subject notes — arriving soon." },
+  { key: "notes", icon: StickyNote, title: "Notes", note: "Subject notes — arriving soon." },
 ];
 
 export default function SubjectHubPage() {
@@ -57,7 +58,7 @@ export default function SubjectHubPage() {
       ) : error ? (
         <Panel><div className="py-8 text-center"><p className="text-focus text-sm mb-3">{error}</p><Button variant="soft" onClick={load}>Retry</Button></div></Panel>
       ) : !subject ? (
-        <Panel><EmptyState icon="📚" title="Subject not found" description="It may have been deleted." /></Panel>
+        <Panel><EmptyState icon={GraduationCap} title="Subject not found" description="It may have been deleted." /></Panel>
       ) : (
         <>
           <div className="bg-surface rounded-token-lg shadow-neu overflow-hidden flex mb-6">
@@ -81,7 +82,7 @@ export default function SubjectHubPage() {
 
           <Panel title="Class schedule" className="mb-6">
             {schedule.length === 0 ? (
-              <EmptyState icon="🕒" title="No class times set" description="Add times by editing this subject on the Subjects page." />
+              <EmptyState icon={Clock} title="No class times set" description="Add times by editing this subject on the Subjects page." />
             ) : (
               <ul className="divide-y divide-[rgb(var(--ink)/0.07)]">
                 {schedule.map((s) => (
@@ -111,7 +112,7 @@ export default function SubjectHubPage() {
             {COMING.map((c) => (
               <Panel key={c.key}>
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xl">{c.icon}</span>
+                  <span className="text-brand">{renderIcon(c.icon, { size: 22 })}</span>
                   <h3 className="text-sm font-black uppercase tracking-wider text-ink">{c.title}</h3>
                 </div>
                 <p className="text-xs text-muted">{c.note}</p>

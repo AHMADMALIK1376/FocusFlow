@@ -1,4 +1,5 @@
 import React from 'react';
+import { Target, Flame, ClipboardList, Clock } from "lucide-react";
 import { useApp } from '../../context/AppContext';
 import { StatCard } from '../../ui';
 
@@ -12,25 +13,25 @@ export default function MetricsCard() {
       </h3>
       <div className="grid grid-cols-2 gap-3">
         <StatCard
-          icon="🎯"
+          icon={Target}
           label="Completed Goals"
           value={completedGoals || 0}
           tone="brand"
         />
         <StatCard
-          icon="🔥"
+          icon={Flame}
           label="Day Streak"
           value={streak || 0}
           tone="warn"
         />
         <StatCard
-          icon="📋"
+          icon={ClipboardList}
           label="Tasks Pending"
           value={pendingTasksCount || 0}
           tone="info"
         />
         <StatCard
-          icon="🕒"
+          icon={Clock}
           label="Routines Left"
           value={pendingRoutineCount || 0}
           tone="success"

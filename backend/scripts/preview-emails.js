@@ -67,8 +67,11 @@ function renderPage(handler, req) {
   fs.mkdirSync(OUT, { recursive: true });
   const links = [];
   const write = (name, html, label) => {
-    // emails embed the logo by cid; answer pages load it from the API (logo.png)
-    fs.writeFileSync(path.join(OUT, `${name}.html`), html.split(`cid:${LOGO_CID}`).join(logo).split('"logo.png"').join(`"${logo}"`));
+    // emails embed the logo and line icons by cid; answer pages load the logo from the API (logo.png)
+    const icon = (file) => `data:image/png;base64,${fs.readFileSync(path.join(__dirname, '..', 'assets', 'icons', `${file}.png`)).toString('base64')}`;
+    const inlined = html.split(`cid:${LOGO_CID}`).join(logo).split('"logo.png"').join(`"${logo}"`)
+      .replace(/cid:ffi-([\w-]+)/g, (_, file) => icon(file));
+    fs.writeFileSync(path.join(OUT, `${name}.html`), inlined);
     links.push(`<li><a href="${name}.html">${label}</a></li>`);
   };
 

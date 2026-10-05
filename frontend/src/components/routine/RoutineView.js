@@ -1,5 +1,6 @@
 // src/components/routine/RoutineView.js
 import React, { useState, useEffect } from "react";
+import { Sunrise, Pencil, Lock, CircleCheck, CircleX, Circle, Trash2, House } from "lucide-react";
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../context/AppContext";
@@ -175,7 +176,7 @@ export default function RoutineView() {
         <div className="bg-surface rounded-token-xl shadow-neu p-8 mb-6">
           {dayTasks.length === 0 ? (
             <div className="text-center py-10">
-              <span className="text-5xl mb-4 block">🌅</span>
+              <Sunrise size={44} strokeWidth={1.75} className="mx-auto mb-4 text-brand" />
               <p className="text-muted font-bold">No activities for {formatDayForDisplay(activeDay)}</p>
               <button onClick={() => navigate("/routine")} className="magic-btn mt-4 text-sm">+ Add Activities</button>
             </div>
@@ -197,9 +198,9 @@ export default function RoutineView() {
                       <div key={task.id} className="flex items-center gap-1.5 group justify-end w-full">
                         {!missed && (
                           <button onClick={() => handleEditClick(task)}
-                            className="text-[13px] text-info opacity-0 group-hover:opacity-100 transition-opacity leading-none mr-0.5">✎</button>
+                            className="text-info opacity-0 group-hover:opacity-100 transition-opacity leading-none mr-0.5" aria-label="Edit"><Pencil size={13} /></button>
                         )}
-                        {missed && <span className="text-[11px] text-focus font-bold mr-0.5">🔒</span>}
+                        {missed && <Lock size={11} className="text-focus mr-0.5 shrink-0" />}
                         <span className={`text-[11px] font-bold text-right leading-tight max-w-[115px] truncate ${completed ? 'text-success line-through' : missed ? 'text-focus line-through font-black' : 'text-ink'}`}>
                           {task.activity}
                         </span>
@@ -228,9 +229,9 @@ export default function RoutineView() {
                         </span>
                         {!missed && (
                           <button onClick={() => handleEditClick(task)}
-                            className="text-[13px] text-info opacity-0 group-hover:opacity-100 transition-opacity leading-none ml-0.5">✎</button>
+                            className="text-info opacity-0 group-hover:opacity-100 transition-opacity leading-none ml-0.5" aria-label="Edit"><Pencil size={13} /></button>
                         )}
-                        {missed && <span className="text-[11px] text-focus font-bold ml-0.5">🔒</span>}
+                        {missed && <Lock size={11} className="text-focus ml-0.5 shrink-0" />}
                       </div>
                     );
                   })}
@@ -238,9 +239,9 @@ export default function RoutineView() {
               </div>
 
               <div className="flex justify-center gap-6 mt-5 text-[9px] font-bold">
-                <span className="text-success">🟢 Completed</span>
-                <span className="text-focus">🔴 Missed</span>
-                <span className="text-muted">⚪ Upcoming</span>
+                <span className="text-success inline-flex items-center gap-1"><CircleCheck size={11} /> Completed</span>
+                <span className="text-focus inline-flex items-center gap-1"><CircleX size={11} /> Missed</span>
+                <span className="text-muted inline-flex items-center gap-1"><Circle size={11} /> Upcoming</span>
               </div>
             </>
           )}
@@ -257,14 +258,14 @@ export default function RoutineView() {
             }}
             className="pointer-events-auto text-xl text-muted hover:text-focus opacity-0 group-hover/card:opacity-100 transition-all duration-300 hover:scale-110 z-10"
             title="Delete activities">
-            🗑
+            <Trash2 size={16} />
           </button>
         </div>
       </div>
 
       <footer className="mt-4 flex gap-4">
-        <button onClick={() => navigate("/dashboard")} className="magic-btn">🏠 Dashboard</button>
-        <button onClick={() => navigate("/routine")} className="magic-btn">✏️ Edit Routine</button>
+        <button onClick={() => navigate("/dashboard")} className="magic-btn"><House size={14} className="inline -mt-0.5 mr-1.5" />Dashboard</button>
+        <button onClick={() => navigate("/routine")} className="magic-btn"><Pencil size={14} className="inline -mt-0.5 mr-1.5" />Edit Routine</button>
       </footer>
 
       {showEditPopup && editingRoutine && (

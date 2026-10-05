@@ -67,7 +67,7 @@ test("same timetable plus one new course: only the new course is added", async (
   expect(subjectAPI.create).toHaveBeenCalledTimes(1);
   expect(subjectAPI.create).toHaveBeenCalledWith(expect.objectContaining({ code: "CSC312", name: "Web Engineering", instructor: "Dr. Faheem Shaukat" }));
   expect(subjectAPI.update).not.toHaveBeenCalled();
-  expect(onDone).toHaveBeenCalledWith("Courses: 1 added ✓");
+  expect(onDone).toHaveBeenCalledWith("Courses: 1 added");
 });
 
 test("differences are corrected one field at a time, everything else is kept", async () => {
@@ -110,7 +110,7 @@ test("a whole new timetable asks first, then replaces: old subjects move to past
   // nothing is archived until every new subject is saved
   const lastCreate = Math.max(...subjectAPI.create.mock.invocationCallOrder);
   expect(Math.min(...subjectAPI.update.mock.invocationCallOrder)).toBeGreaterThan(lastCreate);
-  expect(onDone).toHaveBeenCalledWith("Courses: 3 added, 3 moved to past terms ✓");
+  expect(onDone).toHaveBeenCalledWith("Courses: 3 added, 3 moved to past terms");
 });
 
 test("answering no keeps the old subjects and just adds", async () => {

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus } from "lucide-react";
+import { Plus, Layers } from "lucide-react";
 import { Button, Input, EmptyState, Badge } from "../ui";
 import { Panel } from "../dashboard/DashKit";
 import { useDecks } from "../../features/flashcards/useFlashcards";
@@ -28,12 +28,12 @@ export default function FlashcardsPanel({ subjectId }) {
       {loading ? (
         <p className="text-sm text-muted py-4 text-center">Loading…</p>
       ) : decks.length === 0 ? (
-        <EmptyState icon="🃏" title="No decks yet" description="Create a deck for this subject" />
+        <EmptyState icon={Layers} title="No decks yet" description="Create a deck for this subject" />
       ) : (
         <ul className="divide-y divide-[rgb(var(--ink)/0.07)] mb-3">
           {decks.map((d) => (
             <li key={d.id} onClick={() => navigate(`/flashcards/${d.id}`)} className="flex items-center gap-3 py-2.5 cursor-pointer hover:bg-surface-2 -mx-2 px-2 rounded-token-md transition-colors">
-              <span className="text-lg">🃏</span>
+              <Layers size={18} strokeWidth={1.75} className="text-brand" />
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-ink text-sm truncate">{d.name}</p>
                 <p className="text-xs text-muted">{d.cardCount} card{d.cardCount === 1 ? "" : "s"}</p>

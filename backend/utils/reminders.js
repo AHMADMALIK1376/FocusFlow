@@ -87,7 +87,8 @@ const typeIs = (t, list) => list.includes(String(t || '').toLowerCase());
 const pick = (override, fallback) => (override === null || override === undefined || override === '' ? fallback : Number(override));
 
 // Structured details for the rich email / WhatsApp layouts. Push pop-ups use
-// the plain `title` + `body`; every channel gets the same facts.
+// the plain `title` + `body`; every channel gets the same facts. `icon` is a
+// lucide icon name (the app's nav-bar icons), drawn by the email template.
 const fact = (icon, label, value) => (value ? { icon, label, value } : null);
 const span = (start, end) => [fmt12(start), fmt12(end)].filter(Boolean).join(' – ');
 
@@ -143,10 +144,10 @@ function computeDue({ now, settings, classes = [], routines = [], exams = [], as
       lines.push(`Routine: ${todaysRoutines.map((r) => `${fmt12(r.time)} ${r.name}`).join(', ')}`);
     }
     const deadlines = !s.deadlineReminders ? [] : [
-      ...examsToday.map((e) => ({ emoji: typeIs(e.type, SUBMIT_TYPES) ? '📤' : '📝', when: 'Today', time: fmt12(e.time), title: e.title, type: e.type || 'Exam' })),
-      ...dueToday.map((a) => ({ emoji: '📤', when: 'Today', time: '', title: a.title, type: 'Due' })),
-      ...examsTomorrow.map((e) => ({ emoji: typeIs(e.type, SUBMIT_TYPES) ? '📤' : '📝', when: 'Tomorrow', time: fmt12(e.time), title: e.title, type: e.type || 'Exam' })),
-      ...dueTomorrow.map((a) => ({ emoji: '📤', when: 'Tomorrow', time: '', title: a.title, type: 'Due' })),
+      ...examsToday.map((e) => ({ icon: typeIs(e.type, SUBMIT_TYPES) ? 'send' : 'calendar-clock', when: 'Today', time: fmt12(e.time), title: e.title, type: e.type || 'Exam' })),
+      ...dueToday.map((a) => ({ icon: 'send', when: 'Today', time: '', title: a.title, type: 'Due' })),
+      ...examsTomorrow.map((e) => ({ icon: typeIs(e.type, SUBMIT_TYPES) ? 'send' : 'calendar-clock', when: 'Tomorrow', time: fmt12(e.time), title: e.title, type: e.type || 'Exam' })),
+      ...dueTomorrow.map((a) => ({ icon: 'send', when: 'Tomorrow', time: '', title: a.title, type: 'Due' })),
     ];
     out.push({
       key: `digest:${now.date}`,
@@ -179,7 +180,7 @@ function computeDue({ now, settings, classes = [], routines = [], exams = [], as
           view: {
             headline: c.name,
             sub: before > 0 ? `Starts ${leadText(before)} — time to pack up and head over.` : 'Starting now!',
-            facts: [fact('🕐', 'Time', span(c.start, c.end)), fact('📍', 'Room', c.room)].filter(Boolean),
+            facts: [fact('clock', 'Time', span(c.start, c.end)), fact('map-pin', 'Room', c.room)].filter(Boolean),
           },
         });
       }
@@ -204,7 +205,7 @@ function computeDue({ now, settings, classes = [], routines = [], exams = [], as
           view: {
             headline: `Did you attend ${c.name}?`,
             sub: 'One tap and it goes straight into your attendance.',
-            facts: [fact('🕐', 'Class', span(c.start, c.end)), fact('📍', 'Room', c.room)].filter(Boolean),
+            facts: [fact('clock', 'Class', span(c.start, c.end)), fact('map-pin', 'Room', c.room)].filter(Boolean),
           },
         });
       }
@@ -225,7 +226,7 @@ function computeDue({ now, settings, classes = [], routines = [], exams = [], as
           view: {
             headline: e.title,
             sub: `${e.type || 'Exam'} ${leadText(lead)}. Deep breath — you've got this.`,
-            facts: [fact('🕐', 'Starts', fmt12(e.time)), fact('📚', 'Subject', e.subjectName), fact('📍', 'Where', e.location)].filter(Boolean),
+            facts: [fact('clock', 'Starts', fmt12(e.time)), fact('book-open', 'Subject', e.subjectName), fact('map-pin', 'Where', e.location)].filter(Boolean),
           },
         });
       }
@@ -259,9 +260,9 @@ function computeDue({ now, settings, classes = [], routines = [], exams = [], as
             headline: `Did you submit ${h.title}?`,
             sub: `It's due ${dueText}.`,
             facts: [
-              fact('📤', 'Type', h.type || 'Assignment'),
-              fact('📚', 'Subject', h.subjectName),
-              fact('⏰', 'Due', `${h.date === now.date ? 'Today' : 'Tomorrow'}, ${fmt12(h.time || END_OF_DAY)}`),
+              fact('send', 'Type', h.type || 'Assignment'),
+              fact('book-open', 'Subject', h.subjectName),
+              fact('alarm-clock', 'Due', `${h.date === now.date ? 'Today' : 'Tomorrow'}, ${fmt12(h.time || END_OF_DAY)}`),
             ].filter(Boolean),
           },
         });
@@ -288,7 +289,7 @@ function computeDue({ now, settings, classes = [], routines = [], exams = [], as
           view: {
             headline: `How did ${e.title} go?`,
             sub: 'Add your marks while you still remember them — they go straight into Grades.',
-            facts: [fact('📊', String(e.type || 'Quiz'), e.title), fact('📚', 'Subject', e.subjectName)].filter(Boolean),
+            facts: [fact('award', String(e.type || 'Quiz'), e.title), fact('book-open', 'Subject', e.subjectName)].filter(Boolean),
           },
         });
       }
@@ -309,7 +310,7 @@ function computeDue({ now, settings, classes = [], routines = [], exams = [], as
           view: {
             headline: r.name,
             sub: `Starts ${leadText(lead)}. Small steps, every day.`,
-            facts: [fact('🕐', 'Time', fmt12(r.time))].filter(Boolean),
+            facts: [fact('clock', 'Time', fmt12(r.time))].filter(Boolean),
           },
         });
       }
@@ -330,7 +331,7 @@ function attendanceReport(rows, justMarked) {
     attended += taken;
     missed += r.absent || 0;
     if (taken + (r.absent || 0) === 0) continue;
-    lines.push(`• ${r.name}: ${taken} attended, ${r.absent || 0} missed — ${r.percentage}%${r.percentage < 75 ? ' ⚠️' : ''}`);
+    lines.push(`• ${r.name}: ${taken} attended, ${r.absent || 0} missed — ${r.percentage}%${r.percentage < 75 ? ' (below 75%)' : ''}`);
   }
   const total = attended + missed;
   const overall = total ? Math.round((attended / total) * 100) : null;

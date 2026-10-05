@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { Clock } from "lucide-react";
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { useApp } from "../components/context/AppContext";
 import { focusAPI, getToken } from "../services/api";
@@ -218,7 +219,7 @@ export default function FocusModePage() {
                         <span className={`absolute -left-[14px] top-1 w-6 h-6 rounded-full border-4 bg-surface z-10 ${done ? 'border-green-500' : 'border-red-500'}`}></span>
                         <div className="mb-2">
                           <span className="text-xs font-black text-brand uppercase tracking-widest bg-brand/10 px-2 py-1 rounded-token-sm">
-                            🕒 {item.start} — {item.end}
+                            <Clock size={12} className="inline -mt-0.5 mr-1" />{item.start} — {item.end}
                           </span>
                         </div>
                         <div className="relative bg-surface-2 p-5 rounded-token-md shadow-neu-sm">

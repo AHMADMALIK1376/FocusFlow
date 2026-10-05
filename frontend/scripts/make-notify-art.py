@@ -4,10 +4,12 @@ Writes public/notify/:
   badge.png        96x96 white FocusFlow mark on transparent — Android tints
                    it for the status bar (a full-colour icon shows as a blob)
   <kind>.png       720x360 banner shown when a reminder is expanded: a puffy
-                   clay tile with the reminder's emoji on the crème page, the
-                   reminder's name, and soft colour blobs behind
+                   clay tile with the reminder's line icon (the same lucide
+                   icons as the nav bar) on the crème page, the reminder's
+                   name, and soft colour blobs behind
 
 Reuses the clay renderer from make-logo.py so everything matches the logo.
+Icons are drawn by lucide_png.py (needs Microsoft Edge or Google Chrome).
 
 Usage:  python frontend/scripts/make-notify-art.py
 """
@@ -15,6 +17,8 @@ import importlib.util
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
+
+import lucide_png
 
 HERE = Path(__file__).resolve().parent
 PUBLIC = HERE.parent / "public"
@@ -28,27 +32,26 @@ CANVAS = (245, 239, 230)
 INK = (52, 46, 62)
 CORAL = (236, 112, 109)
 WARM_DROP = (190, 160, 122)
-EMOJI_FONT = "C:/Windows/Fonts/seguiemj.ttf"
 LABEL_FONT = "C:/Windows/Fonts/ARLRDBD.TTF"  # Arial Rounded MT Bold — soft, clay-friendly
 
-# (base, bottom-edge shade) for each clay tone — shades stay light, as in the app.
+# (base, bottom-edge shade, icon colour) for each clay tone — shades stay light, as in the app.
 TONES = {
-    "coral": ((236, 112, 109), (226, 100, 97)),
-    "sage": ((184, 220, 196), (166, 204, 180)),
-    "sun": ((255, 215, 0), (240, 196, 0)),
-    "blush": ((255, 226, 222), (246, 208, 203)),
+    "coral": ((236, 112, 109), (226, 100, 97), "#FFFFFF"),
+    "sage": ((184, 220, 196), (166, 204, 180), "#284634"),
+    "sun": ((255, 215, 0), (240, 196, 0), "#28344E"),
+    "blush": ((255, 226, 222), (246, 208, 203), "#B8403D"),
 }
-# kind: (emoji, label, tile tone, blob colours)
+# kind: (lucide icon — matches the emails, label, tile tone, blob colours)
 KINDS = {
-    "class": ("📚", "Class time", "coral", [(255, 226, 222), (184, 220, 196)]),
-    "attendance": ("🎒", "Did you attend?", "sage", [(206, 234, 214), (255, 226, 222)]),
-    "exam": ("📝", "Exam ahead", "sun", [(255, 236, 150), (255, 226, 222)]),
-    "submit": ("📤", "Hand-in check", "blush", [(255, 214, 208), (206, 234, 214)]),
-    "quiz": ("📊", "Marks time", "sage", [(206, 234, 214), (255, 236, 150)]),
-    "routine": ("🌿", "Your routine", "sage", [(206, 234, 214), (255, 236, 150)]),
-    "digest": ("🌞", "Your day", "sun", [(255, 236, 150), (255, 214, 208)]),
-    "report": ("📈", "Attendance", "sage", [(206, 234, 214), (255, 226, 222)]),
-    "test": ("🔔", "It works!", "coral", [(255, 214, 208), (255, 236, 150)]),
+    "class": ("graduation-cap", "Class time", "coral", [(255, 226, 222), (184, 220, 196)]),
+    "attendance": ("user-check", "Did you attend?", "sage", [(206, 234, 214), (255, 226, 222)]),
+    "exam": ("calendar-clock", "Exam ahead", "sun", [(255, 236, 150), (255, 226, 222)]),
+    "submit": ("send", "Hand-in check", "blush", [(255, 214, 208), (206, 234, 214)]),
+    "quiz": ("award", "Marks time", "sage", [(206, 234, 214), (255, 236, 150)]),
+    "routine": ("clock", "Your routine", "sage", [(206, 234, 214), (255, 236, 150)]),
+    "digest": ("sun", "Your day", "sun", [(255, 236, 150), (255, 214, 208)]),
+    "report": ("chart-column", "Attendance", "sage", [(206, 234, 214), (255, 226, 222)]),
+    "test": ("bell", "It works!", "coral", [(255, 214, 208), (255, 236, 150)]),
 }
 
 
@@ -67,20 +70,18 @@ def clay_tile(size, tone):
     mask = Image.new("L", (size, size), 0)
     pad = int(size * 0.08)
     ImageDraw.Draw(mask).rounded_rectangle([pad, pad, size - pad, size - pad], radius=int(size * 0.3), fill=255)
-    base, shade = TONES[tone]
+    base, shade, _ = TONES[tone]
     return logo.clay(mask, (base, shade, WARM_DROP))
 
 
-def banner(kind):
-    emoji, label, tone, colours = KINDS[kind]
+def banner(kind, icon):
+    _, label, tone, colours = KINDS[kind]
     w, h = 720, 360
     img = blobs((w, h), colours)
 
     tile = clay_tile(250, tone)
     img.alpha_composite(tile, (40, (h - 250) // 2 + 6))
-    e = Image.new("RGBA", (250, 250), (0, 0, 0, 0))
-    ImageDraw.Draw(e).text((125, 122), emoji, font=ImageFont.truetype(EMOJI_FONT, 104), embedded_color=True, anchor="mm")
-    img.alpha_composite(e, (40, (h - 250) // 2 + 6))
+    img.alpha_composite(icon, (40 + (250 - icon.width) // 2, (h - 250) // 2 + 6 + (250 - icon.height) // 2 - 2))
 
     d = ImageDraw.Draw(img)
     big = ImageFont.truetype(LABEL_FONT, 52 if len(label) <= 12 else 42)
@@ -100,8 +101,10 @@ def badge():
 def main():
     OUT.mkdir(exist_ok=True)
     badge().save(OUT / "badge.png", optimize=True)
+    # Same stroke as the nav bar (1.75), drawn big for the tile.
+    icons = lucide_png.render([(kind, name, TONES[tone][2], 112, 1.75) for kind, (name, _, tone, _) in KINDS.items()])
     for kind in KINDS:
-        banner(kind).save(OUT / f"{kind}.png", optimize=True)
+        banner(kind, icons[kind]).save(OUT / f"{kind}.png", optimize=True)
     print(f"wrote badge + {len(KINDS)} banners to {OUT}")
 
 

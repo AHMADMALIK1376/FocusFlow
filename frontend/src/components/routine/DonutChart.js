@@ -68,10 +68,10 @@ export default function DonutChart({ tasks, activeDay, onToggle, sliceAngle, isL
   const getSliceColor = (task) => getTaskColor(task, activeDay, isLocked, currentDayName);
 
   const getStatusText = (task) => {
-    if (isLocked) return '🔒 Locked';
-    if (isTaskCompleted(task, activeDay)) return '✅ Completed';
-    if (isTaskMissed(task, activeDay, currentDayName)) return '🔒 Missed';
-    return '📅 Upcoming';
+    if (isLocked) return 'Locked';
+    if (isTaskCompleted(task, activeDay)) return 'Completed';
+    if (isTaskMissed(task, activeDay, currentDayName)) return 'Missed';
+    return 'Upcoming';
   };
 
   const completedCount = tasks.filter(t => isTaskCompleted(t, activeDay)).length;

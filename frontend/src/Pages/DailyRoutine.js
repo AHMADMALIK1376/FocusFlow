@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { AnimatePresence, motion } from "framer-motion";
-import { Plus, Flame, ScanText } from "lucide-react";
+import { Plus, Flame, ScanText, TriangleAlert, Sunrise, CircleCheck, CircleX, Circle, Clock, Pencil, Lock, TrendingUp, Palette, Check } from "lucide-react";
 import { useApp } from "../components/context/AppContext";
 import { routineAPI, getToken } from "../services/api";
 import { Card, CardDeleteButton, Modal, Button } from "../components/ui";
@@ -307,7 +307,7 @@ export default function DailyRoutine() {
     return (
       <div className="min-h-screen bg-canvas flex items-center justify-center">
         <div className="bg-focus/10 border border-focus/30 rounded-token-lg p-6 text-center max-w-md">
-          <span className="text-4xl mb-3 block">⚠️</span>
+          <TriangleAlert size={36} strokeWidth={1.75} className="mx-auto mb-3 text-focus" />
           <h2 className="text-xl font-black text-focus mb-2">Error Loading Routines</h2>
           <p className="text-muted mb-4">{error}</p>
           <button onClick={() => window.location.reload()} className="magic-btn">
@@ -437,15 +437,15 @@ export default function DailyRoutine() {
           <Card className="relative group/card p-10 mt-4">
             {dayTasks.length === 0 ? (
               <div className="text-center py-10">
-                <span className="text-5xl mb-4 block">🌅</span>
+                <Sunrise size={44} strokeWidth={1.75} className="mx-auto mb-4 text-brand" />
                 <p className="text-muted font-bold text-sm">No activities for {getFullDayName(activeDay)}</p>
               </div>
             ) : (
               <>
                 <div className="absolute top-6 right-6 flex flex-col gap-1.5 text-[11px] font-bold items-end">
-                  <span className="text-success flex items-center gap-1.5">🟢 Completed {completedCount}</span>
-                  <span className="text-focus flex items-center gap-1.5">🔴 Missed {missedCount}</span>
-                  <span className="text-muted flex items-center gap-1.5">⚪ Upcoming {upcomingCount}</span>
+                  <span className="text-success flex items-center gap-1.5"><CircleCheck size={13} /> Completed {completedCount}</span>
+                  <span className="text-focus flex items-center gap-1.5"><CircleX size={13} /> Missed {missedCount}</span>
+                  <span className="text-muted flex items-center gap-1.5"><Circle size={13} /> Upcoming {upcomingCount}</span>
                 </div>
 
                 <div className="text-center mb-6">
@@ -456,7 +456,7 @@ export default function DailyRoutine() {
                 <div className="flex items-center justify-between gap-6">
                   {/* LEFT: Day timeline */}
                   <div className="w-[280px] shrink-0">
-                    <p className="text-[10px] font-black text-muted uppercase tracking-widest mb-4">🕒 Timeline</p>
+                    <p className="text-[10px] font-black text-muted uppercase tracking-widest mb-4 flex items-center gap-1.5"><Clock size={12} /> Timeline</p>
                     <div className={`relative pl-1 ${dayTasks.length > 3 ? 'max-h-[280px] overflow-y-auto pr-2 ff-side-scroll' : ''}`}>
                       <div className="absolute left-[6px] top-1 bottom-1 w-0.5 bg-[rgb(var(--ink)/0.1)]" />
                       {dayTasks.map((task, index) => {
@@ -482,9 +482,9 @@ export default function DailyRoutine() {
                                 </span>
                                 {!missed && (
                                   <button onClick={() => handleEditClick(task)}
-                                    className="text-sm text-info opacity-0 group-hover:opacity-100 transition-opacity leading-none">✎</button>
+                                    className="text-info opacity-0 group-hover:opacity-100 transition-opacity leading-none" aria-label="Edit"><Pencil size={13} /></button>
                                 )}
-                                {missed && <span className="text-xs">🔒</span>}
+                                {missed && <Lock size={12} className="text-focus" />}
                               </div>
                               <span className={`text-[10px] font-bold ${completed ? 'text-success' : missed ? 'text-focus' : 'text-muted'}`}>{statusLabel}</span>
                             </div>
@@ -507,7 +507,7 @@ export default function DailyRoutine() {
 
                   {/* RIGHT: Consistency tracker */}
                   <div className="w-[280px] shrink-0">
-                    <p className="text-[10px] font-black text-muted uppercase tracking-widest mb-4">📈 Consistency</p>
+                    <p className="text-[10px] font-black text-muted uppercase tracking-widest mb-4 flex items-center gap-1.5"><TrendingUp size={12} /> Consistency</p>
                     <div className={`flex flex-col divide-y divide-[rgb(var(--ink)/0.06)] ${dayTasks.length > 3 ? 'max-h-[280px] overflow-y-auto pr-2 ff-side-scroll' : ''}`}>
                       {dayTasks.map((task, taskIndex) => {
                         const streak = computeStreak(task, trackerWeeks);
@@ -590,7 +590,7 @@ export default function DailyRoutine() {
         />
       )}
 
-      <Modal open={showAddModal} onClose={() => setShowAddModal(false)} title="✍️ Add New Activity">
+      <Modal open={showAddModal} onClose={() => setShowAddModal(false)} title="Add New Activity">
         <div>
           <p className="text-[10px] font-black text-muted uppercase tracking-widest mb-3">Select Days:</p>
           <div className="flex flex-wrap gap-2 mb-5">
@@ -618,7 +618,7 @@ export default function DailyRoutine() {
             ))}
           </div>
 
-          <p className="text-[10px] font-black text-muted uppercase tracking-widest mb-3">🎨 Colour</p>
+          <p className="text-[10px] font-black text-muted uppercase tracking-widest mb-3 flex items-center gap-1.5"><Palette size={12} /> Colour</p>
           <div className="grid grid-cols-6 gap-2 mb-5">
             {COLOR_PALETTE.map((c) => {
               const isSelected = selectedColor === c.color;
@@ -632,7 +632,7 @@ export default function DailyRoutine() {
                     ${isSelected ? 'scale-110 shadow-neu ring-2 ring-offset-1 ring-muted' : 'hover:scale-105 shadow-neu-sm'}`}
                   style={{ backgroundColor: c.color }}
                 >
-                  {isSelected && <span className="text-white text-sm font-black">✓</span>}
+                  {isSelected && <Check size={16} strokeWidth={3} className="text-white" />}
                 </button>
               );
             })}

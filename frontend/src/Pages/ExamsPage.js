@@ -84,7 +84,7 @@ export default function ExamsPage() {
       {loading ? (
         <Panel><p className="text-sm text-muted py-8 text-center">Loading…</p></Panel>
       ) : exams.length === 0 ? (
-        <Panel><EmptyState icon="⏰" title="Nothing scheduled" description="Add an exam, quiz or deadline to get started" /></Panel>
+        <Panel><EmptyState icon={CalendarClock} title="Nothing scheduled" description="Add an exam, quiz or deadline to get started" /></Panel>
       ) : (
         <div className="space-y-6">
           {SECTIONS.map((sec) => (g[sec.key].length === 0 ? null : (

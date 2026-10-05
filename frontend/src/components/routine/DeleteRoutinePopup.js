@@ -1,5 +1,6 @@
 // src/components/routine/DeleteRoutinePopup.js
 import React, { useState, useEffect } from "react";
+import { X, Trash2, ClipboardList, CalendarDays } from "lucide-react";
 
 export default function DeleteRoutinePopup({ routine, allRoutines, onClose, onDelete }) {
   const [isVisible, setIsVisible] = useState(false);
@@ -51,11 +52,11 @@ export default function DeleteRoutinePopup({ routine, allRoutines, onClose, onDe
           ${isVisible ? 'scale-100 opacity-100 translate-y-0' : 'scale-90 opacity-0 translate-y-8'}`}
       >
         <button onClick={handleClose}
-          className="absolute top-3 right-3 w-5 h-5 rounded-full bg-focus text-on-brand text-[10px] flex items-center justify-center shadow-neu-sm hover:scale-110 transition-all z-20">✕
+          className="absolute top-3 right-3 w-5 h-5 rounded-full bg-focus text-on-brand text-[10px] flex items-center justify-center shadow-neu-sm hover:scale-110 transition-all z-20"><X size={11} strokeWidth={3} />
         </button>
 
         <div className="text-center mb-4">
-          <span className="text-xl mb-0.5 block">🗑️</span>
+          <Trash2 size={22} strokeWidth={1.75} className="mx-auto mb-0.5 text-focus" />
           <h2 className="text-base font-black text-ink">Delete Activity</h2>
           <p className="text-[9px] text-muted mt-0.5">
             {isAllRoutinesMode ? 'Deleting: ALL routines' : `Deleting: ${currentRoutine?.activity?.trim() || 'Select a routine'}`}
@@ -69,12 +70,12 @@ export default function DeleteRoutinePopup({ routine, allRoutines, onClose, onDe
               <button
                 onClick={() => { setRoutineSelectionMode('single'); setSelectedRoutineId(null); }}
                 className={`flex-1 py-2 rounded-token-sm font-bold text-[10px] transition-all border ${routineSelectionMode === 'single' ? 'bg-focus text-on-brand border-focus shadow-neu-sm' : 'bg-surface-2 text-muted border-[rgb(var(--ink)/0.08)]'}`}>
-                📋 Single Routine
+                <ClipboardList size={12} className="inline -mt-0.5 mr-1" />Single Routine
               </button>
               <button
                 onClick={() => setRoutineSelectionMode('allRoutines')}
                 className={`flex-1 py-2 rounded-token-sm font-bold text-[10px] transition-all border ${isAllRoutinesMode ? 'bg-focus text-on-brand border-focus shadow-neu-sm' : 'bg-surface-2 text-muted border-[rgb(var(--ink)/0.08)]'}`}>
-                🗑️ All Routines
+                <Trash2 size={12} className="inline -mt-0.5 mr-1" />All Routines
               </button>
             </div>
           </div>
@@ -100,12 +101,12 @@ export default function DeleteRoutinePopup({ routine, allRoutines, onClose, onDe
                 <button
                   onClick={() => { setDeleteMode('all'); setSelectedDays([]); }}
                   className={`flex-1 py-2 rounded-token-sm font-bold text-[10px] transition-all border ${deleteMode === 'all' ? 'bg-focus text-on-brand border-focus shadow-neu-sm' : 'bg-surface-2 text-muted border-[rgb(var(--ink)/0.08)]'}`}>
-                  🗑️ Entire Week
+                  <Trash2 size={12} className="inline -mt-0.5 mr-1" />Entire Week
                 </button>
                 <button
                   onClick={() => setDeleteMode('specific')}
                   className={`flex-1 py-2 rounded-token-sm font-bold text-[10px] transition-all border ${deleteMode === 'specific' ? 'bg-warn text-on-brand border-warn shadow-neu-sm' : 'bg-surface-2 text-muted border-[rgb(var(--ink)/0.08)]'}`}>
-                  📅 Specific Days
+                  <CalendarDays size={12} className="inline -mt-0.5 mr-1" />Specific Days
                 </button>
               </div>
             </div>
@@ -133,14 +134,14 @@ export default function DeleteRoutinePopup({ routine, allRoutines, onClose, onDe
           <div className="bg-focus/10 border border-focus/20 rounded-token-sm p-3">
             <p className="text-[9px] text-focus font-bold">
               {isAllRoutinesMode
-                ? '⚠️ This will DELETE ALL routines from ALL days! This action cannot be undone!'
+                ? 'This will DELETE ALL routines from ALL days! This action cannot be undone!'
                 : !selectedRoutineId
-                  ? '⚠️ Select a routine above to delete!'
+                  ? 'Select a routine above to delete!'
                   : deleteMode === 'all'
-                    ? `⚠️ This will permanently delete "${currentRoutine?.activity?.trim()}" from ALL days!`
+                    ? `This will permanently delete "${currentRoutine?.activity?.trim()}" from ALL days!`
                     : selectedDays.length > 0
-                      ? `⚠️ This will remove "${currentRoutine?.activity?.trim()}" from ${selectedDays.length} day(s)!`
-                      : '⚠️ Select days above to remove from specific days'}
+                      ? `This will remove "${currentRoutine?.activity?.trim()}" from ${selectedDays.length} day(s)!`
+                      : 'Select days above to remove from specific days'}
             </p>
           </div>
 
@@ -156,7 +157,7 @@ export default function DeleteRoutinePopup({ routine, allRoutines, onClose, onDe
                 ${(!isAllRoutinesMode && (!selectedRoutineId || (deleteMode === 'specific' && selectedDays.length === 0)))
                   ? 'bg-[rgb(var(--ink)/0.1)] text-muted cursor-not-allowed'
                   : 'bg-focus text-on-brand hover:shadow-neu'}`}>
-              {isAllRoutinesMode ? '🗑️ Delete Everything' : deleteMode === 'all' ? '🗑️ Delete All' : '🗑️ Delete Selected'}
+              <Trash2 size={13} className="inline -mt-0.5 mr-1.5" />{isAllRoutinesMode ? 'Delete Everything' : deleteMode === 'all' ? 'Delete All' : 'Delete Selected'}
             </button>
           </div>
         </div>

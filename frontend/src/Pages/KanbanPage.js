@@ -6,7 +6,7 @@ import {
   SortableContext, useSortable, verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { FolderKanban, CheckCircle2, Loader, CircleDashed, Plus, GripVertical, ScanText } from "lucide-react";
+import { FolderKanban, CheckCircle2, Loader, CircleDashed, Plus, GripVertical, ScanText, Pencil, X } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Cell, LabelList } from "recharts";
 import { Card, Button, Input, ProgressRing, cx, useToast } from "../components/ui";
 import { StatTile } from "../components/dashboard/DashKit";
@@ -40,8 +40,8 @@ function SortableCard({ card, onEdit, onRemove }) {
           )}
         </div>
         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button onClick={() => onEdit(card)} className="text-muted hover:text-ink text-xs p-1" aria-label="Edit">✏️</button>
-          <button onClick={() => onRemove(card.id)} className="text-muted hover:text-focus text-xs p-1" aria-label="Delete">✕</button>
+          <button onClick={() => onEdit(card)} className="text-muted hover:text-ink p-1" aria-label="Edit"><Pencil size={14} /></button>
+          <button onClick={() => onRemove(card.id)} className="text-muted hover:text-focus p-1" aria-label="Delete"><X size={15} /></button>
         </div>
       </div>
     </div>

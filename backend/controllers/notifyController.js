@@ -3,7 +3,10 @@ const { getConnection } = require('../config/database');
 const { generateId } = require('../utils/helpers');
 const { DEFAULT_SETTINGS, localParts, toMinutes, attendanceReport, attendanceView } = require('../utils/reminders');
 const { deliver, escapeHtml, pushReady } = require('../services/notifyChannels');
-const { reportBody, LOGO_ATTACHMENT } = require('../services/emailTemplates');
+const { reportBody, iconSet, LOGO_ATTACHMENT } = require('../services/emailTemplates');
+
+// Line icons (the app's nav-bar style) as inline SVG for the answer pages.
+const webIcons = iconSet('web');
 
 // GET /api/notify/logo.png — the clay app icon for the answer pages.
 exports.logo = (req, res) => res.sendFile(LOGO_ATTACHMENT.path, { maxAge: '7d' });
@@ -191,7 +194,7 @@ exports.sendTest = async (req, res) => {
       n = {
         kind, title: `Did you submit ${e.TITLE}? (test)`, body: `${e.TYPE} · This is a test. "Submitted" really marks it done.`, url: '/exams',
         data: { source: 'exam', itemId: e.ITEM_ID, title: e.TITLE },
-        view: { headline: `Did you submit ${e.TITLE}?`, sub: 'This is a test — "Submitted" really marks it done.', facts: [{ icon: '📤', label: 'Type', value: e.TYPE }] },
+        view: { headline: `Did you submit ${e.TITLE}?`, sub: 'This is a test — "Submitted" really marks it done.', facts: [{ icon: 'send', label: 'Type', value: e.TYPE }] },
       };
     } else if (kind === 'quiz') {
       const e = (await connection.execute(
@@ -206,13 +209,13 @@ exports.sendTest = async (req, res) => {
       };
     } else {
       n = {
-        kind: 'test', title: 'FocusFlow reminders are working ✅', body: `This is how your class reminders will look.\nIt is ${now.weekday}, ${now.date} in ${settings.timezone}.`, url: '/settings',
+        kind: 'test', title: 'FocusFlow reminders are working', body: `This is how your class reminders will look.\nIt is ${now.weekday}, ${now.date} in ${settings.timezone}.`, url: '/settings',
         view: {
           headline: 'Your reminders are working!',
           sub: "This is how FocusFlow will nudge you before classes, exams and deadlines.",
           facts: [
-            { icon: '📅', label: 'Today', value: niceDate(now.date) },
-            { icon: '🌍', label: 'Time zone', value: settings.timezone },
+            { icon: 'calendar-days', label: 'Today', value: niceDate(now.date) },
+            { icon: 'globe', label: 'Time zone', value: settings.timezone },
           ],
         },
       };
@@ -262,7 +265,7 @@ body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px 16px
 h1{font:700 24px/1.25 Fredoka,'Arial Rounded MT Bold',Poppins,sans-serif;margin:10px 0 6px}
 p{margin:0 0 20px;color:#80746C;font-size:15px;line-height:1.55}
 .row{display:flex;flex-wrap:wrap;gap:12px}
-button{flex:1;min-width:130px;border:0;border-radius:999px;padding:16px 18px;font:700 16px Poppins,'Segoe UI',sans-serif;cursor:pointer;transition:transform .15s}
+button{flex:1;min-width:130px;display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:999px;padding:16px 18px;font:700 16px Poppins,'Segoe UI',sans-serif;cursor:pointer;transition:transform .15s}
 button:active{transform:scale(.97)}
 .coral{background:linear-gradient(160deg,#F58C89,#EC706D);color:#fff;box-shadow:0 14px 26px -12px rgba(236,112,109,.5),inset 0 6px 10px rgba(255,255,255,.38),inset 0 -6px 12px rgba(255,190,185,.35)}
 .sage{background:linear-gradient(160deg,#CEEAD6,#B8DCC4);color:#284634}
@@ -285,18 +288,21 @@ input:focus,select:focus{box-shadow:inset 0 4px 8px rgba(214,192,162,.35),0 0 0 
 </div></body></html>`;
 }
 
-// Emoji tile + eyebrow chip at the top of a card, in one of the clay tones.
+// Icon tile + eyebrow chip at the top of a card, in one of the clay tones.
+// [tile background, chip background, chip text, icon colour on the tile]
 const TOP_TONES = {
-  coral: ['linear-gradient(160deg,#F58C89,#EC706D)', '#FFE2DE', '#B8403D'],
-  sage: ['linear-gradient(160deg,#CEEAD6,#B8DCC4)', '#E2F2E7', '#2F6B47'],
-  sun: ['linear-gradient(160deg,#FFE250,#FFD700)', '#FFF4BF', '#6B5200'],
-  blush: ['linear-gradient(160deg,#FFECE9,#FFE2DE)', '#FFE2DE', '#B8403D'],
+  coral: ['linear-gradient(160deg,#F58C89,#EC706D)', '#FFE2DE', '#B8403D', 'white'],
+  sage: ['linear-gradient(160deg,#CEEAD6,#B8DCC4)', '#E2F2E7', '#2F6B47', 'sage'],
+  sun: ['linear-gradient(160deg,#FFE250,#FFD700)', '#FFF4BF', '#6B5200', 'sun'],
+  blush: ['linear-gradient(160deg,#FFECE9,#FFE2DE)', '#FFE2DE', '#B8403D', 'blush'],
 };
-function top(emoji, tone, eyebrow) {
-  const [tile, chipBg, chipInk] = TOP_TONES[tone] || TOP_TONES.coral;
-  return `<div class="tile" style="background:${tile};box-shadow:0 8px 16px -8px rgba(190,160,122,.4),inset 0 -3px 6px rgba(232,214,190,.3),inset 0 3px 5px rgba(255,255,255,.9)">${emoji}</div>
+function top(icon, tone, eyebrow) {
+  const [tile, chipBg, chipInk, iconTone] = TOP_TONES[tone] || TOP_TONES.coral;
+  return `<div class="tile" style="background:${tile};box-shadow:0 8px 16px -8px rgba(190,160,122,.4),inset 0 -3px 6px rgba(232,214,190,.3),inset 0 3px 5px rgba(255,255,255,.9)">${webIcons.img(icon, iconTone, 30)}</div>
     <span class="chip" style="background:${chipBg};color:${chipInk}">${escapeHtml(eyebrow)}</span>`;
 }
+// Icon + label inside a clay button; tone is the icon colour.
+const btnIcon = (icon, tone) => webIcons.img(icon, tone, 20);
 
 const hidden = (t) => `<input type="hidden" name="t" value="${escapeHtml(t)}">`;
 // The answer a reminder button pre-picked (?a=…), if it's a valid one.
@@ -309,29 +315,29 @@ const confirmHint = (choice) => (choice ? '<p class="hint">Tap your answer to sa
 // open links can't answer for the student.
 exports.answerPage = async (req, res) => {
   const p = readToken(req.query.t);
-  if (!p) return res.status(400).send(page('Link expired', `${top('⌛', 'sun', 'Link expired')}<h1>This link has expired</h1><p>Answer links last 3 days. You can still mark it in the app.</p><a class="open" href="${APP_URL()}">Open FocusFlow →</a>`));
+  if (!p) return res.status(400).send(page('Link expired', `${top('hourglass', 'sun', 'Link expired')}<h1>This link has expired</h1><p>Answer links last 3 days. You can still mark it in the app.</p><a class="open" href="${APP_URL()}">Open FocusFlow →</a>`));
   const t = req.query.t;
 
   if (p.p === 'att') {
     const choice = picked(req.query.a, ['present', 'absent']);
     return res.send(page(`Attendance · ${p.n}`, `
-      ${top('🎒', 'sage', 'Attendance check')}
+      ${top('user-check', 'sage', 'Attendance check')}
       <h1>Did you attend ${escapeHtml(p.n)}?</h1>
       <p>Class on ${escapeHtml(niceDate(p.d))}</p>
       <form method="post" action="answer" class="row">${hidden(t)}
-        <button class="sage${pickCls(choice, 'present')}" name="a" value="present">✅ Attended</button>
-        <button class="plain${pickCls(choice, 'absent')}" name="a" value="absent">❌ Missed</button>
+        <button class="sage${pickCls(choice, 'present')}" name="a" value="present">${btnIcon('check', 'sage')}Attended</button>
+        <button class="plain${pickCls(choice, 'absent')}" name="a" value="absent">${btnIcon('x', 'blush')}Missed</button>
       </form>${confirmHint(choice)}`));
   }
   if (p.p === 'sub') {
     const choice = picked(req.query.a, ['yes', 'no']);
     return res.send(page(`Submitted? · ${p.n}`, `
-      ${top('📤', 'blush', 'Hand-in check')}
+      ${top('send', 'blush', 'Hand-in check')}
       <h1>Did you submit ${escapeHtml(p.n)}?</h1>
       <p>"Submitted" marks it done in FocusFlow.</p>
       <form method="post" action="answer" class="row">${hidden(t)}
-        <button class="sage${pickCls(choice, 'yes')}" name="a" value="yes">✅ Submitted</button>
-        <button class="sun${pickCls(choice, 'no')}" name="a" value="no">⏳ Not yet</button>
+        <button class="sage${pickCls(choice, 'yes')}" name="a" value="yes">${btnIcon('check', 'sage')}Submitted</button>
+        <button class="sun${pickCls(choice, 'no')}" name="a" value="no">${btnIcon('hourglass', 'sun')}Not yet</button>
       </form>${confirmHint(choice)}`));
   }
   // quiz → marks form. Pick the subject here if the quiz didn't have one.
@@ -347,7 +353,7 @@ exports.answerPage = async (req, res) => {
     }
   }
   res.send(page(`Marks · ${p.n}`, `
-    ${top('📊', 'sage', 'Marks time')}
+    ${top('award', 'sage', 'Marks time')}
     <h1>How did ${escapeHtml(p.n)} go?</h1>
     <p>Your marks go straight into Grades.</p>
     <form method="post" action="answer">${hidden(t)}
@@ -356,7 +362,7 @@ exports.answerPage = async (req, res) => {
         <div><label for="score">Marks you got</label><input id="score" name="score" type="number" step="any" min="0" inputmode="decimal" required></div>
         <div><label for="max">Out of</label><input id="max" name="max" type="number" step="any" min="0.01" inputmode="decimal" value="10" required></div>
       </div>
-      <div class="row"><button class="coral" name="a" value="save">📊 Save marks</button></div>
+      <div class="row"><button class="coral" name="a" value="save">${btnIcon('check', 'white')}Save marks</button></div>
     </form>
     <form method="post" action="answer" style="margin-top:12px">${hidden(t)}<div class="row"><button class="plain" name="a" value="skip" formnovalidate>Skip for now</button></div></form>`));
 };
@@ -387,13 +393,13 @@ const QUIZ_CATEGORY = (type, title) => {
 // POST /api/notify/answer  { t, a, score?, max?, s? }  (form or JSON)
 exports.answer = async (req, res) => {
   const wantsJson = req.is('application/json');
-  // look: [emoji, tone, eyebrow] for the clay card on the result page
+  // look: [icon, tone, eyebrow] for the clay card on the result page
   const done = (heading, sub, look, extra = '') => (wantsJson
-    ? res.json({ success: true, heading: `${look[0]} ${heading}`, detail: sub })
+    ? res.json({ success: true, heading, detail: sub })
     : res.send(page(heading, `${top(...look)}<h1>${escapeHtml(heading)}</h1><p>${escapeHtml(sub)}</p>${extra}<a class="open" href="${APP_URL()}">Open FocusFlow →</a>`)));
   const fail = (code, msg) => (wantsJson
     ? res.status(code).json({ error: msg })
-    : res.status(code).send(page('Sorry', `${top('🙈', 'blush', 'Not saved')}<h1>Sorry, that didn't work</h1><p>${escapeHtml(msg)}</p><a class="open" href="${APP_URL()}">Open FocusFlow →</a>`)));
+    : res.status(code).send(page('Sorry', `${top('triangle-alert', 'blush', 'Not saved')}<h1>Sorry, that didn't work</h1><p>${escapeHtml(msg)}</p><a class="open" href="${APP_URL()}">Open FocusFlow →</a>`)));
 
   const b = req.body || {};
   const p = readToken(b.t);
@@ -432,24 +438,24 @@ exports.answer = async (req, res) => {
       if (wantsJson) return res.json({ success: true, status, report });
       const present = status === 'Present';
       return done(present ? 'Marked attended' : 'Marked missed', `${p.n} · ${niceDate(p.d)}`,
-        present ? ['✅', 'sage', 'Saved'] : ['📝', 'blush', 'Saved'],
+        present ? ['circle-check', 'sage', 'Saved'] : ['circle-x', 'blush', 'Saved'],
         `<div style="margin:0 0 6px">${reportBody({ ...view, justMarked: null })}</div>`);
     }
 
     // ── Did you submit? ──
     if (p.p === 'sub') {
       if (!['yes', 'no'].includes(a)) return fail(400, 'Choose Submitted or Not yet.');
-      if (a === 'no') return done('Okay — not yet', `${p.n} is still open. You've got this — don't forget to submit it!`, ['⏳', 'sun', 'Still open']);
+      if (a === 'no') return done('Okay — not yet', `${p.n} is still open. You've got this — don't forget to submit it!`, ['hourglass', 'sun', 'Still open']);
       const sql = p.src === 'assignment'
         ? `UPDATE ASSIGNMENTS SET column_id = 'col-done' WHERE assignment_id = :id AND user_id = :u RETURNING assignment_id`
         : `UPDATE EXAMS_DEADLINES SET is_done = 1 WHERE item_id = :id AND user_id = :u RETURNING item_id`;
       const r = await connection.execute(sql, { id: p.id, u: p.u });
       if (!r.rows.length) return fail(404, 'That item no longer exists.');
-      return done('Marked submitted', `${p.n} is marked done. One less thing on your plate!`, ['🎉', 'sage', 'Saved']);
+      return done('Marked submitted', `${p.n} is marked done. One less thing on your plate!`, ['circle-check', 'sage', 'Saved']);
     }
 
     // ── Quiz / test / exam marks ──
-    if (a === 'skip') return done('Skipped for now', `No marks saved for ${p.n}. You can add them later on the Grades page.`, ['👌', 'sun', 'Skipped']);
+    if (a === 'skip') return done('Skipped for now', `No marks saved for ${p.n}. You can add them later on the Grades page.`, ['clock', 'sun', 'Skipped']);
     if (a !== 'save') return fail(400, 'Enter your marks or skip.');
     // Number('') is 0, so a blank box must be caught before converting.
     const blank = (v) => v === undefined || v === null || String(v).trim() === '';
@@ -473,7 +479,7 @@ exports.answer = async (req, res) => {
     await connection.execute(`UPDATE EXAMS_DEADLINES SET is_done = 1 WHERE item_id = :e AND user_id = :u`, { e: p.e, u: p.u });
     const pct = Math.round((score / max) * 100);
     if (wantsJson) return res.json({ success: true, score, max, percentage: pct });
-    return done('Marks saved', `${p.n}: ${score}/${max} (${pct}%) — added to Grades.`, [pct >= 75 ? '🌟' : '📊', pct >= 75 ? 'sun' : 'sage', 'Saved']);
+    return done('Marks saved', `${p.n}: ${score}/${max} (${pct}%) — added to Grades.`, ['award', pct >= 75 ? 'sun' : 'sage', 'Saved']);
   } catch (err) {
     console.error('Answer error:', err);
     return fail(500, 'Could not save your answer. Please try again.');

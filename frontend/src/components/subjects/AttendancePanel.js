@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Check, X, Clock } from "lucide-react";
+import { Check, X, Clock, UserCheck } from "lucide-react";
 import { Button, Input, Badge, EmptyState, DeleteButton } from "../ui";
 import { Panel } from "../dashboard/DashKit";
 import { subjectAttendanceAPI } from "../../services/api";
@@ -54,7 +54,7 @@ export default function AttendancePanel({ subjectId }) {
       {loading ? (
         <p className="text-sm text-muted py-4 text-center">Loading…</p>
       ) : data.records.length === 0 ? (
-        <EmptyState icon="✅" title="No attendance yet" description="Mark today's class above" />
+        <EmptyState icon={UserCheck} title="No attendance yet" description="Mark today's class above" />
       ) : (
         <ul className="divide-y divide-[rgb(var(--ink)/0.07)]">
           {data.records.slice(0, 8).map((r) => (

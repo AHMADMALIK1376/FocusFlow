@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { CircleCheck, CircleX, CalendarDays, X, Inbox } from "lucide-react";
 
 // ========== Horizontal Bar Chart with Left Axis ==========
 const HorizontalBarChart = ({ subjects }) => {
@@ -29,7 +30,7 @@ const HorizontalBarChart = ({ subjects }) => {
 
         <line x1={paddingLeft + (chartW * 0.6)} y1={5} x2={paddingLeft + (chartW * 0.6)} y2={sortedSubjects.length * (barH + gap) + 10}
           stroke="rgb(var(--focus))" strokeWidth="1.5" strokeDasharray="5,3" opacity="0.5" />
-        <text x={paddingLeft + (chartW * 0.6)} y={4} textAnchor="middle" fill="rgb(var(--focus))" fontSize="9" fontWeight="black">60% ⚠️</text>
+        <text x={paddingLeft + (chartW * 0.6)} y={4} textAnchor="middle" fill="rgb(var(--focus))" fontSize="9" fontWeight="black">60% min</text>
 
         <line x1={paddingLeft} y1={sortedSubjects.length * (barH + gap) + 15}
           x2={paddingLeft + chartW} y2={sortedSubjects.length * (barH + gap) + 15}
@@ -111,10 +112,10 @@ const HorizontalBarChart = ({ subjects }) => {
               <p className="text-xs font-black truncate mb-1">{subject.subjectName}</p>
               <p className="text-lg font-black" style={{ color: colors.main }}>{pct.toFixed(1)}%</p>
               <div className="flex gap-3 mt-1.5 text-[10px]">
-                <span className="text-success">✅ {subject.attendedSessions || 0} Present</span>
-                <span className="text-focus">❌ {subject.absentSessions || 0} Absent</span>
+                <span className="text-success inline-flex items-center gap-1"><CircleCheck size={11} /> {subject.attendedSessions || 0} Present</span>
+                <span className="text-focus inline-flex items-center gap-1"><CircleX size={11} /> {subject.absentSessions || 0} Absent</span>
               </div>
-              <p className="text-[9px] text-muted mt-1">📅 {taken} taken / {subject.totalSessions || 0} total</p>
+              <p className="text-[9px] text-muted mt-1 flex items-center gap-1"><CalendarDays size={10} /> {taken} taken / {subject.totalSessions || 0} total</p>
             </div>
             <div className="absolute -left-2 top-1/2 -translate-y-1/2 w-3 h-3 bg-ink rotate-45"></div>
           </div>
@@ -222,7 +223,7 @@ export default function AttendanceGraphPopup({ attendanceData, attendanceStats, 
               }}
               title="Close"
             >
-              <span className="text-on-brand text-[9px] font-bold">✕</span>
+              <X size={11} strokeWidth={3} className="text-on-brand" />
             </button>
           </div>
 
@@ -257,7 +258,7 @@ export default function AttendanceGraphPopup({ attendanceData, attendanceStats, 
             </>
           ) : (
             <div className="flex flex-col items-center justify-center py-10">
-              <span className="text-3xl mb-2">📭</span>
+              <Inbox size={30} strokeWidth={1.75} className="mb-2 text-muted" />
               <p className="text-sm font-bold text-muted">No data yet</p>
             </div>
           )}

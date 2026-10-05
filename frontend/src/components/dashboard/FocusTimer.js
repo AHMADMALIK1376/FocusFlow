@@ -1,5 +1,6 @@
 // src/components/dashboard/FocusTimer.js
 import React, { useState } from "react";
+import { Zap, Timer, Flame, Orbit, Undo2, Hourglass } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import Lottie from "lottie-react";
@@ -18,7 +19,7 @@ export default function FocusTimer() {
       {/* Front Face */}
       <div className={`transition-all duration-500 ${isExpanded ? "opacity-0 scale-95" : "opacity-100 scale-100"}`}>
         <div className="flex flex-col items-center mb-4">
-          <span className="text-[2.2rem] mb-2 drop-shadow-md">⚡</span>
+          <Zap size={34} strokeWidth={1.75} className="mb-2 text-brand" />
           <h3 className="text-xl font-black text-ink">Deep Work</h3>
         </div>
 
@@ -28,7 +29,7 @@ export default function FocusTimer() {
 
         <p className="text-muted font-bold mb-6">Set custom timers & track sessions.</p>
         <Button variant="primary" onClick={() => navigate("/focus-mode")}>
-          ⏱️ Enter Focus Mode
+          <Timer size={15} className="inline -mt-0.5 mr-1.5" />Enter Focus Mode
         </Button>
       </div>
 
@@ -36,7 +37,7 @@ export default function FocusTimer() {
       <div className={`absolute inset-0 bg-surface-2 flex flex-col items-center justify-center transition-all duration-700 ease-spring z-10
         ${isExpanded ? "[clip-path:circle(150%_at_50%_90%)] pointer-events-auto" : "[clip-path:circle(0%_at_50%_90%)] pointer-events-none"}`}>
         <div className="flex flex-col items-center mb-6">
-          <span className="text-[2.2rem] mb-2">{isActive ? "☄️" : "🪐"}</span>
+          <span className="mb-2 text-brand">{isActive ? <Flame size={34} strokeWidth={1.75} /> : <Orbit size={34} strokeWidth={1.75} />}</span>
           <h3 className="text-xl font-black text-ink">Flow State</h3>
         </div>
 
@@ -57,7 +58,7 @@ export default function FocusTimer() {
         className="absolute bottom-4 right-4 w-11 h-11 rounded-full bg-brand text-on-brand text-xl flex items-center justify-center z-20 shadow-neu-sm hover:scale-110 hover:rotate-12 transition-transform"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        {isExpanded ? "↩" : "⏳"}
+        {isExpanded ? <Undo2 size={16} /> : <Hourglass size={16} />}
       </button>
     </Card>
   );

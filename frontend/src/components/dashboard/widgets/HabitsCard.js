@@ -1,4 +1,5 @@
 import React from 'react';
+import { Repeat, Sprout, Flame, Check } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../../ui';
@@ -30,14 +31,14 @@ export default function HabitsCard() {
   return (
     <WidgetShell
       tone="sage"
-      icon="🔁"
+      icon={Repeat}
       title={t('widgets.habits', { defaultValue: 'Habits' })}
       linkLabel={t('habits.viewAll', { defaultValue: 'View all' })}
       onLink={() => navigate('/habits')}
       footer={<Button size="sm" variant="neu" full onClick={() => navigate('/habits')}>{t('habits.manage', { defaultValue: 'Manage habits' })}</Button>}
     >
       {habits.length === 0 ? (
-        <WidgetEmpty emoji="🌱" title="No habits yet" hint="Build a study streak — e.g. revise 30 minutes a day." />
+        <WidgetEmpty icon={Sprout} title="No habits yet" hint="Build a study streak — e.g. revise 30 minutes a day." />
       ) : (
         <ul className="space-y-3.5">
           {habits.map((habit) => {
@@ -46,7 +47,7 @@ export default function HabitsCard() {
               <li key={habit.id}>
                 <div className="flex items-center justify-between gap-2 mb-1.5">
                   <span className="text-sm font-bold text-ink truncate">{habit.name}</span>
-                  <span className={`text-xs font-black shrink-0 ${streak ? 'text-ink' : 'text-muted'}`}>{streak ? `🔥 ${streak}` : '—'}</span>
+                  <span className={`text-xs font-black shrink-0 ${streak ? 'text-ink' : 'text-muted'}`}>{streak ? <span className="inline-flex items-center gap-0.5"><Flame size={13} />{streak}</span> : '—'}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   {week.map((d) => {
@@ -61,7 +62,7 @@ export default function HabitsCard() {
                         title={done ? 'Done today — tap to undo' : 'Tap when done today'}
                         className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-black transition-transform active:scale-90 ring-2 ring-sun ring-offset-1 ring-offset-surface ${cls} ${done ? 'text-on-sage' : 'text-muted'}`}
                       >
-                        {done ? '✓' : d.label}
+                        {done ? <Check size={13} strokeWidth={3} className="mx-auto" /> : d.label}
                       </button>
                     ) : (
                       <span key={d.key} title={d.key} className={`w-5 h-5 rounded-full ${cls}`} />

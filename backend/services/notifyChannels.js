@@ -4,9 +4,7 @@
 //   • WhatsApp  — CallMeBot's free personal API (user gets their own API key)
 const webpush = require('web-push');
 const { sendBulkEmailQueued } = require('./emailQueueService');
-const { reminderEmail, KINDS, escapeHtml } = require('./emailTemplates');
-
-const emojiOf = (kind) => (KINDS[kind] || KINDS.test).emoji;
+const { reminderEmail, escapeHtml } = require('./emailTemplates');
 
 const pushReady = Boolean(process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY);
 if (pushReady) {
@@ -29,7 +27,7 @@ async function sendPush(connection, userId, n) {
     { userId }
   );
   const payload = JSON.stringify({
-    title: `${emojiOf(n.kind)} ${n.title}`,
+    title: n.title, // the pop-up's banner carries the kind's line icon (public/notify)
     body: n.body,
     url: n.url || '/',
     tag: n.key,
@@ -63,14 +61,15 @@ async function sendEmail(to, n) {
   return { queued: Boolean(queued) };
 }
 
-// WhatsApp: *bold* headline, one fact per line, then the answer links.
+// WhatsApp (plain text — no icons): *bold* headline, one fact per line, then
+// the answer links.
 function whatsappText(n) {
   const v = n.view || {};
-  const lines = [`${emojiOf(n.kind)} *${v.headline || n.title}*`];
+  const lines = [`*${v.headline || n.title}*`];
   if (v.sub) lines.push(`_${v.sub}_`);
-  if (v.facts && v.facts.length) lines.push('', ...v.facts.map((f) => `${f.icon} ${f.label}: *${f.value}*`));
+  if (v.facts && v.facts.length) lines.push('', ...v.facts.map((f) => `${f.label}: *${f.value}*`));
   else if (n.body) lines.push('', n.body);
-  if (n.actions && n.actions.length) lines.push('', ...n.actions.map((a) => `👉 ${a.label}: ${a.url}`));
+  if (n.actions && n.actions.length) lines.push('', ...n.actions.map((a) => `${a.label}: ${a.url}`));
   lines.push('', '— FocusFlow');
   return lines.join('\n');
 }

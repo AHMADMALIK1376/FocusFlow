@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, CalendarClock } from "lucide-react";
 import { Button, Input, Select, Field, Modal, EmptyState, DeleteButton, Badge, Checkbox } from "../ui";
 import { Panel } from "../dashboard/DashKit";
 import { useExams } from "../../features/exams/useExams";
@@ -39,7 +39,7 @@ export default function ExamsPanel({ subjectId }) {
       {loading ? (
         <p className="text-sm text-muted py-4 text-center">Loading…</p>
       ) : items.length === 0 ? (
-        <EmptyState icon="⏰" title="Nothing upcoming" description="Add an exam, quiz or deadline for this subject" />
+        <EmptyState icon={CalendarClock} title="Nothing upcoming" description="Add an exam, quiz or deadline for this subject" />
       ) : (
         <ul className="divide-y divide-[rgb(var(--ink)/0.07)]">
           {items.map((x) => (

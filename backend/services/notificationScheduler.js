@@ -46,9 +46,9 @@ async function loadSettings(connection, userId) {
 //   quiz — "How did it go?"    → marks form (opens the answer page)
 // `tone` is the clay colour of the matching email button.
 const ANSWERS = {
-  attendance: { p: 'att', buttons: [{ action: 'present', title: '✅ Attended', tone: 'sage' }, { action: 'absent', title: '❌ Missed', tone: 'plain' }] },
-  submit: { p: 'sub', buttons: [{ action: 'yes', title: '✅ Submitted', tone: 'sage' }, { action: 'no', title: '⏳ Not yet', tone: 'sun' }] },
-  quiz: { p: 'quiz', buttons: [], label: '📊 Enter my marks' },
+  attendance: { p: 'att', buttons: [{ action: 'present', title: 'Attended', tone: 'sage' }, { action: 'absent', title: 'Missed', tone: 'plain' }] },
+  submit: { p: 'sub', buttons: [{ action: 'yes', title: 'Submitted', tone: 'sage' }, { action: 'no', title: 'Not yet', tone: 'sun' }] },
+  quiz: { p: 'quiz', buttons: [], label: 'Enter my marks' },
 };
 
 function answerToken(kind, userId, data) {

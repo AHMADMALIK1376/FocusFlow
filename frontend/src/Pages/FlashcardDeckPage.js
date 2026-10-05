@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Pencil, Play, Check, X, RotateCcw } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Play, Check, X, RotateCcw, Layers } from "lucide-react";
 import { Button, Input, Field, Modal, EmptyState, DeleteButton, Badge } from "../components/ui";
 import { PageShell, Panel } from "../components/dashboard/DashKit";
 import { useDeck } from "../features/flashcards/useFlashcards";
@@ -47,7 +47,7 @@ export default function FlashcardDeckPage() {
   }
 
   if (loading) return <PageShell><Panel><p className="text-sm text-muted py-8 text-center">Loading…</p></Panel></PageShell>;
-  if (error || !deck) return <PageShell><Panel><EmptyState icon="🃏" title="Deck not found" /></Panel></PageShell>;
+  if (error || !deck) return <PageShell><Panel><EmptyState icon={Layers} title="Deck not found" /></Panel></PageShell>;
 
   return (
     <PageShell>
@@ -83,7 +83,7 @@ export default function FlashcardDeckPage() {
 
       <Panel title={`Cards (${cards.length})`}>
         {cards.length === 0 ? (
-          <EmptyState icon="🃏" title="No cards yet" description="Add your first card above" />
+          <EmptyState icon={Layers} title="No cards yet" description="Add your first card above" />
         ) : (
           <ul className="divide-y divide-[rgb(var(--ink)/0.07)]">
             {cards.map((c) => (

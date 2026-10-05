@@ -1,4 +1,5 @@
 import React from 'react';
+import { PartyPopper } from "lucide-react";
 import { useApp } from '../../context/AppContext';
 import { Card, Pill, EmptyState } from '../../ui';
 
@@ -16,7 +17,7 @@ export default function TaskScheduleCard() {
       </h3>
       {pending.length === 0 ? (
         <EmptyState
-          icon="🎉"
+          icon={PartyPopper}
           title="All caught up!"
           description="No pending tasks right now."
         />

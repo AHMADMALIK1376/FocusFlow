@@ -180,7 +180,7 @@ export default function ScanImportModal({ open, onClose, kind, ctx, onDone }) {
     if (done.created) parts.push(`${done.created} added`);
     if (done.updated) parts.push(`${done.updated} updated`);
     if (done.removed) parts.push(`${done.removed} ${kind.removedWord}`);
-    await onDone?.(parts.length ? `${cap(kind.noun[1])}: ${parts.join(", ")} ✓` : "");
+    await onDone?.(parts.length ? `${cap(kind.noun[1])}: ${parts.join(", ")}` : "");
     if (failed.length) {
       const kept = removes.length && !done.removed ? " Nothing old was removed yet." : "";
       setError(`Couldn't save ${failed.join(", ")}${reason ? ` (${reason})` : ""}. ${parts.length ? `Everything else was saved.${kept}` : "Nothing was changed."} Press the button again to retry.`);

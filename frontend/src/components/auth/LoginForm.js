@@ -1,5 +1,6 @@
 // src/components/auth/LoginForm.js
 import React, { useState } from "react";
+import { TriangleAlert } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useUser } from "./UserContext";
 
@@ -45,7 +46,7 @@ export default function LoginForm() {
 
         {requiresVerification && (
           <div className="w-[85%] mb-4 p-3 bg-warn/15 border border-warn/40 text-ink rounded-token-sm text-sm font-bold text-center">
-            ⚠️ Email not verified! Redirecting to verification page...
+            <TriangleAlert size={15} className="inline -mt-0.5 mr-1.5 text-warn" />Email not verified! Redirecting to verification page...
           </div>
         )}
 

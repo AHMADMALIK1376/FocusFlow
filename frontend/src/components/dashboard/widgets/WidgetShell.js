@@ -1,6 +1,7 @@
 import React from 'react';
 import { ChevronRight } from 'lucide-react';
 import { cx } from '../../ui';
+import { renderIcon } from '../../ui/renderIcon';
 
 // Shared clay card for dashboard widgets: icon chip + title + link on top,
 // content in the middle (grows so cards in a grid row line up), optional
@@ -12,8 +13,8 @@ export default function WidgetShell({ icon, title, linkLabel, onLink, footer, ch
   return (
     <section className={cx(CARD_TONES[tone] || CARD_TONES.plain, 'text-ink rounded-token-lg p-5 h-full flex flex-col', className)}>
       <header className="flex items-center gap-3 mb-4">
-        <span className={cx('w-10 h-10 rounded-2xl shadow-neu-sm flex items-center justify-center text-lg shrink-0', tinted ? 'bg-surface' : 'bg-grad-sage')} aria-hidden="true">
-          {icon}
+        <span className={cx('w-10 h-10 rounded-2xl shadow-neu-sm flex items-center justify-center shrink-0', tinted ? 'bg-surface text-brand' : 'bg-grad-sage text-on-sage')} aria-hidden="true">
+          {renderIcon(icon, { size: 19 })}
         </span>
         <h3 className="flex-1 min-w-0 text-sm font-black uppercase tracking-wide text-ink leading-tight break-words">{title}</h3>
         {onLink && (
@@ -29,11 +30,11 @@ export default function WidgetShell({ icon, title, linkLabel, onLink, footer, ch
   );
 }
 
-// Friendly empty state used inside widgets.
-export function WidgetEmpty({ emoji, title, hint }) {
+// Friendly empty state used inside widgets. icon: a lucide icon component.
+export function WidgetEmpty({ icon, title, hint }) {
   return (
     <div className="h-full min-h-[120px] flex flex-col items-center justify-center text-center py-3">
-      <span className="w-14 h-14 rounded-3xl bg-surface-2 shadow-neu-sm flex items-center justify-center text-2xl mb-2.5">{emoji}</span>
+      <span className="w-14 h-14 rounded-3xl bg-surface-2 shadow-neu-sm flex items-center justify-center text-brand mb-2.5">{renderIcon(icon, { size: 24 })}</span>
       <p className="text-sm font-black text-ink">{title}</p>
       {hint && <p className="text-xs text-muted mt-0.5 max-w-[16rem]">{hint}</p>}
     </div>

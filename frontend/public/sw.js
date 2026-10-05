@@ -83,7 +83,7 @@ self.addEventListener('notificationclick', (event) => {
             await self.registration.showNotification(res.heading, { body: res.detail || '', icon: '/logo192.png', badge: BADGE, vibrate: [80], tag: `${data.tag || 'answer'}:done` });
           }
         })
-        .catch(() => self.registration.showNotification('🙈 Could not save your answer', {
+        .catch(() => self.registration.showNotification('Could not save your answer', {
           body: 'Tap to answer in the browser instead.',
           icon: '/logo192.png',
           badge: BADGE,

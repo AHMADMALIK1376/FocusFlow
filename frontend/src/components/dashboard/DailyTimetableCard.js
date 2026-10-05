@@ -1,5 +1,6 @@
 // src/components/dashboard/DailyTimetableCard.js
 import React, { useState } from "react";
+import { Clock, CalendarDays, Medal, Undo2, BarChart3 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import { Card, Button } from "../ui";
@@ -26,7 +27,7 @@ export default function DailyTimetableCard() {
       {/* Front Face */}
       <div className={`transition-all duration-500 ${isExpanded ? "opacity-0 scale-95" : "opacity-100 scale-100"}`}>
         <div className="flex flex-col items-center mb-4">
-          <span className="text-[2.2rem] mb-2 drop-shadow-md">🕒</span>
+          <Clock size={34} strokeWidth={1.75} className="mb-2 text-brand" />
           <h3 className="text-xl font-black text-ink">{todayNameFull} Routine</h3>
         </div>
         <div className="text-8xl font-black text-brand drop-shadow-lg mb-2">
@@ -34,7 +35,7 @@ export default function DailyTimetableCard() {
         </div>
         <p className="text-muted font-bold mb-6">Remaining Tasks</p>
         <Button variant="primary" onClick={() => navigate("/routine")}>
-          📅 Manage Schedule
+          <CalendarDays size={15} className="inline -mt-0.5 mr-1.5" />Manage Schedule
         </Button>
       </div>
 
@@ -42,7 +43,7 @@ export default function DailyTimetableCard() {
       <div className={`absolute inset-0 bg-surface-2 flex flex-col items-center justify-center transition-all duration-700 ease-spring z-10
         ${isExpanded ? "[clip-path:circle(150%_at_50%_90%)] pointer-events-auto" : "[clip-path:circle(0%_at_50%_90%)] pointer-events-none"}`}>
         <div className="flex flex-col items-center">
-          <span className="text-[2.2rem] mb-2">🏅</span>
+          <Medal size={34} strokeWidth={1.75} className="mb-2 text-brand" />
           <h3 className="text-xl font-black text-ink">Total Completed</h3>
         </div>
         <div className="text-8xl font-black text-brand drop-shadow-lg my-2">
@@ -59,7 +60,7 @@ export default function DailyTimetableCard() {
         onClick={() => setIsExpanded(!isExpanded)}
         title="Switch View"
       >
-        {isExpanded ? "↩" : "📊"}
+        {isExpanded ? <Undo2 size={16} /> : <BarChart3 size={16} />}
       </button>
     </Card>
   );

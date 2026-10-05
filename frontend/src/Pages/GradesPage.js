@@ -106,7 +106,7 @@ export default function GradesPage() {
 
           <Panel title="By subject" subtitle="Tap a subject to manage its grades">
             {current.length === 0 ? (
-              <EmptyState icon="📊" title="No subjects yet" description="Add subjects and grade items to see your CGPA" />
+              <EmptyState icon={Award} title="No subjects yet" description="Add subjects and grade items to see your CGPA" />
             ) : (
               <SubjectList items={current} onOpen={openSubject} />
             )}

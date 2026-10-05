@@ -3,6 +3,8 @@
 // time passes. Rows = Hours / Minutes / Seconds. Recoloured to the brand theme
 // (Indigo Night panel, Wisteria / Mint / Peach tiles) + live date & temperature.
 import React, { useState, useEffect } from "react";
+import { renderIcon } from "../ui/renderIcon";
+import { Sun, CloudSun, Cloud, CloudFog, CloudDrizzle, CloudRain, Snowflake, CloudSnow, CloudLightning, Thermometer, MapPin } from "lucide-react";
 import { chartColors } from "../charts/chartColors";
 
 const COLS = 6;
@@ -13,17 +15,17 @@ const toBits = (val) => {
 };
 
 function weatherFor(code) {
-  if (code === 0) return { icon: "☀️", label: "Clear" };
-  if (code <= 2) return { icon: "🌤️", label: "Partly cloudy" };
-  if (code === 3) return { icon: "☁️", label: "Cloudy" };
-  if (code <= 48) return { icon: "🌫️", label: "Fog" };
-  if (code <= 57) return { icon: "🌦️", label: "Drizzle" };
-  if (code <= 67) return { icon: "🌧️", label: "Rain" };
-  if (code <= 77) return { icon: "❄️", label: "Snow" };
-  if (code <= 82) return { icon: "🌦️", label: "Showers" };
-  if (code <= 86) return { icon: "🌨️", label: "Snow" };
-  if (code <= 99) return { icon: "⛈️", label: "Storm" };
-  return { icon: "🌡️", label: "" };
+  if (code === 0) return { icon: Sun, label: "Clear" };
+  if (code <= 2) return { icon: CloudSun, label: "Partly cloudy" };
+  if (code === 3) return { icon: Cloud, label: "Cloudy" };
+  if (code <= 48) return { icon: CloudFog, label: "Fog" };
+  if (code <= 57) return { icon: CloudDrizzle, label: "Drizzle" };
+  if (code <= 67) return { icon: CloudRain, label: "Rain" };
+  if (code <= 77) return { icon: Snowflake, label: "Snow" };
+  if (code <= 82) return { icon: CloudRain, label: "Showers" };
+  if (code <= 86) return { icon: CloudSnow, label: "Snow" };
+  if (code <= 99) return { icon: CloudLightning, label: "Storm" };
+  return { icon: Thermometer, label: "" };
 }
 
 function Tile({ active, color, delay }) {
@@ -140,9 +142,9 @@ export default function Clock() {
         </span>
         <span className="inline-flex items-center gap-1.5 text-sm font-black">
           {w ? (
-            <><span className="text-base leading-none">{w.icon}</span>{weather.temp}°<span className="text-[11px] font-medium opacity-75">{w.label}</span></>
+            <><span className="leading-none">{renderIcon(w.icon, { size: 15 })}</span>{weather.temp}°<span className="text-[11px] font-medium opacity-75">{w.label}</span></>
           ) : (
-            <span className="text-[11px] opacity-70 font-medium">📍 Enable location</span>
+            <span className="text-[11px] opacity-70 font-medium"><MapPin size={11} className="inline -mt-0.5 mr-0.5" />Enable location</span>
           )}
         </span>
       </div>

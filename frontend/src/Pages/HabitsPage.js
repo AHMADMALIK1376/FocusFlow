@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Repeat, Flame, CalendarCheck, Percent, Plus } from "lucide-react";
+import { Repeat, Flame, CalendarCheck, Percent, Plus, Pencil, X, Check } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import { Button, Input, EmptyState } from "../components/ui";
 import { PageShell, PageHeader, StatTile, Panel } from "../components/dashboard/DashKit";
@@ -94,7 +94,7 @@ export default function HabitsPage() {
       </Panel>
 
       {habits.length === 0 ? (
-        <Panel><EmptyState icon="🔁" title="No habits tracked yet" description="Add a habit above to get started" /></Panel>
+        <Panel><EmptyState icon={Repeat} title="No habits tracked yet" description="Add a habit above to get started" /></Panel>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {habits.map((habit, idx) => {
@@ -115,9 +115,9 @@ export default function HabitsPage() {
                     </h3>
                   )}
                   <div className="flex items-center gap-1.5 shrink-0">
-                    <span className="text-sm font-bold text-ink">🔥 {streak}</span>
-                    <button onClick={() => { setRenaming(habit.id); setRenameVal(habit.name); }} className="text-muted hover:text-ink text-xs p-1">✏️</button>
-                    <button onClick={() => removeHabit(habit.id)} className="text-muted hover:text-focus text-xs p-1">✕</button>
+                    <span className="text-sm font-bold text-ink inline-flex items-center gap-1"><Flame size={15} className="text-brand" />{streak}</span>
+                    <button onClick={() => { setRenaming(habit.id); setRenameVal(habit.name); }} className="text-muted hover:text-ink p-1" aria-label="Rename"><Pencil size={14} /></button>
+                    <button onClick={() => removeHabit(habit.id)} className="text-muted hover:text-focus p-1" aria-label="Delete"><X size={15} /></button>
                   </div>
                 </div>
 
@@ -134,7 +134,7 @@ export default function HabitsPage() {
                         className={`flex flex-col items-center gap-0.5 rounded-token-md p-1.5 w-10 transition-all ${grid[i] ? `${colorClass} shadow-neu-sm` : "bg-surface-2 hover:bg-[rgb(var(--ink)/0.08)]"}`}
                       >
                         <span className={`text-[10px] font-black ${grid[i] ? "text-on-brand" : "text-muted"}`}>{day}</span>
-                        <span className={`text-xs ${grid[i] ? "text-on-brand" : "text-ink/40"}`}>{grid[i] ? "✓" : "·"}</span>
+                        <span className={`text-xs ${grid[i] ? "text-on-brand" : "text-ink/40"}`}>{grid[i] ? <Check size={13} strokeWidth={3} /> : "·"}</span>
                       </button>
                     );
                   })}
@@ -142,7 +142,7 @@ export default function HabitsPage() {
 
                 <div className="mt-3">
                   <Button size="sm" variant={habit.log && habit.log[TODAY] ? "primary" : "neu"} onClick={() => toggleDay(habit.id, TODAY)}>
-                    {habit.log && habit.log[TODAY] ? "✓ Done today" : "Mark today"}
+                    {habit.log && habit.log[TODAY] ? <span className="inline-flex items-center gap-1"><Check size={14} strokeWidth={3} /> Done today</span> : "Mark today"}
                   </Button>
                 </div>
               </div>

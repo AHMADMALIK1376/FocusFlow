@@ -47,7 +47,7 @@ export default function FlashcardsPage() {
       {loading ? (
         <Panel><p className="text-sm text-muted py-8 text-center">Loading…</p></Panel>
       ) : decks.length === 0 ? (
-        <Panel><EmptyState icon="🃏" title="No decks yet" description="Create a deck and add cards to start studying" /></Panel>
+        <Panel><EmptyState icon={Layers} title="No decks yet" description="Create a deck and add cards to start studying" /></Panel>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {decks.map((d) => (

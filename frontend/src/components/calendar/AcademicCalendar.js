@@ -1,5 +1,6 @@
 // src/components/calendar/AcademicCalendar.js
 import React, { useState, useEffect } from "react";
+import { MapPin, Pencil, BarChart3 } from "lucide-react";
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../context/AppContext";
@@ -56,9 +57,9 @@ export default function AcademicCalendar() {
 
   const getOverallStatus = () => {
     const pct = attendanceStats.overallPercentage || 0;
-    if (pct >= 80) return { emoji: '🟢', colorCls: 'text-success' };
-    if (pct >= 60) return { emoji: '🟡', colorCls: 'text-warn' };
-    return { emoji: '🔴', colorCls: 'text-focus' };
+    if (pct >= 80) return { dot: 'bg-success', colorCls: 'text-success' };
+    if (pct >= 60) return { dot: 'bg-warn', colorCls: 'text-warn' };
+    return { dot: 'bg-focus', colorCls: 'text-focus' };
   };
 
   if (loading) {
@@ -90,7 +91,7 @@ export default function AcademicCalendar() {
                     <p className="text-[10px] text-muted font-medium mt-0.5">
                       {item.startTime && item.endTime ? `${item.startTime} – ${item.endTime}` : item.time || "No time set"}
                     </p>
-                    {item.room && <p className="text-[10px] text-brand font-bold mt-0.5">📍 {item.room}</p>}
+                    {item.room && <p className="text-[10px] text-brand font-bold mt-0.5"><MapPin size={10} className="inline -mt-0.5 mr-0.5" />{item.room}</p>}
                   </div>
                 </div>
               ))}
@@ -109,13 +110,13 @@ export default function AcademicCalendar() {
             onMouseEnter={() => setShowTooltip(true)}
             onMouseLeave={() => setShowTooltip(false)}>
             <p className="text-muted font-bold mt-2 mb-2">
-              {classCount === 0 ? "No classes today 🎉" : `${classCount} ${classCount === 1 ? "class" : "classes"} scheduled`}
+              {classCount === 0 ? "No classes today" : `${classCount} ${classCount === 1 ? "class" : "classes"} scheduled`}
             </p>
           </div>
 
           {hasAttendanceData && (
             <div className="flex items-center gap-2 mb-4 px-3 py-1.5 bg-surface-2 rounded-token-sm">
-              <span className="text-sm">{overallStatus.emoji}</span>
+              <span className={`w-2.5 h-2.5 rounded-full ${overallStatus.dot}`} />
               <span className={`text-xs font-black ${overallStatus.colorCls}`}>
                 {attendanceStats.overallPercentage?.toFixed(1)}% Overall
               </span>
@@ -123,7 +124,7 @@ export default function AcademicCalendar() {
           )}
 
           <button className="magic-btn" onClick={() => navigate("/academic")}>
-            <span className="icon">✏️</span>
+            <span className="icon"><Pencil size={14} /></span>
             <span className="text">Edit Calendar</span>
           </button>
         </div>
@@ -133,8 +134,9 @@ export default function AcademicCalendar() {
           className="absolute bottom-4 right-4 w-11 h-11 rounded-full bg-grad-hero text-on-brand text-xl flex items-center justify-center z-10 shadow-neu hover:scale-110 hover:rotate-12 transition-transform"
           onClick={() => setShowGraphPopup(true)}
           title="View Attendance Graphs"
+          aria-label="Attendance graph"
         >
-          📊
+          <BarChart3 size={18} />
         </button>
       </div>
 

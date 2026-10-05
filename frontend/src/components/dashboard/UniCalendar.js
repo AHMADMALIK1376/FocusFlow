@@ -1,5 +1,6 @@
 // src/components/dashboard/UniCalendar.js
 import React, { useState, useEffect } from "react";
+import { NotebookPen, ClipboardList, CalendarDays, AlarmClock, Hourglass, CircleCheck, Undo2, BarChart3 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import { Card, Button } from "../ui";
@@ -183,7 +184,7 @@ export default function UniCalendar() {
         </div>
 
         <Button variant="primary" size="sm" className="mt-4" onClick={() => navigate("/tasks")}>
-          📓 Open Task Planner
+          <NotebookPen size={15} className="inline -mt-0.5 mr-1.5" />Open Task Planner
         </Button>
       </div>
 
@@ -200,7 +201,7 @@ export default function UniCalendar() {
               <div className="p-5">
                 <div className="flex items-start gap-3 mb-3">
                   <div className="w-12 h-12 bg-brand/10 rounded-token-sm flex items-center justify-center flex-shrink-0">
-                    <span className="text-xl">📋</span>
+                    <ClipboardList size={22} strokeWidth={1.75} className="text-brand" />
                   </div>
                   <div className="flex-1 text-left">
                     <p className="text-base font-black text-ink leading-tight">{nextTask.text}</p>
@@ -213,7 +214,7 @@ export default function UniCalendar() {
                 <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-[rgb(var(--ink)/0.08)]">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 bg-surface-2 rounded-token-sm flex items-center justify-center">
-                      <span className="text-sm">📅</span>
+                      <CalendarDays size={15} className="text-muted" />
                     </div>
                     <div className="text-left">
                       <p className="text-[8px] text-muted uppercase tracking-wider">Due Date</p>
@@ -223,7 +224,7 @@ export default function UniCalendar() {
                   {nextTask.time && (
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 bg-warn/10 rounded-token-sm flex items-center justify-center">
-                        <span className="text-sm">⏰</span>
+                        <AlarmClock size={15} className="text-warn" />
                       </div>
                       <div className="text-left">
                         <p className="text-[8px] text-muted uppercase tracking-wider">Deadline</p>
@@ -236,7 +237,7 @@ export default function UniCalendar() {
                 <div className="mt-3 p-2.5 bg-brand/5 rounded-token-sm">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm">⏳</span>
+                      <Hourglass size={14} className="text-muted" />
                       <span className="text-[9px] font-bold text-muted">Time Remaining</span>
                     </div>
                     <span className="text-xs font-black text-brand">{timeLeft || "Calculating..."}</span>
@@ -246,7 +247,7 @@ export default function UniCalendar() {
             </div>
           ) : (
             <div className="w-full p-6 bg-surface rounded-token-md text-center border border-[rgb(var(--ink)/0.08)]">
-              <span className="text-3xl mb-2 block">✅</span>
+              <CircleCheck size={32} strokeWidth={1.75} className="mx-auto mb-2 text-success" />
               <p className="text-sm font-black text-ink">All caught up!</p>
               <p className="text-[9px] text-muted mt-1">No pending tasks</p>
             </div>
@@ -259,7 +260,7 @@ export default function UniCalendar() {
         onClick={() => setIsExpanded(!isExpanded)}
         title="Switch View"
       >
-        {isExpanded ? "↩" : "📊"}
+        {isExpanded ? <Undo2 size={16} /> : <BarChart3 size={16} />}
       </button>
     </Card>
   );
