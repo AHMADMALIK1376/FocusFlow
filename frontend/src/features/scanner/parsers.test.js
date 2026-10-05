@@ -99,8 +99,8 @@ describe("parseAssignments", () => {
   test("title and due date on one row", () => {
     const rows = parseAssignments("CSC301 Lab Report 3 Due: 15/10/2026 11:59 PM\nAssignment 2 - Sorting  Oct 20, 2026  Submitted", TODAY);
     expect(rows).toEqual([
-      { code: "CSC301", title: "Lab Report 3", dueDate: "2026-10-15", done: false },
-      { code: null, title: "Assignment 2 - Sorting", dueDate: "2026-10-20", done: true },
+      { code: "CSC301", title: "Lab Report 3", dueDate: "2026-10-15", done: false, notes: "Due 11:59 PM" },
+      { code: null, title: "Assignment 2 - Sorting", dueDate: "2026-10-20", done: true, notes: "" },
     ]);
   });
 

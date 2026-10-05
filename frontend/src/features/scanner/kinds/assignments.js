@@ -1,7 +1,7 @@
 import React from "react";
 import { Input, Select, Checkbox } from "../../../components/ui";
 import { assignmentAPI } from "../../../services/api";
-import { parseAssignments } from "../parseAssignments";
+import { scanAssignments } from "../parseAssignments";
 import { findSubject, sameText } from "../textParse";
 
 const subjectName = (ctx, id) => (ctx.subjects || []).find((s) => s.id === id)?.name || "";
@@ -18,6 +18,7 @@ function AssignmentEditor({ data: d, set, ctx, status }) {
         </Select>
         <Input type="date" value={d.dueDate} onChange={(e) => set("dueDate", e.target.value)} title="Due date" className={cls} />
       </div>
+      <Input value={d.note} onChange={(e) => set("note", e.target.value)} placeholder="Notes (marks, details…)" className={cls} />
       {status === "new" && (
         <label className="inline-flex items-center gap-2 text-xs font-bold text-muted cursor-pointer">
           <Checkbox checked={d.done} onChange={(v) => set("done", v)} size={18} label="Already done" /> Already done (goes in the Done column)
@@ -45,13 +46,16 @@ export const assignmentsScan = {
   removeButton: (n) => `Delete ${n}`,
   removedWord: "deleted",
 
-  parse: (text, ctx) =>
-    parseAssignments(text).map((r) => ({
+  parse: (text, ctx) => {
+    const { rows, unread } = scanAssignments(text);
+    return Object.assign(rows.map((r) => ({
       subjectId: (r.code && findSubject(ctx.subjects, { code: r.code })?.id) || "",
       title: r.title,
       dueDate: r.dueDate || "",
       done: r.done,
-    })),
+      note: r.notes || "",
+    })), { unread });
+  },
   existing: (ctx) => ctx.cards || [],
 
   match(s, e) {
@@ -62,6 +66,8 @@ export const assignmentsScan = {
   fields: (ctx) => [
     { key: "dueDate", label: "Due" },
     { key: "subjectId", label: "Subject", format: (id) => subjectName(ctx, id) || "None" },
+    // a saved note is the student's own: only fill it in when empty
+    { key: "note", label: "Notes", same: (from) => Boolean(String(from || "").trim()) },
   ],
 
   label: (e) => (e.dueDate ? `${e.title} (due ${e.dueDate})` : e.title),
@@ -76,6 +82,7 @@ export const assignmentsScan = {
       title: d.title.trim(),
       subjectId: d.subjectId || null,
       dueDate: d.dueDate || null,
+      note: (d.note || "").trim().slice(0, 1000) || null,
     }),
 
   // The server keeps any field it isn't sent, so send only what changed.

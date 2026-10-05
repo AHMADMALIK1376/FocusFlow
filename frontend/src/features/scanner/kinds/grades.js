@@ -1,7 +1,7 @@
 import React from "react";
 import { Input, Select, Field } from "../../../components/ui";
 import { gradeAPI } from "../../../services/api";
-import { parseMarks } from "../parseMarks";
+import { scanMarks } from "../parseMarks";
 import { findSubject, sameText } from "../textParse";
 
 const CATEGORIES = ["Quiz", "Assignment", "Midterm", "Final", "Project", "Other"];
@@ -54,8 +54,9 @@ export const gradesScan = {
   removedWord: "deleted",
   defaultOptions: { subjectId: "" },
 
-  parse: (text, ctx, opts) =>
-    parseMarks(text).map((r) => {
+  parse(text, ctx, opts) {
+    const { rows, unread } = scanMarks(text);
+    return Object.assign(rows.map((r) => {
       const found = r.code || r.course ? findSubject(ctx.subjects, { code: r.code, name: r.course }) : null;
       return {
         subjectId: opts.subjectId || found?.id || "", // a subject picked before scanning wins
@@ -65,7 +66,8 @@ export const gradesScan = {
         maxScore: r.maxScore,
         weight: r.weight ?? "",
       };
-    }),
+    }), { unread });
+  },
   // Only compare with the subjects this scan is about.
   existing(ctx, datas) {
     const ids = new Set(datas.map((d) => d.subjectId).filter(Boolean));

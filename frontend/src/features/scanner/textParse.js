@@ -158,6 +158,8 @@ export function findDate(text, today = new Date()) {
 const MER = "(a\\.?\\s?m\\.?|p\\.?\\s?m\\.?)";
 const T = `(\\d{1,2})(?:\\s*[:.]\\s*(\\d{2}))?\\s*${MER}?`;
 const RANGE_RE = new RegExp(`\\b${T}\\s*(?:-|–|—|to|till|until)\\s*${T}(?!\\d)`, "gi");
+// "09:00 12:00" — a portal's range with no dash. Both sides need minutes.
+const SPACED_RANGE_RE = new RegExp(`\\b(\\d{1,2})\\s*[:.]\\s*(\\d{2})\\s*${MER}?\\s+(\\d{1,2})\\s*[:.]\\s*(\\d{2})\\s*${MER}?(?!\\d)`, "gi");
 const SINGLE_RE = new RegExp(`\\b(\\d{1,2})\\s*[:.]\\s*(\\d{2})\\s*${MER}?|\\b(\\d{1,2})\\s*${MER}`, "gi");
 
 const merOf = (s) => (s ? s.replace(/[^a-z]/gi, "").toUpperCase() : null);
@@ -186,6 +188,13 @@ export function findTimeRange(text) {
     let end = to24h(m[4], m[5], merOf(m[6]));
     if (!start || !end) continue;
     // something can't end before it starts — push the end into the afternoon
+    if (minutesOf(end) <= minutesOf(start) && minutesOf(end) < 12 * 60) end = `${pad(Number(end.slice(0, 2)) + 12)}${end.slice(2)}`;
+    return { start, end, index: m.index, length: m[0].length };
+  }
+  for (const m of str.matchAll(SPACED_RANGE_RE)) {
+    const start = to24h(m[1], m[2], merOf(m[3]));
+    let end = to24h(m[4], m[5], merOf(m[6]));
+    if (!start || !end) continue;
     if (minutesOf(end) <= minutesOf(start) && minutesOf(end) < 12 * 60) end = `${pad(Number(end.slice(0, 2)) + 12)}${end.slice(2)}`;
     return { start, end, index: m.index, length: m[0].length };
   }

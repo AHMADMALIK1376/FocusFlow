@@ -1,0 +1,8 @@
+// Exact Tesseract output (the app's own settings) for four tables drawn the way
+// a portal shows them. Used to check the scanners against real OCR spacing.
+export const OCR_TABLES = {
+  "datesheet": "1        14-10-2026  Wednesday)9:00 AM - 12:00 PEB201          Data Structures                      Hall 2           Open book\n2        16-10-2026 Friday      01:30 PM - 04:30 PEBC332        Advance Database Systems         LR-26           Bring calculator\n3         19-10-2026 Monday 09:00 AM - 11:00 ABMC381         Artifical Intelligence                     Hall 3             Group A\n",
+  "quizzes": "Quiz           Course                Title                                      Date                 Time                Room\nQuiz 2         CS201                 Data Structures                        15/10/2026         10:00 AM           LR-12\nQuiz 1         CSC332              Advance Database Systems        18/10/2026        11:00 AM          LR-14\n",
+  "assignments": "CS201       Assignment 1: Linked Lists               10                  12-10-2026         Submitted\nCSC332       Project Proposal                                 20                        20-10-2026            Not submitted\nCMC381      Final Project Presentation                  25                    05-12-2026          Not submitted\n",
+  "marks": "Quiz 1                                   10                  8                     5%\nAssignment 1                        20                 17                   10%\nMid Term                             30                 22                  25%\nPresentation                           10                  9                     5%\n"
+};

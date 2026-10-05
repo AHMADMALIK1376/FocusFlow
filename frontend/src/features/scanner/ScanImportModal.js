@@ -72,6 +72,19 @@ function ReviewRow({ row, kind, ctx, onInclude, onOpen, update }) {
   );
 }
 
+// Text the scanner saw but could not turn into anything: shown, never dropped.
+function UnreadLines({ lines, title, open = false }) {
+  if (!lines.length) return null;
+  return (
+    <details open={open} className="rounded-token-md bg-[rgb(var(--ink)/0.04)] px-3 py-2 text-xs">
+      <summary className="cursor-pointer font-bold text-muted">{title}</summary>
+      <ul className="mt-1.5 space-y-0.5 text-muted font-mono break-words">
+        {lines.map((l, i) => <li key={i}>{l}</li>)}
+      </ul>
+    </details>
+  );
+}
+
 export default function ScanImportModal({ open, onClose, kind, ctx, onDone }) {
   const [step, setStep] = useState("input"); // input | decide | review
   const [mode, setMode] = useState("image");
@@ -83,13 +96,14 @@ export default function ScanImportModal({ open, onClose, kind, ctx, onDone }) {
   const [error, setError] = useState("");
   const [rows, setRows] = useState([]); // [{ data, include, open }]
   const [replace, setReplace] = useState(false);
+  const [unread, setUnread] = useState([]); // lines on the page the scanner could not use
   const [opts, setOpts] = useState(kind.defaultOptions || {});
   const fileRef = useRef(null);
 
   useEffect(() => {
     if (!open) return;
     setStep("input"); setFile(null); setPreview(null); setText("");
-    setError(""); setProgress(0); setRows([]); setReplace(false);
+    setError(""); setProgress(0); setRows([]); setReplace(false); setUnread([]);
     setOpts(kind.defaultOptions || {});
   }, [open, kind]);
 
@@ -127,6 +141,9 @@ export default function ScanImportModal({ open, onClose, kind, ctx, onDone }) {
 
   function toReview(raw) {
     const parsed = kind.parse(raw, ctx, opts);
+    // Whatever was not turned into a row stays visible, so nothing vanishes silently.
+    const leftover = parsed.unread?.length ? parsed.unread : parsed.length ? [] : String(raw).split("\n").map((l) => l.trim()).filter(Boolean);
+    setUnread(leftover.slice(0, 15));
     if (!parsed.length) {
       setError(kind.emptyError);
       return;
@@ -259,6 +276,7 @@ export default function ScanImportModal({ open, onClose, kind, ctx, onDone }) {
             </div>
           )}
           {error && <p className="text-sm text-focus">{error}</p>}
+          {error && <UnreadLines lines={unread} title="What the scanner read" open />}
 
           <div className="flex justify-end gap-2 pt-1">
             <Button variant="ghost" onClick={onClose} disabled={busy}>Cancel</Button>
@@ -314,6 +332,7 @@ export default function ScanImportModal({ open, onClose, kind, ctx, onDone }) {
                 )}
               </p>
             ) : null}
+            <UnreadLines lines={unread} title={`${unread.length} line${unread.length === 1 ? "" : "s"} on the page ${unread.length === 1 ? "wasn't" : "weren't"} used`} />
             {kind.ReviewExtras && <kind.ReviewExtras opts={opts} setOpts={setOpts} ctx={ctx} datas={datas} updateAll={updateAll} />}
           </div>
 

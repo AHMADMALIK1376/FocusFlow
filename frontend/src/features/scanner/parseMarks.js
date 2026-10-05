@@ -22,7 +22,7 @@ export function gradeCategory(title) {
   if (/quiz/i.test(title)) return "Quiz";
   if (/assign|home\s*work|\bhw\b|\btask/i.test(title)) return "Assignment";
   if (/\bmid/i.test(title)) return "Midterm";
-  if (/final/i.test(title)) return "Final";
+  if (/final|terminal/i.test(title)) return "Final";
   if (/project|presentation|proposal|viva/i.test(title)) return "Project";
   return "Other";
 }
@@ -70,10 +70,11 @@ function readMarks(text) {
  * @returns {Array<{code,course,title,category,score,maxScore,weight}>}
  *   code/course: the course the row belongs to (either may be null)
  */
-export function parseMarks(raw) {
-  if (!raw) return [];
-  const lines = fixOcrNumbers(raw).replace(/\r/g, "").split("\n").map((l) => l.trim()).filter(Boolean);
+export function scanMarks(raw) {
   const out = [];
+  const unread = []; // assessment-looking lines without marks, shown to the student
+  if (!raw) return { rows: out, unread };
+  const lines = fixOcrNumbers(raw).replace(/\r/g, "").split("\n").map((l) => l.trim()).filter(Boolean);
   let course = null;
 
   for (const raw0 of lines) {
@@ -86,6 +87,7 @@ export function parseMarks(raw) {
 
     if (!marks) {
       const name = tidy(rest).replace(/\s+\d+\s*\(.*$/, ""); // drop "3(2,1)" credit hours
+      if (ASSESSMENT_RE.test(line) && /\d/.test(line) && !SUMMARY_RE.test(line) && !HEADER_RE.test(line)) unread.push(raw0);
       if (c) course = { code: c.code, name: name || null };
       // a course heading written without a code
       else if (/^[A-Za-z&'()., -]+$/.test(name) && name.split(" ").length >= 2 && !HEADER_RE.test(name) && !SUMMARY_RE.test(name)) {
@@ -107,5 +109,8 @@ export function parseMarks(raw) {
       weight: marks.weight,
     });
   }
-  return out;
+  return { rows: out, unread };
 }
+
+/** Just the rows (see scanMarks for the lines that could not be used). */
+export const parseMarks = (raw) => scanMarks(raw).rows;

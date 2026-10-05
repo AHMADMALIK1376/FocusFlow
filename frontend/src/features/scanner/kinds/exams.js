@@ -1,10 +1,12 @@
 import React from "react";
 import { Input, Select } from "../../../components/ui";
 import { examAPI } from "../../../services/api";
-import { parseDateSheet } from "../parseDateSheet";
+import { scanDateSheet } from "../parseDateSheet";
 import { findSubject, sameText } from "../textParse";
 
-const TYPES = ["Exam", "Quiz", "Test"]; // what a date sheet lists; deadlines are left alone
+// what a date sheet lists; assignments and other deadlines are left alone
+const TYPES = ["Exam", "Quiz", "Test", "Presentation", "Viva", "Practical"];
+const ALL_TYPES = [...TYPES, "Assignment", "Project", "Submission", "Deadline"];
 const isTimed = (x) => TYPES.some((t) => t.toLowerCase() === String(x.type || "").toLowerCase());
 const subjectName = (ctx, id) => (ctx.subjects || []).find((s) => s.id === id)?.name || "";
 const examTerm = (t) => (/\bmid/i.test(t) ? "mid" : /\bfinal/i.test(t) ? "final" : null);
@@ -16,7 +18,7 @@ function ExamEditor({ data: d, set, ctx }) {
       <div className="grid grid-cols-[1fr_6.5rem] gap-1.5">
         <Input value={d.title} onChange={(e) => set("title", e.target.value)} placeholder="Title" className={`${cls} font-bold`} />
         <Select value={d.type} onChange={(e) => set("type", e.target.value)} className={cls}>
-          {TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+          {(ALL_TYPES.includes(d.type) ? ALL_TYPES : [d.type, ...ALL_TYPES]).map((t) => <option key={t} value={t}>{t}</option>)}
         </Select>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-[1.4fr_1fr_6rem_5.5rem] gap-1.5">
@@ -29,6 +31,7 @@ function ExamEditor({ data: d, set, ctx }) {
         <Input type="number" min="1" step="5" value={d.duration} onChange={(e) => set("duration", e.target.value)} placeholder="Min" title="Length in minutes" className={`${cls} min-w-0`} />
       </div>
       <Input value={d.location} onChange={(e) => set("location", e.target.value)} placeholder="Location (e.g. Hall 2)" className={cls} />
+      <Input value={d.notes} onChange={(e) => set("notes", e.target.value)} placeholder="Notes (syllabus, group, remarks…)" className={cls} />
     </div>
   );
 }
@@ -44,15 +47,16 @@ export const examsScan = {
   pastePlaceholder: "14-10-2026\tMonday\t09:00 - 12:00\tCSC452\tCompiler Construction\tHall 2",
   emptyError: "Couldn't find any exams. Make sure the dates and course names or codes are visible, or try pasting the text instead.",
   noun: ["exam", "exams"],
-  reviewNote: "Screenshots can misread a digit, so check dates and times. Times are 24-hour.",
+  reviewNote: "Screenshots can misread a digit, so check dates and times. Portal times without AM/PM were read as 8–11 morning, 12–7 afternoon. Anything else on the sheet is saved in Notes.",
   replaceQuestion: "Replace your current exams with these?",
-  replaceExplain: "Upcoming exams, quizzes and tests that aren't in this date sheet will be deleted. Ones you've marked done, and your other deadlines, stay.",
+  replaceExplain: "Upcoming exams, quizzes, tests, presentations and vivas that aren't in this date sheet will be deleted. Ones you've marked done, and your other deadlines, stay.",
   removeHeading: (n) => `Deleting ${n} exam${n === 1 ? "" : "s"}`,
   removeButton: (n) => `Delete ${n}`,
   removedWord: "deleted",
 
-  parse: (text, ctx) =>
-    parseDateSheet(text).map((r) => {
+  parse: (text, ctx) => {
+    const { rows, unread } = scanDateSheet(text);
+    return Object.assign(rows.map((r) => {
       const s = findSubject(ctx.subjects, { code: r.code, name: r.name });
       const who = s?.name || r.name || r.code || "";
       return {
@@ -63,9 +67,16 @@ export const examsScan = {
         time: r.time || "",
         duration: r.duration ?? "",
         location: r.location || "",
+        notes: r.notes || "",
       };
-    }),
-  existing: (ctx) => (ctx.exams || []).filter(isTimed),
+    }), { unread });
+  },
+  // what a date sheet lists, plus any other kind this scan itself contains
+  // (a "Project" heading), so those are compared instead of added twice
+  existing: (ctx, scanned = []) => {
+    const also = new Set(scanned.map((r) => String(r.type || "").toLowerCase()));
+    return (ctx.exams || []).filter((x) => isTimed(x) || also.has(String(x.type || "").toLowerCase()));
+  },
 
   match(s, e) {
     if (s.subjectId && e.subjectId && s.subjectId !== e.subjectId) return 0;
@@ -82,6 +93,8 @@ export const examsScan = {
     { key: "time", label: "Time" },
     { key: "duration", label: "Length (min)", same: (a, b) => Number(a) === Number(b) },
     { key: "location", label: "Location", same: (a, b) => sameText(a, b) },
+    // saved notes are the student's own: only fill them in when empty
+    { key: "notes", label: "Notes", same: (from) => Boolean(String(from || "").trim()) },
   ],
 
   label: (e) => `${e.title} (${e.date})`,
@@ -99,7 +112,7 @@ export const examsScan = {
       time: d.time || null,
       duration: Number(d.duration) || null,
       location: (d.location || "").trim() || null,
-      notes: null,
+      notes: (d.notes || "").trim().slice(0, 500) || null,
     }),
 
   // The server replaces the whole item, so start from what's saved.
@@ -108,7 +121,7 @@ export const examsScan = {
       subjectId: e.subjectId || null, title: e.title, type: e.type, date: e.date,
       time: e.time || null, duration: e.duration ?? null, location: e.location || null, notes: e.notes || null,
     };
-    for (const c of changes) payload[c.key] = c.key === "duration" ? Number(d.duration) || null : d[c.key] || null;
+    for (const c of changes) payload[c.key] = c.key === "duration" ? Number(d.duration) || null : c.key === "notes" ? String(d.notes).trim().slice(0, 500) : d[c.key] || null;
     return examAPI.update(e.id, payload);
   },
 

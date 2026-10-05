@@ -8,8 +8,9 @@ import { groupExams, countdownLabel } from "../features/exams/examsLogic";
 import DeadlineSkyline from "../components/charts/DeadlineSkyline";
 import ScanImportModal from "../features/scanner/ScanImportModal";
 import { examsScan } from "../features/scanner/kinds/exams";
+import { fmt12 } from "../features/schedule/todayClasses";
 
-const TYPES = ["Exam", "Quiz", "Test", "Assignment", "Project", "Submission", "Deadline"];
+const TYPES = ["Exam", "Quiz", "Test", "Presentation", "Viva", "Practical", "Assignment", "Project", "Submission", "Deadline"];
 const TIMED = ["Exam", "Quiz", "Test"]; // things you sit → have a length; marks asked afterwards
 const EMPTY = { title: "", type: "Exam", subjectId: "", date: "", time: "", duration: "", location: "", notes: "" };
 const fieldCls = "!py-2.5 !px-4 text-sm";
@@ -104,11 +105,12 @@ export default function ExamsPage() {
                           <span className={`font-bold text-sm truncate ${x.isDone ? "line-through text-muted" : "text-ink"}`}>{x.title}</span>
                           {x.type && <Badge tone="muted">{x.type}</Badge>}
                         </div>
-                        <p className="text-xs text-muted truncate">{x.subjectName || "General"}{x.location ? ` · ${x.location}` : ""}</p>
+                        <p className="text-xs text-muted truncate">{x.subjectName || "General"}{x.location ? ` · ${x.location}` : ""}{x.duration ? ` · ${x.duration} min` : ""}</p>
+                        {x.notes && <p className="text-xs text-muted/80 break-words line-clamp-2">{x.notes}</p>}
                       </div>
                       <div className="text-right shrink-0">
                         <p className={`text-xs font-bold ${sec.key === "overdue" ? "text-focus" : "text-ink"}`}>{x.isDone ? "Done" : countdownLabel(x.date)}</p>
-                        <p className="text-[11px] text-muted">{x.date}{x.time ? ` · ${x.time}` : ""}</p>
+                        <p className="text-[11px] text-muted">{x.date}{x.time ? ` · ${fmt12(x.time)}` : ""}</p>
                       </div>
                       <button onClick={() => openEdit(x)} className="p-1.5 rounded-lg text-muted hover:text-brand hover:bg-brand/10 transition-colors" title="Edit"><Pencil size={15} /></button>
                       <DeleteButton onClick={() => onDelete(x)} title="Delete" />
