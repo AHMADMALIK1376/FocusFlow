@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Pencil, GraduationCap, Clock, BookOpen, CalendarDays, Trash2, ScanText, RotateCcw, ChevronDown } from "lucide-react";
-import { Button, Input, Select, Field, Modal, EmptyState, CardDeleteButton, DeleteButton, useToast } from "../components/ui";
-import { PageShell, PageHeader, StatTile, Panel } from "../components/dashboard/DashKit";
+import { Plus, GraduationCap, Trash2, ScanText, RotateCcw, ChevronDown } from "lucide-react";
+import { Button, Input, Select, Field, Modal, EmptyState, DeleteButton, useToast } from "../components/ui";
+import { PageShell, PageHeader, Panel } from "../components/dashboard/DashKit";
 import { useSubjects } from "../features/subjects/useSubjects";
 import TimetableImportModal from "../features/subjects/TimetableImportModal";
+import SubjectTable from "../components/subjects/SubjectTable";
+import WeekBeads from "../components/subjects/WeekBeads";
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 const DAY_SHORT = { Monday: "Mon", Tuesday: "Tue", Wednesday: "Wed", Thursday: "Thu", Friday: "Fri", Saturday: "Sat", Sunday: "Sun" };
@@ -15,34 +17,6 @@ const REMIND_BEFORE = [["", "Default (Settings)"], [0, "When it starts"], [5, "5
 const ASK_AFTER = [["", "Default (Settings)"], [0, "When it ends"], [5, "5 min after"], [10, "10 min after"], [15, "15 min after"], [30, "30 min after"], [60, "1 hour after"]];
 const fieldCls = "!py-2 !px-3.5 text-sm";
 
-// Every subject already carries its own custom `color` (set via the picker in
-// the edit form) — cards use a light pastel TINT of that same color as their
-// full background, and a darker SHADE for text/badge, rather than introducing
-// a separate auto-assigned palette. Different subjects already have different
-// stored colors (see the screenshot's left-border strips), so tinting them
-// keeps "each card a different colour" without fighting the existing picker.
-function hexToRgb(hex) {
-  const h = String(hex || "#E86562").replace("#", "");
-  const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
-  const n = parseInt(full, 16) || 0xe86562;
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-}
-const mixWhite = (rgb, t) => rgb.map((c) => Math.round(c + (255 - c) * t));
-const mixBlack = (rgb, t) => rgb.map((c) => Math.round(c * (1 - t)));
-const rgbCss = (rgb) => `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
-function subjectPalette(hex) {
-  const rgb = hexToRgb(hex);
-  return {
-    cardBg: rgbCss(mixWhite(rgb, 0.86)),
-    badgeBg: rgbCss(mixWhite(rgb, 0.7)),
-    deep: rgbCss(mixBlack(rgb, 0.25)),
-  };
-}
-
-function scheduleSummary(schedule) {
-  if (!schedule || !schedule.length) return "No class times set";
-  return schedule.map((s) => `${DAY_SHORT[s.day] || s.day}${s.start ? " " + s.start : ""}`).join(" · ");
-}
 function mostCommon(arr) {
   if (!arr.length) return null;
   const counts = {};
@@ -65,8 +39,6 @@ export default function SubjectsPage() {
   const [importOpen, setImportOpen] = useState(false);
   const [showPast, setShowPast] = useState(false);
 
-  const totalCredits = subjects.reduce((s, x) => s + (Number(x.creditHours) || 0), 0);
-  const totalSlots = subjects.reduce((s, x) => s + (x.schedule?.length || 0), 0);
   const term = mostCommon(subjects.map((s) => s.term).filter(Boolean));
 
   function openAdd() { setEditId(null); setForm(EMPTY_FORM); setOpen(true); }
@@ -112,16 +84,14 @@ export default function SubjectsPage() {
 
   return (
     <PageShell>
-      <PageHeader title="Subjects" subtitle="Your courses this term — schedule, grades, attendance and more in one place.">
-        <Button variant="primary" onClick={() => setImportOpen(true)} className="gap-1.5"><ScanText size={16} /> Import timetable</Button>
-        <Button variant="primary" onClick={openAdd} className="gap-1.5"><Plus size={16} /> Add subject</Button>
-      </PageHeader>
-
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatTile tone="coral" icon={<GraduationCap size={18} />} label="Subjects" value={subjects.length} sub="This term" />
-        <StatTile tone="plain" icon={<BookOpen size={18} />} label="Credit hours" value={totalCredits} sub="Total load" />
-        <StatTile tone="sage" icon={<Clock size={18} />} label="Classes / week" value={totalSlots} sub="Scheduled slots" />
-        <StatTile tone="plain" icon={<CalendarDays size={18} />} label="Term" value={term || "—"} sub="Active" />
+      <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
+        <div className="min-w-0">
+          <PageHeader title="Subjects" subtitle={`Your courses this term${term ? ` (${term})` : ""} — schedule, grades, attendance and more in one place.`}>
+            <Button variant="primary" onClick={() => setImportOpen(true)} className="gap-1.5"><ScanText size={16} /> Import timetable</Button>
+            <Button variant="primary" onClick={openAdd} className="gap-1.5"><Plus size={16} /> Add subject</Button>
+          </PageHeader>
+        </div>
+        {!loading && !error && <WeekBeads subjects={subjects} />}
       </div>
 
       {loading ? (
@@ -136,47 +106,7 @@ export default function SubjectsPage() {
           </div>
         </Panel>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-          {subjects.map((s) => {
-            const pal = subjectPalette(s.color);
-            return (
-              <div
-                key={s.id}
-                className="relative rounded-token-lg shadow-neu p-4 pb-9 transition-transform hover:-translate-y-0.5"
-                style={{ background: pal.cardBg }}
-              >
-                <button type="button" onClick={() => navigate(`/subjects/${s.id}`)} className="min-w-0 text-left block w-full pr-8">
-                  {s.code && (
-                    <span
-                      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold"
-                      style={{ background: pal.badgeBg, color: pal.deep }}
-                    >
-                      {s.code}
-                    </span>
-                  )}
-                  <h3 className="font-black text-ink text-base mt-1.5 truncate">{s.name}</h3>
-                  {s.instructor && <p className="text-xs text-ink/60 truncate">{s.instructor}</p>}
-                  <p className="text-xs text-ink/70 mt-2.5 truncate">{scheduleSummary(s.schedule)}</p>
-                  {s.targetGrade && <p className="text-xs font-bold mt-1" style={{ color: pal.deep }}>Target {s.targetGrade}</p>}
-                </button>
-
-                <div className="flex items-center justify-between mt-2.5 pt-2.5 border-t border-black/10">
-                  <span className="text-xs font-bold text-ink/70">{s.creditHours || 0} cr</span>
-                  {s.term && <span className="text-xs text-ink/60">{s.term}</span>}
-                </div>
-
-                <button
-                  onClick={() => openEdit(s)}
-                  className="absolute top-3 right-3 p-1.5 rounded-lg text-ink/50 hover:text-ink hover:bg-black/10 transition-colors"
-                  title="Edit subject"
-                >
-                  <Pencil size={15} />
-                </button>
-                <CardDeleteButton onClick={() => onDelete(s)} ghost className="absolute bottom-2.5 right-2.5" />
-              </div>
-            );
-          })}
-        </div>
+        <SubjectTable subjects={subjects} onOpen={(x) => navigate(`/subjects/${x.id}`)} onEdit={openEdit} onDelete={onDelete} />
       )}
 
       {archived.length > 0 && (

@@ -7,7 +7,7 @@ export function EmptyState({ icon, title, description, action, className = '' })
   return (
     <div className={cx('text-center py-12 px-6', className)}>
       {icon != null && (
-        <span className="mx-auto mb-4 w-16 h-16 rounded-3xl bg-surface-2 shadow-neu-sm flex items-center justify-center text-brand">
+        <span className="mx-auto mb-4 w-16 h-16 rounded-3xl bg-sage/50 shadow-neu-sm flex items-center justify-center text-sage-deep">
           {renderIcon(icon, { size: 28 })}
         </span>
       )}

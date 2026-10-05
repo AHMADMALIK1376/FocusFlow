@@ -34,7 +34,7 @@ export default function WidgetShell({ icon, title, linkLabel, onLink, footer, ch
 export function WidgetEmpty({ icon, title, hint }) {
   return (
     <div className="h-full min-h-[120px] flex flex-col items-center justify-center text-center py-3">
-      <span className="w-14 h-14 rounded-3xl bg-surface-2 shadow-neu-sm flex items-center justify-center text-brand mb-2.5">{renderIcon(icon, { size: 24 })}</span>
+      <span className="w-14 h-14 rounded-3xl bg-sage/50 shadow-neu-sm flex items-center justify-center text-sage-deep mb-2.5">{renderIcon(icon, { size: 24 })}</span>
       <p className="text-sm font-black text-ink">{title}</p>
       {hint && <p className="text-xs text-muted mt-0.5 max-w-[16rem]">{hint}</p>}
     </div>

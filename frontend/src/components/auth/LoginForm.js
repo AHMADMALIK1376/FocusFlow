@@ -30,7 +30,7 @@ export default function LoginForm() {
   };
 
   const inputCls =
-    "w-[85%] py-4 px-5 rounded-token-md bg-surface text-ink placeholder:text-muted/70 shadow-neu-inset outline-none text-sm font-medium focus:ring-2 focus:ring-brand/60 transition-all";
+    "w-[85%] py-4 px-5 rounded-token-md bg-surface text-ink placeholder:text-muted/70 shadow-[inset_0_4px_8px_rgb(184_220_196/0.55),inset_0_-2px_4px_rgb(255_255_255/0.9)] outline-none text-sm font-medium focus:ring-2 focus:ring-sage-deep/70 transition-all";
 
   return (
     <div className="w-full flex flex-col items-center">
@@ -70,7 +70,7 @@ export default function LoginForm() {
         </div>
 
         <div className="w-[85%] text-right mt-2">
-          <Link to="/forgot-password" className="text-[10px] text-muted hover:text-brand transition-colors">
+          <Link to="/forgot-password" className="text-[10px] font-bold text-sage-deep hover:text-on-sage transition-colors">
             Forgot Password?
           </Link>
         </div>
@@ -85,7 +85,7 @@ export default function LoginForm() {
 
         <div className="relative w-[85%] my-5">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-[rgb(var(--ink)/0.12)]"></div>
+            <div className="w-full border-t border-sage"></div>
           </div>
           <div className="relative flex justify-center">
             <span className="bg-surface px-3 text-xs font-bold text-muted uppercase tracking-wider">or</span>
