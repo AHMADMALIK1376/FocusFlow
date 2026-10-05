@@ -14,5 +14,7 @@ router.post('/test', authMiddleware, controller.sendTest);
 // link identifies the student, so no login is needed.
 router.get('/answer', controller.answerPage);
 router.post('/answer', controller.answer);
+// The logo on those pages, served from here so they don't depend on the frontend.
+router.get('/logo.png', controller.logo);
 
 module.exports = router;

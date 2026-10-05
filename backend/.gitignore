@@ -133,3 +133,5 @@ cwallet.sso
 *.p12
 .secrets/
 *.secret
+# Local renders from scripts/preview-emails.js
+email-previews/
