@@ -1,13 +1,16 @@
-import React, { useState } from "react";
-import { Plus, Pencil, AlarmClock, CalendarClock, CalendarX, CheckCircle2 } from "lucide-react";
-import { Button, Input, Textarea, Select, Field, Modal, EmptyState, DeleteButton, Badge, Checkbox } from "../components/ui";
+import React, { useMemo, useState } from "react";
+import { Plus, Pencil, AlarmClock, CalendarClock, CalendarX, CheckCircle2, ScanText } from "lucide-react";
+import { Button, Input, Textarea, Select, Field, Modal, EmptyState, DeleteButton, Badge, Checkbox, useToast } from "../components/ui";
 import { PageShell, PageHeader, StatTile, Panel } from "../components/dashboard/DashKit";
 import { useExams } from "../features/exams/useExams";
 import { useSubjects } from "../features/subjects/useSubjects";
 import { groupExams, countdownLabel } from "../features/exams/examsLogic";
 import DeadlineSkyline from "../components/charts/DeadlineSkyline";
+import ScanImportModal from "../features/scanner/ScanImportModal";
+import { examsScan } from "../features/scanner/kinds/exams";
+import { fmt12 } from "../features/schedule/todayClasses";
 
-const TYPES = ["Exam", "Quiz", "Test", "Assignment", "Project", "Submission", "Deadline"];
+const TYPES = ["Exam", "Quiz", "Test", "Presentation", "Viva", "Practical", "Assignment", "Project", "Submission", "Deadline"];
 const TIMED = ["Exam", "Quiz", "Test"]; // things you sit → have a length; marks asked afterwards
 const EMPTY = { title: "", type: "Exam", subjectId: "", date: "", time: "", duration: "", location: "", notes: "" };
 const fieldCls = "!py-2.5 !px-4 text-sm";
@@ -20,8 +23,11 @@ const SECTIONS = [
 ];
 
 export default function ExamsPage() {
-  const { exams, loading, create, update, toggle, remove } = useExams();
+  const { exams, loading, refresh, create, update, toggle, remove } = useExams();
   const { subjects } = useSubjects();
+  const { toast } = useToast();
+  const [scanOpen, setScanOpen] = useState(false);
+  const scanCtx = useMemo(() => ({ subjects, exams }), [subjects, exams]);
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState(EMPTY);
@@ -57,6 +63,7 @@ export default function ExamsPage() {
   return (
     <PageShell>
       <PageHeader title="Exams & Deadlines" subtitle="Everything with a due date — sorted by what's next.">
+        <Button variant="primary" onClick={() => setScanOpen(true)} className="gap-1.5"><ScanText size={16} /> Scan date sheet</Button>
         <Button variant="primary" onClick={openAdd} className="gap-1.5"><Plus size={16} /> Add</Button>
       </PageHeader>
 
@@ -78,7 +85,7 @@ export default function ExamsPage() {
       {loading ? (
         <Panel><p className="text-sm text-muted py-8 text-center">Loading…</p></Panel>
       ) : exams.length === 0 ? (
-        <Panel><EmptyState icon="⏰" title="Nothing scheduled" description="Add an exam, quiz or deadline to get started" /></Panel>
+        <Panel><EmptyState icon={CalendarClock} title="Nothing scheduled" description="Add an exam, quiz or deadline to get started" /></Panel>
       ) : (
         <div className="space-y-6">
           {SECTIONS.map((sec) => (g[sec.key].length === 0 ? null : (
@@ -98,11 +105,12 @@ export default function ExamsPage() {
                           <span className={`font-bold text-sm truncate ${x.isDone ? "line-through text-muted" : "text-ink"}`}>{x.title}</span>
                           {x.type && <Badge tone="muted">{x.type}</Badge>}
                         </div>
-                        <p className="text-xs text-muted truncate">{x.subjectName || "General"}{x.location ? ` · ${x.location}` : ""}</p>
+                        <p className="text-xs text-muted truncate">{x.subjectName || "General"}{x.location ? ` · ${x.location}` : ""}{x.duration ? ` · ${x.duration} min` : ""}</p>
+                        {x.notes && <p className="text-xs text-muted/80 break-words line-clamp-2">{x.notes}</p>}
                       </div>
                       <div className="text-right shrink-0">
                         <p className={`text-xs font-bold ${sec.key === "overdue" ? "text-focus" : "text-ink"}`}>{x.isDone ? "Done" : countdownLabel(x.date)}</p>
-                        <p className="text-[11px] text-muted">{x.date}{x.time ? ` · ${x.time}` : ""}</p>
+                        <p className="text-[11px] text-muted">{x.date}{x.time ? ` · ${fmt12(x.time)}` : ""}</p>
                       </div>
                       <button onClick={() => openEdit(x)} className="p-1.5 rounded-lg text-muted hover:text-brand hover:bg-brand/10 transition-colors" title="Edit"><Pencil size={15} /></button>
                       <DeleteButton onClick={() => onDelete(x)} title="Delete" />
@@ -137,6 +145,14 @@ export default function ExamsPage() {
           </div>
         </div>
       </Modal>
+
+      <ScanImportModal
+        open={scanOpen}
+        onClose={() => setScanOpen(false)}
+        kind={examsScan}
+        ctx={scanCtx}
+        onDone={async (summary) => { await refresh(); if (summary) toast(summary, { tone: "success" }); }}
+      />
     </PageShell>
   );
 }

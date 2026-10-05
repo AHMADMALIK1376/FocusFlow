@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { FileText, Type, CalendarClock, Sparkles, Plus } from "lucide-react";
+import { FileText, Type, CalendarClock, Sparkles, Plus, StickyNote, PenLine } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import { Button, Input, Textarea, EmptyState, DeleteButton } from "../components/ui";
 import { PageShell, PageHeader, StatTile, Panel } from "../components/dashboard/DashKit";
@@ -120,7 +120,7 @@ export default function NotesPage() {
       <div className="grid lg:grid-cols-[320px_1fr] gap-5">
         <Panel title="All notes">
           {notes.length === 0 ? (
-            <EmptyState icon="📝" title="No notes yet" description="Create your first note" />
+            <EmptyState icon={StickyNote} title="No notes yet" description="Create your first note" />
           ) : (
             <ul className="space-y-1 max-h-[520px] overflow-y-auto -mx-2 px-2">
               {notes.map((note) => (
@@ -139,7 +139,7 @@ export default function NotesPage() {
 
         <Panel>
           {!selected && !editing ? (
-            <EmptyState icon="🖊️" title="Select or create a note" description="Your note appears here" />
+            <EmptyState icon={PenLine} title="Select or create a note" description="Your note appears here" />
           ) : editing ? (
             <div className="space-y-3">
               <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="Note title" />

@@ -108,12 +108,12 @@ export default function RemindersSettings() {
       emailEnabled: s.emailEnabled,
       whatsappEnabled: s.whatsappEnabled, whatsappPhone: s.whatsappPhone, whatsappApikey: s.whatsappApikey,
     });
-    toast("Reminder settings saved ✓", { tone: "success" });
+    toast("Reminder settings saved", { tone: "success" });
   });
 
   const togglePush = () => run("push", async () => {
     if (push === "on") { await disablePush(); setPush("off"); toast("Notifications turned off on this device"); }
-    else { await enablePush(s.vapidPublicKey); setPush("on"); toast("Notifications on for this device ✓", { tone: "success" }); }
+    else { await enablePush(s.vapidPublicKey); setPush("on"); toast("Notifications on for this device", { tone: "success" }); }
   });
 
   const test = (kind) => run(kind, async () => {

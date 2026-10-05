@@ -44,10 +44,11 @@ async function loadSettings(connection, userId) {
 //   att  — "Did you attend?"   → Attended / Missed
 //   sub  — "Did you submit?"   → Submitted / Not yet
 //   quiz — "How did it go?"    → marks form (opens the answer page)
+// `tone` is the clay colour of the matching email button.
 const ANSWERS = {
-  attendance: { p: 'att', buttons: [{ action: 'present', title: '✅ Attended' }, { action: 'absent', title: '❌ Missed' }], label: 'Answer: attended or missed' },
-  submit: { p: 'sub', buttons: [{ action: 'yes', title: '✅ Submitted' }, { action: 'no', title: '⏳ Not yet' }], label: 'Answer: submitted or not yet' },
-  quiz: { p: 'quiz', buttons: [], label: 'Enter your marks' },
+  attendance: { p: 'att', buttons: [{ action: 'present', title: 'Attended', tone: 'sage' }, { action: 'absent', title: 'Missed', tone: 'plain' }] },
+  submit: { p: 'sub', buttons: [{ action: 'yes', title: 'Submitted', tone: 'sage' }, { action: 'no', title: 'Not yet', tone: 'sun' }] },
+  quiz: { p: 'quiz', buttons: [], label: 'Enter my marks' },
 };
 
 function answerToken(kind, userId, data) {
@@ -60,16 +61,22 @@ function answerToken(kind, userId, data) {
   return jwt.sign({ p: ANSWERS[kind].p, u: userId, ...payload }, process.env.JWT_SECRET, { expiresIn: '3d' });
 }
 
-// Attach the answer link (email/WhatsApp) and push buttons to a question.
+// Attach the answer links (email/WhatsApp: one per answer, opening the answer
+// page with that choice picked — saving still needs a tap there) and the push
+// buttons to a question.
 function withAnswerLink(n, userId) {
   const a = ANSWERS[n.kind];
   if (!a) return n;
   const t = answerToken(n.kind, userId, n.data);
   const answerUrl = `${API_URL()}/api/notify/answer`;
+  const link = (choice) => `${answerUrl}?t=${encodeURIComponent(t)}${choice ? `&a=${choice}` : ''}`;
+  const actions = a.buttons.length
+    ? a.buttons.map((b) => ({ label: b.title, url: link(b.action), tone: b.tone }))
+    : [{ label: a.label, url: link(), tone: 'coral' }];
   return {
     ...n,
-    actions: [{ label: a.label, url: `${answerUrl}?t=${encodeURIComponent(t)}` }],
-    pushData: { answer: { token: t, answerUrl, buttons: a.buttons } },
+    actions,
+    pushData: { answer: { token: t, answerUrl, buttons: a.buttons.map(({ action, title }) => ({ action, title })) } },
   };
 }
 

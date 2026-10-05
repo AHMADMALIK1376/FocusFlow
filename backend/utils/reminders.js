@@ -86,6 +86,12 @@ const typeIs = (t, list) => list.includes(String(t || '').toLowerCase());
 // A per-item override wins when it's set (0 is a valid override).
 const pick = (override, fallback) => (override === null || override === undefined || override === '' ? fallback : Number(override));
 
+// Structured details for the rich email / WhatsApp layouts. Push pop-ups use
+// the plain `title` + `body`; every channel gets the same facts. `icon` is a
+// lucide icon name (the app's nav-bar icons), drawn by the email template.
+const fact = (icon, label, value) => (value ? { icon, label, value } : null);
+const span = (start, end) => [fmt12(start), fmt12(end)].filter(Boolean).join(' – ');
+
 function leadText(mins) {
   if (mins <= 0) return 'now';
   if (mins % 60 === 0) return `in ${mins / 60} hour${mins === 60 ? '' : 's'}`;
@@ -137,12 +143,25 @@ function computeDue({ now, settings, classes = [], routines = [], exams = [], as
     if (s.routineReminders && todaysRoutines.length) {
       lines.push(`Routine: ${todaysRoutines.map((r) => `${fmt12(r.time)} ${r.name}`).join(', ')}`);
     }
+    const deadlines = !s.deadlineReminders ? [] : [
+      ...examsToday.map((e) => ({ icon: typeIs(e.type, SUBMIT_TYPES) ? 'send' : 'calendar-clock', when: 'Today', time: fmt12(e.time), title: e.title, type: e.type || 'Exam' })),
+      ...dueToday.map((a) => ({ icon: 'send', when: 'Today', time: '', title: a.title, type: 'Due' })),
+      ...examsTomorrow.map((e) => ({ icon: typeIs(e.type, SUBMIT_TYPES) ? 'send' : 'calendar-clock', when: 'Tomorrow', time: fmt12(e.time), title: e.title, type: e.type || 'Exam' })),
+      ...dueTomorrow.map((a) => ({ icon: 'send', when: 'Tomorrow', time: '', title: a.title, type: 'Due' })),
+    ];
     out.push({
       key: `digest:${now.date}`,
       kind: 'digest',
       title: `Today, ${now.weekday}`,
       body: lines.join('\n'),
       url: '/dashboard',
+      view: {
+        headline: `Good morning — it's ${now.weekday}`,
+        sub: todaysClasses.length ? `${todaysClasses.length} class${todaysClasses.length === 1 ? '' : 'es'} on your timetable today.` : 'A free day on your timetable.',
+        classes: todaysClasses.map((c) => ({ start: fmt12(c.start), end: fmt12(c.end), name: c.name, room: c.room || '' })),
+        deadlines,
+        routines: s.routineReminders ? todaysRoutines.map((r) => ({ time: fmt12(r.time), name: r.name })) : [],
+      },
     });
   }
 
@@ -158,6 +177,11 @@ function computeDue({ now, settings, classes = [], routines = [], exams = [], as
           title: `${c.name} ${leadText(before)}`,
           body: `${fmt12(c.start)}–${fmt12(c.end)}${c.room ? ` · Room ${c.room}` : ''}`,
           url: '/subjects',
+          view: {
+            headline: c.name,
+            sub: before > 0 ? `Starts ${leadText(before)} — time to pack up and head over.` : 'Starting now!',
+            facts: [fact('clock', 'Time', span(c.start, c.end)), fact('map-pin', 'Room', c.room)].filter(Boolean),
+          },
         });
       }
     }
@@ -178,6 +202,11 @@ function computeDue({ now, settings, classes = [], routines = [], exams = [], as
           body: `${fmt12(c.start)}–${fmt12(c.end)}${c.room ? ` · ${c.room}` : ''}. Tap Attended or Missed.`,
           url: '/attendance',
           data: { subjectId: c.subjectId, subjectName: c.name, date: now.date },
+          view: {
+            headline: `Did you attend ${c.name}?`,
+            sub: 'One tap and it goes straight into your attendance.',
+            facts: [fact('clock', 'Class', span(c.start, c.end)), fact('map-pin', 'Room', c.room)].filter(Boolean),
+          },
         });
       }
     }
@@ -194,6 +223,11 @@ function computeDue({ now, settings, classes = [], routines = [], exams = [], as
           title: `${e.type || 'Exam'} ${leadText(lead)}: ${e.title}`,
           body: [fmt12(e.time), e.subjectName, e.location].filter(Boolean).join(' · '),
           url: '/exams',
+          view: {
+            headline: e.title,
+            sub: `${e.type || 'Exam'} ${leadText(lead)}. Deep breath — you've got this.`,
+            facts: [fact('clock', 'Starts', fmt12(e.time)), fact('book-open', 'Subject', e.subjectName), fact('map-pin', 'Where', e.location)].filter(Boolean),
+          },
         });
       }
     }
@@ -222,6 +256,15 @@ function computeDue({ now, settings, classes = [], routines = [], exams = [], as
           body: `${h.type || 'Assignment'}${h.subjectName ? ` · ${h.subjectName}` : ''} · due ${dueText}.`,
           url: h.source === 'exam' ? '/exams' : '/projects',
           data: { source: h.source, itemId: h.itemId, title: h.title },
+          view: {
+            headline: `Did you submit ${h.title}?`,
+            sub: `It's due ${dueText}.`,
+            facts: [
+              fact('send', 'Type', h.type || 'Assignment'),
+              fact('book-open', 'Subject', h.subjectName),
+              fact('alarm-clock', 'Due', `${h.date === now.date ? 'Today' : 'Tomorrow'}, ${fmt12(h.time || END_OF_DAY)}`),
+            ].filter(Boolean),
+          },
         });
       }
     }
@@ -243,6 +286,11 @@ function computeDue({ now, settings, classes = [], routines = [], exams = [], as
           body: `Enter your marks for this ${String(e.type || 'quiz').toLowerCase()}${e.subjectName ? ` (${e.subjectName})` : ''}. They go straight into Grades.`,
           url: '/grades',
           data: { examId: e.id, title: e.title, type: e.type, subjectId: e.subjectId || null, date: now.date },
+          view: {
+            headline: `How did ${e.title} go?`,
+            sub: 'Add your marks while you still remember them — they go straight into Grades.',
+            facts: [fact('award', String(e.type || 'Quiz'), e.title), fact('book-open', 'Subject', e.subjectName)].filter(Boolean),
+          },
         });
       }
     }
@@ -259,6 +307,11 @@ function computeDue({ now, settings, classes = [], routines = [], exams = [], as
           title: `${r.name} ${leadText(lead)}`,
           body: `Daily routine · ${fmt12(r.time)}`,
           url: '/routine',
+          view: {
+            headline: r.name,
+            sub: `Starts ${leadText(lead)}. Small steps, every day.`,
+            facts: [fact('clock', 'Time', fmt12(r.time))].filter(Boolean),
+          },
         });
       }
     }
@@ -278,13 +331,35 @@ function attendanceReport(rows, justMarked) {
     attended += taken;
     missed += r.absent || 0;
     if (taken + (r.absent || 0) === 0) continue;
-    lines.push(`• ${r.name}: ${taken} attended, ${r.absent || 0} missed — ${r.percentage}%${r.percentage < 75 ? ' ⚠️' : ''}`);
+    lines.push(`• ${r.name}: ${taken} attended, ${r.absent || 0} missed — ${r.percentage}%${r.percentage < 75 ? ' (below 75%)' : ''}`);
   }
   const total = attended + missed;
   const overall = total ? Math.round((attended / total) * 100) : null;
   lines.unshift(overall == null ? 'No attendance recorded yet.' : `Overall: ${attended}/${total} classes (${overall}%)`);
   if (justMarked) lines.unshift(`Marked ${justMarked.status} for ${justMarked.subjectName}.`);
   return lines.join('\n');
+}
+
+// The same report as structured data for the email / answer-page layout.
+function attendanceView(rows, justMarked) {
+  let attended = 0;
+  let total = 0;
+  const list = rows.map((r) => {
+    const a = (r.present || 0) + (r.late || 0);
+    const t = a + (r.absent || 0);
+    attended += a;
+    total += t;
+    return { name: r.name, attended: a, total: t, pct: t ? Math.round(r.percentage) : 0 };
+  });
+  return {
+    headline: 'Your attendance so far',
+    sub: justMarked ? "Saved — here's where every subject stands." : '',
+    overall: total ? Math.round((attended / total) * 100) : null,
+    attended,
+    total,
+    rows: list,
+    justMarked: justMarked || null,
+  };
 }
 
 module.exports = {
@@ -298,4 +373,5 @@ module.exports = {
   fmt12,
   computeDue,
   attendanceReport,
+  attendanceView,
 };

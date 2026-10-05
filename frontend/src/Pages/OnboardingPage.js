@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Hand, Rocket } from "lucide-react";
 import { useNavigate, Navigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import Lottie from "lottie-react";
@@ -124,7 +125,7 @@ export default function OnboardingPage() {
   const steps = [
     // 0 — Welcome
     <div key="welcome" className="flex flex-col items-center text-center gap-6">
-      <div className="text-6xl">👋</div>
+      <span className="w-20 h-20 rounded-[28px] bg-grad-hero shadow-clay-brand flex items-center justify-center text-on-brand"><Hand size={38} strokeWidth={1.75} /></span>
       <h1 className="text-3xl md:text-4xl font-black text-ink leading-tight">
         Welcome to <span className="bg-grad-hero bg-clip-text text-transparent">FocusFlow</span>
       </h1>
@@ -198,7 +199,7 @@ export default function OnboardingPage() {
 
     // 5 — Finish
     <div key="allset" className="flex flex-col items-center text-center gap-6">
-      <div className="text-6xl">🚀</div>
+      <span className="w-20 h-20 rounded-[28px] bg-grad-hero shadow-clay-brand flex items-center justify-center text-on-brand"><Rocket size={38} strokeWidth={1.75} /></span>
       <h1 className="text-3xl font-black text-ink">You're all set!</h1>
       <p className="text-muted text-base max-w-sm">
         <b className="text-ink">{draft.dashboardName || "Your workspace"}</b> is ready. Let's get to work.

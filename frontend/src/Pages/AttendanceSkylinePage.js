@@ -17,7 +17,7 @@
 // (4) each tower memoized so only the previously/now-hovered pair re-render.
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useAccountYears } from '../features/account/useAccountYears';
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, TriangleAlert } from "lucide-react";
 import { subjectAttendanceAPI } from "../services/api";
 import { PageShell, Panel } from "../components/dashboard/DashKit";
 
@@ -216,7 +216,7 @@ function SubjectBreakdown() {
                   <span className="text-sm font-bold text-ink truncate">{s.name}</span>
                 </div>
                 <span className={`text-sm font-black text-right sm:order-3 ${pct == null ? "text-muted" : s.isAtRisk ? "text-focus" : "text-ink"}`}>
-                  {pct == null ? "No classes yet" : `${pct}%${s.isAtRisk ? " ⚠️" : ""}`}
+                  {pct == null ? "No classes yet" : <span className="inline-flex items-center gap-1">{s.isAtRisk && <TriangleAlert size={14} />}{pct}%</span>}
                 </span>
                 <span className="text-xs text-muted col-span-2 sm:col-span-1 sm:order-2">
                   {pct == null ? "" : `${attended} attended · ${s.absent || 0} missed`}

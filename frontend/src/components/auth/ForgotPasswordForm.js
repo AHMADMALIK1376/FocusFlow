@@ -33,7 +33,7 @@ export default function ForgotPasswordForm() {
     }
   };
 
-  const inputCls = "w-[80%] p-4 bg-surface-2 rounded-token-md border border-[rgb(var(--ink)/0.08)] outline-none text-sm text-ink placeholder:text-muted focus:border-brand transition-all";
+  const inputCls = "w-[80%] p-4 bg-surface rounded-token-md border border-sage shadow-[inset_0_4px_8px_rgb(184_220_196/0.55),inset_0_-2px_4px_rgb(255_255_255/0.9)] outline-none text-sm text-ink placeholder:text-muted focus:border-sage-deep transition-all";
 
   return (
     <div className="w-full flex flex-col items-center p-0">
@@ -75,7 +75,7 @@ export default function ForgotPasswordForm() {
         </button>
 
         <div className="mt-6 text-center">
-          <Link to="/login" className="text-brand font-bold text-sm hover:underline">
+          <Link to="/login" className="text-sage-deep font-bold text-sm hover:underline">
             Back to Login
           </Link>
         </div>

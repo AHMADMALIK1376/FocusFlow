@@ -43,7 +43,7 @@ exports.getRoutines = async (req, res) => {
                 activity: routine.ACTIVITY_NAME,
                 time: routine.ACTIVITY_TIME,
                 repeatOn: daysResult.rows.map(d => d.DAY_OF_WEEK),
-                dayColors: dayColors, // ✅ Per-day colors
+                dayColors: dayColors, // per-day colors
                 completedDays: completionsResult.rows.map(c => 
                     c.COMPLETION_DATE.toISOString().split('T')[0]
                 )

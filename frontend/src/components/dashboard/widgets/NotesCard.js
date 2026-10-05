@@ -1,4 +1,5 @@
 import React from 'react';
+import { StickyNote, NotebookPen } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../../ui';
@@ -17,14 +18,14 @@ export default function NotesCard() {
 
   return (
     <WidgetShell
-      icon="📝"
+      icon={StickyNote}
       title={t('widgets.notes', { defaultValue: 'Notes' })}
       linkLabel={t('notes.viewAll', { defaultValue: 'View all' })}
       onLink={() => navigate('/notes')}
       footer={<Button size="sm" variant="primary" full onClick={() => navigate('/notes')}>{t('notes.add', { defaultValue: '+ New Note' })}</Button>}
     >
       {notes.length === 0 ? (
-        <WidgetEmpty emoji="🗒️" title="No notes yet" hint="Jot down lecture points, formulas or to-dos." />
+        <WidgetEmpty icon={NotebookPen} title="No notes yet" hint="Jot down lecture points, formulas or to-dos." />
       ) : (
         <div className="space-y-2.5">
           {notes.map((note, i) => (

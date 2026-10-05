@@ -46,7 +46,7 @@ export default function SettingsPage() {
   function handleSaveProfile(e) {
     e.preventDefault();
     updateProfile(form);
-    toast("Profile saved ✓", { tone: "success" });
+    toast("Profile saved", { tone: "success" });
   }
 
   return (

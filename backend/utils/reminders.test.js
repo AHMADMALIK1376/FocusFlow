@@ -175,7 +175,7 @@ test('attendanceReport lists every subject with counts and percentage', () => {
   assert.equal(lines[0], 'Marked Present for Compiler Construction.');
   assert.equal(lines[1], 'Overall: 5/8 classes (63%)');
   assert.equal(lines[2], '• Compiler Construction: 3 attended, 1 missed — 75%');
-  assert.equal(lines[3], '• AI: 2 attended, 2 missed — 50% ⚠️');
+  assert.equal(lines[3], '• AI: 2 attended, 2 missed — 50% (below 75%)');
   assert.equal(lines.length, 4, 'subjects with no records are left out');
   assert.equal(attendanceReport([]), 'No attendance recorded yet.');
 });

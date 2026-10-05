@@ -1,4 +1,5 @@
 import React from 'react';
+import { SquareKanban } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useKanban } from '../../../features/kanban/useKanban';
@@ -24,9 +25,9 @@ export default function KanbanCard() {
   const active = [...cards].filter((c) => c.columnId !== 'col-done').sort((a, b) => (b.id > a.id ? 1 : -1)).slice(0, 3);
 
   return (
-    <WidgetShell icon="🗂️" title={t('widgets.kanban', { defaultValue: 'Assignment board' })} linkLabel={t('kanban.open', { defaultValue: 'Open board' })} onLink={() => navigate('/projects')}>
+    <WidgetShell icon={SquareKanban} title={t('widgets.kanban', { defaultValue: 'Assignment board' })} linkLabel={t('kanban.open', { defaultValue: 'Open board' })} onLink={() => navigate('/projects')}>
       {total === 0 ? (
-        <WidgetEmpty emoji="🗂️" title="No cards yet" hint="Add assignments and projects, then drag them from To do → Done." />
+        <WidgetEmpty icon={SquareKanban} title="No cards yet" hint="Add assignments and projects, then drag them from To do → Done." />
       ) : (
         <div className="space-y-3">
           <div className="flex items-center justify-between text-xs">

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Plus, Pencil } from "lucide-react";
+import { Plus, Pencil, Award } from "lucide-react";
 import { Button, Input, Select, Field, Modal, EmptyState, DeleteButton, Badge } from "../ui";
 import { Panel } from "../dashboard/DashKit";
 import { useGrades } from "../../features/grades/useGrades";
@@ -66,7 +66,7 @@ export default function GradesPanel({ subjectId }) {
       {loading ? (
         <p className="text-sm text-muted py-4 text-center">Loading grades…</p>
       ) : grades.length === 0 ? (
-        <EmptyState icon="📊" title="No grades yet" description="Add a quiz, assignment or exam score" />
+        <EmptyState icon={Award} title="No grades yet" description="Add a quiz, assignment or exam score" />
       ) : (
         <ul className="divide-y divide-[rgb(var(--ink)/0.07)]">
           {grades.map((x) => {

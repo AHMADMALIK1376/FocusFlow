@@ -48,9 +48,9 @@ function TodayClassesTile() {
         {p.total} <span className="text-sm font-bold text-muted">class{p.total === 1 ? "" : "es"} today</span>
       </p>
       {p.total === 0 ? (
-        <p className="text-[11px] text-muted mt-1.5">No classes — free day 🎉</p>
+        <p className="text-[11px] text-muted mt-1.5">No classes — free day</p>
       ) : p.allDone ? (
-        <p className="text-[11px] font-bold text-success mt-1.5">All {p.total} done for today ✓</p>
+        <p className="text-[11px] font-bold text-success mt-1.5">All {p.total} done for today</p>
       ) : (
         <div key={idx} className="mt-1.5 min-w-0 animate-[fadeIn_0.4s_ease-in-out]">
           <div className="flex items-center justify-between gap-2">

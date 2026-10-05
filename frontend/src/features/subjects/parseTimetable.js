@@ -29,7 +29,7 @@ export const SUBJECT_COLORS = [
   "#0D9488", "#B45309",
 ];
 
-function titleCase(str) {
+export function titleCase(str) {
   return str
     .toLowerCase()
     .split(/\s+/)
@@ -63,7 +63,8 @@ function fixOcrDigits(text) {
 }
 
 function parseSlots(text) {
-  const slotRe = new RegExp(`\\b${DAY_RE}\\s+${TIME_RE}\\s*(?:-|–|to)?\\s*${TIME_RE}`, "gi");
+  // The end time is optional: a misread one must not drop the whole class.
+  const slotRe = new RegExp(`\\b${DAY_RE}\\s+${TIME_RE}(?:\\s*(?:-|–|to)?\\s*${TIME_RE})?`, "gi");
   const matches = [...text.matchAll(slotRe)];
   return matches.map((m, i) => {
     const after = m.index + m[0].length;
@@ -80,7 +81,7 @@ function parseSlots(text) {
       .slice(0, 3)
       .join(" ");
     const start = to24h(m[2], m[3], m[4] && m[4].toUpperCase());
-    let end = to24h(m[5], m[6], m[7] && m[7].toUpperCase());
+    let end = m[5] ? to24h(m[5], m[6], m[7] && m[7].toUpperCase()) : null;
     // A class can't end before it starts — push the end into the afternoon.
     if (start && end && end <= start && Number(end.slice(0, 2)) < 12) {
       end = `${Number(end.slice(0, 2)) + 12}${end.slice(2)}`;
@@ -121,8 +122,25 @@ function parseMiddle(middle) {
   return {
     name: titleCase(title),
     creditHours: credits,
-    instructor: instructor ? titleCase(instructor) : "",
+    // no teacher on the table → "TBA", like the portal
+    instructor: instructor ? titleCase(instructor) : "TBA",
   };
+}
+
+// The text in front of a line's first class time: a title (a real word) and a
+// credit number mean it is a whole course row, not the tail of the one above.
+const isRowStart = (before) => /[A-Z]{4,}/.test(before) && /(^|\s)\d{1,2}(\.\d)?(\s|$)/.test(before);
+
+// Drop the section number / course code OCR mangled at the start of a row
+// ("D) OC 10500 CCM(C381 ARTIFICAL …" → "ARTIFICAL …") so the title is clean.
+function dropGarbledCode(line) {
+  const tokens = line.split(/\s+/);
+  const lead = tokens.slice(0, 6);
+  let cut = -1;
+  lead.forEach((t, i) => {
+    if (/\d{5,}/.test(t) || (/\d/.test(t) && /[A-Z]/.test(t)) || /[^A-Z0-9.&'-]/.test(t)) cut = i;
+  });
+  return tokens.slice(cut + 1).join(" ");
 }
 
 /**
@@ -142,6 +160,11 @@ export function parseTimetable(raw) {
   // Group lines into one chunk per course: a line whose first course code
   // appears before any day token starts a new course; anything else is a
   // continuation (wrapped schedule, one-cell-per-line paste, …).
+  // A row whose code OCR garbled ("CcM(C381") must still start its own course,
+  // or its class times get glued onto the course above it. That is told by
+  // structure: there is no course above yet or it already has its times, and
+  // this line has a title and a credit number in front of its own times (a
+  // wrapped second time slot starts with the day instead).
   const chunks = [];
   const dayAnywhere = new RegExp(`\\b${DAY_RE}\\s+\\d`, "i");
   for (const line of lines) {
@@ -149,10 +172,13 @@ export function parseTimetable(raw) {
     const codeMatch = upper.match(CODE_RE);
     const dayMatch = upper.match(dayAnywhere);
     const startsCourse = codeMatch && (!dayMatch || codeMatch.index < dayMatch.index);
+    const last = chunks[chunks.length - 1];
     if (startsCourse) {
       chunks.push({ code: `${codeMatch[1]}${codeMatch[2]}${codeMatch[3] || ""}`, rest: upper.slice(codeMatch.index + codeMatch[0].length) });
-    } else if (chunks.length) {
-      chunks[chunks.length - 1].rest += "\t" + upper;
+    } else if (dayMatch && (!last || dayAnywhere.test(last.rest)) && isRowStart(upper.slice(0, dayMatch.index))) {
+      chunks.push({ code: "", rest: dropGarbledCode(upper) });
+    } else if (last) {
+      last.rest += "\t" + upper;
     }
   }
 

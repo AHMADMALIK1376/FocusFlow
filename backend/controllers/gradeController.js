@@ -130,14 +130,15 @@ exports.deleteGrade = async (req, res) => {
   }
 };
 
-// GET /api/grades/gpa  — per-subject grade + overall CGPA
+// GET /api/grades/gpa  — per-subject grade + overall CGPA.
+// Past-term (archived) subjects are included: a cumulative GPA counts every term.
 exports.getGpa = async (req, res) => {
   let connection;
   try {
     connection = await getConnection();
     const subs = await connection.execute(
-      `SELECT subject_id, name, code, color, credit_hours
-       FROM SUBJECTS WHERE user_id = :userId AND is_archived = 0 ORDER BY created_at DESC`,
+      `SELECT subject_id, name, code, color, credit_hours, is_archived
+       FROM SUBJECTS WHERE user_id = :userId ORDER BY is_archived ASC, created_at DESC`,
       { userId: req.user.userId }
     );
     const grades = await connection.execute(
@@ -157,6 +158,7 @@ exports.getGpa = async (req, res) => {
         code: s.CODE,
         color: s.COLOR,
         creditHours: s.CREDIT_HOURS,
+        isArchived: s.IS_ARCHIVED === 1,
         itemCount: items.length,
         percent: g ? g.percent : null,
         letter: g ? g.letter : null,

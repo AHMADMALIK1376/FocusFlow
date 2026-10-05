@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { Timer, Hourglass, ListChecks, Trophy, Play, Square } from "lucide-react";
+import { Timer, Hourglass, ListChecks, Trophy, Play, Square, X } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, LabelList } from "recharts";
 import { EmptyState } from "../components/ui";
 import { PageShell, PageHeader, StatTile, Panel } from "../components/dashboard/DashKit";
@@ -118,7 +118,7 @@ export default function TimeTrackPage() {
 
       <Panel title="History">
         {state.entries.length === 0 ? (
-          <EmptyState icon="⏲️" title="No sessions yet" description="Start the timer above to log your first session" />
+          <EmptyState icon={Timer} title="No sessions yet" description="Start the timer above to log your first session" />
         ) : (
           <ul className="space-y-2 max-h-[460px] overflow-y-auto -mx-1 px-1">
             {state.entries.map((e) => (
@@ -126,7 +126,7 @@ export default function TimeTrackPage() {
                 <span className="flex-1 text-sm text-ink font-bold truncate">{e.label}</span>
                 <span className="text-muted text-xs shrink-0">{e.date}</span>
                 <span className="text-brand text-sm font-black tabular-nums shrink-0">{formatHMS(e.seconds)}</span>
-                <button onClick={() => removeEntry(e.id)} className="text-muted hover:text-focus text-xs shrink-0">✕</button>
+                <button onClick={() => removeEntry(e.id)} className="text-muted hover:text-focus shrink-0" aria-label="Delete"><X size={15} /></button>
               </li>
             ))}
           </ul>

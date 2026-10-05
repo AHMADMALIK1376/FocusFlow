@@ -1,5 +1,9 @@
 // services/emailQueueService.js
 const nodemailer = require('nodemailer');
+const { codeEmail } = require('./emailTemplates');
+
+// Shows as "FocusFlow" in the inbox instead of the bare Gmail address.
+const FROM = () => ({ name: 'FocusFlow', address: process.env.EMAIL_USER });
 
 // ==============================================
 // EMAIL QUEUE CONFIGURATION
@@ -284,85 +288,35 @@ function getEmailQueue() {
 
 // Send verification email via queue
 async function sendVerificationEmailQueued(toEmail, verificationCode) {
-    const queue = getEmailQueue();
-    
-    const mailOptions = {
-        from: process.env.EMAIL_USER,
-        to: toEmail,
-        subject: 'FocusFlow - Verify Your Email',
-        html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: linear-gradient(135deg, #6c5ce7, #8271ff); border-radius: 20px;">
-                <div style="text-align: center; padding: 20px;">
-                    <h1 style="color: white; margin-bottom: 10px;">🔐 FocusFlow</h1>
-                    <p style="color: rgba(255,255,255,0.9);">Verify Your Email Address</p>
-                </div>
-                <div style="background: white; border-radius: 20px; padding: 30px; text-align: center;">
-                    <h2 style="color: #6c5ce7;">Your Verification Code</h2>
-                    <div style="font-size: 48px; font-weight: bold; color: #6c5ce7; letter-spacing: 10px; margin: 20px 0; padding: 20px; background: #f0f2f5; border-radius: 15px;">
-                        ${verificationCode}
-                    </div>
-                    <p style="color: #666;">Enter this code to complete your registration.</p>
-                    <p style="color: #999; font-size: 12px;">Code expires in 10 minutes.</p>
-                </div>
-                <div style="text-align: center; padding: 20px; color: rgba(255,255,255,0.7); font-size: 12px;">
-                    <p>If you didn't request this, please ignore this email.</p>
-                    <p>&copy; 2024 FocusFlow. All rights reserved.</p>
-                </div>
-            </div>
-        `
-    };
-    
-    const result = await queue.addEmail(mailOptions, 'high');
+    const { subject, html, text, attachments } = codeEmail({ purpose: 'verify', code: verificationCode });
+    const result = await getEmailQueue().addEmail(
+        { from: FROM(), to: toEmail, subject, html, text, attachments },
+        'high'
+    );
     return result.queued;
 }
 
 // Send password reset email via queue
 async function sendPasswordResetCodeQueued(toEmail, resetCode) {
-    const queue = getEmailQueue();
-    
-    const mailOptions = {
-        from: process.env.EMAIL_USER,
-        to: toEmail,
-        subject: 'FocusFlow - Password Reset Code',
-        html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: linear-gradient(135deg, #6c5ce7, #8271ff); border-radius: 20px;">
-                <div style="text-align: center; padding: 20px;">
-                    <h1 style="color: white; margin-bottom: 10px;">🔐 FocusFlow</h1>
-                    <p style="color: rgba(255,255,255,0.9);">Password Reset Request</p>
-                </div>
-                <div style="background: white; border-radius: 20px; padding: 30px; text-align: center;">
-                    <h2 style="color: #6c5ce7;">Your Password Reset Code</h2>
-                    <div style="font-size: 48px; font-weight: bold; color: #6c5ce7; letter-spacing: 10px; margin: 20px 0; padding: 20px; background: #f0f2f5; border-radius: 15px;">
-                        ${resetCode}
-                    </div>
-                    <p style="color: #666;">Use this code to reset your password.</p>
-                    <p style="color: #999; font-size: 12px;">Code expires in 10 minutes.</p>
-                </div>
-                <div style="text-align: center; padding: 20px; color: rgba(255,255,255,0.7); font-size: 12px;">
-                    <p>If you didn't request this, please ignore this email.</p>
-                    <p>&copy; 2024 FocusFlow. All rights reserved.</p>
-                </div>
-            </div>
-        `
-    };
-    
-    const result = await queue.addEmail(mailOptions, 'high');
+    const { subject, html, text, attachments } = codeEmail({ purpose: 'reset', code: resetCode });
+    const result = await getEmailQueue().addEmail(
+        { from: FROM(), to: toEmail, subject, html, text, attachments },
+        'high'
+    );
     return result.queued;
 }
 
-// Send bulk email via queue (for daily routines, schedules, etc.)
-async function sendBulkEmailQueued(toEmail, subject, htmlContent, textContent) {
-    const queue = getEmailQueue();
-    
+// Send bulk email via queue (reminders, reports, etc.)
+async function sendBulkEmailQueued(toEmail, subject, htmlContent, textContent, attachments) {
     const mailOptions = {
-        from: process.env.EMAIL_USER,
+        from: FROM(),
         to: toEmail,
         subject: subject,
         html: htmlContent,
-        text: textContent
+        text: textContent,
+        ...(attachments && attachments.length ? { attachments } : {})
     };
-    
-    const result = await queue.addEmail(mailOptions, 'normal');
+    const result = await getEmailQueue().addEmail(mailOptions, 'normal');
     return result.queued;
 }
 

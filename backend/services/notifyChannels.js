@@ -4,6 +4,7 @@
 //   • WhatsApp  — CallMeBot's free personal API (user gets their own API key)
 const webpush = require('web-push');
 const { sendBulkEmailQueued } = require('./emailQueueService');
+const { reminderEmail, escapeHtml } = require('./emailTemplates');
 
 const pushReady = Boolean(process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY);
 if (pushReady) {
@@ -18,8 +19,6 @@ if (pushReady) {
 
 const APP_URL = () => (process.env.APP_URL || 'http://localhost:3000').replace(/\/$/, '');
 
-const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-
 // n = { title, body, url, kind, key, actions?: [{label, url}] , pushData? }
 async function sendPush(connection, userId, n) {
   if (!pushReady) return { sent: 0, skipped: 'no-vapid' };
@@ -28,7 +27,7 @@ async function sendPush(connection, userId, n) {
     { userId }
   );
   const payload = JSON.stringify({
-    title: n.title,
+    title: n.title, // the pop-up's banner carries the kind's line icon (public/notify)
     body: n.body,
     url: n.url || '/',
     tag: n.key,
@@ -57,20 +56,22 @@ async function sendPush(connection, userId, n) {
 }
 
 async function sendEmail(to, n) {
-  const buttons = (n.actions || [])
-    .map((a) => `<a href="${escapeHtml(a.url)}" style="display:inline-block;margin:6px 8px 0 0;padding:12px 22px;border-radius:999px;background:${a.color || '#6c5ce7'};color:#fff;text-decoration:none;font-weight:bold">${escapeHtml(a.label)}</a>`)
-    .join('');
-  const html = `
-    <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:20px">
-      <h2 style="color:#4c3fb8;margin:0 0 12px">${escapeHtml(n.title)}</h2>
-      <div style="white-space:pre-wrap;font-size:15px;line-height:1.6;color:#222;background:#f4f3fb;border-radius:14px;padding:16px">${escapeHtml(n.body)}</div>
-      ${buttons ? `<div style="margin-top:14px">${buttons}</div>` : ''}
-      <p style="margin-top:18px"><a href="${APP_URL()}${n.url || '/'}" style="color:#6c5ce7">Open FocusFlow</a></p>
-      <p style="color:#999;font-size:12px">Change reminders in FocusFlow → Settings → Reminders.</p>
-    </div>`;
-  const text = `${n.title}\n\n${n.body}${(n.actions || []).map((a) => `\n${a.label}: ${a.url}`).join('')}`;
-  const queued = await sendBulkEmailQueued(to, `🔔 ${n.title}`, html, text);
+  const { subject, html, text, attachments } = reminderEmail(n, APP_URL());
+  const queued = await sendBulkEmailQueued(to, subject, html, text, attachments);
   return { queued: Boolean(queued) };
+}
+
+// WhatsApp (plain text — no icons): *bold* headline, one fact per line, then
+// the answer links.
+function whatsappText(n) {
+  const v = n.view || {};
+  const lines = [`*${v.headline || n.title}*`];
+  if (v.sub) lines.push(`_${v.sub}_`);
+  if (v.facts && v.facts.length) lines.push('', ...v.facts.map((f) => `${f.label}: *${f.value}*`));
+  else if (n.body) lines.push('', n.body);
+  if (n.actions && n.actions.length) lines.push('', ...n.actions.map((a) => `${a.label}: ${a.url}`));
+  lines.push('', '— FocusFlow');
+  return lines.join('\n');
 }
 
 function whatsappUrl(phone, apikey, text) {
@@ -79,8 +80,7 @@ function whatsappUrl(phone, apikey, text) {
 }
 
 async function sendWhatsApp(phone, apikey, n) {
-  const text = `*${n.title}*\n${n.body}${(n.actions || []).map((a) => `\n${a.label}: ${a.url}`).join('')}`;
-  const res = await fetch(whatsappUrl(phone, apikey, text), { signal: AbortSignal.timeout(15000) });
+  const res = await fetch(whatsappUrl(phone, apikey, whatsappText(n)), { signal: AbortSignal.timeout(15000) });
   const body = await res.text();
   // CallMeBot answers 200 with an HTML page; failures mention "APIKey is invalid" etc.
   const ok = res.ok && !/invalid|error/i.test(body);
@@ -108,4 +108,4 @@ async function deliver(connection, user, settings, n) {
   return result;
 }
 
-module.exports = { deliver, sendPush, sendEmail, sendWhatsApp, whatsappUrl, escapeHtml, pushReady };
+module.exports = { deliver, sendPush, sendEmail, sendWhatsApp, whatsappUrl, whatsappText, escapeHtml, pushReady };

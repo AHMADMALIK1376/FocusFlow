@@ -1,5 +1,6 @@
 // src/components/auth/ResetPasswordVerify.js
 import React, { useState, useEffect } from "react";
+import { Mail } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import { authAPI } from "../../services/api";
 
@@ -92,7 +93,7 @@ export default function ResetPasswordVerify() {
   return (
     <div className="w-full flex flex-col items-center py-4">
       <div className="w-full flex flex-col items-center animate-in zoom-in duration-500">
-        <div className="text-4xl mb-4">📧</div>
+        <span className="mb-4 w-16 h-16 rounded-3xl bg-grad-hero shadow-clay-brand flex items-center justify-center text-on-brand"><Mail size={30} strokeWidth={1.75} /></span>
         <h2 className="text-2xl font-black text-ink mb-1">Reset Password</h2>
         <p className="text-muted text-[10px] font-bold mb-2 uppercase tracking-[2px] text-center max-w-[250px]">
           We sent a 4-digit code to
@@ -115,7 +116,7 @@ export default function ResetPasswordVerify() {
               value={code[i]}
               onChange={(e) => handleChange(e, i)}
               onKeyDown={(e) => handleKeyDown(e, i)}
-              className="w-12 h-14 bg-surface-2 shadow-neu-inset rounded-token-sm text-center font-black text-xl text-brand outline-none border border-transparent focus:border-brand/30 transition-all"
+              className="w-12 h-14 bg-surface-2 shadow-[inset_0_4px_8px_rgb(184_220_196/0.55),inset_0_-2px_4px_rgb(255_255_255/0.9)] rounded-token-sm text-center font-black text-xl text-brand outline-none border border-sage focus:border-sage-deep transition-all"
             />
           ))}
         </div>
@@ -131,14 +132,14 @@ export default function ResetPasswordVerify() {
         <p
           onClick={handleResendCode}
           className={`mt-6 text-[10px] font-bold text-muted uppercase transition-all ${
-            canResend ? 'cursor-pointer hover:text-brand' : 'cursor-not-allowed opacity-50'
+            canResend ? 'cursor-pointer hover:text-sage-deep' : 'cursor-not-allowed opacity-50'
           }`}
         >
           {canResend ? 'Resend Code' : `Resend Code (${countdown}s)`}
         </p>
 
         <div className="mt-6 text-center">
-          <Link to="/login" className="text-brand font-bold text-xs hover:underline">
+          <Link to="/login" className="text-sage-deep font-bold text-xs hover:underline">
             Back to Login
           </Link>
         </div>

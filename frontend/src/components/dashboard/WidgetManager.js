@@ -1,4 +1,6 @@
 import React from 'react';
+import { GripVertical } from 'lucide-react';
+import { renderIcon } from '../ui/renderIcon';
 import {
   DndContext,
   closestCenter,
@@ -46,10 +48,10 @@ function SortableWidgetRow({ widget, enabled, onToggle }) {
         {...attributes}
         {...listeners}
       >
-        ⠿
+        <GripVertical size={16} />
       </button>
 
-      <span className="text-lg">{widget.icon}</span>
+      <span className="text-brand">{renderIcon(widget.icon, { size: 18 })}</span>
 
       <span className="flex-1 text-sm font-bold text-ink">
         {t(widget.titleKey, { defaultValue: widget.titleKey.split('.').pop() })}

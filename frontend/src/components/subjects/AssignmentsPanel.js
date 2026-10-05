@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Check } from "lucide-react";
+import { Plus, Check, SquareKanban } from "lucide-react";
 import { Button, Input, Badge, EmptyState, DeleteButton } from "../ui";
 import { Panel } from "../dashboard/DashKit";
 import { useKanban } from "../../features/kanban/useKanban";
@@ -35,7 +35,7 @@ export default function AssignmentsPanel({ subjectId }) {
       {loading ? (
         <p className="text-sm text-muted py-4 text-center">Loading…</p>
       ) : cards.length === 0 ? (
-        <EmptyState icon="📝" title="No assignments yet" description="Add one above" />
+        <EmptyState icon={SquareKanban} title="No assignments yet" description="Add one above" />
       ) : (
         <ul className="divide-y divide-[rgb(var(--ink)/0.07)]">
           {cards.map((c) => (

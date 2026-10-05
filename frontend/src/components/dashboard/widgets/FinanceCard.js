@@ -1,4 +1,5 @@
 import React from 'react';
+import { Wallet, PiggyBank, Coins } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../../ui';
@@ -19,18 +20,18 @@ export default function FinanceCard() {
 
   return (
     <WidgetShell
-      icon="💰"
+      icon={Wallet}
       title={t('widgets.finance', { defaultValue: 'Budget' })}
       linkLabel={t('finance.open', { defaultValue: 'Open' })}
       onLink={() => navigate('/budget')}
       footer={<Button size="sm" variant="primary" full onClick={() => navigate('/budget')}>{t('finance.addEntry', { defaultValue: 'Add entry' })}</Button>}
     >
       {state.entries.length === 0 ? (
-        <WidgetEmpty emoji="🐷" title="No entries yet" hint="Add your pocket money and spending to see where it goes." />
+        <WidgetEmpty icon={PiggyBank} title="No entries yet" hint="Add your pocket money and spending to see where it goes." />
       ) : (
         <div className="space-y-4">
           <div className="flex items-center gap-3">
-            <span className="w-12 h-12 rounded-2xl bg-grad-sun shadow-neu-sm flex items-center justify-center text-2xl shrink-0">🪙</span>
+            <span className="w-12 h-12 rounded-2xl bg-grad-sun shadow-neu-sm flex items-center justify-center text-on-sun shrink-0"><Coins size={22} strokeWidth={1.75} /></span>
             <div className="min-w-0">
               <p className="text-[11px] font-bold uppercase tracking-wider text-muted">Left to spend</p>
               <p className={`text-2xl font-black leading-tight ${balance < 0 ? 'text-focus' : 'text-ink'}`}>{compactRs(balance)}</p>

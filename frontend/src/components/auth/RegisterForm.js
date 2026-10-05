@@ -1,5 +1,6 @@
 // src/components/auth/RegisterForm.js
 import React, { useState, useRef, useEffect } from "react";
+import { ShieldCheck, Check, TriangleAlert } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { authAPI } from "../../services/api";
 
@@ -98,7 +99,7 @@ export default function RegisterForm() {
   };
 
   const inputCls =
-    "w-full py-4 px-5 rounded-token-md bg-surface text-ink placeholder:text-muted/70 shadow-neu-inset outline-none text-sm font-medium focus:ring-2 focus:ring-brand/60 transition-all";
+    "w-full py-4 px-5 rounded-token-md bg-surface text-ink placeholder:text-muted/70 shadow-[inset_0_4px_8px_rgb(184_220_196/0.55),inset_0_-2px_4px_rgb(255_255_255/0.9)] outline-none text-sm font-medium focus:ring-2 focus:ring-sage-deep/70 transition-all";
 
   return (
     <div className="w-full flex flex-col items-center">
@@ -155,7 +156,7 @@ export default function RegisterForm() {
               >
                 <div className="p-4 bg-brand/5">
                   <div className="flex items-center gap-2">
-                    <span className="text-xl">🔐</span>
+                    <ShieldCheck size={22} strokeWidth={1.75} className="text-brand" />
                     <div>
                       <p className="text-sm font-black text-ink">Suggested password</p>
                       <p className="text-[10px] text-muted">Strong and secure</p>
@@ -176,7 +177,7 @@ export default function RegisterForm() {
                     </span>
                   </div>
                   <div className="mt-3 flex items-center gap-2">
-                    <span className="text-[10px] text-success">✓ Strong password</span>
+                    <span className="text-[10px] text-success inline-flex items-center gap-1"><Check size={12} strokeWidth={3} /> Strong password</span>
                     <span className="w-1 h-1 rounded-full bg-muted/50"></span>
                     <span className="text-[10px] text-muted">{suggestedPassword.length} characters</span>
                   </div>
@@ -194,7 +195,7 @@ export default function RegisterForm() {
 
           {password && password.length > 0 && password.length < 8 && (
             <p className="w-full text-[10px] text-focus text-left mt-1">
-              ⚠️ Password must be at least 8 characters
+              <TriangleAlert size={12} className="inline -mt-0.5 mr-1" />Password must be at least 8 characters
             </p>
           )}
         </div>
@@ -209,7 +210,7 @@ export default function RegisterForm() {
 
         <div className="relative w-[85%] my-5">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-[rgb(var(--ink)/0.12)]"></div>
+            <div className="w-full border-t border-sage"></div>
           </div>
           <div className="relative flex justify-center">
             <span className="bg-surface px-3 text-xs font-bold text-muted uppercase tracking-wider">or</span>

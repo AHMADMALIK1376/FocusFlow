@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { Check, Pencil, Trash2, X } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 import { usePreferences } from '../../preferences/usePreferences';
 import { Button, Input } from '../ui';
@@ -99,8 +100,8 @@ export default function DashboardSwitcher({ triggerClassName } = {}) {
                     className="text-sm py-2 px-3"
                     autoFocus
                   />
-                  <Button size="sm" variant="primary" onClick={() => handleRename(db.id)}>
-                    ✓
+                  <Button size="sm" variant="primary" onClick={() => handleRename(db.id)} aria-label="Save name">
+                    <Check size={15} strokeWidth={3} />
                   </Button>
                 </div>
               ) : (
@@ -131,7 +132,7 @@ export default function DashboardSwitcher({ triggerClassName } = {}) {
                       }}
                       aria-label="Rename"
                     >
-                      ✏️
+                      <Pencil size={14} />
                     </button>
                     <button
                       type="button"
@@ -142,7 +143,7 @@ export default function DashboardSwitcher({ triggerClassName } = {}) {
                       }}
                       aria-label="Delete"
                     >
-                      🗑
+                      <Trash2 size={14} />
                     </button>
                   </div>
                 </div>
@@ -169,8 +170,8 @@ export default function DashboardSwitcher({ triggerClassName } = {}) {
                 <Button size="sm" variant="primary" full onClick={handleCreate}>
                   {t('dashboards.create', { defaultValue: 'Create' })}
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => setCreatingNew(false)}>
-                  ✕
+                <Button size="sm" variant="ghost" onClick={() => setCreatingNew(false)} aria-label="Cancel">
+                  <X size={15} />
                 </Button>
               </div>
             </div>

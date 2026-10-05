@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from "react";
-import { Wallet, TrendingUp, TrendingDown, PiggyBank, Plus, Save } from "lucide-react";
+import { Wallet, TrendingUp, TrendingDown, PiggyBank, Plus, Save, X } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from "recharts";
 import { Button, Input, Select, EmptyState } from "../components/ui";
 import { PageShell, PageHeader, StatTile, Panel } from "../components/dashboard/DashKit";
@@ -150,7 +150,7 @@ export default function FinancePage() {
           }
         >
           {filtered.length === 0 ? (
-            <EmptyState icon="💰" title="No entries yet" description="Add your first income or expense" />
+            <EmptyState icon={Wallet} title="No entries yet" description="Add your first income or expense" />
           ) : (
             <ul className="space-y-2 max-h-[460px] overflow-y-auto -mx-1 px-1">
               {filtered.map((e) => (
@@ -162,7 +162,7 @@ export default function FinancePage() {
                   </div>
                   <span className="text-xs text-muted shrink-0">{e.date}</span>
                   <span className={`font-black text-sm shrink-0 ${e.type === "income" ? "text-success" : "text-focus"}`}>{fmt(e.amount)}</span>
-                  <button onClick={() => removeEntry(e.id)} className="text-muted hover:text-focus text-xs shrink-0">✕</button>
+                  <button onClick={() => removeEntry(e.id)} className="text-muted hover:text-focus shrink-0" aria-label="Delete"><X size={15} /></button>
                 </li>
               ))}
             </ul>

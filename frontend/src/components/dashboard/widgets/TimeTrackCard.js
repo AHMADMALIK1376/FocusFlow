@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Timer } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../../ui';
@@ -54,7 +55,7 @@ export default function TimeTrackCard() {
 
   return (
     <WidgetShell
-      icon="⏲️"
+      icon={Timer}
       title={t('widgets.timetrack', { defaultValue: 'Study time' })}
       linkLabel={t('timetrack.open', { defaultValue: 'Open' })}
       onLink={() => navigate('/time')}

@@ -1,5 +1,6 @@
 // src/components/routine/EditRoutinePopup.js
 import React, { useState, useEffect } from "react";
+import { X, Clock, Palette, Check, Save } from "lucide-react";
 
 // Use SHORT day names for backend compatibility
 const allDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -92,10 +93,10 @@ export default function EditRoutinePopup({ routine, onClose, onSave }) {
           ${isVisible ? 'scale-100 opacity-100 translate-y-0' : 'scale-90 opacity-0 translate-y-8'}`}
       >
         <button onClick={handleClose}
-          className="absolute top-3 right-3 w-5 h-5 rounded-full bg-focus text-on-brand text-[10px] flex items-center justify-center shadow-neu-sm hover:scale-110 transition-all z-20">✕</button>
+          className="absolute top-3 right-3 w-5 h-5 rounded-full bg-focus text-on-brand text-[10px] flex items-center justify-center shadow-neu-sm hover:scale-110 transition-all z-20"><X size={11} strokeWidth={3} /></button>
 
         <div className="text-center mb-4">
-          <span className="text-xl mb-0.5 block">🕒</span>
+          <Clock size={22} strokeWidth={1.75} className="mx-auto mb-0.5 text-brand" />
           <h2 className="text-base font-black text-ink">Edit Activity</h2>
           <p className="text-[9px] text-muted mt-0.5">Editing: {routine.activity}</p>
         </div>
@@ -128,7 +129,7 @@ export default function EditRoutinePopup({ routine, onClose, onSave }) {
           </div>
 
           <div>
-            <label className="text-[9px] font-black text-muted uppercase tracking-wider mb-1.5 block">🎨 Colors</label>
+            <label className="text-[9px] font-black text-muted uppercase tracking-wider mb-1.5 flex items-center gap-1"><Palette size={10} /> Colors</label>
 
             <div className="flex items-center gap-1.5 mb-2">
               <button onClick={() => { setApplyAllSame(true); setActiveDayForColor(null); }}
@@ -158,12 +159,12 @@ export default function EditRoutinePopup({ routine, onClose, onSave }) {
 
             {!applyAllSame && activeDayForColor && (
               <p className="text-[9px] text-brand font-bold mb-1.5 flex items-center gap-1">
-                🎨 <span className="uppercase">{activeDayForColor}</span>
+                <Palette size={10} /> <span className="uppercase">{activeDayForColor}</span>
                 <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: getDayColor(activeDayForColor) }}></span>
               </p>
             )}
             {applyAllSame && selectedDays.length > 0 && (
-              <p className="text-[9px] text-brand font-bold mb-1.5">🎨 All {selectedDays.length} days</p>
+              <p className="text-[9px] text-brand font-bold mb-1.5 flex items-center gap-1"><Palette size={10} /> All {selectedDays.length} days</p>
             )}
 
             {/* Color palette — swatches use inline style (functional UI, not theme surface) */}
@@ -182,7 +183,7 @@ export default function EditRoutinePopup({ routine, onClose, onSave }) {
                       ${isSelected ? 'scale-110 shadow-neu ring-2 ring-offset-1 ring-muted' : 'hover:scale-105 shadow-neu-sm'}`}
                     style={{ backgroundColor: colorOption.color, maxHeight: '32px' }}
                     title={colorOption.name}>
-                    {isSelected && <span className="text-on-brand text-sm font-black">✓</span>}
+                    {isSelected && <Check size={15} strokeWidth={3} className="text-on-brand" />}
                   </button>
                 );
               })}
@@ -191,7 +192,7 @@ export default function EditRoutinePopup({ routine, onClose, onSave }) {
 
           <button onClick={handleSave}
             className="w-full py-2.5 rounded-token-md bg-grad-hero text-on-brand font-black text-xs hover:opacity-90 transition-all shadow-neu-sm hover:shadow-neu">
-            💾 Save Changes
+            <Save size={13} className="inline -mt-0.5 mr-1.5" />Save Changes
           </button>
         </div>
       </div>
