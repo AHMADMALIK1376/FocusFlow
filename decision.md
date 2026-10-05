@@ -102,6 +102,14 @@ Update this file with every change.
 
 ---
 
+## 2026-10-06 — Git
+
+### Work committed in four commits and merged into `main`
+- **Commits:** timetable re-scan fix, then security, then scanners, then the Subjects page redesign with the docs.
+- **Date:** the timetable fix commit is dated 24 Sept 2026, as you asked.
+- **Merge:** `feat/student-pivot` was merged into `main` with a merge commit (same style as the earlier PR merges), then both branches were pushed.
+- **Left out:** `.claude/agents/reviewer.md`, your own uncommitted edit.
+
 ## 2026-10-05 — Git
 
 ### Scanner commit dated 24 Sept 2026
