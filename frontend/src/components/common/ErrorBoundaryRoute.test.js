@@ -13,9 +13,10 @@ jest.mock("react-router-dom", () => ({
 
 beforeEach(() => mockNavigate.mockClear());
 
-test("an unknown address shows Page Not Found with that address", () => {
+test("an unknown address shows the 404 page with that address", () => {
   render(<ErrorBoundaryRoute />);
-  expect(screen.getByText("Page Not Found")).toBeInTheDocument();
+  expect(screen.getByText("Page not found")).toBeInTheDocument();
+  expect(screen.getByRole("img", { name: "Error 404" })).toBeInTheDocument();
   expect(screen.getByText("/no-such-page")).toBeInTheDocument();
 });
 

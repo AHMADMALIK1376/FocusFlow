@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Plus, Pencil, Play, Check, X, RotateCcw, Layers } from "lucide-react";
 import { Button, Input, Field, Modal, EmptyState, DeleteButton, Badge } from "../components/ui";
 import { PageShell, Panel } from "../components/dashboard/DashKit";
+import { PageLoading, useFirstLoad } from "../components/common/LoadingSpinner";
 import { useDeck } from "../features/flashcards/useFlashcards";
 
 const TODAY = new Date().toISOString().slice(0, 10);
@@ -12,6 +13,7 @@ export default function FlashcardDeckPage() {
   const { deckId } = useParams();
   const navigate = useNavigate();
   const { deck, loading, error, addCard, updateCard, deleteCard, reviewCard } = useDeck(deckId);
+  const firstLoad = useFirstLoad(loading);
 
   const [front, setFront] = useState("");
   const [back, setBack] = useState("");
@@ -46,7 +48,7 @@ export default function FlashcardDeckPage() {
     else { setIdx(idx + 1); setFlipped(false); }
   }
 
-  if (loading) return <PageShell><Panel><p className="text-sm text-muted py-8 text-center">Loading…</p></Panel></PageShell>;
+  if (firstLoad) return <PageShell><PageLoading message="Loading deck…" /></PageShell>;
   if (error || !deck) return <PageShell><Panel><EmptyState icon={Layers} title="Deck not found" /></Panel></PageShell>;
 
   return (

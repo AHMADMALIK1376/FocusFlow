@@ -2,6 +2,7 @@ import React, { useMemo, useState } from "react";
 import { Plus, Pencil, AlarmClock, CalendarClock, CalendarX, CheckCircle2, ScanText } from "lucide-react";
 import { Button, Input, Textarea, Select, Field, Modal, EmptyState, DeleteButton, Badge, Checkbox, useToast } from "../components/ui";
 import { PageShell, PageHeader, StatTile, Panel } from "../components/dashboard/DashKit";
+import { PageLoading, useFirstLoad } from "../components/common/LoadingSpinner";
 import { useExams } from "../features/exams/useExams";
 import { useSubjects } from "../features/subjects/useSubjects";
 import { groupExams, countdownLabel } from "../features/exams/examsLogic";
@@ -24,6 +25,7 @@ const SECTIONS = [
 
 export default function ExamsPage() {
   const { exams, loading, refresh, create, update, toggle, remove } = useExams();
+  const firstLoad = useFirstLoad(loading);
   const { subjects } = useSubjects();
   const { toast } = useToast();
   const [scanOpen, setScanOpen] = useState(false);
@@ -82,8 +84,8 @@ export default function ExamsPage() {
         </Panel>
       )}
 
-      {loading ? (
-        <Panel><p className="text-sm text-muted py-8 text-center">Loading…</p></Panel>
+      {firstLoad ? (
+        <PageLoading message="Loading exams…" />
       ) : exams.length === 0 ? (
         <Panel><EmptyState icon={CalendarClock} title="Nothing scheduled" description="Add an exam, quiz or deadline to get started" /></Panel>
       ) : (

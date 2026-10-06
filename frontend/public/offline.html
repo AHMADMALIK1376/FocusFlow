@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#E86562" />
+  <title>FocusFlow · You're offline</title>
+  <!-- Served by sw.js when a page can't be loaded at all (no internet, or
+       the site is unreachable). Self-contained: the React app can't load here. -->
+  <style>
+    :root { --canvas: #F5EFE6; --surface: #FFFDF9; --surface2: #FAF4EB; --coral: #EC706D; --sage: #6CB288; --ink: #342E3E; --muted: #80746C; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 40px 16px; background: var(--canvas); color: var(--ink); text-align: center;
+      font-family: "Poppins", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 32px; font-weight: 900; font-size: 18px; }
+    .brand img { width: 40px; height: 40px; border-radius: 12px; box-shadow: 0 6px 14px rgb(190 160 122 / .35); }
+    .dial { position: relative; width: 150px; height: 150px; margin-bottom: 32px; }
+    .groove { position: absolute; inset: 22px; border-radius: 50%; background: var(--surface2);
+      box-shadow: inset 0 4px 8px rgb(214 192 162 / .35), inset 0 -2px 4px rgb(255 255 255 / .9); }
+    .disc { position: absolute; inset: 36px; border-radius: 50%; background: var(--surface); display: grid; place-items: center;
+      box-shadow: 0 6px 12px rgb(190 160 122 / .3), inset 0 3px 5px rgb(255 255 255 / .9); color: var(--sage); }
+    svg.ticks { position: absolute; inset: 0; }
+    h1 { margin: 0; font-size: 28px; font-weight: 900; }
+    p { margin: 8px auto 0; max-width: 420px; color: var(--muted); font-size: 15px; line-height: 1.5; }
+    button { margin-top: 28px; padding: 12px 24px; border: 0; border-radius: 16px; cursor: pointer; font: inherit; font-weight: 700; font-size: 14px;
+      color: #fff; background: linear-gradient(160deg, rgb(245 140 137), var(--coral)); box-shadow: 0 10px 20px rgb(236 112 109 / .35); }
+    button:active { transform: translateY(1px); }
+  </style>
+</head>
+<body>
+  <div class="brand"><img src="/logo192.png" alt="" />FocusFlow</div>
+
+  <div class="dial" role="img" aria-label="Offline">
+    <svg class="ticks" viewBox="0 0 150 150" id="ticks"></svg>
+    <div class="groove"></div>
+    <div class="disc">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 20h.01" /><path d="M8.5 16.429a5 5 0 0 1 7 0" /><path d="M5 12.859a10 10 0 0 1 5.17-2.69" />
+        <path d="M19 12.859a10 10 0 0 0-2.007-1.523" /><path d="M2 8.82a15 15 0 0 1 4.177-2.643" />
+        <path d="M22 8.82a15 15 0 0 0-11.288-3.764" /><path d="m2 2 20 20" />
+      </svg>
+    </div>
+  </div>
+
+  <h1>You're offline</h1>
+  <p>Check your Wi-Fi or mobile data. FocusFlow opens again as soon as you're back online.</p>
+  <button type="button" onclick="location.reload()">Try again</button>
+
+  <script>
+    // The same 60-tick ring as the app's dials.
+    (function () {
+      var svg = document.getElementById('ticks'), out = '';
+      for (var i = 0; i < 60; i++) {
+        var t = i / 60 * 2 * Math.PI, major = i % 5 === 0, r2 = 74, r1 = major ? 64 : 68;
+        out += '<line x1="' + (75 + r1 * Math.sin(t)) + '" y1="' + (75 - r1 * Math.cos(t)) + '" x2="' + (75 + r2 * Math.sin(t)) +
+          '" y2="' + (75 - r2 * Math.cos(t)) + '" stroke="' + (i === 0 ? '#6CB288' : 'rgb(52 46 62 / .16)') +
+          '" stroke-width="' + (major ? 1.8 : 1) + '" stroke-linecap="round" />';
+      }
+      svg.innerHTML = out;
+    })();
+    // Back online: load the page they wanted.
+    window.addEventListener('online', function () { location.reload(); });
+  </script>
+</body>
+</html>

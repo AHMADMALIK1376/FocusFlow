@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Plus, Layers, CalendarClock, GraduationCap } from "lucide-react";
 import { Button, Input, Textarea, Select, Field, Modal, EmptyState, DeleteButton, Badge } from "../components/ui";
 import { PageShell, PageHeader, StatTile, Panel } from "../components/dashboard/DashKit";
+import { PageLoading, useFirstLoad } from "../components/common/LoadingSpinner";
 import { useDecks } from "../features/flashcards/useFlashcards";
 import { useSubjects } from "../features/subjects/useSubjects";
 
@@ -11,6 +12,7 @@ const EMPTY = { name: "", subjectId: "", description: "" };
 export default function FlashcardsPage() {
   const navigate = useNavigate();
   const { decks, loading, createDeck, deleteDeck } = useDecks();
+  const firstLoad = useFirstLoad(loading);
   const { subjects } = useSubjects();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(EMPTY);
@@ -44,8 +46,8 @@ export default function FlashcardsPage() {
         <StatTile tone="sage" icon={<CalendarClock size={18} />} label="Due today" value={dueTotal} sub="To review" />
       </div>
 
-      {loading ? (
-        <Panel><p className="text-sm text-muted py-8 text-center">Loading…</p></Panel>
+      {firstLoad ? (
+        <PageLoading message="Loading flashcards…" />
       ) : decks.length === 0 ? (
         <Panel><EmptyState icon={Layers} title="No decks yet" description="Create a deck and add cards to start studying" /></Panel>
       ) : (

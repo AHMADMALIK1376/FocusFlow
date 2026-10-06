@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Check, X, Clock, UserCheck } from "lucide-react";
 import { Button, Input, Badge, EmptyState, DeleteButton } from "../ui";
 import { Panel } from "../dashboard/DashKit";
+import { PanelLoading, useFirstLoad } from "../common/LoadingSpinner";
 import { subjectAttendanceAPI } from "../../services/api";
 
 const TODAY = new Date().toISOString().slice(0, 10);
@@ -10,6 +11,7 @@ const STATUS_TONE = { Present: "success", Absent: "focus", Late: "warn", Excused
 export default function AttendancePanel({ subjectId }) {
   const [data, setData] = useState({ records: [], summary: { percentage: null, present: 0, absent: 0, late: 0, total: 0 } });
   const [loading, setLoading] = useState(true);
+  const firstLoad = useFirstLoad(loading);
   const [date, setDate] = useState(TODAY);
 
   const refresh = useCallback(async () => {
@@ -43,7 +45,7 @@ export default function AttendancePanel({ subjectId }) {
         <Button size="sm" variant="soft" onClick={() => mark("Late")} className="gap-1"><Clock size={14} /> Late</Button>
       </div>
 
-      {!loading && s.total > 0 && (
+      {!firstLoad && s.total > 0 && (
         <div className="flex gap-4 text-xs text-muted mb-3">
           <span><b className="text-success">{s.present}</b> present</span>
           <span><b className="text-focus">{s.absent}</b> absent</span>
@@ -51,8 +53,8 @@ export default function AttendancePanel({ subjectId }) {
         </div>
       )}
 
-      {loading ? (
-        <p className="text-sm text-muted py-4 text-center">Loading…</p>
+      {firstLoad ? (
+        <PanelLoading message="Loading attendance…" />
       ) : data.records.length === 0 ? (
         <EmptyState icon={UserCheck} title="No attendance yet" description="Mark today's class above" />
       ) : (

@@ -4,6 +4,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Clock, StickyNote, GraduationCap } from "lucide-react";
 import { Button, Badge, EmptyState, DeleteButton } from "../components/ui";
 import { PageShell, Panel } from "../components/dashboard/DashKit";
+import { PageLoading } from "../components/common/LoadingSpinner";
 import { subjectAPI } from "../services/api";
 import { fmtRange } from "../features/schedule/todayClasses";
 import GradesPanel from "../components/subjects/GradesPanel";
@@ -55,7 +56,7 @@ export default function SubjectHubPage() {
       </button>
 
       {loading ? (
-        <Panel><p className="text-sm text-muted py-8 text-center">Loading…</p></Panel>
+        <PageLoading message="Loading subject…" />
       ) : error ? (
         <Panel><div className="py-8 text-center"><p className="text-focus text-sm mb-3">{error}</p><Button variant="soft" onClick={load}>Retry</Button></div></Panel>
       ) : !subject ? (

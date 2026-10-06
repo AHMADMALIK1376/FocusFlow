@@ -1,9 +1,38 @@
 /* FocusFlow service worker — shows reminder pop-ups sent by the server and
    handles the answer buttons on questions ("Did you attend?", "Did you
-   submit?"), even when the app is closed. Kept dependency-free on purpose. */
+   submit?"), even when the app is closed. It also keeps a small "You're
+   offline" page for when the app can't load at all. Kept dependency-free on
+   purpose. */
 
-self.addEventListener('install', () => self.skipWaiting());
-self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()));
+// The offline page and the logo it shows. Bump the name when they change.
+const OFFLINE_CACHE = 'ff-offline-v1';
+const OFFLINE_FILES = ['/offline.html', '/logo192.png'];
+
+self.addEventListener('install', (event) => {
+  self.skipWaiting();
+  event.waitUntil(caches.open(OFFLINE_CACHE).then((c) => c.addAll(OFFLINE_FILES)).catch(() => {}));
+});
+self.addEventListener('activate', (event) => event.waitUntil(
+  caches.keys()
+    .then((keys) => Promise.all(keys.filter((k) => k.startsWith('ff-offline-') && k !== OFFLINE_CACHE).map((k) => caches.delete(k))))
+    .then(() => self.clients.claim())
+));
+
+// Network first, always. Only when a page load (or the offline page's logo)
+// fails completely does the cached offline page step in. API calls, scripts
+// and everything else go straight to the network untouched.
+self.addEventListener('fetch', (event) => {
+  const req = event.request;
+  if (req.method !== 'GET') return;
+  if (req.mode === 'navigate') {
+    event.respondWith(fetch(req).catch(() => caches.match('/offline.html')));
+    return;
+  }
+  const url = new URL(req.url);
+  if (url.origin === self.location.origin && url.pathname === '/logo192.png') {
+    event.respondWith(fetch(req).catch(() => caches.match('/logo192.png')));
+  }
+});
 
 // Reminders that should stay on screen until the student dismisses them.
 const STICKY = ['class', 'attendance', 'submit', 'quiz', 'exam', 'routine', 'test'];

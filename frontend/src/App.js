@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 // ==============================================
 import ErrorBoundary from "./components/common/ErrorBoundary";
 import ErrorBoundaryRoute from "./components/common/ErrorBoundaryRoute";
+import ConnectionGate from "./components/errors/ConnectionGate";
 
 // ==============================================
 // LOADING COMPONENT
@@ -82,7 +83,7 @@ function ScrollToTop() {
 // PAGE LOADER using LoadingSpinner component
 // ==============================================
 function PageLoader() {
-  return <LoadingSpinner fullScreen message="Loading page..." />;
+  return <LoadingSpinner fullScreen message="Loading page…" />;
 }
 
 // ==============================================
@@ -182,6 +183,8 @@ function App() {
           </ErrorBoundary>
         </PreferencesProvider>
       )}
+      {/* Offline / server-unreachable pages, above everything (even a crash). */}
+      <ConnectionGate />
     </ThemeProvider>
   );
 }

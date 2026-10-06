@@ -3,6 +3,7 @@ import { Wallet, TrendingUp, TrendingDown, PiggyBank, Plus, Save, X } from "luci
 import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from "recharts";
 import { Button, Input, Select, EmptyState } from "../components/ui";
 import { PageShell, PageHeader, StatTile, Panel } from "../components/dashboard/DashKit";
+import { PageLoading, useFirstLoad } from "../components/common/LoadingSpinner";
 import ChartBox from "../components/charts/ChartBox";
 import SpendingPuckStack from "../components/charts/SpendingPuckStack";
 import { chartColors, hexToRgba, CHART_TOOLTIP } from "../components/charts/chartColors";
@@ -16,7 +17,8 @@ const EXPENSE_COLOR = "#E0606B";
 const CURRENCIES = { PKR: "Rs ", USD: "$", EUR: "€", GBP: "£", INR: "₹", AED: "AED " };
 
 export default function FinancePage() {
-  const { state, entries, settings, addEntry, removeEntry, saveSettings } = useFinance();
+  const { state, entries, settings, loading, addEntry, removeEntry, saveSettings } = useFinance();
+  const firstLoad = useFirstLoad(loading);
   const { brand } = chartColors();
 
   const [type, setType] = useState("expense");
@@ -65,6 +67,8 @@ export default function FinancePage() {
   }
 
   const filtered = filterType === "all" ? entries : entries.filter((e) => e.type === filterType);
+
+  if (firstLoad) return <PageShell><PageLoading message="Loading your budget…" /></PageShell>;
 
   return (
     <PageShell>

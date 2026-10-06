@@ -3,7 +3,7 @@
 // like a pen — the top line from left to right, then the bottom line — then
 // gives a soft clay "puff", fades and starts again.
 // The line images come from scripts/make-logo.py.
-import React from 'react';
+import React, { useRef } from 'react';
 
 const SIZES = { small: 28, medium: 72, large: 110 };
 
@@ -64,6 +64,29 @@ export const LoadingSpinner = ({ size = 'medium', fullScreen = false, message = 
   }
   return spinner;
 };
+
+// A page's content area while its data loads the first time.
+export const PageLoading = ({ message = 'Loading…' }) => (
+  <div className="min-h-[55vh] flex items-center justify-center">
+    <LoadingSpinner message={message} />
+  </div>
+);
+
+// The same logo, smaller, for a panel inside a page.
+export const PanelLoading = ({ message = 'Loading…' }) => (
+  <div className="py-6 flex items-center justify-center">
+    <LoadingSpinner size={44} message={message} />
+  </div>
+);
+
+// True until `loading` has been false once. The feature hooks set loading
+// again on every refresh after a save; this keeps the page on screen then
+// instead of swapping it for the loader each time.
+export function useFirstLoad(loading) {
+  const done = useRef(false);
+  if (!loading) done.current = true;
+  return !done.current;
+}
 
 export const SkeletonLoader = ({ type = 'card', count = 1 }) => {
   const skeletons = [];

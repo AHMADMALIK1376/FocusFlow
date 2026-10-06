@@ -3,6 +3,7 @@ import { Timer, Hourglass, ListChecks, Trophy, Play, Square, X } from "lucide-re
 import { BarChart, Bar, XAxis, YAxis, Tooltip, LabelList } from "recharts";
 import { EmptyState } from "../components/ui";
 import { PageShell, PageHeader, StatTile, Panel } from "../components/dashboard/DashKit";
+import { PageLoading, useFirstLoad } from "../components/common/LoadingSpinner";
 import ChartBox from "../components/charts/ChartBox";
 import { chartColors, hexToRgba, CHART_TOOLTIP } from "../components/charts/chartColors";
 import { useTimetrack } from "../features/timetrack/useTimetrack";
@@ -12,7 +13,8 @@ const TODAY = new Date().toISOString().slice(0, 10);
 const hoursLabel = (secs) => `${(secs / 3600).toFixed(1)}h`;
 
 export default function TimeTrackPage() {
-  const { state, start, stop, removeEntry } = useTimetrack();
+  const { state, loading, start, stop, removeEntry } = useTimetrack();
+  const firstLoad = useFirstLoad(loading);
   const { brand } = chartColors();
 
   const [label, setLabel] = useState("");
@@ -47,6 +49,8 @@ export default function TimeTrackPage() {
 
   function startTimer() { if (label.trim()) start(label.trim()); }
   function stopTimer() { stop(new Date().toISOString()); setLabel(""); }
+
+  if (firstLoad) return <PageShell><PageLoading message="Loading study hours…" /></PageShell>;
 
   return (
     <PageShell>

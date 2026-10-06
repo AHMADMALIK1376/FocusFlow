@@ -3,6 +3,7 @@ import { FileText, Type, CalendarClock, Sparkles, Plus, StickyNote, PenLine } fr
 import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import { Button, Input, Textarea, EmptyState, DeleteButton } from "../components/ui";
 import { PageShell, PageHeader, StatTile, Panel } from "../components/dashboard/DashKit";
+import { PageLoading, useFirstLoad } from "../components/common/LoadingSpinner";
 import ChartBox from "../components/charts/ChartBox";
 import { chartColors, hexToRgba, CHART_TOOLTIP } from "../components/charts/chartColors";
 import { useNotes } from "../features/notes/useNotes";
@@ -11,7 +12,8 @@ import { renderInline } from "../features/notes/notesLogic";
 const wordCount = (s) => (s ? s.trim().split(/\s+/).filter(Boolean).length : 0);
 
 export default function NotesPage() {
-  const { notes, create, update, remove } = useNotes();
+  const { notes, loading, create, update, remove } = useNotes();
+  const firstLoad = useFirstLoad(loading);
   const { brand } = chartColors();
 
   const [selectedId, setSelectedId] = useState(null);
@@ -83,6 +85,8 @@ export default function NotesPage() {
       }
     });
   }
+
+  if (firstLoad) return <PageShell><PageLoading message="Loading notes…" /></PageShell>;
 
   return (
     <PageShell>

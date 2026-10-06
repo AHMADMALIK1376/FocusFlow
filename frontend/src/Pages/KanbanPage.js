@@ -10,6 +10,7 @@ import { FolderKanban, CheckCircle2, Loader, CircleDashed, Plus, GripVertical, S
 import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Cell, LabelList } from "recharts";
 import { Card, Button, Input, ProgressRing, cx, useToast } from "../components/ui";
 import { StatTile } from "../components/dashboard/DashKit";
+import { PageLoading, useFirstLoad } from "../components/common/LoadingSpinner";
 import ChartBox from "../components/charts/ChartBox";
 import { chartColors, hexToRgba, CHART_TOOLTIP } from "../components/charts/chartColors";
 import { useKanban } from "../features/kanban/useKanban";
@@ -49,7 +50,8 @@ function SortableCard({ card, onEdit, onRemove }) {
 }
 
 export default function KanbanPage() {
-  const { state, addCard: createCard, updateCard, removeCard, moveCard, refresh } = useKanban();
+  const { state, loading, addCard: createCard, updateCard, removeCard, moveCard, refresh } = useKanban();
+  const firstLoad = useFirstLoad(loading);
   const { subjects } = useSubjects();
   const { toast } = useToast();
   const [scanOpen, setScanOpen] = useState(false);
@@ -119,6 +121,8 @@ export default function KanbanPage() {
     updateCard(editCard.id, { title: editVal, note: editNote });
     setEditCard(null);
   }
+
+  if (firstLoad) return <div className="w-full px-3 sm:px-5 md:px-6 pb-10 pt-4"><PageLoading message="Loading your board…" /></div>;
 
   return (
     <div className="w-full px-3 sm:px-5 md:px-6 pb-10 pt-4">

@@ -6,6 +6,58 @@ Update this file with every change.
 
 ---
 
+## 2026-10-06 — Git
+
+### Loading and error-page work committed as three backdated commits, then merged into `main`
+- **Why:** your request. Each commit has its author and committer date set to 2:00 PM Pakistan time, like the 24 Sept commit.
+
+  | Date | Commit |
+  |---|---|
+  | 2 Aug 2026 | The logo loader on every loading state |
+  | 5 Aug 2026 | The 404, 500, 503 and offline pages |
+  | 18 Sept 2026 | The offline fallback page in the service worker, plus these docs |
+
+- **Order:** the commits sit on top of the 6 Oct work in the history; only their dates are earlier.
+- **Merge:** the merge commit into `main` carries today's date.
+- **Left out:** `.claude/agents/reviewer.md`, your own uncommitted edit.
+
+---
+
+## 2026-10-06 — Loading animation and error pages
+
+### The logo animation for every loading state (`components/common/LoadingSpinner.js`)
+- **Decision:** every page and panel that loads data now shows the logo drawing itself, with a short caption ("Loading notes…"). It's the same animation as "Loading your dashboard…". There are two sizes: `PageLoading` for a page and `PanelLoading` for a panel inside one.
+- **Where:**
+  - Plain "Loading…" text was replaced in 7 pages (Subjects, Grades, Exams, Flashcards, a flashcard deck, the subject hub, Attendance), the 5 subject-hub panels and Reminders settings.
+  - Notes, Goals, the Assignment board, Budget, Study streaks and Study hours had no loading state at all; they flashed their empty screen first. They now show the logo.
+  - Five logo loaders that had no caption now have one.
+- **`useFirstLoad`:** the feature hooks set `loading` again on every refresh after a save. The logo shows only on a page's first load, so it doesn't replace the page after every edit.
+- **Checked in your Chrome:** opening 13 pages one after another, each showed its own captioned logo, and no plain text loader appeared anywhere.
+
+### Error pages, each with its own look (`components/errors/`)
+- **Shared layout (`ErrorScreen.js`):** a big clay status code where the middle "0" is the app's dial. Each page sets the dial differently.
+- **404 Page not found:** dial at zero with a search icon. Shows the wrong address, with Go to Dashboard and Go back buttons.
+- **500 Something broke on our side (`CrashScreen.js`):** a full dial. `ErrorBoundary` shows it when the app crashes. Buttons: Reload and Go to Dashboard. "What happened?" reveals the error, plus the stack in development. A page that failed to load after a new deploy is shown as "FocusFlow was updated, reload" instead of a crash.
+- **503 Can't reach FocusFlow's server (`ConnectionGate.js`):**
+  - `api.js` reports any request that gets no answer, or a 502/503/504.
+  - The gate then asks `/api/health` itself, so one failed request never shows the page.
+  - While the server is down, the dial counts down 15 s and retries. "Try now" retries straight away.
+  - When the server answers again, the app reloads by itself.
+- **You're offline (`ConnectionGate.js`):** shown on the browser's offline event, with a Wi-Fi-off icon in a sage dial. It reloads when the connection returns.
+- **Offline fallback (`public/offline.html` and `sw.js`):** when a page can't load at all (no internet, or the site is unreachable), the service worker serves this saved page. It's network-first: only a failed page load uses the cache. API calls and scripts are never touched.
+- **Not added:**
+  - 401: an expired login already goes straight to sign-in.
+  - 403: the app has no restricted pages.
+  - 501: nothing in the app can produce it.
+- **Checked in your Chrome (port 3001):**
+  - The 404 page.
+  - The 503 page, with API calls made to fail in that tab only. It counted down, and recovered by itself once calls worked again.
+  - The offline page, which reloaded when "online" fired.
+  - `offline.html`, served with the 3001 server stopped.
+  - The 500 page is covered by tests (crash, deploy update, and the error boundary), not by a real crash.
+
+---
+
 ## 2026-10-06 — Round gauges and the cube chart
 
 ### Every round progress graph now looks like the focus timer dial (`components/ui/ProgressRing.js`)

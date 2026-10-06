@@ -164,7 +164,7 @@ export default function FocusModePage() {
   if (loading) {
     return (
       <div className="flex flex-col items-center px-5 pt-20 pb-10 max-w-[1200px] mx-auto min-h-screen justify-center">
-        <LoadingSpinner message={null} />
+        <LoadingSpinner message="Loading deep work…" />
       </div>
     );
   }
