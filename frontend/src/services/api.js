@@ -299,9 +299,11 @@ export const routineAPI = {
         return authFetch('/routines', { method: 'DELETE' });
     },
     
-    complete: async (routineId) => {
+    // Ticks (or unticks) a routine for one local date, "YYYY-MM-DD".
+    complete: async (routineId, date) => {
         return authFetch(`/routines/${routineId}/complete`, {
-            method: 'POST'
+            method: 'POST',
+            body: JSON.stringify(date ? { date } : {})
         });
     }
 };

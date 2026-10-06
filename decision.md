@@ -6,6 +6,57 @@ Update this file with every change.
 
 ---
 
+## 2026-10-06 — Round gauges and the cube chart
+
+### Every round progress graph now looks like the focus timer dial (`components/ui/ProgressRing.js`)
+- **Decision:** the shared ring has four layers:
+  - an outer ring of tick marks that light up in coral up to the value
+  - a sunken clay groove, using the same pressed-in shadow (`--shadow-neu-inset`) as the sign-in fields
+  - a thin arc inside the groove, ending in a sage knob
+  - a raised disc in the middle for the number
+- Large gauges also get dial numbers at the top, right, bottom and left, like the timer's 0/15/30/45: `0 25 50 75` for percentages and `0 1 2 3` for CGPA.
+- **Where:** CGPA (dashboard snapshot and Grades page), Focus today, Goals page, Assignment board, the Goals widget and the Goal-progress widget. The "Task Progress" double ring (`GoalCard.js`) now uses the same gauge, with done and left in the middle.
+- **Why:** you asked for the timer dial's style, with the sunken look of the email field, on all round graphs. The plain flat ring looked empty at 0.
+- **How:** one shared component was changed, so every page updates together. The arc is about 60% of the old thickness, like the timer's. The larger gauges were made bigger to leave room for the numbers.
+- **Daily Routine donut (`components/routine/DonutChart.js`):** given the same engraved look at your request, with no change to how it works. The slices sit in a sunken groove, a raised disc holds the count, and a ring of ticks lights up in sage over the slices that are done. Done slices are now light sage (`#B8DCC4`) instead of the dark emerald.
+
+### Routine ticks are saved and read by date (`features/routine/routineDays.js`, `routineController.js`)
+- **Bugs found:**
+  1. The server stores the date a routine was ticked, but the app checked for a weekday name ("Wed"). A tick showed only until you reloaded the page.
+  2. Tapping a slice on a day that hadn't come yet (e.g. Wednesday on a Tuesday) saved the tick to *today*.
+  3. The server used the UTC date, so before 5 AM in Pakistan a tick was saved to yesterday.
+  4. Dates sent back to the app were shifted a day early on a Pakistan-time machine (`toISOString` on a local-midnight date). Checked against the real database: 7 Oct came back as 6 Oct.
+  5. The full-week view (`RoutineView.js`) sent the navbar the old list, so its counter never changed.
+- **Fix:**
+  - One set of date helpers decides "done": ticked on that weekday's date in the current Monday-to-Sunday week, in the phone's local time.
+  - The app sends the slice's date, and the server checks it (`completionDate()` in `utils/helpers.js`) and saves exactly that date.
+  - Dates go back as text (`TO_CHAR`).
+  - Days that haven't come yet can't be ticked.
+- **Navbar:** the Daily Routine pill now shows today's **done/total** (e.g. `1/1`), the same count as the donut, and opens the routine page. Before, it showed the number left, so a finished day read `00`. The dashboard's Routine cube uses the same count.
+- **Rejected:** storing weekday names. A Monday tick would then count for every Monday.
+- **Today's items can be ticked at any time (`canTick()` in `DonutChart.js`):** before, a slice turned red "missed" the minute its time arrived and could no longer be clicked. But you tick a routine *after* doing it. It still shows red until ticked. Missed past days stay locked (a done past day can still be unticked), and days that haven't come yet can't be ticked.
+- **Checked end to end in your Chrome (port 3001):**
+  - A temporary routine for today was added. The navbar showed `0/1`.
+  - Clicking its slice changed the navbar and donut to `1/1`, with a light-sage slice. It stayed `1/1` after a reload.
+  - The server saved 2026-10-06, today's local date. The dashboard's Routine cube showed 100%.
+  - Wednesday's slice was locked.
+  - The test routine was then unticked and deleted, leaving only your own routine.
+
+### "Page Not Found" no longer crashes (`components/common/ErrorBoundaryRoute.js`)
+- **Bug:** the catch-all `*` route used `useRouteError()`, which only works with a data router. The app uses `<BrowserRouter>`, so every unknown or old link crashed into the general "Something went wrong" screen.
+- **Fix:** it's now a plain 404 page that uses `useLocation()`. It shows the address that wasn't found, plus Go to Dashboard and Go back buttons, in the same card design. The Refresh button was dropped because reloading a missing page doesn't help.
+- **Checked:** in the real app, `/some-old-link` shows the page with no console errors, and Go to Dashboard works.
+
+### Focus button uses a line icon
+- The "▶" text character on Focus today is now the lucide `Play` icon, following the no-emoji rule.
+
+### Cubes spread out to fill their card (`components/charts/ProgressCubeStack.js`)
+- **Decision:** the chart takes the card's spare height and puts it between the cubes, up to 46 px per gap, then centres the stack.
+- **Why:** at 0% the four cubes sat in a tight stack at the top, leaving a large empty area in the card.
+- **How:** the SVG is absolutely positioned, so its own height never feeds back into the measured space.
+
+---
+
 ## 2026-10-06 — Docs
 
 ### Root `README.md` added

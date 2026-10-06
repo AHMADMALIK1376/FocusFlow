@@ -13,7 +13,7 @@ export default function ProgressRingCard() {
       <h3 className="text-sm font-black uppercase tracking-wider text-muted self-start">
         Goal Progress
       </h3>
-      <ProgressRing value={pct} size={140} stroke={12}>
+      <ProgressRing value={pct} size={180} stroke={12} marks={['0', '25', '50', '75']}>
         <div className="text-center">
           <p className="text-3xl font-black text-ink leading-none">{pct}%</p>
           <p className="text-xs text-muted font-bold mt-1">Complete</p>

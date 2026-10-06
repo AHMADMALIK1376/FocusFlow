@@ -7,7 +7,8 @@ import { useApp } from "../context/AppContext";
 import { routineAPI } from "../../services/api";
 import EditRoutinePopup from "./EditRoutinePopup";
 import DeleteRoutinePopup from "./DeleteRoutinePopup";
-import DonutChart, { daysOfWeek, getFullDayName, isTaskCompleted, isTaskMissed, getTaskColor } from "./DonutChart";
+import DonutChart, { daysOfWeek, getFullDayName, isTaskCompleted, isTaskMissed, canTick, getTaskColor } from "./DonutChart";
+import { dateOfWeekday, setDoneOn } from "../../features/routine/routineDays";
 
 export default function RoutineView() {
   const navigate = useNavigate();
@@ -66,18 +67,18 @@ export default function RoutineView() {
 
   const toggleComplete = async (routineId, day) => {
     const task = schedule.find(t => t.id === routineId);
-    if (task && isTaskMissed(task, day, currentDayName)) return;
+    if (task && !canTick(task, day, currentDayName)) return;
+    const date = dateOfWeekday(day);
+    if (!date) return;
     try {
-      await routineAPI.complete(routineId);
-      setSchedule(prev => prev.map(task => {
-        if (task.id === routineId) {
-          const isDone = task.completedDays?.includes(day);
-          return { ...task, completedDays: isDone ? task.completedDays.filter(d => d !== day) : [...(task.completedDays || []), day] };
-        }
-        return task;
-      }));
-      // Update context
-      setTimetable(schedule);
+      const res = await routineAPI.complete(routineId, date);
+      const done = typeof res?.completed === 'boolean' ? res.completed : !isTaskCompleted(task, day);
+      // Update this view and the shared context (navbar, dashboard) together.
+      setSchedule(prev => {
+        const next = prev.map(t => (t.id === routineId ? setDoneOn(t, date, done) : t));
+        setTimetable(next);
+        return next;
+      });
     } catch (error) { console.error('Failed to toggle:', error); }
   };
 

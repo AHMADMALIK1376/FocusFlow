@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { assignmentAPI, routineAPI, dashboardAPI, focusAPI, subjectAttendanceAPI, getToken } from "../../services/api";
+import { routineToday } from "../../features/routine/routineDays";
 
 const AppContext = createContext();
 
@@ -176,13 +177,8 @@ export const AppProvider = ({ children }) => {
   // ── Derived values ───────────────────────────────────────────────
   const pendingCount = tasks.filter(t => !t.completed).length;
 
-  // Use SHORT day format for backend compatibility
-  const todayShort = new Date().toLocaleDateString("en-US", { weekday: "short" });
-
-  // Filter routines using short day format
-  const pendingRoutine = timetable.filter(
-    t => t.repeatOn?.includes(todayShort) && !t.completedDays?.includes(todayShort)
-  ).length;
+  // Today's routine, by local date (the server stores the dates it was ticked).
+  const { total: routineTodayTotal, done: routineTodayDone, pending: pendingRoutine } = routineToday(timetable);
 
   const totalTasks = tasks.length;
   const completedTasksCount = tasks.filter(t => t.completed).length;
@@ -224,6 +220,8 @@ export const AppProvider = ({ children }) => {
       // Derived
       pendingCount,
       pendingRoutine,
+      routineTodayTotal,
+      routineTodayDone,
       progress,
       setTodaysClasses: setTodaysClassesState,
     }}>

@@ -169,9 +169,9 @@ export default function KanbanPage() {
 
         <section className="bg-surface rounded-token-lg shadow-neu p-6 flex flex-col items-center">
           <h3 className="text-sm font-black uppercase tracking-wider text-ink self-start mb-3">Progress</h3>
-          <ProgressRing value={pct} size={150} stroke={15}>
+          <ProgressRing value={pct} size={190} stroke={15} marks={["0", "25", "50", "75"]}>
             <div className="text-center">
-              <p className="text-3xl font-black text-ink">{pct}%</p>
+              <p className="text-3xl font-black text-ink leading-none">{pct}%</p>
               <p className="text-[10px] uppercase tracking-widest text-muted">complete</p>
             </div>
           </ProgressRing>

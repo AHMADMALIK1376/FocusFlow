@@ -4,6 +4,7 @@ import { Clock, CalendarDays, Medal, Undo2, BarChart3 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../context/AppContext";
 import { Card, Button } from "../ui";
+import { routineToday } from "../../features/routine/routineDays";
 
 export default function DailyTimetableCard() {
   const navigate = useNavigate();
@@ -11,16 +12,11 @@ export default function DailyTimetableCard() {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const today = new Date();
-  const todayNameShort = today.toLocaleDateString('en-US', { weekday: 'short' });
   const todayNameFull = today.toLocaleDateString('en-US', { weekday: 'long' });
   const dateStr = today.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
-  const todayRoutines = timetable.filter(activity =>
-    activity.repeatOn?.includes(todayNameShort)
-  );
-
-  const pending = todayRoutines.filter(r => !r.completedDays?.includes(todayNameShort)).length;
-  const completed = todayRoutines.filter(r => r.completedDays?.includes(todayNameShort)).length;
+  // Ticked today, by local date (the server stores dates, not weekday names).
+  const { pending, done: completed } = routineToday(timetable, today);
 
   return (
     <Card className={`min-w-[320px] max-w-[450px] transition-all duration-500 overflow-hidden text-center hover:-translate-y-2 relative ${isExpanded ? "min-h-[320px]" : "min-h-[280px]"}`}>
