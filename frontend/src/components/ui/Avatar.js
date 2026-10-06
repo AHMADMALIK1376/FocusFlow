@@ -1,7 +1,8 @@
 import React from 'react';
 import { cx } from './cx';
+import { mascotSrc } from './mascots';
 
-export function Avatar({ name = '', src, size = 44, className = '' }) {
+export function Avatar({ name = '', src, mascot, size = 44, className = '' }) {
   const initials =
     name
       .split(' ')
@@ -11,6 +12,18 @@ export function Avatar({ name = '', src, size = 44, className = '' }) {
       .slice(0, 2) || '?';
 
   const style = { width: size, height: size };
+
+  const mSrc = mascotSrc(mascot);
+  if (!src && mSrc) {
+    return (
+      <img
+        src={mSrc}
+        alt={name}
+        style={style}
+        className={cx('rounded-2xl object-contain bg-surface-2', className)}
+      />
+    );
+  }
 
   if (src) {
     return (

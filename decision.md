@@ -6,6 +6,17 @@ Update this file with every change.
 
 ---
 
+## 2026-10-06 — Mascots
+
+### Ten mascots you can pick as your profile picture
+- **Decision:** the ten characters you liked are now mascots: Cap, Chill Dev (the bearded one), Sloth, and seven robots (Radio, Rocket, Goggle, Toaster, Antenna, Box, Violet). Pick one from the profile card on the dashboard ("Mascot" on hover, or "Pick a mascot" before you've set anything) or from the account menu in the navbar ("Choose mascot").
+- **How it's stored:** `profile.mascot` holds the id. Picking a mascot clears an uploaded photo, and uploading a photo clears the mascot, so only one is ever active. `Avatar` also takes a `mascot` prop.
+- **Images:** cut out of your screenshots into transparent PNGs in `frontend/public/mascots/`, upscaled 4x. The source characters were only about 60-100 px wide, so they look soft when shown large (the profile card). Send the originals, or re-generate at higher resolution, and drop them in with the same file names.
+- **Profile card:** hovering the card now shows one button, "Change mascot", which opens the picker popup. It replaces the old "Change photo" / "Add photo" buttons, so the card no longer uploads photos. It is always visible on touch screens, which can't hover. The navbar menu still lets you upload a photo.
+- **Not done:** the mascot doesn't react to anything yet (no animation, no tips). It is a picker only.
+
+---
+
 ## 2026-10-06 — Git
 
 ### Loading and error-page work committed as three backdated commits, then merged into `main`
