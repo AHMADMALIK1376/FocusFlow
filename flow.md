@@ -21,6 +21,7 @@ Update this file with every change.
   - `Pages/Authpage.js` is the layout. It renders the form from `components/auth/*` through `<Outlet />`.
 - **App screens (need login):** `/dashboard` (`Pages/Home.js`), `/subjects`, `/subjects/:id`, `/grades`, `/exams`, `/projects` (assignments board), `/routine`, `/attendance`, `/flashcards`, `/notes`, `/goals`, `/habits`, `/time`, `/budget`, `/settings`.
 - Pages are loaded on demand with `React.lazy`.
+- **Any other address** (`*`) shows `components/common/ErrorBoundaryRoute.js`, a "Page Not Found" page. It uses only `useLocation`/`useNavigate`, because `useRouteError` needs a data router and the app uses `<BrowserRouter>`.
 
 ### Talking to the backend — `services/api.js`
 1. Every page calls a helper such as `subjectAPI.getAll()` or `examAPI.create()`.
@@ -131,4 +132,14 @@ Used by Subjects, Daily Routine, Exams, Grades and Assignments.
 | Sage touches | `Pages/Authpage.js`, `components/auth/*.js`, `components/ui/EmptyState.js`, `components/dashboard/widgets/WidgetShell.js` |
 | Rate limiting | `backend/middleware/rateLimiters.js` (new), `backend/server.js` |
 | Deleted-account sign-out | `backend/middleware/auth.js`, `frontend/src/services/api.js` |
+| Dial-style round gauges | `components/ui/ProgressRing.js` (`ringLayout()` works out the radii; it's used by `StudentSnapshot.js`, `GoalCard.js`, `widgets/GoalsCard.js`, `widgets/ProgressRingCard.js`, `Pages/Home.js`, `GradesPage.js`, `GoalsPage.js`, `KanbanPage.js`) |
+| Cube chart fills its card | `components/charts/ProgressCubeStack.js` (measures the card's spare height and turns it into gaps), `Pages/Home.js` (the card is a flex column) |
+| Routine ticks by date | `features/routine/routineDays.js` (new), `components/routine/DonutChart.js`, `RoutineView.js`, `Pages/DailyRoutine.js`, `context/AppContext.js`, `layout/Navbar.js`, `dashboard/DailyTimetableCard.js`, `services/api.js`, `backend/controllers/routineController.js`, `backend/utils/helpers.js` |
+
+### Ticking a routine slice
+1. `DonutChart` → `onToggle(id, day)`. Days that haven't come yet are blocked.
+2. `toggleComplete()` (in `DailyRoutine.js` or `RoutineView.js`) → `dateOfWeekday(day)` gives the local date in this week.
+3. `routineAPI.complete(id, date)` → `POST /api/routines/:id/complete { date }`.
+4. `completeRoutine` checks the date with `completionDate()`, then adds or removes that date's row in `ROUTINE_COMPLETIONS` and replies `{ completed }`.
+5. The page applies `setDoneOn()` to its list and to `AppContext`. `routineToday()` then updates the navbar's done/total and the dashboard's Routine cube.
 | Tests | `*.test.js` beside each file above, plus fixtures in `features/scanner/__fixtures__/` and `features/subjects/__fixtures__/` |

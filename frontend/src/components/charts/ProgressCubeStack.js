@@ -25,6 +25,8 @@ const LABEL_SPACE = 96; // room each side for the callout line + "Attendance"
 const DX = 28;        // isometric depth, x
 const DY = 18;        // isometric depth, y
 const GAP = 8;        // tight stack — only a sliver of each top face shows
+const GAP_MAX = 46;   // in a tall card the spare room goes between the cubes,
+                      // up to this; anything left over centres the stack
 const MIN_H = 30;     // a 0% block still needs to be visible and labelled
 const H_RANGE = 42;   // extra height at 100%
 const LEAD = 16;      // callout line length
@@ -45,13 +47,14 @@ const pts = (arr) => arr.map((p) => `${p[0]},${p[1]}`).join(" ");
 
 export default function ProgressCubeStack({ data }) {
   const ref = useRef(null);
-  const [w, setW] = useState(0);
+  const [box, setBox] = useState({ w: 0, h: 0 });
   const [hovered, setHovered] = useState(null);
+  const w = box.w;
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const update = () => setW(el.clientWidth);
+    const update = () => setBox({ w: el.clientWidth, h: el.clientHeight });
     update();
     const ro = new ResizeObserver(update);
     ro.observe(el);
@@ -62,12 +65,20 @@ export default function ProgressCubeStack({ data }) {
   const BLOCK_W = Math.max(BLOCK_W_MIN, Math.min(BLOCK_W_MAX, w - 2 * LABEL_SPACE - DX));
   const stackX = Math.max(0, (w - BLOCK_W - DX) / 2);
 
-  let cursorY = DY + PAD_V;
+  // Natural (tight) height first; spare height in the card becomes gaps.
+  const heights = data.map((row) => MIN_H + (Math.max(0, Math.min(100, row.value || 0)) / 100) * H_RANGE);
+  const natural = DY + 2 * PAD_V + heights.reduce((s, h) => s + h, 0) + GAP * Math.max(0, data.length - 1);
+  const spare = Math.max(0, box.h - natural);
+  const gap = data.length > 1 ? GAP + Math.min(GAP_MAX - GAP, spare / (data.length - 1)) : GAP;
+  const used = natural + (gap - GAP) * Math.max(0, data.length - 1);
+  const height = Math.max(used, box.h);
+
+  let cursorY = DY + PAD_V + (height - used) / 2;
   const blocks = data.map((row, i) => {
     const pct = Math.max(0, Math.min(100, row.value || 0));
-    const h = MIN_H + (pct / 100) * H_RANGE;
+    const h = heights[i];
     const y = cursorY;
-    cursorY += h + GAP;
+    cursorY += h + gap;
     const c = rgbOf(SERIES_COLORS[i % SERIES_COLORS.length]);
     return {
       ...row, i, pct, y, h,
@@ -80,8 +91,6 @@ export default function ProgressCubeStack({ data }) {
       onLeft: i % 2 === 0,
     };
   });
-
-  const height = cursorY - GAP + PAD_V;
 
   function renderBlock(b) {
     const x = stackX;
@@ -132,9 +141,11 @@ export default function ProgressCubeStack({ data }) {
   }
 
   return (
-    <div ref={ref} style={{ width: "100%" }}>
+    // The SVG is absolutely placed so its own height never feeds back into the
+    // measured box: the box is the card's spare room, or the natural height.
+    <div ref={ref} style={{ position: "relative", width: "100%", flex: "1 1 auto", minHeight: natural }}>
       {w > 0 && (
-        <svg width={w} height={height} viewBox={`0 0 ${w} ${height}`}>
+        <svg width={w} height={height} viewBox={`0 0 ${w} ${height}`} style={{ position: "absolute", top: 0, left: 0 }}>
           <defs>
             <filter id="cubeShadow" x="-40%" y="-40%" width="200%" height="200%">
               <feDropShadow dx="0" dy="5" stdDeviation="4.5" floodColor="#BEA07A" floodOpacity="0.32" />

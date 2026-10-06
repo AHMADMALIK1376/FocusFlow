@@ -73,9 +73,9 @@ export default function GoalsPage() {
 
         <Panel className="flex flex-col items-center justify-center">
           <h3 className="text-sm font-black uppercase tracking-wider text-ink self-start mb-2">Overall</h3>
-          <ProgressRing value={overall} size={150} stroke={15}>
+          <ProgressRing value={overall} size={190} stroke={15} marks={["0", "25", "50", "75"]}>
             <div className="text-center">
-              <p className="text-3xl font-black text-ink">{overall}%</p>
+              <p className="text-3xl font-black text-ink leading-none">{overall}%</p>
               <p className="text-[10px] uppercase tracking-widest text-muted">complete</p>
             </div>
           </ProgressRing>

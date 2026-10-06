@@ -3,7 +3,7 @@ import React, { useMemo, useState, useEffect, useRef, Suspense } from "react";
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Camera, Pencil, Plus, Flame } from "lucide-react";
+import { Camera, Pencil, Plus, Flame, Play } from "lucide-react";
 import { useUser } from "../components/auth/UserContext";
 import { useApp } from "../components/context/AppContext";
 import { usePreferences } from "../preferences/usePreferences";
@@ -62,14 +62,13 @@ export default function Home() {
   const { userName } = useUser();
   const {
     tasks = [],
-    timetable = [],
     streak,
     completedGoals,
     totalFocusSessions,
     attendanceSummary,
     progress,
-    pendingRoutineCount,
-    pendingRoutine,
+    routineTodayTotal,
+    routineTodayDone,
     loading: contextLoading,
   } = useApp();
   const { profile, activeDashboard, updateProfile, updateActiveDashboard } = usePreferences();
@@ -95,9 +94,8 @@ export default function Home() {
   const totalTasks = tasks.length;
   const doneTasks = tasks.filter(taskDone).length;
   const taskPct = totalTasks ? Math.round((doneTasks / totalTasks) * 100) : (progress || 0);
-  const routinePctBase = timetable.length || 0;
-  const routineDone = Math.max(0, routinePctBase - (pendingRoutine ?? pendingRoutineCount ?? 0));
-  const routinePct = routinePctBase ? Math.round((routineDone / routinePctBase) * 100) : 0;
+  // Today's routine items ticked off (same count as the navbar and the donut).
+  const routinePct = routineTodayTotal ? Math.round(((routineTodayDone || 0) / routineTodayTotal) * 100) : 0;
   const attendancePct = Math.round(attendanceSummary?.overallPercentage ?? attendanceSummary?.percentage ?? 0);
 
   const todaysTasks = useMemo(() => tasks.filter((tk) => !taskDone(tk)).slice(0, 5), [tasks]);
@@ -218,7 +216,7 @@ export default function Home() {
                   <h3 className="text-sm font-black uppercase tracking-wider text-ink">
                     <InlineEdit value={lbl("focus", "Focus today")} onSave={(v) => setLbl("focus", v)} />
                   </h3>
-                  <button onClick={() => navigate("/focus-mode")} aria-label="Open focus mode" className="w-8 h-8 rounded-full bg-grad-hero text-on-brand flex items-center justify-center shadow-neu-sm hover:scale-105 transition-transform">▶</button>
+                  <button onClick={() => navigate("/focus-mode")} aria-label="Open focus mode" className="w-8 h-8 rounded-full bg-grad-hero text-on-brand flex items-center justify-center shadow-neu-sm hover:scale-105 transition-transform"><Play size={14} fill="currentColor" className="ml-0.5" /></button>
                 </div>
                 <ProgressRing value={focusRingPct} size={110} stroke={12}>
                   <div className="text-center">
@@ -242,8 +240,9 @@ export default function Home() {
               </section>
             </div>
 
-            {/* Progress overview — 3D extruded bars */}
-            <section className="rounded-token-lg bg-surface shadow-neu p-5">
+            {/* Progress overview — 3D extruded bars. A flex column so the chart
+                can take the card's spare height (it spreads the cubes out). */}
+            <section className="rounded-token-lg bg-surface shadow-neu p-5 flex flex-col">
               <h3 className="text-sm font-black uppercase tracking-wider text-ink mb-1">
                 <InlineEdit value={lbl("progress", "Progress overview")} onSave={(v) => setLbl("progress", v)} />
               </h3>

@@ -1,5 +1,5 @@
 const { getConnection } = require('../config/database');
-const { generateId, today, getDayOfWeek } = require('../utils/helpers');
+const { generateId, today, completionDate, getDayOfWeek } = require('../utils/helpers');
 
 // Get all routines for the logged-in user
 exports.getRoutines = async (req, res) => {
@@ -26,8 +26,10 @@ exports.getRoutines = async (req, res) => {
                 { routineId: routine.ROUTINE_ID }
             );
             
+            // As text: a DATE parsed into a JS Date at local midnight and then
+            // turned into ISO would come back a day early east of UTC.
             const completionsResult = await connection.execute(
-                `SELECT completion_date FROM ROUTINE_COMPLETIONS 
+                `SELECT TO_CHAR(completion_date, 'YYYY-MM-DD') AS completion_date FROM ROUTINE_COMPLETIONS
                  WHERE routine_id = :routineId AND user_id = :userId`,
                 { routineId: routine.ROUTINE_ID, userId: req.user.userId }
             );
@@ -44,9 +46,7 @@ exports.getRoutines = async (req, res) => {
                 time: routine.ACTIVITY_TIME,
                 repeatOn: daysResult.rows.map(d => d.DAY_OF_WEEK),
                 dayColors: dayColors, // per-day colors
-                completedDays: completionsResult.rows.map(c => 
-                    c.COMPLETION_DATE.toISOString().split('T')[0]
-                )
+                completedDays: completionsResult.rows.map(c => c.COMPLETION_DATE)
             });
         }
         
@@ -253,7 +253,12 @@ exports.completeRoutine = async (req, res) => {
     let connection;
     try {
         const { routineId } = req.params;
-        const todayStr = today();
+        // The app sends the student's own date for the slice they tapped. The
+        // server's today() is UTC, which in Pakistan is still yesterday before 5 AM.
+        const todayStr = completionDate(req.body?.date) || today();
+        if (req.body?.date && todayStr !== req.body.date) {
+            return res.status(400).json({ error: 'Invalid date.' });
+        }
         connection = await getConnection();
         const checkResult = await connection.execute(
             `SELECT completion_id FROM ROUTINE_COMPLETIONS 

@@ -16,6 +16,19 @@ const today = () => {
     return d.toISOString().split('T')[0];
 };
 
+// A "YYYY-MM-DD" the app sent for a routine tick, or null if it isn't a real
+// date in a sensible range: not more than a day past today in UTC (time zones
+// ahead of UTC are already on tomorrow) and not more than a year back.
+const completionDate = (s, at = new Date()) => {
+    if (typeof s !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
+    const d = new Date(`${s}T00:00:00Z`);
+    if (Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== s) return null;
+    const dayMs = 24 * 60 * 60 * 1000;
+    const todayUtc = Date.parse(`${at.toISOString().slice(0, 10)}T00:00:00Z`);
+    if (d.getTime() > todayUtc + dayMs || d.getTime() < todayUtc - 366 * dayMs) return null;
+    return s;
+};
+
 // Get current timestamp for Oracle
 const now = () => new Date();
 
@@ -38,6 +51,7 @@ module.exports = {
     generateId,
     formatDate,
     today,
+    completionDate,
     now,
     getDayOfWeek,
     formatTime12h

@@ -9,7 +9,8 @@ import { Card, CardDeleteButton, Modal, Button } from "../components/ui";
 import { useToast } from "../components/ui/Toast";
 import { useSubjects } from "../features/subjects/useSubjects";
 import TimetableImportModal from "../features/subjects/TimetableImportModal";
-import DonutChart, { daysOfWeek, getFullDayName, isTaskCompleted, isTaskMissed, getTaskColor, formatTime12h } from "../components/routine/DonutChart";
+import DonutChart, { daysOfWeek, getFullDayName, isTaskCompleted, isTaskMissed, canTick, getTaskColor, formatTime12h } from "../components/routine/DonutChart";
+import { dateOfWeekday, setDoneOn } from "../features/routine/routineDays";
 import EditRoutinePopup from "../components/routine/EditRoutinePopup";
 import DeleteRoutinePopup from "../components/routine/DeleteRoutinePopup";
 
@@ -201,24 +202,15 @@ export default function DailyRoutine() {
 
   const toggleComplete = async (routineId, day) => {
     const task = schedule.find(t => t.id === routineId);
-    if (task && isTaskMissed(task, day, currentDayName)) return;
+    if (task && !canTick(task, day, currentDayName)) return;
+    const date = dateOfWeekday(day);
+    if (!date) return;
     try {
-      await routineAPI.complete(routineId);
-      const todayISO = toISODate(new Date());
+      // The server toggles that date and says which way it went.
+      const res = await routineAPI.complete(routineId, date);
+      const done = typeof res?.completed === 'boolean' ? res.completed : !isTaskCompleted(task, day);
       setSchedule(prev => {
-        const next = prev.map(t => {
-          if (t.id === routineId) {
-            const isDone = t.completedDays?.includes(day);
-            // Push both the weekday flag (drives the donut/timeline's "current cycle" status)
-            // and today's real date (drives the consistency tracker's per-week history) so
-            // a fresh toggle reflects immediately in both without waiting on a refetch.
-            const updated = isDone
-              ? t.completedDays.filter(d => d !== day && d !== todayISO)
-              : [...(t.completedDays || []), day, todayISO];
-            return { ...t, completedDays: updated };
-          }
-          return t;
-        });
+        const next = prev.map(t => (t.id === routineId ? setDoneOn(t, date, done) : t));
         setTimetable(next);
         return next;
       });

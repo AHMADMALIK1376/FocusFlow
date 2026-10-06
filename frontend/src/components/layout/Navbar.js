@@ -11,7 +11,7 @@ export default function Navbar() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { userName, logout } = useUser();
-  const { pendingCount, pendingRoutine } = useApp();
+  const { pendingCount, routineTodayDone, routineTodayTotal } = useApp();
   const { profile, updateProfile } = usePreferences();
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
@@ -66,15 +66,20 @@ export default function Navbar() {
               {t("nav.pending")}
             </span>
           </div>
-          <div className="flex items-center gap-2 px-3 h-9 rounded-full bg-grad-sage shadow-neu-sm">
+          {/* Today's routine as done/total, the same count the routine donut shows */}
+          <button
+            onClick={() => navigate("/routine")}
+            title="Today's routine: done / total"
+            className="flex items-center gap-2 px-3 h-9 rounded-full bg-grad-sage shadow-neu-sm hover:-translate-y-0.5 transition-transform"
+          >
             <Zap size={16} className="text-on-sage" />
             <span className="font-mono text-sm font-black text-on-sage leading-none">
-              {(pendingRoutine ?? 0).toString().padStart(2, "0")}
+              {routineTodayDone ?? 0}/{routineTodayTotal ?? 0}
             </span>
             <span className="text-[0.55rem] font-bold text-[rgb(var(--on-sage)/0.75)] tracking-widest uppercase">
               {t("nav.routine")}
             </span>
-          </div>
+          </button>
         </div>
 
         {/* Profile dropdown (logout lives inside it) */}

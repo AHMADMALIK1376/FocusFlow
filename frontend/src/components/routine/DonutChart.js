@@ -2,9 +2,14 @@
 // Shared donut-chart schedule widget + routine helpers, used by both the
 // combined /routine page and the full-week /routine/view page.
 import React, { useState, useEffect, useRef } from "react";
+import { WEEK, isDoneOn, isFutureDay } from "../../features/routine/routineDays";
 
 // Use SHORT day names for backend compatibility
-export const daysOfWeek = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+export const daysOfWeek = WEEK;
+
+// Light sage for a ticked-off slice (the theme's --sage).
+export const DONE_COLOR = '#B8DCC4';
+const TICK_DONE = '#8FCDA6';
 
 export const getFullDayName = (shortDay) => {
   const dayMap = {
@@ -20,8 +25,12 @@ const TASK_COLORS = [
   '#e11d48', '#7c3aed',
 ];
 
+// Done = ticked on that weekday's date in the current week (the server stores
+// dates, not weekday names).
+export const isTaskCompleted = (task, activeDay) => isDoneOn(task, activeDay);
+
 export const isTaskMissed = (task, activeDay, currentDayName) => {
-  if (task.completedDays?.includes(activeDay)) return false;
+  if (isTaskCompleted(task, activeDay)) return false;
   const dayIndex = daysOfWeek.indexOf(activeDay);
   const currentDayIndex = daysOfWeek.indexOf(currentDayName);
   if (dayIndex > currentDayIndex) return false;
@@ -33,11 +42,17 @@ export const isTaskMissed = (task, activeDay, currentDayName) => {
   return true;
 };
 
-export const isTaskCompleted = (task, activeDay) => task.completedDays?.includes(activeDay);
+// Can this slice be ticked (or unticked)? Today's items: any time, because you
+// tick a routine after doing it, i.e. after its time (it still shows red until
+// then). Past days: only to undo a tick, since a missed day stays missed.
+// Days that haven't come yet: no.
+export const canTick = (task, activeDay, currentDayName) =>
+  !isFutureDay(activeDay) &&
+  (activeDay === currentDayName || !isTaskMissed(task, activeDay, currentDayName));
 
 export const getTaskColor = (task, activeDay, isLocked, currentDayName) => {
   if (isLocked) return '#cbd5e1';
-  if (isTaskCompleted(task, activeDay)) return '#10b981';
+  if (isTaskCompleted(task, activeDay)) return DONE_COLOR;
   if (isTaskMissed(task, activeDay, currentDayName)) return '#ff3b3b';
   if (task.dayColors && task.dayColors[activeDay]) return task.dayColors[activeDay];
   if (task.color) return task.color;
@@ -77,10 +92,41 @@ export default function DonutChart({ tasks, activeDay, onToggle, sliceAngle, isL
   const completedCount = tasks.filter(t => isTaskCompleted(t, activeDay)).length;
   const missedCount = isLocked ? 0 : tasks.filter(t => isTaskMissed(t, activeDay, currentDayName)).length;
 
+  const canToggle = (task) => !isLocked && canTick(task, activeDay, currentDayName);
+
   const handleSliceClick = (task) => {
-    if (isLocked || isTaskMissed(task, activeDay, currentDayName)) return;
+    if (!canToggle(task)) return;
     onToggle(task.id, activeDay);
   };
+
+  // Engraved look shared with the other round graphs (ui/ProgressRing): the
+  // slices sit in a sunken groove, a raised disc holds the count, and a ring
+  // of ticks lights up over the slices that are done.
+  const pad = Math.max(6, size * 0.03); // the groove's rim around the slices
+  const grooveOuter = radius + strokeWidth / 2 + pad;
+  const discR = radius - strokeWidth / 2 - pad;
+  const tickIn = grooveOuter + Math.max(3, size * 0.012);
+  const tickCount = size < 200 ? 40 : 60;
+  const tickLen = Math.max(4, size * 0.045);
+  const ticks = Array.from({ length: tickCount }, (_, i) => {
+    const deg = (i / tickCount) * 360;
+    const t = (deg * Math.PI) / 180;
+    const task = sliceAngle ? tasks[Math.floor(deg / sliceAngle)] : null;
+    const lit = !isLocked && task && isTaskCompleted(task, activeDay);
+    const r2 = tickIn + (i % 5 === 0 ? tickLen : tickLen * 0.6);
+    return (
+      <line key={i}
+        x1={center + tickIn * Math.sin(t)} y1={center - tickIn * Math.cos(t)}
+        x2={center + r2 * Math.sin(t)} y2={center - r2 * Math.cos(t)}
+        stroke={lit ? TICK_DONE : 'rgb(var(--ink) / 0.16)'}
+        strokeWidth={i % 5 === 0 ? Math.max(1.6, size * 0.009) : Math.max(1, size * 0.005)}
+        strokeLinecap="round" style={{ transition: 'stroke 400ms ease-out' }} />
+    );
+  });
+  const round = (r, style) => ({
+    position: 'absolute', left: '50%', top: '50%', width: r * 2, height: r * 2,
+    transform: 'translate(-50%, -50%)', borderRadius: '50%', pointerEvents: 'none', ...style,
+  });
 
   const handleMouseEnter = (index) => {
     if (isLocked) return;
@@ -101,30 +147,33 @@ export default function DonutChart({ tasks, activeDay, onToggle, sliceAngle, isL
 
   return (
     <div className="relative flex items-center justify-center">
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        <circle cx={center} cy={center} r={radius} fill="none" stroke="rgb(var(--ink)/0.1)" strokeWidth={strokeWidth} />
+      {/* sunken groove (behind the slices) */}
+      <div aria-hidden="true" style={round(grooveOuter, { background: 'rgb(var(--surface-2))', boxShadow: 'var(--shadow-neu-inset)' })} />
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="relative">
+        {ticks}
         {tasks.map((task, i) => {
           const color = getSliceColor(task);
           const isHovered = hoveredIndex === i;
-          const isMissed = isTaskMissed(task, activeDay, currentDayName);
+          const clickable = canToggle(task);
           const rotation = i * sliceAngle - 90;
           const dashArray = `${((sliceAngle - 2) / 360) * circumference} ${circumference}`;
           return (
             <g key={`${activeDay}-${task.id}`}
               onMouseEnter={() => handleMouseEnter(i)}
               onMouseLeave={handleMouseLeave}
-              style={{ cursor: (isLocked || isMissed) ? 'not-allowed' : 'pointer' }}
+              style={{ cursor: clickable ? 'pointer' : 'not-allowed' }}
               onClick={() => handleSliceClick(task)}>
               <circle cx={center} cy={center} r={radius} fill="none" stroke={color}
-                strokeWidth={isHovered && !isMissed && !isLocked ? strokeWidth + 6 : strokeWidth}
+                strokeWidth={isHovered && clickable ? strokeWidth + 6 : strokeWidth}
                 strokeDasharray={dashArray} strokeLinecap="butt"
                 transform={`rotate(${rotation} ${center} ${center})`} opacity={1}
                 className="transition-all duration-300" />
             </g>
           );
         })}
-        <circle cx={center} cy={center} r={radius - strokeWidth / 2 - 5} fill="rgb(var(--surface))" />
       </svg>
+      {/* raised centre */}
+      <div aria-hidden="true" style={round(discR, { background: 'rgb(var(--surface))', boxShadow: 'var(--shadow-neu-sm)' })} />
       <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
         <span className="font-black text-ink" style={{ fontSize: Math.round(size * 0.11) }}>{completedCount}/{totalTasks}</span>
         {showLabels && (

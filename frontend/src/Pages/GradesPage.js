@@ -87,9 +87,9 @@ export default function GradesPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-6">
             <Panel className="flex flex-col items-center justify-center">
               <h3 className="text-sm font-black uppercase tracking-wider text-ink self-start mb-2">CGPA</h3>
-              <ProgressRing value={ringValue} size={160} stroke={16}>
+              <ProgressRing value={ringValue} size={200} stroke={16} marks={["0", "1", "2", "3"]}>
                 <div className="text-center">
-                  <p className="text-4xl font-black text-ink">{cgpa != null ? cgpa.toFixed(2) : "—"}</p>
+                  <p className="text-3xl font-black text-ink leading-none">{cgpa != null ? cgpa.toFixed(2) : "—"}</p>
                   <p className="text-[10px] uppercase tracking-widest text-muted">/ 4.0</p>
                 </div>
               </ProgressRing>

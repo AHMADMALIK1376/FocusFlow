@@ -29,8 +29,8 @@ export default function GoalsCard() {
         <div className="space-y-4">
           <div className="flex items-center gap-3">
             <span className="rounded-full bg-surface shadow-neu-sm p-1">
-              <ProgressRing value={overall} size={54} stroke={7}>
-                <span className="text-[11px] font-black text-ink">{overall}%</span>
+              <ProgressRing value={overall} size={68} stroke={6}>
+                <span className="text-[10px] font-black text-ink">{overall}%</span>
               </ProgressRing>
             </span>
             <p className="text-xs text-muted">
