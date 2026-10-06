@@ -6,6 +6,8 @@ import { useUser } from "../auth/UserContext";
 import { useApp } from "../context/AppContext";
 import { usePreferences } from "../../preferences/usePreferences";
 import { LogoutButton } from "../ui/LogoutButton";
+import { MascotPicker } from "../ui/MascotPicker";
+import { mascotSrc } from "../ui/mascots";
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -17,12 +19,14 @@ export default function Navbar() {
   const dropdownRef = useRef(null);
   const fileRef = useRef(null);
   const avatarUrl = profile?.avatarUrl || null;
+  const mascot = mascotSrc(profile?.mascot);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   function onPickImage(e) {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => updateProfile({ avatarUrl: reader.result });
+    reader.onload = () => updateProfile({ avatarUrl: reader.result, mascot: null });
     reader.readAsDataURL(file);
   }
 
@@ -91,7 +95,7 @@ export default function Navbar() {
             className="flex items-center gap-1.5 group px-1 py-1 rounded-full hover:bg-[rgb(var(--on-brand)/0.12)] transition-all"
           >
             <span className="w-9 h-9 rounded-xl bg-on-brand text-brand flex items-center justify-center font-black text-[0.8rem] overflow-hidden">
-              {avatarUrl ? <img src={avatarUrl} alt={userName || "User"} className="w-full h-full object-cover" /> : getInitials(userName)}
+              {avatarUrl ? <img src={avatarUrl} alt={userName || "User"} className="w-full h-full object-cover" /> : mascot ? <img src={mascot} alt={userName || "User"} className="w-full h-full object-contain" /> : getInitials(userName)}
             </span>
             <ChevronDown size={15} className={`text-[rgb(var(--on-brand)/0.75)] transition-transform duration-300 ${showDropdown ? "rotate-180" : ""}`} />
           </button>
@@ -104,7 +108,7 @@ export default function Navbar() {
                   title="Change profile photo"
                   className="group/avatar relative w-9 h-9 rounded-xl bg-grad-hero flex items-center justify-center text-[0.8rem] text-on-brand font-black shrink-0 overflow-hidden"
                 >
-                  {avatarUrl ? <img src={avatarUrl} alt={userName || "User"} className="w-full h-full object-cover" /> : getInitials(userName)}
+                  {avatarUrl ? <img src={avatarUrl} alt={userName || "User"} className="w-full h-full object-cover" /> : mascot ? <img src={mascot} alt={userName || "User"} className="w-full h-full object-contain" /> : getInitials(userName)}
                   <span className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover/avatar:opacity-100 transition-opacity">
                     <Camera size={14} className="text-white" />
                   </span>
@@ -118,6 +122,12 @@ export default function Navbar() {
                 <input ref={fileRef} type="file" accept="image/*" hidden onChange={onPickImage} />
                 <div className="min-w-0">
                   <p className="text-[0.85rem] font-bold text-ink leading-tight truncate">{userName || "User"}</p>
+                  <button
+                    onClick={() => { setPickerOpen(true); setShowDropdown(false); }}
+                    className="text-[0.7rem] font-bold text-brand hover:underline"
+                  >
+                    Choose mascot
+                  </button>
                 </div>
               </div>
               <div className="h-px bg-[rgb(var(--ink)/0.08)] my-1 mx-2" />
@@ -134,6 +144,12 @@ export default function Navbar() {
           )}
         </div>
       </div>
+      <MascotPicker
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        value={profile?.mascot}
+        onPick={(id) => updateProfile({ mascot: id, avatarUrl: null })}
+      />
     </nav>
   );
 }

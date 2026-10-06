@@ -7,7 +7,7 @@ import { Camera, Pencil, Plus, Flame, Play } from "lucide-react";
 import { useUser } from "../components/auth/UserContext";
 import { useApp } from "../components/context/AppContext";
 import { usePreferences } from "../preferences/usePreferences";
-import { ProgressRing, cx } from "../components/ui";
+import { ProgressRing, cx, MascotPicker, mascotSrc } from "../components/ui";
 import ProgressCubeStack from "../components/charts/ProgressCubeStack";
 import { WIDGET_BY_ID } from "../dashboard/registry";
 import Clock from "../components/dashboard/Clock";
@@ -84,6 +84,8 @@ export default function Home() {
   const workspace = activeDashboard?.name || "My Workspace";
   const greeting = t(now.getHours() < 12 ? "dashboard.goodMorning" : now.getHours() < 18 ? "dashboard.goodAfternoon" : "dashboard.goodEvening");
   const avatarUrl = profile?.avatarUrl || null;
+  const mascot = mascotSrc(profile?.mascot);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   // Editable labels (per dashboard)
   const labels = activeDashboard?.labels || {};
@@ -118,7 +120,7 @@ export default function Home() {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => updateProfile({ avatarUrl: reader.result });
+    reader.onload = () => updateProfile({ avatarUrl: reader.result, mascot: null });
     reader.readAsDataURL(file);
   }
 
@@ -176,17 +178,30 @@ export default function Home() {
             {/* Coral (not black) fade under the text when a photo is set */}
             {avatarUrl && <div className="absolute inset-0 bg-gradient-to-t from-[rgb(var(--brand)/0.9)] via-[rgb(var(--brand)/0.35)] to-transparent" />}
 
-            <div className="flex items-center justify-end relative z-10">
+            <div className="flex items-center justify-end gap-3 relative z-10">
+              <button onClick={() => setPickerOpen(true)} className="flex items-center gap-1.5 text-[11px] font-bold opacity-0 group-hover:opacity-100 transition-opacity">
+                Mascot
+              </button>
               <button onClick={() => fileRef.current?.click()} className="flex items-center gap-1.5 text-[11px] font-bold opacity-0 group-hover:opacity-100 transition-opacity">
                 <Camera size={13} /> {avatarUrl ? "Change" : "Add photo"}
               </button>
             </div>
 
             <div className={cx("flex-1 flex flex-col relative z-10", avatarUrl ? "justify-end" : "items-center justify-center text-center")}>
-              {!avatarUrl && (
+              {!avatarUrl && mascot && (
+                <button onClick={() => setPickerOpen(true)} title="Change mascot" className="mb-3 hover:scale-105 transition-transform">
+                  <img src={mascot} alt={displayName} className="w-40 h-40 lg:w-52 lg:h-52 object-contain drop-shadow-lg" />
+                </button>
+              )}
+              {!avatarUrl && !mascot && (
                 <button onClick={() => fileRef.current?.click()} title="Add a photo"
                   className="w-20 h-20 rounded-2xl bg-[rgb(var(--on-brand)/0.18)] backdrop-blur flex items-center justify-center text-3xl font-black mb-4 hover:bg-[rgb(var(--on-brand)/0.28)] transition-colors">
                   {displayName.slice(0, 1).toUpperCase()}
+                </button>
+              )}
+              {!avatarUrl && !mascot && (
+                <button onClick={() => setPickerOpen(true)} className="mb-3 text-xs font-bold underline underline-offset-2">
+                  Pick a mascot
                 </button>
               )}
               <span className="inline-block w-fit px-3 py-1 rounded-full bg-white/16 backdrop-blur text-xs font-bold">
@@ -200,6 +215,8 @@ export default function Home() {
               <div className="text-center"><p className="text-lg font-black">{totalFocusSessions || 0}</p><p className="text-[9px] uppercase tracking-wider opacity-75">Focus</p></div>
             </div>
             <input ref={fileRef} type="file" accept="image/*" hidden onChange={onPickImage} />
+            <MascotPicker open={pickerOpen} onClose={() => setPickerOpen(false)} value={profile?.mascot}
+              onPick={(id) => updateProfile({ mascot: id, avatarUrl: null })} />
           </section>
 
           {/* Budget — this month at a glance (today's classes are in the snapshot tile) */}
