@@ -6,6 +6,17 @@ Update this file with every change.
 
 ---
 
+## 2026-10-06 — Docs
+
+### Root `README.md` added
+- **Decision:** a full README at the repo root. It covers the features, tech stack, an architecture diagram, local setup, every environment variable, backend scripts, tests, the API routes, the scanner, reminders, security, deployment and the design system.
+- **Why:** the GitHub page had no README. The only one was the Create React App boilerplate in `frontend/`.
+- **Rule followed:** every claim was checked against the code. Example: routine reminders come 60 minutes early, not at the routine's time. The README uses no emoji, only shields.io badges and the app logo.
+- **Left as is:** `frontend/README.md` (CRA boilerplate).
+- **Git:** committed on `feat/student-pivot`, merged into `main` with a merge commit, and both branches pushed. `.claude/agents/reviewer.md` was again left out.
+
+---
+
 ## 2026-10-06 — Subjects page
 
 ### Week chart redesigned as a small clay abacus (`components/subjects/WeekBeads.js`)
