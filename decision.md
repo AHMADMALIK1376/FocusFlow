@@ -32,6 +32,26 @@ Update this file with every change.
 
 ---
 
+## 2026-10-07 — Before deploying
+
+### CORS locked to the app's own address (`backend/middleware/cors.js`)
+- **Decision:** in production only `APP_URL` and the comma-separated `ALLOWED_ORIGINS` may call the API from a browser. In development any origin works, so localhost on any port is fine. Requests with no Origin header (email answer links, health pings) always pass.
+- **Why:** the old code copied back whatever origin asked, so any website could use a logged-in student's browser to call the API.
+- **Also:** it replaces both old CORS blocks in `server.js` (they did the same job twice), and the `cors` package is no longer used there.
+- **Checked:** unit tests, plus a real HTTP call: the allowed origin gets 200 and 204 on preflight, and an unknown origin gets no CORS header and 403 on preflight.
+
+### Seed script no longer holds a password (`backend/scripts/seed-user.js`)
+- **Decision:** the password comes from `SEED_PASSWORD`, and the default account is `demo@example.com`, not your real address. The script deletes the account it seeds, so the old default could have wiped your real account.
+- **Also:** the password and email were removed from two old plan docs. The old password still exists in git history, so change it anywhere you've used it.
+
+### Vercel setup (`frontend/vercel.json`) and `backend/.env.example`
+- **`vercel.json`:** unknown paths go to `index.html`, so reloading `/goals` doesn't give a Vercel 404. Real files (service worker, manifest, icons, mascots, `/static`) are served as files. `sw.js` is never cached, so updates reach phones.
+- **`.env.example`:** lists every backend variable. It had been hidden by a line in `backend/.gitignore`, which I removed.
+- **Checked:** `CI=true react-scripts build` passes. Vercel builds with `CI=true`, which turns lint warnings into errors.
+- **Correction:** VAPID keys were not missing. They were already in `backend/.env`, so none were generated. New keys would have cancelled any phone that had already allowed notifications.
+
+---
+
 ## 2026-10-06 — Git
 
 ### Loading and error-page work committed as three backdated commits, then merged into `main`

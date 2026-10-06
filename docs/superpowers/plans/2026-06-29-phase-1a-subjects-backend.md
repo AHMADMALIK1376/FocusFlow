@@ -376,7 +376,7 @@ Expected: `200`. If not, start it: `npm --prefix backend run dev` (wait until it
 Run:
 ```bash
 TOKEN=$(curl -s -X POST http://localhost:5555/api/auth/login -H "Content-Type: application/json" \
-  -d '{"email":"ahmadmalik1376@gmail.com","password":"411711376"}' | sed -n 's/.*"token":"\([^"]*\)".*/\1/p')
+  -d '{"email":"demo@example.com","password":"<demo-password>"}' | sed -n 's/.*"token":"\([^"]*\)".*/\1/p')
 echo "token: ${TOKEN:0:12}..."
 
 echo "--- create ---"

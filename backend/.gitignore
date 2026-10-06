@@ -18,7 +18,6 @@ yarn.lock
 .env.development
 .env.test
 .env.*.local
-.env.example  # Remove this line if you want to commit the example
 
 # ==============================================
 # BUILD OUTPUTS

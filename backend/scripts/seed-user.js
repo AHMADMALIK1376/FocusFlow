@@ -1,16 +1,21 @@
 // Seeds a ready-to-use demo account with data across the DB-backed features
 // (tasks, routine, calendar/schedule, focus sessions, attendance, stats).
-// Usage: node scripts/seed-user.js
+// Usage: SEED_PASSWORD=<choose one> node scripts/seed-user.js
+// (SEED_EMAIL, SEED_NAME and SEED_USERNAME are optional.)
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 const { Client } = require('pg');
 const bcrypt = require('bcryptjs');
 const { v4: uuid } = require('uuid');
 
-const EMAIL = 'ahmadmalik1376@gmail.com';
-const PASSWORD = '411711376';
-const FULL_NAME = 'Ahmad Malik';
-const USERNAME = 'ahmadmalik';
+const EMAIL = process.env.SEED_EMAIL || 'demo@example.com';
+const PASSWORD = process.env.SEED_PASSWORD;
+const FULL_NAME = process.env.SEED_NAME || 'Demo Student';
+const USERNAME = process.env.SEED_USERNAME || 'demo';
+if (!PASSWORD) {
+  console.error('Set SEED_PASSWORD to the password for the demo account, e.g. SEED_PASSWORD=choose-one node scripts/seed-user.js');
+  process.exit(1);
+}
 
 const ymd = (d) => d.toISOString().slice(0, 10);
 const addDays = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return d; };
@@ -137,6 +142,6 @@ const at = (dayOffset, h, m = 0) => { const d = addDays(dayOffset); d.setHours(h
   console.log('✅ Seeded DB account:', EMAIL);
   console.log(`   user_id: ${userId}`);
   console.log(`   tasks: ${tasks} (${tasksDone} done) · focus: 6 · subjects: ${subjects.length} · routines: ${routines.length}`);
-  console.log('   login: ahmadmalik1376@gmail.com / 411711376');
+  console.log('   login:', EMAIL, '(password from SEED_PASSWORD)');
   await client.end();
 })().catch((e) => { console.error('ERROR:', e.message); process.exit(1); });

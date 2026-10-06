@@ -324,6 +324,7 @@ The Google button uses the OAuth client ID set in `frontend/src/Pages/Authpage.j
 | `APP_URL` | No | Frontend address used in email links. Defaults to `http://localhost:3000`. |
 | `PUBLIC_API_URL` | No | Public API address used in "answer from the email" links. Defaults to `http://localhost:5555`. |
 | `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` | No | Turn on web push. Without them, push is skipped and email still works. |
+| `ALLOWED_ORIGINS` | No | Extra websites allowed to call the API, comma separated. In production only these and `APP_URL` are allowed. |
 | `VAPID_SUBJECT` | No | Contact for the push service, for example `mailto:you@example.com` |
 | `DEFAULT_TZ` | No | Default reminder timezone. Defaults to `Asia/Karachi`. |
 | `NODE_ENV` | No | `development` or `production` |

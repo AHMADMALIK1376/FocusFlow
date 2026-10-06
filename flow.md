@@ -70,15 +70,16 @@ Update this file with every change.
 
 ### One request, start to finish
 1. Browser request.
-2. Rate limiter.
-3. `routes/<x>Routes.js`.
-4. `middleware/auth.js`:
+2. CORS (`middleware/cors.js`): in production only `APP_URL` and `ALLOWED_ORIGINS` are let through.
+3. Rate limiter.
+4. `routes/<x>Routes.js`.
+5. `middleware/auth.js`:
    - Verifies the JWT.
    - Checks the user still exists (remembered for 60 s).
    - Sets `req.user`.
-5. `controllers/<x>Controller.js`.
-6. `getConnection()` → SQL `execute()` → `connection.close()`.
-7. JSON reply.
+6. `controllers/<x>Controller.js`.
+7. `getConnection()` → SQL `execute()` → `connection.close()`.
+8. JSON reply.
 
 ### Reminders
 1. `notificationScheduler.js`, every minute.

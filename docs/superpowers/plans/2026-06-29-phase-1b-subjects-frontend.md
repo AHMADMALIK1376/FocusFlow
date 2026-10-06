@@ -133,7 +133,7 @@ Add inside the protected `<Route>` group (next to `/notes` etc.):
 Run: `cd frontend && CI=true npm run build 2>&1 | grep -E "Compiled|Failed|Error"`
 Expected: `Compiled successfully.`
 
-- [ ] **Step 7: Verify in the browser (preview workflow)** — start the frontend dev server, log in as the seeded user (`ahmadmalik1376@gmail.com` / `411711376`) against the live backend on :5555, navigate to `/subjects`, add a subject with one schedule slot, confirm the card appears, then screenshot.
+- [ ] **Step 7: Verify in the browser (preview workflow)** — start the frontend dev server, log in as the seeded user (`demo@example.com` / `<demo-password>`) against the live backend on :5555, navigate to `/subjects`, add a subject with one schedule slot, confirm the card appears, then screenshot.
 
 - [ ] **Step 8: Commit**
 
