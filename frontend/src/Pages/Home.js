@@ -1,9 +1,9 @@
 // src/Pages/Home.js — FocusFlow dashboard (editable, image profile card, live graphs)
-import React, { useMemo, useState, useEffect, useRef, Suspense } from "react";
+import React, { useMemo, useState, useEffect, Suspense } from "react";
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Camera, Pencil, Plus, Flame, Play } from "lucide-react";
+import { Smile, Pencil, Plus, Flame, Play } from "lucide-react";
 import { useUser } from "../components/auth/UserContext";
 import { useApp } from "../components/context/AppContext";
 import { usePreferences } from "../preferences/usePreferences";
@@ -73,7 +73,6 @@ export default function Home() {
   } = useApp();
   const { profile, activeDashboard, updateProfile, updateActiveDashboard } = usePreferences();
 
-  const fileRef = useRef(null);
   const [now, setNow] = useState(new Date());
   useEffect(() => {
     const tmr = setInterval(() => setNow(new Date()), 30000);
@@ -115,14 +114,6 @@ export default function Home() {
 
   const enabledMap = activeDashboard?.widgets?.enabled || {};
   const enabledFeatures = FEATURE_IDS.filter((id) => enabledMap[id] && WIDGET_BY_ID[id]);
-
-  function onPickImage(e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => updateProfile({ avatarUrl: reader.result, mascot: null });
-    reader.readAsDataURL(file);
-  }
 
   if (contextLoading) {
     return (
@@ -179,11 +170,9 @@ export default function Home() {
             {avatarUrl && <div className="absolute inset-0 bg-gradient-to-t from-[rgb(var(--brand)/0.9)] via-[rgb(var(--brand)/0.35)] to-transparent" />}
 
             <div className="flex items-center justify-end gap-3 relative z-10">
-              <button onClick={() => setPickerOpen(true)} className="flex items-center gap-1.5 text-[11px] font-bold opacity-0 group-hover:opacity-100 transition-opacity">
-                Mascot
-              </button>
-              <button onClick={() => fileRef.current?.click()} className="flex items-center gap-1.5 text-[11px] font-bold opacity-0 group-hover:opacity-100 transition-opacity">
-                <Camera size={13} /> {avatarUrl ? "Change" : "Add photo"}
+              <button onClick={() => setPickerOpen(true)}
+                className="flex items-center gap-1.5 text-[11px] font-bold opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity">
+                <Smile size={13} /> Change mascot
               </button>
             </div>
 
@@ -194,7 +183,7 @@ export default function Home() {
                 </button>
               )}
               {!avatarUrl && !mascot && (
-                <button onClick={() => fileRef.current?.click()} title="Add a photo"
+                <button onClick={() => setPickerOpen(true)} title="Pick a mascot"
                   className="w-20 h-20 rounded-2xl bg-[rgb(var(--on-brand)/0.18)] backdrop-blur flex items-center justify-center text-3xl font-black mb-4 hover:bg-[rgb(var(--on-brand)/0.28)] transition-colors">
                   {displayName.slice(0, 1).toUpperCase()}
                 </button>
@@ -214,7 +203,6 @@ export default function Home() {
               <div className="text-center"><p className="text-lg font-black">{doneTasks}</p><p className="text-[9px] uppercase tracking-wider opacity-75">Done</p></div>
               <div className="text-center"><p className="text-lg font-black">{totalFocusSessions || 0}</p><p className="text-[9px] uppercase tracking-wider opacity-75">Focus</p></div>
             </div>
-            <input ref={fileRef} type="file" accept="image/*" hidden onChange={onPickImage} />
             <MascotPicker open={pickerOpen} onClose={() => setPickerOpen(false)} value={profile?.mascot}
               onPick={(id) => updateProfile({ mascot: id, avatarUrl: null })} />
           </section>
