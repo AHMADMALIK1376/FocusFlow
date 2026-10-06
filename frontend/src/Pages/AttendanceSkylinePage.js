@@ -21,6 +21,7 @@ import { ChevronDown, TriangleAlert } from "lucide-react";
 import { subjectAttendanceAPI } from "../services/api";
 import { PageShell, Panel } from "../components/dashboard/DashKit";
 import { PanelLoading } from "../components/common/LoadingSpinner";
+import PageMascot from "../components/common/PageMascot";
 
 const DAYS = 7;
 
@@ -482,6 +483,7 @@ export default function AttendanceSkylinePage() {
             Every class day in {year} — taller means more classes attended.
           </p>
         </div>
+        <div className="flex items-start gap-3 ml-auto">
         <div className="relative" ref={yearRef}>
           <button
             type="button"
@@ -507,6 +509,8 @@ export default function AttendanceSkylinePage() {
               </button>
             ))}
           </div>
+        </div>
+        <PageMascot />
         </div>
       </div>
 

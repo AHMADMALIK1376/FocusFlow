@@ -13,6 +13,7 @@ import DonutChart, { daysOfWeek, getFullDayName, isTaskCompleted, isTaskMissed, 
 import { dateOfWeekday, setDoneOn } from "../features/routine/routineDays";
 import EditRoutinePopup from "../components/routine/EditRoutinePopup";
 import DeleteRoutinePopup from "../components/routine/DeleteRoutinePopup";
+import PageMascot from "../components/common/PageMascot";
 
 const WEEKDAY_INDEX = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
 const WEEKS_TRACKED = 8;
@@ -319,9 +320,12 @@ export default function DailyRoutine() {
           <h1 className="text-4xl font-black text-brand">Create Your Routine</h1>
           <p className="text-muted text-sm mt-2">Add activities for each day of the week</p>
         </div>
-        <Button variant="primary" onClick={() => setImportOpen(true)} className="gap-1.5">
-          <ScanText size={16} /> Import timetable
-        </Button>
+        <div className="flex items-end gap-3 ml-auto">
+          <Button variant="primary" onClick={() => setImportOpen(true)} className="gap-1.5">
+            <ScanText size={16} /> Import timetable
+          </Button>
+          <PageMascot />
+        </div>
       </div>
       <TimetableImportModal
         open={importOpen}

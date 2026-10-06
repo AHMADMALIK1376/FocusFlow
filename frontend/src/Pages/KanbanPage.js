@@ -18,6 +18,7 @@ import { cardsByColumn } from "../features/kanban/kanbanLogic";
 import { useSubjects } from "../features/subjects/useSubjects";
 import ScanImportModal from "../features/scanner/ScanImportModal";
 import { assignmentsScan } from "../features/scanner/kinds/assignments";
+import PageMascot from "../components/common/PageMascot";
 
 const COLUMN_DOT = { "col-todo": "bg-warn", "col-doing": "bg-info", "col-done": "bg-success" };
 
@@ -132,13 +133,16 @@ export default function KanbanPage() {
           <h1 className="text-3xl md:text-4xl font-black text-ink tracking-tight">Assignments</h1>
           <p className="text-muted mt-1">Plan assignments across your subjects — drag between columns.</p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="primary" size="md" onClick={() => setScanOpen(true)} className="gap-2">
-            <ScanText size={16} /> Scan assignments
-          </Button>
-          <Button variant="primary" size="md" onClick={() => setCreating(true)} className="gap-2">
-            <Plus size={16} /> Add task
-          </Button>
+        <div className="flex items-end gap-3 ml-auto">
+          <div className="flex flex-wrap gap-2">
+            <Button variant="primary" size="md" onClick={() => setScanOpen(true)} className="gap-2">
+              <ScanText size={16} /> Scan assignments
+            </Button>
+            <Button variant="primary" size="md" onClick={() => setCreating(true)} className="gap-2">
+              <Plus size={16} /> Add task
+            </Button>
+          </div>
+          <PageMascot />
         </div>
       </header>
 
