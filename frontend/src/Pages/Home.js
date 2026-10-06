@@ -7,7 +7,8 @@ import { Smile, Pencil, Plus, Flame, Play } from "lucide-react";
 import { useUser } from "../components/auth/UserContext";
 import { useApp } from "../components/context/AppContext";
 import { usePreferences } from "../preferences/usePreferences";
-import { ProgressRing, cx, MascotPicker, mascotSrc } from "../components/ui";
+import { ProgressRing, cx, MascotPicker, mascotSrc, mascotSheets, mascotName } from "../components/ui";
+import Mascot from "../components/common/Mascot";
 import ProgressCubeStack from "../components/charts/ProgressCubeStack";
 import { WIDGET_BY_ID } from "../dashboard/registry";
 import Clock from "../components/dashboard/Clock";
@@ -84,6 +85,7 @@ export default function Home() {
   const greeting = t(now.getHours() < 12 ? "dashboard.goodMorning" : now.getHours() < 18 ? "dashboard.goodAfternoon" : "dashboard.goodEvening");
   const avatarUrl = profile?.avatarUrl || null;
   const mascot = mascotSrc(profile?.mascot);
+  const mascotSheet = mascotSheets(profile?.mascot);
   const [pickerOpen, setPickerOpen] = useState(false);
 
   // Editable labels (per dashboard)
@@ -178,9 +180,9 @@ export default function Home() {
 
             <div className={cx("flex-1 flex flex-col relative z-10", avatarUrl ? "justify-end" : "items-center justify-center text-center")}>
               {!avatarUrl && mascot && (
-                <button onClick={() => setPickerOpen(true)} title="Change mascot" className="mb-3 hover:scale-105 transition-transform">
-                  <img src={mascot} alt={displayName} className="w-40 h-40 lg:w-52 lg:h-52 object-contain drop-shadow-lg" />
-                </button>
+                <div className="mb-3 drop-shadow-lg">
+                  <Mascot directions={mascotSheet.directions} reactions={mascotSheet.reactions} size={240} label={mascotName(profile?.mascot)} />
+                </div>
               )}
               {!avatarUrl && !mascot && (
                 <button onClick={() => setPickerOpen(true)} title="Pick a mascot"

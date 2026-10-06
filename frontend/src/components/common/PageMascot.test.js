@@ -1,11 +1,13 @@
 import React from 'react';
-import { render } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import PageMascot from './PageMascot';
 import { PreferencesContext } from '../../preferences/PreferencesProvider';
 
+const sheetOf = (container) => Array.from(container.querySelectorAll('span[style*="background-image"]')).map((s) => s.style.backgroundImage);
+
 test('falls back to the default mascot with no provider', () => {
   const { container } = render(<PageMascot />);
-  expect(container.querySelector('img')).toHaveAttribute('src', '/mascots/sloth.png');
+  expect(sheetOf(container).join()).toContain('/mascots/sloth-directions.webp');
 });
 
 test('shows the mascot picked in the profile', () => {
@@ -14,5 +16,14 @@ test('shows the mascot picked in the profile', () => {
       <PageMascot />
     </PreferencesContext.Provider>
   );
-  expect(container.querySelector('img')).toHaveAttribute('src', '/mascots/rocket.png');
+  expect(sheetOf(container).join()).toContain('/mascots/rocket-directions.webp');
+  expect(sheetOf(container).join()).toContain('/mascots/rocket-reactions.webp');
+});
+
+test('a poke shows a reaction', () => {
+  const { container } = render(<PageMascot />);
+  fireEvent.click(screen.getByRole('button', { name: /boop/i }));
+  const [directions, reactions] = Array.from(container.querySelectorAll('span[style*="background-image"]'));
+  expect(directions.style.opacity).toBe('0');
+  expect(reactions.style.opacity).toBe('1');
 });

@@ -6,7 +6,7 @@ import { MASCOTS, mascotSrc } from './mascots';
 
 describe('mascots', () => {
   it('resolves known ids and rejects unknown ones', () => {
-    expect(mascotSrc('sloth')).toBe('/mascots/sloth.png');
+    expect(mascotSrc('sloth')).toBe('/mascots/sloth.webp');
     expect(mascotSrc('nope')).toBeNull();
     expect(mascotSrc(null)).toBeNull();
   });
@@ -23,7 +23,7 @@ describe('mascots', () => {
 
   it('Avatar shows the mascot when there is no photo, and the photo wins otherwise', () => {
     const { rerender } = render(<Avatar name="Ada" mascot="cap" />);
-    expect(screen.getByAltText('Ada')).toHaveAttribute('src', '/mascots/cap.png');
+    expect(screen.getByAltText('Ada')).toHaveAttribute('src', '/mascots/cap.webp');
     rerender(<Avatar name="Ada" mascot="cap" src="data:image/png;base64,x" />);
     expect(screen.getByAltText('Ada')).toHaveAttribute('src', 'data:image/png;base64,x');
   });

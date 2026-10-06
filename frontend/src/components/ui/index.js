@@ -11,7 +11,7 @@ export { ClearHistoryButton } from './ClearHistoryButton';
 export { CardDeleteButton } from './CardDeleteButton';
 export { Avatar } from './Avatar';
 export { MascotPicker } from './MascotPicker';
-export { MASCOTS, mascotSrc, mascotName } from './mascots';
+export { MASCOTS, mascotSrc, mascotSheets, mascotName } from './mascots';
 export { ProgressRing } from './ProgressRing';
 export { StatCard } from './StatCard';
 export { Skeleton } from './Skeleton';
