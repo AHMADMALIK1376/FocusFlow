@@ -13,6 +13,7 @@ import FontSelector from "../components/dashboard/FontSelector";
 import WidgetManager from "../components/dashboard/WidgetManager";
 import DashboardSwitcher from "../components/dashboard/DashboardSwitcher";
 import RemindersSettings from "../features/notifications/RemindersSettings";
+import PageMascot from "../components/common/PageMascot";
 
 function Section({ title, subtitle, children }) {
   return (
@@ -51,8 +52,13 @@ export default function SettingsPage() {
 
   return (
     <div className="p-5 md:p-8 max-w-4xl mx-auto w-full">
-      <h1 className="text-3xl font-black text-ink mb-1">{t("settings.title", "Settings")}</h1>
-      <p className="text-muted mb-8">Personalise FocusFlow — your colours, font, features and profile.</p>
+      <div className="flex items-end justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl font-black text-ink mb-1">{t("settings.title", "Settings")}</h1>
+          <p className="text-muted">Personalise FocusFlow — your colours, font, features and profile.</p>
+        </div>
+        <PageMascot />
+      </div>
 
       {/* ── Reminders ────────────────────────────────────────────── */}
       <Section

@@ -1,5 +1,6 @@
 import React from "react";
 import { cx } from "../ui";
+import PageMascot from '../common/PageMascot';
 
 // Page shell — consistent padding/width for every feature dashboard.
 export function PageShell({ children }) {
@@ -10,11 +11,14 @@ export function PageShell({ children }) {
 export function PageHeader({ title, subtitle, children }) {
   return (
     <header className="flex flex-wrap items-end justify-between gap-4 mb-6">
-      <div>
+      <div className="flex-1 min-w-[14rem]">
         <h1 className="text-3xl md:text-4xl font-black text-ink tracking-tight">{title}</h1>
         {subtitle && <p className="text-muted mt-1">{subtitle}</p>}
       </div>
-      {children && <div className="flex items-center gap-2">{children}</div>}
+      <div className="flex items-end gap-3 ml-auto">
+        {children && <div className="flex items-center gap-2">{children}</div>}
+        <PageMascot />
+      </div>
     </header>
   );
 }

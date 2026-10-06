@@ -5,6 +5,7 @@ import { useApp } from "../components/context/AppContext";
 import { focusAPI, getToken } from "../services/api";
 import { Card, RepeatButton, ClearHistoryButton, CardDeleteButton } from "../components/ui";
 import DialTimer from "../components/dashboard/DialTimer";
+import PageMascot from "../components/common/PageMascot";
 
 const isCompleted = (status) => (status || "").toLowerCase() === "completed";
 
@@ -171,10 +172,11 @@ export default function FocusModePage() {
 
   return (
     <div className="flex flex-col items-center px-5 pt-4 pb-10 max-w-[1200px] mx-auto min-h-screen animate-[fadeInUp_0.8s_ease]">
-      <section className="w-full max-w-[1100px] mb-4 flex items-center gap-3">
+      <section className="w-full max-w-[1100px] mb-4 flex items-center justify-between gap-3">
         <h1 className="text-4xl font-black text-ink">
           Deep <span className="text-brand">Flow</span>
         </h1>
+        <PageMascot />
       </section>
 
       <div className="w-full max-w-[1100px] flex flex-col lg:flex-row items-stretch gap-8">

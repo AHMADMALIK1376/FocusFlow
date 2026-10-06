@@ -8,6 +8,13 @@ Update this file with every change.
 
 ## 2026-10-06 — Mascots
 
+### The mascot sits in the top-right corner of the pages
+- **Decision:** your mascot (no card behind it, about 64 px tall, 48 px on phones) now sits at the right end of the page header on Subjects, Grades, Exams, Flashcards, Notes, Goals, Habits, Time, Budget, Assignments, Daily Routine, Deep Flow, Attendance and Settings. It lives in `components/common/PageMascot.js`.
+- **Placement:** it is part of each header row, not floating over the page, so it never covers a button or scrolls over content. `PageHeader` carries it for the pages that use it; the five pages with their own headers carry it by hand. On Subjects the subtitle now wraps to two lines so the buttons and the mascot fit on the title row.
+- **Default:** until you pick one, the sloth shows. It follows whatever you pick in the profile card.
+- **Not added:** the dashboard (its profile card already shows the mascot) and detail pages (a subject, a flashcard deck, the routine viewer).
+- **Checked in a browser:** Subjects, Deep Flow, Daily Routine, Attendance, Assignments and Settings at 1280 px wide. Not checked on a phone.
+
 ### Ten mascots you can pick as your profile picture
 - **Decision:** the ten characters you liked are now mascots: Cap, Chill Dev (the bearded one), Sloth, and seven robots (Radio, Rocket, Goggle, Toaster, Antenna, Box, Violet). Pick one from the profile card on the dashboard ("Mascot" on hover, or "Pick a mascot" before you've set anything) or from the account menu in the navbar ("Choose mascot").
 - **How it's stored:** `profile.mascot` holds the id. Picking a mascot clears an uploaded photo, and uploading a photo clears the mascot, so only one is ever active. `Avatar` also takes a `mascot` prop.
