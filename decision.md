@@ -8,6 +8,14 @@ Update this file with every change.
 
 ## 2026-10-06 — Mascots
 
+### The mascots now follow the cursor (page-mascot library)
+- **Decision:** the ten mascots are now live characters from [nilbuild/page-mascot](https://github.com/nilbuild/page-mascot) (MIT). The head turns toward the mouse, and a click makes it blink and react (a heart, a sparkle, a grin; dizzy after four quick pokes). This works in the page headers and in the big one on the dashboard profile card.
+- **Same ten characters:** your ten picks were all in the library. Their library names are cap, kamran (Chill Dev), sloth, radio, rocket, scout (Goggle Bot), toaster, tv (Antenna Bot), cube (Box Bot) and drone (Violet Bot). The saved ids didn't change, so anyone who already picked one keeps it.
+- **Not the whole library:** only the ten are copied in, as WebP and scaled to 810 px. The whole set is 1.8 MB. A page loads only the user's own mascot, about 185 KB for its two sheets. The picker and navbar use a 5 KB preview per mascot.
+- **Code:** the library's component is copied into `components/common/Mascot.js`, not installed from npm. It's one small file and needs no build step for TypeScript. Its MIT licence sits next to the images in `public/mascots/LICENSE-page-mascot.txt`.
+- **Phones:** there's no mouse, so the head stays facing forward; tapping still makes it react.
+- **Checked in a browser:** the head follows the mouse on Subjects and the dashboard card, and a click shows the heart reaction.
+
 ### The mascot sits in the top-right corner of the pages
 - **Decision:** your mascot (no card behind it, about 64 px tall, 48 px on phones) now sits at the right end of the page header on Subjects, Grades, Exams, Flashcards, Notes, Goals, Habits, Time, Budget, Assignments, Daily Routine, Deep Flow, Attendance and Settings. It lives in `components/common/PageMascot.js`.
 - **Placement:** it is part of each header row, not floating over the page, so it never covers a button or scrolls over content. `PageHeader` carries it for the pages that use it; the five pages with their own headers carry it by hand. On Subjects the subtitle now wraps to two lines so the buttons and the mascot fit on the title row.
@@ -18,7 +26,7 @@ Update this file with every change.
 ### Ten mascots you can pick as your profile picture
 - **Decision:** the ten characters you liked are now mascots: Cap, Chill Dev (the bearded one), Sloth, and seven robots (Radio, Rocket, Goggle, Toaster, Antenna, Box, Violet). Pick one from the profile card on the dashboard ("Mascot" on hover, or "Pick a mascot" before you've set anything) or from the account menu in the navbar ("Choose mascot").
 - **How it's stored:** `profile.mascot` holds the id. Picking a mascot clears an uploaded photo, and uploading a photo clears the mascot, so only one is ever active. `Avatar` also takes a `mascot` prop.
-- **Images:** cut out of your screenshots into transparent PNGs in `frontend/public/mascots/`, upscaled 4x. The source characters were only about 60-100 px wide, so they look soft when shown large (the profile card). Send the originals, or re-generate at higher resolution, and drop them in with the same file names.
+- **Images:** first cut out of your screenshots as PNGs; since replaced by the library's own sheets (see "The mascots now follow the cursor").
 - **Profile card:** hovering the card now shows one button, "Change mascot", which opens the picker popup. It replaces the old "Change photo" / "Add photo" buttons, so the card no longer uploads photos. It is always visible on touch screens, which can't hover. The navbar menu still lets you upload a photo.
 - **Not done:** the mascot doesn't react to anything yet (no animation, no tips). It is a picker only.
 
