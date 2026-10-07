@@ -26,7 +26,7 @@ function makePalettes(count, seed) {
   }));
 }
 
-const SHAPE_ONLY = /^--(shadow-(neu|neu-sm|neu-inset|clay-brand|heading|glass)|grad-.*)$/;
+const SHAPE_ONLY = /^--(shadow-(neu|neu-sm|neu-inset|clay-brand|clay-sage|heading|glass)|grad-.*)$/;
 
 describe('random palettes (property test)', () => {
   const palettes = makePalettes(200, 20261007);

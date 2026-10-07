@@ -6,6 +6,7 @@ import ThemeApplier from "./ThemeApplier";
 import { useAppTheme } from "./useAppTheme";
 import { DEFAULT_THEME } from "../design/theme/theme";
 import { migratePreferences } from "./migrate";
+import { THEME_CACHE_VERSION } from "../design/theme/applyTheme";
 
 jest.mock("../services/api", () => ({
   AUTH_EVENT: "ff:auth",
@@ -113,11 +114,11 @@ describe("corrupted storage at load", () => {
     mount();
     expect(canvas()).toBe("26 11 61");
     const c = JSON.parse(localStorage.getItem(CACHE));
-    expect(c.v).toBe(1);
+    expect(c.v).toBe(THEME_CACHE_VERSION);
   });
 
   it("a stale device cache for a theme that is no longer saved is removed once the default applies", () => {
-    localStorage.setItem(CACHE, JSON.stringify({ v: 1, tokens: { "--canvas": "0 0 0" }, scheme: "dark", meta: "#000000" }));
+    localStorage.setItem(CACHE, JSON.stringify({ v: THEME_CACHE_VERSION, tokens: { "--canvas": "0 0 0" }, scheme: "dark", meta: "#000000" }));
     mount();
     expect(localStorage.getItem(CACHE)).toBeNull();
   });

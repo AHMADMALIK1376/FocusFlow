@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { readThemeCache } from './applyTheme';
+import { readThemeCache, THEME_CACHE_VERSION } from './applyTheme';
 import { deriveTokens } from './deriveTokens';
 import { DEFAULT_THEME } from './theme';
 
@@ -17,7 +17,7 @@ beforeEach(() => { root.removeAttribute('style'); localStorage.clear(); });
 // Only rgb(, linear-gradient( and var( may appear; any other CSS function (any case) is refused.
 const withToken = (k, v) => {
   const r = deriveTokens(BLACK);
-  return JSON.stringify({ v: 1, tokens: { ...r.tokens, [k]: v }, scheme: r.scheme, meta: r.metaColor });
+  return JSON.stringify({ v: THEME_CACHE_VERSION, tokens: { ...r.tokens, [k]: v }, scheme: r.scheme, meta: r.metaColor });
 };
 ['linear-gradient(red, URL(//evil.example/x.png))', 'Url(//evil.example/x)', 'expression(alert(1))', 'image-set(//evil.example/x 1x)'].forEach((v) => {
   it(`both refuse ${v}`, () => {

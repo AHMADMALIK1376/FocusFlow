@@ -66,6 +66,8 @@ const RECIPES = {
   habitDoneA: { ref: [150, 206, 170], rule: 'accent', chroma: 'accent' },
   habitDoneB: { ref: [118, 184, 142], rule: 'accent', chroma: 'accent' },
   metaColor: { ref: [232, 101, 98], rule: 'brand', chroma: 'brand' },
+  sageGlow: { ref: [120, 190, 150], rule: 'accent', chroma: 'accent' },
+  sageGlowTint: { ref: [205, 232, 214], rule: 'accent', chroma: 'accent' },
 };
 
 // Colours that mean the same thing on every theme (streak/reward sun, status colours).
@@ -264,6 +266,8 @@ export function deriveTokens(theme) {
   const BR = trip('--brand');
   const BHL = trip('brandHighlight');
   const BTINT = trip('brandTint');
+  const G = trip('sageGlow');
+  const GT = trip('sageGlowTint');
   const g = (a, b) => `linear-gradient(160deg, rgb(${a}), rgb(${b}))`;
 
   const tokens = {
@@ -305,6 +309,7 @@ export function deriveTokens(theme) {
     '--shadow-neu-sm': `0 8px 16px -8px rgb(${SC} / 0.40), inset 0 -3px 6px rgb(${TINT} / 0.30), inset 0 3px 5px rgb(${HL} / 0.9)`,
     '--shadow-neu-inset': `inset 0 4px 8px rgb(${SHADE} / 0.35), inset 0 -2px 4px rgb(${HL} / 0.9)`,
     '--shadow-clay-brand': `0 14px 26px -12px rgb(${BR} / 0.50), inset 0 6px 10px rgb(${BHL} / 0.38), inset 0 -6px 12px rgb(${BTINT} / 0.35)`,
+    '--shadow-clay-sage': `0 14px 26px -12px rgb(${G} / 0.45), 0 6px 12px -8px rgb(${G} / 0.3), inset 0 -6px 12px rgb(${GT} / 0.4), inset 0 6px 10px rgb(${HL} / 0.95)`,
     '--shadow-heading': `0 2px 0 rgb(${HL} / 0.85), 0 6px 14px rgb(${SC} / 0.28)`,
     '--glass-bg': trip('--surface'),
     '--glass-border': trip('--border'),
@@ -323,6 +328,9 @@ export function deriveTokens(theme) {
     flags,
     scheme: light ? 'light' : 'dark',
     metaColor: rgbToHex(map.metaColor),
+    // Internal recipe colours, read by the backend email palette. Not a token; never cached.
+    extras: Object.fromEntries(['shadowTint', 'heroStart', 'brandHighlight', 'brandTint', 'sageLight', 'blushLight', 'sageCardA']
+      .map((name) => [name, trip(name)])),
   };
 }
 

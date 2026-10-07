@@ -122,6 +122,7 @@ module.exports = {
         'neu-inset': 'var(--shadow-neu-inset)',
         glass: 'var(--shadow-glass)',
         'clay-brand': 'var(--shadow-clay-brand)',
+        'clay-sage': 'var(--shadow-clay-sage)',
       },
     },
   },

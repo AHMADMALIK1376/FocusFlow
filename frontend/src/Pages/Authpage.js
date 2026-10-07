@@ -168,7 +168,7 @@ export default function AuthPage() {
                 <button 
                   onClick={handleGoogleSignIn}
                   disabled={isGoogleLoading}
-                  className="w-full flex items-center justify-center gap-3 py-4 rounded-token-md bg-surface text-ink shadow-[0_14px_26px_-12px_rgb(120_190_150/0.45),0_6px_12px_-8px_rgb(120_190_150/0.3),inset_0_-6px_12px_rgb(205_232_214/0.4),inset_0_6px_10px_rgb(var(--highlight)/0.95)] hover:-translate-y-0.5 active:scale-95 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full flex items-center justify-center gap-3 py-4 rounded-token-md bg-surface text-ink shadow-clay-sage hover:-translate-y-0.5 active:scale-95 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isGoogleLoading ? (
                     <>

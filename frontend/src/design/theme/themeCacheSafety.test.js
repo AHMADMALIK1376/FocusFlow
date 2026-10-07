@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { writeThemeCache, readThemeCache } from './applyTheme';
+import { writeThemeCache, readThemeCache, THEME_CACHE_VERSION } from './applyTheme';
 import { deriveTokens } from './deriveTokens';
 import { DEFAULT_THEME } from './theme';
 
@@ -15,7 +15,7 @@ const root = document.documentElement;
 const BLACK = { ...DEFAULT_THEME, presetId: 'black', background: '#000000' };
 const good = () => {
   const r = deriveTokens(BLACK);
-  return JSON.parse(JSON.stringify({ v: 1, tokens: r.tokens, scheme: r.scheme, meta: r.metaColor }));
+  return JSON.parse(JSON.stringify({ v: THEME_CACHE_VERSION, tokens: r.tokens, scheme: r.scheme, meta: r.metaColor }));
 };
 let meta;
 
@@ -65,14 +65,14 @@ const BAD = {
   'key with space': withToken('--a b', '1 2 3'),
   'key with colon': withToken('--a:b', '1 2 3'),
   'key with semicolon': withToken('--a;color', '1 2 3'),
-  'key __proto__': '{"v":1,"scheme":"dark","meta":"#000000","tokens":{"__proto__":"1 2 3"}}',
+  'key __proto__': `{"v":${THEME_CACHE_VERSION},"scheme":"dark","meta":"#000000","tokens":{"__proto__":"1 2 3"}}`,
   'key constructor': withToken('constructor', '1 2 3'),
   'key prototype': withToken('prototype', '1 2 3'),
-  'tokens is an array of one': '{"v":1,"scheme":"dark","meta":"#000000","tokens":["1 2 3"]}',
-  'tokens is a string': '{"v":1,"scheme":"dark","meta":"#000000","tokens":"x"}',
-  'tokens null': '{"v":1,"scheme":"dark","meta":"#000000","tokens":null}',
-  'version 2': JSON.stringify({ ...good(), v: 2 }),
-  'version string': JSON.stringify({ ...good(), v: '1' }),
+  'tokens is an array of one': `{"v":${THEME_CACHE_VERSION},"scheme":"dark","meta":"#000000","tokens":["1 2 3"]}`,
+  'tokens is a string': `{"v":${THEME_CACHE_VERSION},"scheme":"dark","meta":"#000000","tokens":"x"}`,
+  'tokens null': `{"v":${THEME_CACHE_VERSION},"scheme":"dark","meta":"#000000","tokens":null}`,
+  'next version': JSON.stringify({ ...good(), v: THEME_CACHE_VERSION + 1 }),
+  'version string': JSON.stringify({ ...good(), v: String(THEME_CACHE_VERSION) }),
   'version missing': JSON.stringify({ ...good(), v: undefined }),
   'not json': '{not json',
   'json null': 'null',
@@ -109,7 +109,7 @@ describe('cache readers on bad input', () => {
   });
 
   it('a polluted prototype never leaks onto the page', () => {
-    both('{"v":1,"scheme":"dark","meta":"#000000","tokens":{"__proto__":{"polluted":"1"}}}');
+    both(`{"v":${THEME_CACHE_VERSION},"scheme":"dark","meta":"#000000","tokens":{"__proto__":{"polluted":"1"}}}`);
     expect({}.polluted).toBeUndefined();
   });
 });

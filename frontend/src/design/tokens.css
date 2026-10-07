@@ -72,6 +72,12 @@
     0 14px 26px -12px rgb(236 112 109 / 0.50),
     inset 0 6px 10px rgb(255 255 255 / 0.38),
     inset 0 -6px 12px rgb(255 190 185 / 0.35);
+  /* Sage clay: the Google sign-in button's soft green glow */
+  --shadow-clay-sage:
+    0 14px 26px -12px rgb(120 190 150 / 0.45),
+    0 6px 12px -8px rgb(120 190 150 / 0.3),
+    inset 0 -6px 12px rgb(205 232 214 / 0.4),
+    inset 0 6px 10px rgb(255 255 255 / 0.95);
   --shadow-heading: 0 2px 0 rgb(255 255 255 / 0.85), 0 6px 14px rgb(190 160 122 / 0.28);
 
   /* Glass (dropdowns, popovers) */

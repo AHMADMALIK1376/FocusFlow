@@ -48,7 +48,7 @@ describe('theme cache', () => {
     const result = deriveTokens(DARK);
     writeThemeCache(DARK, result);
     expect(JSON.parse(localStorage.getItem(RAW))).toEqual({
-      v: 1, tokens: result.tokens, scheme: 'dark', meta: result.metaColor,
+      v: THEME_CACHE_VERSION, tokens: result.tokens, scheme: 'dark', meta: result.metaColor,
     });
     expect(readThemeCache()).not.toBeNull();
   });
