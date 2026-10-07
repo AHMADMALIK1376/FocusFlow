@@ -6,6 +6,71 @@ Update this file with every change.
 
 ---
 
+## 2026-10-08 — Theme everywhere
+
+The colours a student picks now show on the pages before sign-in, the error and offline pages, the charts, the sign-in illustrations and reminder emails. With the normal FocusFlow colours nothing changes: web pages look the same, and every email is byte-for-byte the same (`services/emailDefaultSnapshot.test.js`, with a fixture captured before the refactor).
+
+### Colours remembered for the sign-in page (OQ1)
+- **Decision:** `focusflow:theme.device` holds the last signed-in student's theme (colour codes only; `design/theme/deviceTheme.js`). `PreferencesProvider` computes `shownTheme` and the colours painted come from it: the account theme once the account has loaded, otherwise the device theme, otherwise the saved one. The Design Studio still edits `theme` (the account theme).
+- The memory is written while signed in and loaded (removed when the theme is the default). It is **not** cleared on sign-out or on a 401. It is cleared by saving "Reset to FocusFlow colours", by another student's account loading, or by clearing site data. It is essential display storage like `theme.colors`, so `CONSENT_VERSION` is not bumped; the Privacy page lists it and says how to clear it.
+- `useServerSync` now returns `loaded` (true after the first load for this sign-in succeeds, finds nothing, or fails; false when signed out), so a student who has just signed in sees the remembered colours until their own arrive (no flash of the normal colours).
+
+| Situation | Painted | `theme.device` | `theme.colors` |
+|---|---|---|---|
+| Signed in, account loaded, theme X | X | X | X tokens |
+| Saves "Reset to FocusFlow colours" | default | removed | removed |
+| Signs out (X saved) | X (login page) | kept | X tokens kept |
+| Signs in, account not loaded yet | device theme | unchanged | unchanged |
+| Another student loads with theme Y / default | Y / default | Y / removed | Y / removed |
+| Account load fails | the browser's saved copy | written from it | as painted |
+| Session ends by 401 | like sign-out | kept | kept |
+| Never signed in | default | none | none |
+
+- **Trade-off (shared computers):** the next person sees the previous student's colours on the sign-in page. They hold no personal data. The owner's acceptance test (sign out, see the sign-in page in my colours) requires it.
+- **Rejected:** clearing the memory on sign-out (the sign-in page would always be coral); reusing `theme.colors` as the memory (it holds derived tokens, not the theme the engine needs for logo, charts and Lottie); keeping the whole theme in the preferences across sign-out (the next account would upload one student's colours as its own).
+- **Superseded:** the old theme-engine bullet "Sign-out: ... cache is removed" (below) no longer holds. The cache now follows `shownTheme`.
+
+### Pages before sign-in
+- Most were already tokenised (see the earlier audit), so they follow the theme as soon as it is on `<html>`. The Google sign-in button's green glow was fixed literals; it is now `--shadow-clay-sage` (`shadow-clay-sage`), derived from the Accent with its own recipes (`sageGlow`, `sageGlowTint`), default value unchanged.
+- `ErrorScreen` shows the coral app icon on the normal brand; on another brand it shows a brand-coloured tile with the FocusFlow mark (same rule as the loading logo). It uses `useActiveTheme()`, which now works outside the provider (splash, `ConnectionGate`, `CrashScreen`) by reading the remembered theme (`initialShownTheme()`: device theme, else the saved preferences' theme, else none).
+- **App icon (OQ4):** the installed icon, `manifest.json`, and the icon in emails stay coral. The phone reads the installed icon once; the email logo is the app icon, like the installed one.
+
+### Static files
+- `offline.html` carries a copy of the `ff-theme-boot` script (a test keeps it identical to `index.html`), plus a second tiny script that adds `ff-themed` when the brand is not the default coral. Its colours are now token triplets named as in `tokens.css`; with the defaults it renders the same. The icon swaps for a brand tile when themed. Its only hex is the theme-color meta (the boot script updates it).
+- `sw.js`: `ff-offline-v2` (the page changed, so the old cached copy is replaced); the mark image is cached and served offline too.
+- Notification pictures (`public/notify`) stay in FocusFlow's colours on purpose: the phone draws them outside the app, the worker cannot read the theme, and per-student pictures would need image generation on the server for every push.
+
+### Theme cache version 2
+- Tokens changed (`--shadow-clay-sage`), so `THEME_CACHE_VERSION` and the inline scripts' `c.v` are 2. After deploy a student's cached colours are ignored once: the app opens in the normal colours for a moment, then repaints and rewrites the cache. Tests now use the constant instead of a literal 1.
+
+### Reminder emails
+- **Same colour maths as the app, one copy:** the backend deploys on its own (Render, root `backend`), and the frontend files are ES modules with extensionless imports. `backend/scripts/sync-theme-engine.js` writes a generated CommonJS copy of `color.js`, `theme.js`, `deriveTokens.js` and `palettes.js` to `backend/services/theme/`, changing only the import and export lines and refusing any other form. `themeEngineSync.test.js` fails, saying how to fix it, when a copy is out of date. **Rejected:** a hand port (drifts silently); `require()` of the frontend files (not deployed with the backend).
+- `deriveTokens` returns an extra `extras` (internal recipe colours for the email: shadow tint, hero start, brand highlight, brand tint, sage light, blush light, sage card). Nothing in the app reads it and the cache does not store it.
+- `services/emailTheme.js` builds one palette `P` of hex colours (`DEFAULT_PALETTE` is exactly today's values). `emailPalette(theme)` returns that same object for no, default or invalid themes. Otherwise it derives from the theme and runs a readability pass over `EMAIL_PAIRS`: ink and muted on surface/well/canvas 4.5; coral text 3; text on coral 4.5 (2.3 on the gradient top); text on sage 4.5; chip inks 4.5; success and danger 3. The walk is the app guard's (OKLCH lightness in 0.01 steps, keeping chroma and hue).
+  - **Found when run:** on dark themes dark sage text cannot sit on both the light sage and the dark raised sage card. So when the text reaches white or black and a secondary backdrop still fails, that backdrop moves away from the text (as the app's own guard does). The first backdrop never moves. All 24 ready-made palettes and 200 random themes pass.
+  - The default palette is exempt (OQ6): white on coral is 2.96:1 today and default emails must stay identical. A test documents it.
+  - `edge` and `track` are mixes of tokens; for the default they come within 3 per channel of the old literals, which is why the default is the literal palette, not the derived one.
+- `emailTemplates.js` has no colour literals (`emailColorGuard.test.js` enforces it, and that hex in `emailTheme.js` is only inside the `palette:start`/`palette:end` markers). Text uses of coral use `coralText` (contrast-fixed), fills use `coral`.
+- **Dark themes:** the email says `color-scheme: dark only` and sets `bgcolor` on body, outer table and card, so dark-mode email apps do not invert it. Light themes keep `light only`.
+- **Icons:** the email icons are one flat colour with soft edges in the alpha channel, so a recolour is "keep the white file's alpha, set the RGB" (`services/emailIcons.js`, using `pngjs`, pure JavaScript, MIT, no dependencies; installs on Render's free plan). Tinted icons are cached (200 entries) and attached as in-memory buffers with the usual `cid`; a manifest colour still uses the file, so default attachments are unchanged. **Measured:** tinting coral reproduces the shipped `-coral.png` files with an alpha difference of 0 on all 22 icons (RGB within 1 where alpha is at least 200). **Rejected:** an SVG renderer (resvg and sharp have native or large WASM builds); keeping only the five ready-made tints (cannot match a colour).
+- **Theming never stops an email.** `loadUserTheme` returns null for no row, a missing table (migration not run), bad JSON, oversize data, an invalid theme or a database error, and never logs the data or the user. `paletteOf` falls back to the default palette if the palette code throws; `buildReminderEmail` falls back to the default email if the template throws; a failing tint falls back to the nearest ready-made icon. Each is tested, including a Proxy that throws when read.
+- **OQ2:** sign-up and password-reset code emails stay in the default look (security emails should always look the same; their call sites only have an address; sign-up has no theme yet). `codeEmail` accepts a theme only so the preview can show it.
+- **OQ3 (known gap):** the reminder answer pages opened from email buttons stay in the default look. They are not in the owner's list, and theming them would add a database read to a page with no login.
+- `scripts/preview-emails.js` writes every email in three themes (`email-previews/default`, `bold`, `dark`); `scripts/test-email.js [to] --theme dark` sends the normal test plus a sample reminder in that theme. Emoji removed from both scripts' email subjects and sample text.
+
+### Charts (`components/charts/categoryColors.js`)
+- On a custom theme the first category colour is the Brand and the second the Accent; the rest come from a fixed list (sun, peach, powder, mocha, then six more), taking each one only if it is far enough (OKLab `deltaE`) from the ones already chosen, with a fallback that takes the furthest unused one. Normal colours: today's six, untouched.
+- **Found when run:** today's own six are only 0.056 apart at the closest (sun and peach), so a minimum of 0.08 was stricter than the original. `MIN_SERIES_DE` is 0.05, and a test checks every ready-made palette and 300 random themes.
+
+### Sign-in illustrations (OQ5)
+- Recolour at load, do not replace the art (`design/theme/lottieTint.js`, `useThemedLottie`): fills and strokes with OKLCH hue between 180 and 300 degrees and chroma of at least 0.08 turn by the same hue shift as the brand moved from coral; L and C are kept; skin, hair, white, greys and yellow stay. A grey brand desaturates the decoration. Gradients are untouched. Results are cached per illustration and brand. Used on the auth pages and onboarding. The dashboard Lotties (`FocusTimer`, `AcademicCalendar`) are unchanged (follow-up).
+- **Rejected:** replacing the art with new vector pictures (a lot of work for little gain).
+
+### Guards
+- `design/colorGuard.test.js` scans the app's code for hex and numeric `rgb()/hsl()` colours; a new one fails with how to fix it. Data colours (subjects, routines, categories, status, third-party logos, neutral black/white effects, fallbacks) are listed with a reason in `design/colorAllowlist.js`; an entry whose colour is gone fails too. The engine (`design/theme/`) and `tokens.css` are the token source and are not scanned. The backend email guard is described above.
+
+---
+
 ## 2026-10-07 — Design Studio
 
 ### Where it lives
@@ -121,8 +186,8 @@ After deriving, `GUARD` checks text colours against their backdrops and nudges t
   - `readThemeCache` applies the same checks in code. Tests run both on about 45 bad caches, and keep the script's key and version in step with `applyTheme.js`.
   - The first version only refused a lowercase `url(`. The tester showed `URL(`, `image-set(` and `expression(` got through. An allow-list of the three functions a theme uses closes the whole class.
   - **Rejected:** adding blocked words one at a time.
-- **Cache shape:** `{ v: 1, tokens, scheme, meta }`. Bump `THEME_CACHE_VERSION` (and the `c.v` in the script) whenever recipes or tokens change. The default palette stores no cache (the stylesheet already has it).
-- **Sign-out:** `useServerSync` resets preferences to default, so the default is applied and the cache is removed. Same rule as the preferences themselves (shared lab computers: the next student sees the normal colours); the theme returns from the account on sign-in. Cost: the login page after sign-out uses the default colours.
+- **Cache shape:** `{ v, tokens, scheme, meta }` (`v` is 2 since Theme everywhere). Bump `THEME_CACHE_VERSION` (and the `c.v` in the script) whenever recipes or tokens change. The default palette stores no cache (the stylesheet already has it).
+- **Sign-out (superseded 2026-10-08, see Theme everywhere):** `useServerSync` resets preferences to default, so the default is applied and the cache is removed. Same rule as the preferences themselves (shared lab computers: the next student sees the normal colours); the theme returns from the account on sign-in. Cost: the login page after sign-out uses the default colours.
 - **Preview:** `previewTheme` shows colours without saving, syncing or caching. `setTheme`, `resetTheme`, `resetPreferences` and signing out end it. The editor (next task) must call `previewTheme(null)` when it closes without saving.
   - Signing out used to leave a preview on screen, because `useServerSync` resets only the saved preferences.
   - `PreferencesProvider` now listens for the signed-out event and drops the preview too.
@@ -170,7 +235,7 @@ Kinds: **UI** = interface, converted to a token with the identical default value
 | `features/subjects/parseTimetable.js:27-29` | subject palette | Keep-data | none |
 | `Pages/Authpage.js:124` | `rgb(236_112_109/0.38)`, `rgb(255_255_255/0.9)` | UI | `rgb(var(--brand)/0.38)`, `rgb(var(--highlight)/0.9)` |
 | `Pages/Authpage.js:171` | `rgb(255_255_255/0.95)` | UI | `rgb(var(--highlight)/0.95)` |
-| `Pages/Authpage.js:171` | `rgb(120_190_150/..)`, `rgb(205_232_214/..)` (Google button green glow) | Keep (decorative; no exact token, converting would change the default) | none |
+| `Pages/Authpage.js:171` | `rgb(120_190_150/..)`, `rgb(205_232_214/..)` (Google button green glow) | UI (changed 2026-10-08: it should follow the Accent) | `shadow-clay-sage` (`--shadow-clay-sage`, default value identical) |
 | `Pages/Authpage.js:183-186` | Google logo #FFC107 #FF3D00 #4CAF50 #1976D2 | Keep-data (third-party mark) | none |
 | `Pages/Authpage.js:227` | `border-white`, `hover:bg-white` on the coral panel | UI | `border-on-brand`, `hover:bg-on-brand` |
 | `components/auth/LoginForm.js:33`, `RegisterForm.js:102`, `ForgotPasswordForm.js:36`, `ResetPassword.js:53`, `VerifyForm.js:123`, `ResetPasswordVerify.js:119` | `rgb(184_220_196/0.55)`, `rgb(255_255_255/0.9)` | UI | `rgb(var(--sage)/0.55)`, `rgb(var(--highlight)/0.9)` |

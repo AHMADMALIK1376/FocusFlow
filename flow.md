@@ -35,20 +35,22 @@ Before React starts, the inline script in `public/index.html` paints the cached 
   - If the check fails, it shows the 503 page and retries every 15 s.
   - When the server answers again, it reloads.
 - **Device offline:** the browser's `offline` event → the gate's offline page. The `online` event → check → reload.
-- **App can't load at all:** `public/sw.js` handles failed page loads (`navigate` requests) by serving the cached `public/offline.html`.
+- **App can't load at all:** `public/sw.js` handles failed page loads (`navigate` requests) by serving the cached `public/offline.html` (cache `ff-offline-v2`, with the app icon and the FocusFlow mark). The page carries its own copy of the `ff-theme-boot` script, so it opens in the colours in `focusflow:theme.colors`; with a non-default brand a second small script adds `ff-themed`, which swaps the icon for a brand tile.
+- `ErrorScreen` (404, 500, 503, offline) reads `useActiveTheme()`; outside the provider that is the colours this browser remembers (see Colour theme).
 
 ### Colour theme
 1. A component calls `useAppTheme()` (`preferences/useAppTheme.js`): `theme`, `setTheme`, `resetTheme`, `previewTheme`.
 2. `PreferencesProvider` holds `state.theme` (saved, part of the v3 preferences) and `themePreview` (not saved).
    - `setTheme(next)` cleans it with `sanitizeTheme`, ends any preview and saves; it returns `false` for an invalid theme.
    - `previewTheme(next)` shows colours without saving; `previewTheme(null)` ends the preview. **The editor must call `previewTheme(null)` when it closes without saving.**
-3. `ThemeApplier` runs `useApplyColorTheme()`. In a layout effect it calls `deriveTokens(themePreview || theme)` (`design/theme/deriveTokens.js`), then `applyTheme` (every token inline on `<html>`, `color-scheme`, the `theme-color` meta).
-4. A saved theme (not a preview) is also written to `focusflow:theme.colors` by `writeThemeCache`. The default palette removes that key.
-5. Next page load: the inline script in `public/index.html` reads the cache and sets the same tokens before the first paint (the splash included).
+3. `ThemeApplier` runs `useApplyColorTheme()`. In a layout effect it calls `deriveTokens(themePreview || shownTheme)` (`design/theme/deriveTokens.js`), then `applyTheme` (every token inline on `<html>`, `color-scheme`, the `theme-color` meta).
+4. The theme on screen (not a preview) is also written to `focusflow:theme.colors` by `writeThemeCache(shownTheme, ...)`. The default palette removes that key. `shownTheme` comes from `pickShownTheme` (`design/theme/deviceTheme.js`): the account theme once `own` (signed in and `useServerSync` has loaded), otherwise the device theme, otherwise the saved one. While `own`, an effect writes the account theme to `focusflow:theme.device` (removed when it is the default).
+5. Next page load: the inline script in `public/index.html` (and the same one in `public/offline.html`) reads the cache and sets the same tokens before the first paint (the splash included). Version 2 caches only.
 6. Sync: the theme is a field of the preferences document, so `useServerSync` sends it to `USER_PREFERENCES` with everything else. `backend/utils/preferences.js` checks its shape (only `#RRGGBB` colours). `savePreferences` refuses (409) a save with a lower `schemaVersion` than the stored one, so an out-of-date tab cannot overwrite a newer document.
-7. Sign-out: `useServerSync` resets preferences to default, and `PreferencesProvider` drops any preview on the same signed-out event. So the default colours are applied and the cache key is removed.
-8. Charts and the dashboard clock call `useChartColors()` (`components/charts/chartColors.js`). It reads the active theme from context through `useActiveTheme()` (`preferences/useActiveTheme.js`: the preview if one is open, else the saved theme, cleaned), so they re-render on every preview and save. Outside a provider it falls back to `chartColors()`, which reads `<html>` (`tokenHex`).
+7. Sign-out (or a 401): `useServerSync` resets preferences to default (`loaded` goes false), and `PreferencesProvider` drops any preview and sets `signedIn` false on the same event. `own` is false, so `shownTheme` is the device theme: the sign-in page keeps the last student's colours, and `theme.device` and the cache are kept. Another account loading replaces the device theme; saving Reset removes it.
+8. Charts and the dashboard clock call `useChartColors()` (`components/charts/chartColors.js`). It reads the active theme from context through `useActiveTheme()` (`preferences/useActiveTheme.js`: the preview if one is open, else `shownTheme`, cleaned), so they re-render on every preview and save. Outside a provider `useActiveTheme()` returns `initialShownTheme()` (device theme, else the saved preferences' theme, else none), and `chartColors()` reads `<html>` (`tokenHex`). The budget pucks and home cubes call `useCategoryColors()` (`components/charts/categoryColors.js`: the normal six colours, or brand, accent and a spread-out list on a custom theme).
 9. The logo marks: `components/layout/Logo.js` and the navbar read `useActiveTheme()`. With no logo colour they render the PNG as it is. With one, `ThemedMark` paints the same shape in `rgb(var(--logo))` with a CSS mask. The loader paints in `rgb(var(--brand))` only when the brand is not the default coral (see Loading).
+10. The sign-in and onboarding illustrations call `useThemedLottie()` (`design/theme/lottieTint.js`), which turns only their blue, purple and cyan decoration by the brand's hue shift.
 
 ### Settings page — `Pages/SettingsPage.js`
 1. The header card shows the student's mascot (`components/common/Mascot.js`). "Choose mascot" opens `MascotPicker`, which saves through `updateProfile`.
@@ -149,6 +151,9 @@ Before React starts, the inline script in `public/index.html` paints the cached 
 3. `services/notifyChannels.js` sends it:
    - web push
    - email through `emailService.js` → `emailQueueService.js`, using the templates in `emailTemplates.js`
+
+#### Reminder emails
+`deliver` → `loadUserTheme(connection, user.userId)` (`emailTheme.js`: reads `USER_PREFERENCES`, null on any problem) → `buildReminderEmail(n, appUrl, theme)` (`notifyChannels.js`; falls back to the default look if the template throws) → `reminderEmail` → `emailPalette(theme)` (`emailTheme.js`, using the generated engine copy in `services/theme/`; the default or an invalid theme gives `DEFAULT_PALETTE`; others are derived and made readable) → templates in `emailTemplates.js` (colours only from the palette) → `iconAttachment` (`emailIcons.js`: the existing file for a ready-made colour, a tinted buffer for another, the nearest ready-made file if tinting fails). Sign-up and reset code emails and the answer pages stay in the default look.
 
 ---
 

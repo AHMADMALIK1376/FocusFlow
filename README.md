@@ -95,7 +95,7 @@ All data is saved per account in a PostgreSQL database, so it's the same on your
 - **Onboarding** for new accounts.
 - **26 languages** to choose from in Settings, with full translations for English, Spanish, French, German, Portuguese, Arabic, Chinese, Hindi and Urdu. The others fall back to English. Right-to-left layout works for Arabic, Urdu, Persian and Hebrew.
 - **Light and dark mode.**
-- **Design Studio** (Settings > Appearance): ready-made palettes and custom colours for the background, brand, accent, text, logo and icons, with a live preview and a readability check.
+- **Design Studio** (Settings > Appearance): ready-made palettes and custom colours for the background, brand, accent, text, logo and icons, with a live preview and a readability check. Your colours also show on the sign-in pages (this browser remembers the last student's colours), error and offline pages, charts, sign-in illustrations and reminder emails.
 - **Installable PWA** with its own icons, a home-screen shortcut and a service worker for notifications.
 - **12-hour times** everywhere in the interface. Data is stored as 24-hour time underneath.
 
@@ -106,7 +106,7 @@ All data is saved per account in a PostgreSQL database, so it's the same on your
 | Layer | Technology |
 |---|---|
 | **Frontend** | React 19 (Create React App), React Router 7, Tailwind CSS 3, Framer Motion, Recharts, dnd-kit (drag and drop), lucide-react (icons), i18next, Tesseract.js (OCR), Lottie |
-| **Backend** | Node.js, Express 4, JSON Web Tokens, bcryptjs, helmet, compression, express-rate-limit, node-cron, nodemailer (Gmail), web-push (VAPID) |
+| **Backend** | Node.js, Express 4, JSON Web Tokens, bcryptjs, helmet, compression, express-rate-limit, node-cron, nodemailer (Gmail), web-push (VAPID), pngjs (recolours email icons) |
 | **Database** | PostgreSQL on [Supabase](https://supabase.com), through `pg` |
 | **Testing** | Jest and React Testing Library (frontend), Node's built-in `node:test` runner (backend) |
 | **Hosting (plan)** | Vercel (frontend), Render (backend), Supabase (database). All free tiers. |
@@ -352,8 +352,9 @@ Run these from the `backend/` folder. All of them read `backend/.env`.
 | `node scripts/db-status.js` | Lists the tables and their row counts |
 | `node scripts/smoke-db.js` | Checks the database layer against the live database |
 | `node scripts/get-code.js <email>` | Prints the current verification or reset code for an email |
-| `node scripts/preview-emails.js` | Renders every email template into `backend/email-previews/` so you can open them in a browser. Nothing is sent. |
-| `node scripts/test-email.js` | Sends a test email |
+| `node scripts/preview-emails.js` | Renders every email template into `backend/email-previews/{default,bold,dark}/` (three themes) so you can open them in a browser; answer pages and WhatsApp text go in `email-previews/`. Nothing is sent. |
+| `node scripts/test-email.js [to] --theme dark` | Sends a test email; with `--theme default\|bold\|dark` also a sample reminder in that theme |
+| `node scripts/sync-theme-engine.js` | Refreshes the backend's copy of the app's theme engine (`services/theme/`) after the frontend one changes. A test fails when it is out of date. |
 | `node scripts/seed-user.js` | Fills a demo account with sample data |
 | `node scripts/reset-db.js` | **Deletes all accounts and data.** Use with care. |
 | `node scripts/migrate-*.js` | Older one-off migrations kept for existing databases. A fresh database only needs `run-init.js`. |
