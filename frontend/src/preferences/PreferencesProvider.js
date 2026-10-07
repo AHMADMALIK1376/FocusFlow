@@ -9,6 +9,7 @@ import storage from '../storage/storageAdapter';
 import { useServerSync } from './useServerSync';
 import { segmentFromAge } from './segment';
 import { migratePreferences } from './migrate';
+import { DEFAULT_THEME, sanitizeTheme } from '../design/theme/theme';
 import {
   addDashboard,
   deleteDashboard,
@@ -44,8 +45,10 @@ function load() {
 
 export function PreferencesProvider({ children }) {
   const [state, setState] = useState(() => migratePreferences(load()));
+  // Colours being tried in the editor: shown, but never stored or synced.
+  const [themePreview, setThemePreview] = useState(null);
 
-  // Persist whole v2 object whenever state changes
+  // Persist whole v3 object whenever state changes
   useEffect(() => {
     storage.set(KEY, state);
   }, [state]);
@@ -169,9 +172,36 @@ export function PreferencesProvider({ children }) {
     });
   }, []);
 
+  // ── Colour theme ──────────────────────────────────────────────────────────
+  const setTheme = useCallback((next) => {
+    const clean = sanitizeTheme(next);
+    if (!clean) return false;
+    setThemePreview(null);
+    setState((prev) => ({ ...prev, theme: clean }));
+    return true;
+  }, []);
+
+  const resetTheme = useCallback(() => {
+    setThemePreview(null);
+    setState((prev) => ({ ...prev, theme: { ...DEFAULT_THEME } }));
+  }, []);
+
+  // previewTheme(null) ends the preview.
+  const previewTheme = useCallback((next) => {
+    if (next == null) {
+      setThemePreview(null);
+      return true;
+    }
+    const clean = sanitizeTheme(next);
+    if (!clean) return false;
+    setThemePreview(clean);
+    return true;
+  }, []);
+
   // ── Reset ─────────────────────────────────────────────────────────────────
   const resetPreferences = useCallback(() => {
     storage.remove(KEY);
+    setThemePreview(null);
     setState(migratePreferences(null));
   }, []);
 
@@ -198,6 +228,12 @@ export function PreferencesProvider({ children }) {
       // Legacy compat
       dashboard: activeDashboard ? activeDashboard.widgets : DEFAULT_DASHBOARD,
       updateDashboard,
+      // Colour theme
+      theme: state.theme,
+      themePreview,
+      setTheme,
+      resetTheme,
+      previewTheme,
       // Reset
       resetPreferences,
     }),
@@ -217,6 +253,11 @@ export function PreferencesProvider({ children }) {
       toggleWidget,
       reorderWidgets,
       updateDashboard,
+      state.theme,
+      themePreview,
+      setTheme,
+      resetTheme,
+      previewTheme,
       resetPreferences,
     ]
   );
