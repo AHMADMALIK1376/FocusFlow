@@ -4,23 +4,42 @@
 // gives a soft clay "puff", fades and starts again.
 // The line images come from scripts/make-logo.py.
 import React, { useRef } from 'react';
+import ThemedMark from './ThemedMark';
+import { useActiveTheme } from '../../preferences/useActiveTheme';
+import { DEFAULT_THEME } from '../../design/theme/theme';
 
 const SIZES = { small: 28, medium: 72, large: 110 };
 
 export const LoadingSpinner = ({ size = 'medium', fullScreen = false, message = 'Loading…' }) => {
+  const t = useActiveTheme();
+  // The coral PNGs stay for the default brand; any other brand paints the same shape in it.
+  const brandFill = t && t.brand !== DEFAULT_THEME.brand ? 'rgb(var(--brand))' : null;
   const px = typeof size === 'number' ? size : (SIZES[size] || SIZES.medium);
 
   const spinner = (
     <div className="ff-loader flex flex-col items-center justify-center gap-2" role="status" aria-live="polite" aria-label={message || 'Loading'}>
       <div className="ff-loader-logo" style={{ width: px, height: px }}>
-        <img src="/logo/mark-top-coral.png" alt="" className="ff-loader-line ff-loader-top" />
-        <img src="/logo/mark-bottom-coral.png" alt="" className="ff-loader-line ff-loader-bottom" />
+        {brandFill ? (
+          <>
+            <span className="ff-loader-line ff-loader-top">
+              <ThemedMark src="/logo/mark-top-coral.png" fill={brandFill} className="w-full h-full" />
+            </span>
+            <span className="ff-loader-line ff-loader-bottom">
+              <ThemedMark src="/logo/mark-bottom-coral.png" fill={brandFill} className="w-full h-full" />
+            </span>
+          </>
+        ) : (
+          <>
+            <img src="/logo/mark-top-coral.png" alt="" className="ff-loader-line ff-loader-top" />
+            <img src="/logo/mark-bottom-coral.png" alt="" className="ff-loader-line ff-loader-bottom" />
+          </>
+        )}
       </div>
       {message ? <p className="text-sm text-muted font-bold tracking-wide ff-loader-msg">{message}</p> : null}
       <style>{`
         .ff-loader-logo { position: relative; animation: ff-puff 2.8s ease-in-out infinite; }
         .ff-loader-line {
-          position: absolute; inset: 0; width: 100%; height: 100%;
+          position: absolute; inset: 0; width: 100%; height: 100%; display: block;
           /* a soft-edged wipe = the "pen". With a 200%-wide mask the edge sweeps
              across the whole logo as the position goes 100% → -12%. */
           -webkit-mask-image: linear-gradient(90deg, #000 45%, transparent 55%);
