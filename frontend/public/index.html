@@ -12,10 +12,13 @@
         try {
           var c = JSON.parse(localStorage.getItem('focusflow:theme.colors') || 'null');
           if (!c || c.v !== 1 || !c.tokens || typeof c.tokens !== 'object') return;
-          var name = /^--[a-z0-9-]+$/, safe = /^[0-9a-z .,%()\/#-]+$/i, keys = [], k, v;
+          var name = /^--[a-z0-9-]+$/, safe = /^[0-9a-z .,%()\/#-]+$/i, fn = /([a-z-]+)\(/gi;
+          var ok = /^(rgb|linear-gradient|var)$/, keys = [], k, v, f;
           for (k in c.tokens) {
             v = c.tokens[k];
-            if (!name.test(k) || typeof v !== 'string' || !safe.test(v) || v.indexOf('url(') >= 0) return;
+            if (!name.test(k) || typeof v !== 'string' || !safe.test(v)) return;
+            fn.lastIndex = 0; // only the CSS functions a theme uses (no url(, image-set(, ...)
+            while ((f = fn.exec(v))) if (!ok.test(f[1])) return;
             keys.push(k);
           }
           var root = document.documentElement;

@@ -37,9 +37,11 @@ export function readThemeCache() {
   if (!c || c.v !== THEME_CACHE_VERSION || !c.tokens || typeof c.tokens !== 'object') return null;
   const name = /^--[a-z0-9-]+$/;
   const safe = /^[0-9a-z .,%()/#-]+$/i;
+  const ok = /^(rgb|linear-gradient|var)$/; // only the CSS functions a theme uses (no url(, image-set(, ...)
   for (const k of Object.keys(c.tokens)) {
     const v = c.tokens[k];
-    if (!name.test(k) || typeof v !== 'string' || !safe.test(v) || v.includes('url(')) return null;
+    if (!name.test(k) || typeof v !== 'string' || !safe.test(v)) return null;
+    if ([...v.matchAll(/([a-z-]+)\(/gi)].some((m) => !ok.test(m[1]))) return null;
   }
   if (c.scheme !== 'light' && c.scheme !== 'dark') return null;
   if (!/^#[0-9a-fA-F]{6}$/.test(c.meta)) return null;
