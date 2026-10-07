@@ -31,7 +31,8 @@ export function writeThemeCache(theme, result) {
   });
 }
 
-// Same checks as the inline script; anything unexpected gives null.
+// Same checks as the inline script; anything unexpected gives null. The app itself never
+// reads the cache (the inline script does); this mirror lets the tests prove both agree.
 export function readThemeCache() {
   const c = storage.get(THEME_CACHE_KEY, null);
   if (!c || c.v !== THEME_CACHE_VERSION || !c.tokens || typeof c.tokens !== 'object') return null;

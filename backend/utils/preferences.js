@@ -41,4 +41,15 @@ function validatePreferences(body) {
     return { ok: true, json };
 }
 
-module.exports = { MAX_BYTES, validatePreferences, themeOk };
+// An app from before a schema change reads a newer document as an old one and would
+// upload a mangled copy (the pre-v3 app turns a v3 document into one default dashboard).
+// So a save whose schemaVersion is lower than the stored one is refused. A stored copy
+// that cannot be read never blocks a save.
+function isDowngrade(storedJson, incomingVersion) {
+    let stored;
+    try { stored = JSON.parse(storedJson); } catch { return false; }
+    const current = stored && stored.schemaVersion;
+    return typeof current === 'number' && current > incomingVersion;
+}
+
+module.exports = { MAX_BYTES, validatePreferences, themeOk, isDowngrade };

@@ -44,7 +44,7 @@ Before React starts, the inline script in `public/index.html` paints the cached 
 3. `ThemeApplier` runs `useApplyColorTheme()`. In a layout effect it calls `deriveTokens(themePreview || theme)` (`design/theme/deriveTokens.js`), then `applyTheme` (every token inline on `<html>`, `color-scheme`, the `theme-color` meta).
 4. A saved theme (not a preview) is also written to `focusflow:theme.colors` by `writeThemeCache`. The default palette removes that key.
 5. Next page load: the inline script in `public/index.html` reads the cache and sets the same tokens before the first paint (the splash included).
-6. Sync: the theme is a field of the preferences document, so `useServerSync` sends it to `USER_PREFERENCES` with everything else. `backend/utils/preferences.js` checks its shape (only `#RRGGBB` colours).
+6. Sync: the theme is a field of the preferences document, so `useServerSync` sends it to `USER_PREFERENCES` with everything else. `backend/utils/preferences.js` checks its shape (only `#RRGGBB` colours). `savePreferences` refuses (409) a save with a lower `schemaVersion` than the stored one, so an out-of-date tab cannot overwrite a newer document.
 7. Sign-out: `useServerSync` resets preferences to default, and `PreferencesProvider` drops any preview on the same signed-out event. So the default colours are applied and the cache key is removed.
 8. Charts read `--brand` and `--sage` from `<html>` through `chartColors()` (`tokenHex`).
 

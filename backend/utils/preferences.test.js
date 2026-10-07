@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { MAX_BYTES, validatePreferences } = require('./preferences');
+const { MAX_BYTES, validatePreferences, isDowngrade } = require('./preferences');
 
 test('a normal preferences object is accepted and returned as JSON text', () => {
   const r = validatePreferences({ data: { schemaVersion: 2, profile: { mascot: 'sloth' }, dashboards: [] } });
@@ -150,4 +150,19 @@ test('shared table: a theme with a bad colour is never stored', () => {
 
 test('themeOk is stricter on nothing the app writes: v 2 passes here (the app only writes 1)', () => {
   assert.equal(themeOk({ ...SB, v: 2 }), true);
+});
+
+test('an older app cannot overwrite a newer saved document', () => {
+    const v3 = JSON.stringify({ schemaVersion: 3, dashboards: [] });
+    assert.equal(isDowngrade(v3, 2), true);   // a pre-theme tab saving a mangled copy
+    assert.equal(isDowngrade(v3, 3), false);  // same version
+    assert.equal(isDowngrade(v3, 4), false);  // newer app
+    assert.equal(isDowngrade(JSON.stringify({ schemaVersion: 2 }), 3), false); // the upgrade itself
+});
+
+test('a stored copy that cannot be read never blocks a save', () => {
+    assert.equal(isDowngrade('{not json', 2), false);
+    assert.equal(isDowngrade('null', 2), false);
+    assert.equal(isDowngrade(JSON.stringify({ schemaVersion: '3' }), 2), false);
+    assert.equal(isDowngrade(JSON.stringify({}), 2), false);
 });

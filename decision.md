@@ -66,7 +66,15 @@ After deriving, `GUARD` checks text colours against their backdrops and nudges t
   - `PreferencesProvider` now listens for the signed-out event and drops the preview too.
 
 ### Other choices
-- Schema v3 migration: v2 and v3 documents are kept, an invalid or missing `theme` becomes the default; any other schema version still takes the v1 path. Old open tabs that save a v2 document lose the theme (nothing else), a known small risk during deploy.
+- Schema v3 migration: v2 and v3 documents are kept, an invalid or missing `theme` becomes the default; any other schema version still takes the v1 path.
+- **Deploy window (found by the reviewer).**
+  - The app before this change treats any version other than 2 as the old v1 format.
+  - So a tab or a backgrounded phone app that is still running the old code, and loads a v3 document after signing in, turns every workspace into one default dashboard. Its next save would upload that copy over the account.
+  - Old code cannot be fixed. So the server now refuses a save whose `schemaVersion` is lower than the stored one: 409, "This copy of FocusFlow is out of date" (`isDowngrade` in `backend/utils/preferences.js`, used by `savePreferences`).
+  - The old app ignores failed saves, so it just stops syncing until it is reloaded. The account copy is never overwritten, and an unreadable stored copy never blocks a save.
+  - Rolling the frontend back past this change would stop preference saves to the account, though nothing is lost, until it is deployed again.
+  - **Rejected:** only telling the owner to reload every tab; a phone left in the background is easy to forget.
+  - Still worth doing after deploying: reload open tabs and fully close and reopen the installed app.
 - Server: `backend/utils/preferences.js` checks the theme's shape (only `#RRGGBB`, `auto`, a short preset id, known keys) because the theme becomes CSS on every page. No database change, no migration.
 - Charts need hex (`${hex}66` trick, SVG fills), so `chartColors()` reads the live `--brand` and `--sage` from `<html>`. Charts pick up a new theme on their next render, which is fine while the editor lives on the Settings page.
 - `focusflow:theme.colors` is essential storage, so `CONSENT_VERSION` is not bumped; the Privacy page lists it.

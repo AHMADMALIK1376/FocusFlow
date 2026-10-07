@@ -1,5 +1,5 @@
 const { getConnection } = require('../config/database');
-const { validatePreferences } = require('../utils/preferences');
+const { validatePreferences, isDowngrade } = require('../utils/preferences');
 
 // GET /api/preferences  ->  { data: {...} | null, updatedAt }
 exports.getPreferences = async (req, res) => {
@@ -29,6 +29,13 @@ exports.savePreferences = async (req, res) => {
   let connection;
   try {
     connection = await getConnection();
+    const existing = await connection.execute(
+      `SELECT data FROM USER_PREFERENCES WHERE user_id = :userId`,
+      { userId: req.user.userId }
+    );
+    if (existing.rows.length && isDowngrade(existing.rows[0].DATA, req.body.data.schemaVersion)) {
+      return res.status(409).json({ error: 'This copy of FocusFlow is out of date. Reload the page to save your settings.' });
+    }
     await connection.execute(
       `INSERT INTO USER_PREFERENCES (user_id, data, updated_at) VALUES (:userId, :data, CURRENT_TIMESTAMP)
        ON CONFLICT (user_id) DO UPDATE SET data = EXCLUDED.data, updated_at = CURRENT_TIMESTAMP`,
