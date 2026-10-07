@@ -4,6 +4,7 @@ import { useNavigate, Navigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import Lottie from "lottie-react";
 import workAnim from "../assets/animation/Man Working on Laptop in Office.json";
+import { useThemedLottie } from "../preferences/useThemedLottie";
 import { usePreferences } from "../preferences/usePreferences";
 import { needsOnboarding, clearNeedsOnboarding } from "../features/onboarding/needsOnboarding";
 import { ageFromDOB, segmentFromAge } from "../preferences/segment";
@@ -58,6 +59,7 @@ export default function OnboardingPage() {
     activeDashboardId,
   } = usePreferences();
   const { toast } = useToast();
+  const animation = useThemedLottie(workAnim); // decoration follows the brand colour
 
   const [step, setStep] = useState(0);
   const [dir, setDir] = useState(1);
@@ -225,7 +227,7 @@ export default function OnboardingPage() {
         </div>
 
         <div className="relative z-10 w-full max-w-[300px] mx-auto -my-4">
-          <Lottie animationData={workAnim} loop className="w-full h-auto" />
+          <Lottie animationData={animation} loop className="w-full h-auto" />
         </div>
 
         <div className="relative z-10">

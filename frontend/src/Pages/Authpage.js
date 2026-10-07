@@ -10,6 +10,7 @@ import Lottie from "lottie-react";
 
 import workingAnimationData from "../assets/animation/Man Working on Laptop in Office.json"; 
 import securityAnimationData from "../assets/animation/Profile Password Unlock.json"; 
+import { useThemedLottie } from "../preferences/useThemedLottie";
 
 export default function AuthPage() {
   const location = useLocation();
@@ -26,6 +27,7 @@ export default function AuthPage() {
 
   const isLogin = location.pathname === "/login";
   const isVerify = location.pathname === "/verify";
+  const animationData = useThemedLottie(isVerify ? securityAnimationData : workingAnimationData); // decoration follows the brand colour
   const syncTransition = "transition-all duration-[700ms] ease-[cubic-bezier(0.4,0,0.2,1)]";
 
   // Google Sign-In Handler using native API
@@ -210,7 +212,7 @@ export default function AuthPage() {
                 {isLoaded && (
                   <Lottie 
                     key={isVerify ? "v-anim" : "a-anim"}
-                    animationData={isVerify ? securityAnimationData : workingAnimationData} 
+                    animationData={animationData} 
                     loop={true} 
                     className="w-full h-full transition-opacity duration-500" 
                   />
