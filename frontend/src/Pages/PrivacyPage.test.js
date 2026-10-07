@@ -33,5 +33,5 @@ test("lists the remembered sign-in colours and how to remove them", () => {
   render(<PrivacyPage />);
   expect(screen.getByText("focusflow:theme.device")).toBeInTheDocument();
   expect(screen.getByText(/keeps them after signing out/)).toBeInTheDocument();
-  expect(screen.getByText(/save Reset to FocusFlow colours/)).toBeInTheDocument();
+  expect(screen.getByText(/Resetting to FocusFlow colours/)).toBeInTheDocument();
 });
