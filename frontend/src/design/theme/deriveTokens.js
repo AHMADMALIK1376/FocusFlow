@@ -5,7 +5,7 @@
 // Afterwards a guard nudges text colours until they are readable (WCAG AA).
 import {
   hexToRgb, rgbToHex, rgbToTriplet, tripletToRgb, rgbToOklch, oklchToRgb,
-  contrastRatio, WHITE, BLACK,
+  contrastRatio, relativeLuminance, WHITE, BLACK,
 } from './color';
 import { DEFAULT_THEME, sanitizeTheme, isDefaultPalette } from './theme';
 
@@ -163,9 +163,15 @@ function runGuard(map) {
     return cur;
   };
 
-  GUARD.forEach(({ fg, against }) => {
+  // Everything read on the page or on cards moves the same way as the main text, so a
+  // shared backdrop (e.g. --highlight) is never pushed lighter by one entry and darker by
+  // another (on mid-tone backgrounds that left --ink white and --muted black).
+  let textDir = null;
+  const runEntry = ({ fg, against }) => {
     const primary = map[against[0][0]];
-    const dir = contrastRatio(WHITE, primary) > contrastRatio(BLACK, primary) ? 1 : -1;
+    const own = contrastRatio(WHITE, primary) > contrastRatio(BLACK, primary) ? 1 : -1;
+    const onPage = against[0][0] === '--canvas' || against[0][0] === '--surface';
+    const dir = onPage && textDir !== null ? textDir : own;
     const before = map[fg];
     if (!passes(before, against)) {
       map[fg] = walk(before, dir, (c) => passes(c, against));
@@ -178,7 +184,17 @@ function runGuard(map) {
       map[bg] = walk(old, -dir, (c) => contrastRatio(map[fg], c) >= min);
       if (!same(old, map[bg])) flag(bg);
     });
-  });
+    if (fg === '--ink') {
+      textDir = relativeLuminance(map['--ink']) > relativeLuminance(map['--canvas']) ? 1 : -1;
+    }
+  };
+
+  // Safety net: a later entry may still move a backdrop an earlier one checked, so repeat
+  // until a full pass finds nothing to fix (it settles in one or two passes).
+  for (let pass = 0; pass < 4; pass++) {
+    GUARD.forEach(runEntry);
+    if (GUARD.every(({ fg, against }) => passes(map[fg], against))) break;
+  }
   return flags;
 }
 

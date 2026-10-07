@@ -1,0 +1,99 @@
+import fs from 'fs';
+import path from 'path';
+import { deriveTokens, contrastFailures, NON_THEME_VARS } from './deriveTokens';
+import { DEFAULT_THEME } from './theme';
+import { tripletToRgb } from './color';
+
+// Small deterministic random numbers (same palettes on every run and machine).
+function lcg(seed) {
+  let s = seed >>> 0;
+  return () => {
+    s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
+    return s / 4294967296;
+  };
+}
+const hex = (rnd) => '#' + Array.from({ length: 3 }, () => Math.floor(rnd() * 256).toString(16).padStart(2, '0')).join('').toUpperCase();
+
+function makePalettes(count, seed) {
+  const rnd = lcg(seed);
+  return Array.from({ length: count }, () => ({
+    ...DEFAULT_THEME,
+    presetId: 'random',
+    background: hex(rnd),
+    brand: hex(rnd),
+    accent: hex(rnd),
+    text: rnd() < 0.3 ? hex(rnd) : 'auto',
+  }));
+}
+
+const SHAPE_ONLY = /^--(shadow-(neu|neu-sm|neu-inset|clay-brand|heading|glass)|grad-.*)$/;
+
+describe('random palettes (property test)', () => {
+  const palettes = makePalettes(200, 20261007);
+
+  it('uses a stable generator', () => {
+    expect(palettes[0]).toEqual(makePalettes(1, 20261007)[0]);
+    expect(new Set(palettes.map((p) => p.background + p.brand + p.accent)).size).toBeGreaterThan(190);
+  });
+
+  it('every palette derives without throwing, passes every contrast rule, and has valid triplets', () => {
+    const bad = [];
+    palettes.forEach((theme) => {
+      let r;
+      try {
+        r = deriveTokens(theme);
+      } catch (e) {
+        bad.push({ theme, threw: String(e) });
+        return;
+      }
+      const fails = contrastFailures(r.tokens);
+      if (fails.length) bad.push({ theme, fails });
+      Object.entries(r.tokens).forEach(([k, v]) => {
+        if (SHAPE_ONLY.test(k)) {
+          if (/NaN|undefined|Infinity/.test(v)) bad.push({ theme, token: k, v });
+          return;
+        }
+        const rgb = tripletToRgb(v);
+        if (!rgb || !/^\d{1,3} \d{1,3} \d{1,3}$/.test(v)) bad.push({ theme, token: k, v });
+      });
+      if (!['light', 'dark'].includes(r.scheme) || !/^#[0-9A-F]{6}$/.test(r.metaColor)) bad.push({ theme, scheme: r.scheme, meta: r.metaColor });
+      if (Object.keys(r.tokens).some((k) => NON_THEME_VARS.includes(k))) bad.push({ theme, motion: true });
+    });
+    expect(bad).toEqual([]);
+  });
+
+  it('is deterministic for every palette', () => {
+    palettes.slice(0, 40).forEach((t) => expect(deriveTokens(t)).toEqual(deriveTokens({ ...t })));
+  });
+});
+
+// Proves the "no visual change" comparison would notice an edit to tokens.css.
+describe('the default-equals-tokens.css comparison can fail', () => {
+  const norm = (s) => s.replace(/\s+/g, ' ').trim();
+  const css = fs.readFileSync(path.join(__dirname, '..', 'tokens.css'), 'utf8');
+  const block = css.match(/:root\s*\{([\s\S]*?)\n\}/)[1].replace(/\/\*[\s\S]*?\*\//g, '');
+  const parsed = {};
+  block.split(';').forEach((d) => {
+    const i = d.indexOf(':');
+    const n = d.slice(0, i).trim();
+    if (n.startsWith('--')) parsed[n] = norm(d.slice(i + 1));
+  });
+  const mismatches = (copy) => Object.entries(deriveTokens(DEFAULT_THEME).tokens)
+    .filter(([k, v]) => norm(v) !== copy[k]).map(([k]) => k);
+
+  it('finds nothing in an untouched copy', () => {
+    expect(mismatches({ ...parsed })).toEqual([]);
+  });
+
+  it('catches a one-digit change to a colour, a gradient and a shadow', () => {
+    expect(mismatches({ ...parsed, '--brand': '236 112 110' })).toEqual(['--brand']);
+    expect(mismatches({ ...parsed, '--grad-hero': parsed['--grad-hero'].replace('245', '244') })).toEqual(['--grad-hero']);
+    expect(mismatches({ ...parsed, '--shadow-neu': parsed['--shadow-neu'].replace('0.42', '0.43') })).toEqual(['--shadow-neu']);
+  });
+
+  it('catches a token removed from the copy', () => {
+    const { '--ink-strong': gone, ...rest } = parsed;
+    expect(gone).toBeDefined();
+    expect(mismatches(rest)).toEqual(['--ink-strong']);
+  });
+});

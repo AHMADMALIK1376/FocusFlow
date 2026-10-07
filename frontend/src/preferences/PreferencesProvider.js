@@ -7,6 +7,7 @@ import React, {
 } from 'react';
 import storage from '../storage/storageAdapter';
 import { useServerSync } from './useServerSync';
+import { AUTH_EVENT } from '../services/api';
 import { segmentFromAge } from './segment';
 import { migratePreferences } from './migrate';
 import { DEFAULT_THEME, sanitizeTheme } from '../design/theme/theme';
@@ -55,6 +56,16 @@ export function PreferencesProvider({ children }) {
 
   // ...and keep a copy on the student's account, so it follows them to any device.
   useServerSync(state, setState, KEY);
+
+  // Signing out resets the saved preferences (useServerSync); drop any colour preview too,
+  // so the next person at this computer sees the normal colours.
+  useEffect(() => {
+    const onAuth = (e) => {
+      if (!(e.detail && e.detail.signedIn)) setThemePreview(null);
+    };
+    window.addEventListener(AUTH_EVENT, onAuth);
+    return () => window.removeEventListener(AUTH_EVENT, onAuth);
+  }, []);
 
   // ── Derived: active dashboard ─────────────────────────────────────────────
   const activeDashboard = useMemo(() => {
