@@ -6,6 +6,144 @@ Update this file with every change.
 
 ---
 
+## 2026-10-07 — Theme engine (foundation)
+
+### The model: three colours in, every token out
+- **Decision:** a theme is `{ v, background, brand, accent, text ('auto' or hex), optional logo and icon, presetId }`. `design/theme/deriveTokens.js` turns it into every colour token in `tokens.css`, `applyTheme.js` writes them inline on `<html>`, and the theme is saved with the account (`USER_PREFERENCES`, schema v3). This task is the foundation only: there is no editor yet.
+- **Why OKLCH, calibrated from today's values:** each token is a "recipe" measured once at load from today's colours (for example "surface is a touch lighter than the page, with the page's tint"). The default theme therefore comes out as exactly the shipped values, with no special case in the maths. A test parses `tokens.css` and checks every derived value is identical.
+- **Rejected:** hand-tuned palettes per theme (does not work for a free colour picker); HSL (lightness is uneven between hues, so contrast would be unpredictable); a colour library (rule: no new dependencies).
+
+### Dark backgrounds
+- A background counts as dark when white reads better on it than black.
+- Tokens that are lighter than the page (`--blush`, notes, `--border`, sage-card gradient) stay lighter on dark themes ("raise"), so cards still lift off the page.
+- The lighter-than-page steps are scaled up on backgrounds darker than the default ("lift"), because a tiny step is invisible on near-black.
+- Auto text on a dark page is as light as today's page background. Shadows get darker than the page; the white highlight becomes a soft light tone, not a white glow.
+
+### Fixed colours
+- Sunshine (`--sun`, `--brand-soft`, `--on-sun`) and the status colours (`--success`, `--info`, `--warn`, `--focus`, `--warn-ink`) are the same on every theme. Sunshine is the streak/reward signal and the status colours are signals, so they keep their meaning. Sunshine is never used as text (`on-sun` on `sun` is 8.85:1).
+- The guard may still move a status colour if it is unreadable on a theme's surface.
+- `--dur*`, `--ease-spring`, radii and `--glass-blur` are not themed. Setting `--dur*` inline would also defeat the `prefers-reduced-motion` override in `tokens.css`.
+
+### Readability guard (WCAG 2)
+After deriving, `GUARD` checks text colours against their backdrops and nudges the text lightness in 0.01 steps (keeping tint) until it passes. If text hits pure white or black and still fails a secondary backdrop, that backdrop is nudged instead. Flags list what was moved.
+
+| Pair | Needed | Today's ratio |
+|---|---|---|
+| ink on canvas, surface, surface-2, highlight, blush, notes, sage cards | 4.5 | above 4.5 (11.4 on canvas) |
+| muted on surface, highlight | 4.5 | 4.46 on surface |
+| ink-strong on surface | 4.5 | above 4.5 |
+| on-brand on brand | 4.5 | 2.96 |
+| on-brand on hero gradient start | 2.3 | 2.33 |
+| on-sage on sage, sage light, habit done A | 4.5 | above 4.5 (6.98 on sage) |
+| on-sage on habit done B | 4.4 | 4.47 |
+| sage-deep, icon on surface | 2.4 | 2.47 |
+| chart-label on surface | 4.5 | above 4.5 |
+| chart-axis, success, info, focus on surface | 3 | 3.06, 3.20, 3.04, 3.52 |
+| warn on surface | 2 | 2.00 |
+| warn-ink on surface | 4.5 | above 4.5 |
+
+- The owner's five pairs (ink/canvas, ink/surface, muted/surface, on-brand/brand, on-sage/sage) use 4.5. Every extra pair uses "the WCAG target or today's ratio rounded down to 0.1, whichever is lower", so no theme is ever worse than today.
+- **Open question for the owner (OQ1):** today's default fails two of the five pairs: white on coral is 2.96:1 (needs 4.5) and muted on surface is 4.46:1 (needs 4.5). "Look exactly the same" and "every pair passes" cannot both hold. **Chosen (A):** the shipped default palette is exempt from the guard and stays byte-identical; every other palette must pass. A test documents the two failures. Alternatives: (B) required pairs only need "AA or today's ratio, whichever is lower"; (C) full AA for everyone, so the default changes (muted a level darker; text on coral becomes dark).
+- **Logo and icon overrides (OQ2):** both are optional `#RRGGBB`. `logo` overrides `--logo` (no component uses it yet). `icon` overrides the new `--icon`, used by the two sage icon tiles (`WidgetShell.js`, `EmptyState.js`).
+- **Ghost bin (OQ3, resolved):** the hover-only bin on cards used a literal `rgb(20, 20, 20)`. It now uses a new `--ink-strong` token with default `20 20 20` (recipe: a step beyond ink, away from the page). So the default look is unchanged anywhere, and on dark themes the icon turns light instead of vanishing.
+
+### No flash on load: an inline script
+- `public/index.html` has a small inline script that reads `focusflow:theme.colors` and sets the tokens before anything paints. The splash renders before `PreferencesProvider` mounts, so only an inline script can theme it.
+- There is no Content-Security-Policy on the app's pages (`vercel.json` sets none; the helmet CSP only covers API responses), so inline is allowed. **Rejected:** a separate script file (one more blocking request before first paint).
+- **All or nothing:** one bad entry (wrong version, a name that is not `--lowercase`, a value with `;` or `url(`) and nothing is applied. `readThemeCache` applies the same checks in code, and a test keeps the script's key and version in step with `applyTheme.js`.
+- **Cache shape:** `{ v: 1, tokens, scheme, meta }`. Bump `THEME_CACHE_VERSION` (and the `c.v` in the script) whenever recipes or tokens change. The default palette stores no cache (the stylesheet already has it).
+- **Sign-out:** `useServerSync` resets preferences to default, so the default is applied and the cache is removed. Same rule as the preferences themselves (shared lab computers: the next student sees the normal colours); the theme returns from the account on sign-in. Cost: the login page after sign-out uses the default colours.
+- **Preview:** `previewTheme` shows colours without saving, syncing or caching. `setTheme`, `resetTheme` and `resetPreferences` end it. The editor (next task) must call `previewTheme(null)` when it closes without saving.
+
+### Other choices
+- Schema v3 migration: v2 and v3 documents are kept, an invalid or missing `theme` becomes the default; any other schema version still takes the v1 path. Old open tabs that save a v2 document lose the theme (nothing else), a known small risk during deploy.
+- Server: `backend/utils/preferences.js` checks the theme's shape (only `#RRGGBB`, `auto`, a short preset id, known keys) because the theme becomes CSS on every page. No database change, no migration.
+- Charts need hex (`${hex}66` trick, SVG fills), so `chartColors()` reads the live `--brand` and `--sage` from `<html>`. Charts pick up a new theme on their next render, which is fine while the editor lives on the Settings page.
+- `focusflow:theme.colors` is essential storage, so `CONSENT_VERSION` is not bumped; the Privacy page lists it.
+- Removed unused legacy Tailwind entries (`focusPurple`, `focusDark`, `neuBg`, `shadow-neu-flat`, `shadow-neu-pressed`, `orbPulse`) and the dead `Style/App.css`; they held the only off-palette literals.
+
+### New tokens
+`--sage-mid`, `--icon`, `--note-1` to `--note-4`, `--warn-ink`, `--ink-strong`, `--highlight`, `--shadow-color`, `--shade`, `--chart-label`, `--chart-axis`, `--shadow-heading`, `--grad-sage-deep`. Tailwind: `highlight`, `icon`, `warn-ink`, `bg-grad-sage-deep`. The default values equal the literals they replaced.
+
+### Hard-coded colour audit
+Kinds: **UI** = interface, converted to a token with the identical default value; **Keep-data** = data or meaning colour; **Keep-neutral** = black/white alpha effects or self-contained white tooltips with black text (readable on any theme); **Keep-fill** = white sheen or icon on a coloured data/status/sun fill. `bg-white/16` on the profile card was already a no-op in Tailwind (16 is not in the opacity scale); `bg-on-brand/16` behaves the same.
+
+| File:line | Literal | Kind | Change |
+|---|---|---|---|
+| `index.css:30` | h1 text-shadow white .85 + 190 160 122 .28 | UI | `text-shadow: var(--shadow-heading);` |
+| `index.css:85-86` | mask SVG `stroke='black'` | Keep (mask alpha) | none |
+| `Style/App.css:4,5,26,30,35` | #f0f2f5 #6c5ce7 #d1d9e6 | dead file | delete file |
+| `tailwind.config.js:38-40` | focusPurple #6c5ce7, focusDark #2d3436, neuBg #f0f2f5 | unused legacy | remove |
+| `tailwind.config.js:107-118,127,141-142` | orbPulse keyframe+animation, neu-flat, neu-pressed (#d1d9e6, #c1c9d6, #ffffff, rgba(108,92,231)) | unused legacy | remove |
+| `Pages/DailyRoutine.js:54-65` | routine palette | Keep-data | none |
+| `Pages/DailyRoutine.js:348,360,598,610` | `bg-white` (behind `text-muted`) | UI | `bg-highlight` |
+| same lines | `rgba(0,0,0,0.1/0.16)` shadows | Keep-neutral | none |
+| `Pages/DailyRoutine.js:411-417` | white tooltip, `text-black`, `text-gray-500` | Keep-neutral | none |
+| `Pages/DailyRoutine.js:631` | `text-white` check on a routine colour swatch | Keep-fill | none |
+| `Pages/GoalsPage.js:67,70`, `Pages/TimeTrackPage.js:111,114`, `Pages/KanbanPage.js:171` | `"rgb(54 54 54)"` | UI | `"rgb(var(--chart-label))"` |
+| `Pages/KanbanPage.js:166,167`, `Pages/FinancePage.js:118,119`, `Pages/HabitsPage.js:77,78`, `Pages/NotesPage.js:115,116` | `"#8A93A0"` | UI | `"rgb(var(--chart-axis))"` |
+| `Pages/FinancePage.js:15,16` | income #22A06B, expense #E0606B | Keep-data | none |
+| `Pages/SubjectsPage.js:14,50,127`, `components/subjects/SubjectTable.js:16` | default subject #E86562 | Keep-data | none |
+| `components/subjects/SubjectTable.js:103` | `rgb(255 253 249 / 0.7)` | UI | `rgb(var(--surface) / 0.7)` |
+| `components/subjects/SubjectTable.js:139` | `hover:bg-black/10` | Keep-neutral | none |
+| `components/subjects/WeekBeads.js:63` | white inset on subject bead | Keep-fill | none |
+| `features/subjects/parseTimetable.js:27-29` | subject palette | Keep-data | none |
+| `Pages/Authpage.js:124` | `rgb(236_112_109/0.38)`, `rgb(255_255_255/0.9)` | UI | `rgb(var(--brand)/0.38)`, `rgb(var(--highlight)/0.9)` |
+| `Pages/Authpage.js:171` | `rgb(255_255_255/0.95)` | UI | `rgb(var(--highlight)/0.95)` |
+| `Pages/Authpage.js:171` | `rgb(120_190_150/..)`, `rgb(205_232_214/..)` (Google button green glow) | Keep (decorative; no exact token, converting would change the default) | none |
+| `Pages/Authpage.js:183-186` | Google logo #FFC107 #FF3D00 #4CAF50 #1976D2 | Keep-data (third-party mark) | none |
+| `Pages/Authpage.js:227` | `border-white`, `hover:bg-white` on the coral panel | UI | `border-on-brand`, `hover:bg-on-brand` |
+| `components/auth/LoginForm.js:33`, `RegisterForm.js:102`, `ForgotPasswordForm.js:36`, `ResetPassword.js:53`, `VerifyForm.js:123`, `ResetPasswordVerify.js:119` | `rgb(184_220_196/0.55)`, `rgb(255_255_255/0.9)` | UI | `rgb(var(--sage)/0.55)`, `rgb(var(--highlight)/0.9)` |
+| `components/calendar/AttendanceGraphPopup.js:146`, `components/routine/EditRoutinePopup.js:86` | `bg-[rgb(190_160_122/0.3)]` | UI | `bg-[rgb(var(--shadow-color)/0.3)]` |
+| `components/calendar/AttendanceGraphPopup.js:190,201,216` | black alpha | Keep-neutral | none |
+| `components/routine/EditRoutinePopup.js:9-20,44,59,81` | routine palette / default #6366f1 | Keep-data | none |
+| `components/ui/Modal.js:74,130` | `bg-[rgb(190_160_122/0.35)]` | UI | `bg-[rgb(var(--shadow-color)/0.35)]` |
+| `components/ui/Switch.js:24` | `bg-white`, `rgb(190_160_122/0.4)` | UI | `bg-highlight`, `rgb(var(--shadow-color)/0.4)` |
+| `components/ui/Button.js:24` | sun glow `rgb(230_180_0/0.5)`, white inset | Keep-fill (sun is fixed) | none |
+| `components/ui/Button.js:26` | danger `text-white`, white inset on `bg-focus` | Keep-fill (status) | none |
+| `components/ui/Badge.js:8` | `text-[rgb(133_79_11)]` | UI | `text-warn-ink` (keep `dark:text-warn`) |
+| `components/ui/DeleteButton.js:11,13,17,19`, `components/ui/CardDeleteButton.js:17,21,28,32` | path `#000` (overridden by CSS), clipPath rect white | Keep (geometry) | none |
+| `components/ui/RepeatButton.js:10` | white stroke on danger red | Keep-fill | none |
+| `components/ui/fancyControls.css:17` | `rgb(45 71 89 / 0.12)` faint dark shadow | Keep-neutral | none |
+| `fancyControls.css:37` | `#fff` bin on danger hover | Keep-fill | none |
+| `fancyControls.css:78,85` | logout `#fff` icon/text on `--grad-hero` | UI | `rgb(var(--on-brand))` |
+| `fancyControls.css:117,123,162,208,241` | danger reds | Keep-data (status) | none |
+| `fancyControls.css:138,144,156,174,190,196` | black buttons with white icon/text, black shadows | Keep-neutral (self-contained) | none |
+| `fancyControls.css:237` | ghost bin `rgb(20, 20, 20)` on cards | UI | `rgb(var(--ink-strong))`: a new token whose default is exactly `20 20 20`, so nothing changes by default and it still follows the text colour on dark themes |
+| `components/common/LoadingSpinner.js:26,27` | mask `#000` | Keep (mask alpha) | none |
+| `components/common/LoadingSpinner.js:97-118` | `rgb(214_192_162/0.3)` and `/0.18` | UI | `rgb(var(--shade)/0.3)` / `/0.18` |
+| `components/routine/DonutChart.js:11` | DONE_COLOR #B8DCC4 | UI (done state = accent) | `'rgb(var(--sage))'` |
+| `components/routine/DonutChart.js:12` | TICK_DONE #8FCDA6 | UI | `'rgb(var(--sage-mid))'` |
+| `components/routine/DonutChart.js:23-25,54,56` | task palette, locked #cbd5e1, missed #ff3b3b | Keep-data | none |
+| `components/charts/chartColors.js:5` | BRAND_HEX #EC706D | UI | live `tokenHex('--brand', '#EC706D')` |
+| `components/charts/chartColors.js:6` | ACCENT_HEX #FFD700 (sun) | Keep (sun fixed) | none |
+| `components/charts/chartColors.js:21,24` | black alpha tooltip | Keep-neutral | none |
+| `components/charts/SpendingPuckStack.js:20`, `ProgressCubeStack.js:20` | category series | Keep-data | none |
+| `components/charts/SpendingPuckStack.js:122,125`, `ProgressCubeStack.js:151,154` | `floodColor="#BEA07A"` | UI | remove the attribute, add `style={{ floodColor: "rgb(var(--shadow-color))" }}` (keep `floodOpacity`) |
+| `components/charts/ProgressCubeStack.js:131,135` | white sheen on cubes | Keep-fill | none |
+| `SpendingPuckStack.js:184,188`, `dashboard/BudgetGauge.js:68,72`, `dashboard/AttendanceHeatmap.js:166,175,244,248`, `Pages/AttendanceSkylinePage.js:497,506,623,627` | white tooltips/menus, black text | Keep-neutral | none |
+| `components/dashboard/widgets/WidgetShell.js:50`, `TimeTrackCard.js:79` | white inset on coloured bars | Keep-fill | none |
+| `components/dashboard/widgets/WidgetShell.js:37`, `components/ui/EmptyState.js:10` | `text-sage-deep` icon tiles | UI (OQ2) | `text-icon` |
+| `components/dashboard/widgets/HabitsCard.js:56` | `linear-gradient(160deg,rgb(150_206_170),rgb(118_184_142))` | UI | `bg-grad-sage-deep` |
+| `components/dashboard/widgets/NotesCard.js:11` | four pastel tints | UI | `bg-[rgb(var(--note-1))]` ... `--note-4` |
+| `components/dashboard/Clock.js:50` | `${color}66` glow, white inset | Keep-fill | none |
+| `components/dashboard/Clock.js:101` | M `#B8DCC4` | UI | `sage` from `chartColors()` |
+| `components/dashboard/Clock.js:101` | H fallback `#FFD700`, S `#FFF3D6` cream tile on brand card | Keep (sun fixed / decorative) | none |
+| `components/dashboard/DialTimer.js:207` | `text-white` on `bg-grad-hero` | UI | `text-on-brand` |
+| `components/dashboard/ProfileCard.js:28` | `filled ? "text-white" : "text-on-brand"` | UI | `"text-on-brand"` (keep the cx call; `filled` is still used at lines 61-72) |
+| `components/dashboard/ProfileCard.js:73,78` | `bg-white/16`, `border-white/20` | UI | `bg-on-brand/16`, `border-on-brand/20` (same modifiers, so Tailwind treats them exactly as before) |
+| `components/subjects/AssignmentsPanel.js:48` | `text-white` on `bg-success` | Keep-fill | none |
+| `components/layout/Navbar.js:112-113` | `bg-black/50` scrim, white camera icon | Keep-neutral | none |
+| `Pages/FocusModePage.js:221,231` | green/red-500/600 | Keep-data (status) | none |
+| `components/errors/ErrorScreen.js:13` | `rgb(236 112 109 / 0.25)` | UI | `rgb(var(--brand) / 0.25)` |
+| tests and `features/scanner/__fixtures__` | subject colours | Keep (test data) | none |
+| `src/logo.svg` | CRA asset, unused | Keep (out of scope) | none |
+| `src/assets/animation/*.json` (10 Lottie files) | illustration colours | Keep-data (artwork, no text) | none |
+| `public/index.html:7` | meta theme-color #E86562 | UI | updated at runtime (`metaColor`, same default) |
+| `public/manifest.json` theme_color/background_color | static install colours | Keep (cannot change at runtime) | none |
+
+---
+
 ## 2026-10-07 — Profile card mascot and Settings as cards
 
 ### The mascot fills the dashboard profile card, like a photo
