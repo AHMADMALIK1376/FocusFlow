@@ -35,6 +35,22 @@ Update this file with every change.
 - **Device offline:** the browser's `offline` event → the gate's offline page. The `online` event → check → reload.
 - **App can't load at all:** `public/sw.js` handles failed page loads (`navigate` requests) by serving the cached `public/offline.html`.
 
+### Settings page — `Pages/SettingsPage.js`
+1. The header card shows the student's mascot (`components/common/Mascot.js`). "Choose mascot" opens `MascotPicker`, which saves through `updateProfile`.
+2. Six cards follow: Profile, Reminders, Appearance, Dashboard and workspaces, Language, and Privacy and cookies.
+3. A card click sets `?open=<id>` in the address (`useSearchParams`).
+4. The page reads `?open=`. If it names a card, one `Modal` opens with that card's controls.
+   - The modal uses `trapFocus` and `fullHeightOnMobile`.
+   - The controls are `RemindersSettings`, `FontSelector`, `WidgetManager` with `DashboardSwitcher`, `LanguageSelect`, `components/consent/CookieChoice.js`, or the profile form.
+5. Escape, the close button or the back button removes `?open=`, and the pop-up closes.
+
+### Dashboard profile card — `components/dashboard/ProfileCard.js`
+- `Home.js` renders it with the name, streak, done count and focus count. It reads `profile` from preferences itself.
+- **Photo:** if `profile.avatarUrl` is set, the photo fills the card.
+- **Mascot:** if `profile.mascot` is set instead, a sage backdrop fills the card, and the mascot is sized from it with CSS container units.
+- **Neither:** the initial and "Pick a mascot".
+- "Change mascot" opens `MascotPicker`. A pick saves `{ mascot, avatarUrl: null }`.
+
 ### Talking to the backend — `services/api.js`
 1. Every page calls a helper such as `subjectAPI.getAll()` or `examAPI.create()`.
 2. The helper calls `authFetch()`.
@@ -77,7 +93,7 @@ Update this file with every change.
 
 ### Cookie choice
 - `CookieBanner` (mounted in `App.js`) asks on the first visit and stores the choice in `features/consent/consent.js`.
-- Google's sign-in script is added by `features/consent/googleSignIn.js` only after "Accept all", or when the Google button is pressed and the student agrees. `/privacy` (`Pages/PrivacyPage.js`) explains everything and can change the choice.
+- Google's sign-in script is added by `features/consent/googleSignIn.js` only after "Accept all", or when the Google button is pressed and the student agrees. `/privacy` (`Pages/PrivacyPage.js`) explains everything. The choice can be changed there and in Settings → Privacy and cookies, both through `components/consent/CookieChoice.js`.
 
 ### Preferences on the account
 - `PreferencesProvider` calls `useServerSync` (`preferences/useServerSync.js`). On sign-in (the `ff:auth` event from `setToken`) it loads `GET /api/preferences`; the account's copy wins, and if there is none this browser's copy is uploaded.

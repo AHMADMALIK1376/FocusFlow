@@ -6,6 +6,67 @@ Update this file with every change.
 
 ---
 
+## 2026-10-07 — Profile card mascot and Settings as cards
+
+### The mascot fills the dashboard profile card, like a photo
+- **Decision:** a chosen mascot now uses the photo's footprint, edge to edge. The card moved to `components/dashboard/ProfileCard.js` so it can be tested.
+- **Layers, bottom to top:**
+  1. The coral card itself (`bg-grad-hero`), as before.
+  2. The mascot backdrop. It covers the whole card (`absolute inset-0`), like the photo: `bg-surface` with a `--sage` wash at 30% on top. That is the token mix you asked for, with no hex code.
+  3. The mascot, standing on the card's bottom edge.
+  4. The coral fade from the bottom. It is shorter than the photo's (gone by 40% of the height), so the face is not tinted. It ignores the pointer, so poking the mascot still works.
+  5. The label, the stats and "Change mascot".
+- **Size:** the backdrop is a CSS size container. The mascot is a square of `min(125% of the card's width, the card's height)`.
+  - A character fills about 62% of its sprite cell, more when it turns its head, and its face ends about 60% down.
+  - So it comes out about 80% of the card's width. A turned head stays inside the card, and the face stays above the fade.
+  - It scales on its own at every width, with no JavaScript measuring.
+- **Readability:** on the light sage, white text would vanish. So in the mascot case, "Change mascot" and the "Gen Z" label sit on coral pills. The stats are always on the coral fade.
+- **Unchanged:** the photo case and the empty case (the initial and "Pick a mascot").
+- **Rejected:**
+  - A 145%-wide mascot hanging off the bottom. The cap's brim was cut off when it turned, and the fade covered the face.
+  - Measuring the card with a ResizeObserver. That is more code than the CSS size container needs.
+
+### Settings is a grid of cards, each opening a pop-up
+- **Decision:** the long Settings page is now:
+  - a mascot header card, where "Choose mascot" opens the existing picker;
+  - six clay cards, each with a lucide icon, a title and a one-line subtitle.
+  
+  Each card is a button that opens its existing controls in `Modal`. Nothing inside the controls changed.
+- **Grouping:**
+
+  | Card | Holds |
+  |---|---|
+  | Profile | the profile form |
+  | Reminders | `RemindersSettings` |
+  | Appearance | `FontSelector`, with a marked slot for the colour studio |
+  | Dashboard and workspaces | `WidgetManager`, `DashboardSwitcher` |
+  | Language | `LanguageSelect` |
+  | Privacy and cookies | a link to `/privacy` and the cookie choice |
+
+- **Changed from your suggestion:**
+  - The mascot got its own header card instead of sharing "Profile and mascot". It is the thing a student changes most, and it shows the live mascot without opening anything.
+  - "Language and theme mode" is just "Language". Dark mode currently mirrors light (see `tokens.css`), so a switch would do nothing visible. It belongs with the colour studio task.
+- **Address:**
+  - The open card is kept in the address as `?open=<id>`. Clicking a card adds it, and closing removes it (replacing the entry).
+  - So `/settings?open=reminders` opens Reminders, and the phone's back button closes a pop-up.
+  - Ids: `profile`, `reminders`, `appearance`, `dashboard`, `language`, `privacy`.
+- **`Modal` (`components/ui/Modal.js`):** two opt-in props, used only by Settings, so no other pop-up changes.
+  - `trapFocus`: focus moves into the pop-up, Tab and Shift+Tab stay inside it, and focus goes back to the card on close.
+  - `fullHeightOnMobile`: a full-height sheet below the `sm` width, at `z-[2100]` so it covers the phone tab bar. The tab bar and modals were both `z-[1000]`.
+  - Its animations now honour `prefers-reduced-motion` for every modal (framer-motion `MotionConfig reducedMotion="user"`). The cards skip their hover lift for those users too.
+- **Cookie choice:** moved out of `PrivacyPage.js` into `components/consent/CookieChoice.js`, so the privacy page and Settings share one control. The privacy page looks and works the same.
+- **Rejected:** a separate settings route per group. A pop-up keeps the student on one page, and the address already makes each one linkable.
+
+### Checked
+- **Tests:** new tests for the cards, every pop-up and its controls, Escape and the close button, the focus trap, the deep link, the mascot and the picker, saving the profile, and the cookie choice in Settings. Also the profile card's three cases and the `Modal` options. All frontend and backend tests pass, and so does the `CI=true` build.
+- **Headless Chromium, fake API:**
+  - The profile card with four mascots at 1400 px and 375 px.
+  - Settings at 1280 px and 360 px.
+  - `?open=reminders` and `?open=privacy`, Escape, the back button, the language list inside its pop-up, and the sheet covering the tab bar.
+- **Not checked:** a real phone, and real reminder saving against the server.
+
+---
+
 ## 2026-10-06 — Mascots
 
 ### The mascots now follow the cursor (page-mascot library)
