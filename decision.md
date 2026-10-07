@@ -16,7 +16,7 @@ Update this file with every change.
 - **Decision:** the Studio keeps a draft in a reducer (`studioReducer`, `design/theme/studio.js`). Each change calls `previewTheme(draft)`; Save calls `setTheme(draft)`; Cancel, Discard, closing and unmounting call `previewTheme(null)`, so a preview cannot get stuck. Undo keeps up to 20 steps (`UNDO_LIMIT`). One colour-picker drag is one step (merged until the picker loses focus).
 - **Reset** ("Reset to FocusFlow colours") changes the draft, like every other change: it can be undone and needs Save (OQ4).
 - **Rejected:** a single undo step (a student who tries five palettes cannot get back to the second); Reset that saves at once (surprising, and not undoable).
-- If the saved theme changes while the Studio is open (a server sync, for example), the draft is kept, `dirty` compares against the new saved theme, and the preview effect depends on `theme` so the draft is shown again (a save or sync ends a preview).
+- If the saved theme changes while the Studio is open (a server sync, for example): a draft with changes is kept, `dirty` compares against the new saved theme, and the preview effect depends on `theme` so the draft is shown again (a save or sync ends a preview). A draft nobody has touched becomes the new saved theme instead, so Save cannot overwrite the update.
 
 ### Unsaved changes
 - **Decision:** Escape, the X and the backdrop with changes show a question inside the dialog (Save and close / Discard changes / Keep editing). Escape while it shows hides it. Cancel is an explicit discard and asks nothing. `beforeunload` is blocked only while there are unsaved changes.
