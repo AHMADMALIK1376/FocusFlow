@@ -56,7 +56,7 @@ const to = firstArg && !firstArg.startsWith('--') ? firstArg : null;
       const themed = await transporter.sendMail({
         from: user, to: recipient, subject: email.subject, html: email.html, text: email.text, attachments: email.attachments,
       });
-      console.log(`✅ Sample reminder (${themeName} theme) sent: ${themed.response}`);
+      console.log(`Sample reminder (${themeName} theme) sent: ${themed.response}`);
     }
   } catch (e) {
     console.error(`\n❌ EMAIL FAILED: ${e.message}`);

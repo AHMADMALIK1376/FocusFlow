@@ -134,3 +134,13 @@ test('deliver still sends the normal email when the lookup fails, the table is m
     assert.ok(queued[0].html.includes('#EC706D'));
   }
 });
+
+test('the sample themes used by the preview and test-email scripts are valid, and only the default is empty', () => {
+  const samples = require('../scripts/sampleThemes');
+  const { themeOk } = require('../utils/preferences');
+  assert.deepEqual(Object.keys(samples), ['default', 'bold', 'dark']);
+  assert.equal(samples.default, null);
+  assert.ok(themeOk(samples.bold) && themeOk(samples.dark));
+  assert.notEqual(emailPalette(samples.bold), emailPalette(null));
+  assert.equal(emailPalette(samples.dark).dark, true);
+});
