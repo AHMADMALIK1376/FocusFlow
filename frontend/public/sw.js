@@ -4,9 +4,9 @@
    offline" page for when the app can't load at all. Kept dependency-free on
    purpose. */
 
-// The offline page and the logo it shows. Bump the name when they change.
-const OFFLINE_CACHE = 'ff-offline-v1';
-const OFFLINE_FILES = ['/offline.html', '/logo192.png'];
+// The offline page and the logos it shows. Bump the name when they change.
+const OFFLINE_CACHE = 'ff-offline-v2';
+const OFFLINE_FILES = ['/offline.html', '/logo192.png', '/logo/focusflow-mark.png'];
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -29,8 +29,8 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   const url = new URL(req.url);
-  if (url.origin === self.location.origin && url.pathname === '/logo192.png') {
-    event.respondWith(fetch(req).catch(() => caches.match('/logo192.png')));
+  if (url.origin === self.location.origin && (url.pathname === '/logo192.png' || url.pathname === '/logo/focusflow-mark.png')) {
+    event.respondWith(fetch(req).catch(() => caches.match(url.pathname)));
   }
 });
 
@@ -51,6 +51,9 @@ const BUZZ = {
   report: [100],
   test: [200, 100, 200, 100, 500],
 };
+// The notification pictures stay in FocusFlow's own colours on purpose: the phone draws them outside the app,
+// this worker cannot read the student's theme, and per-student pictures would need image generation on the
+// server for every push.
 const BANNERS = Object.keys(BUZZ);
 const BADGE = '/notify/badge.png'; // white mark — Android tints it for the status bar
 
