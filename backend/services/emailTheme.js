@@ -174,7 +174,7 @@ async function loadUserTheme(connection, userId) {
     }
     return data && themeOk(data.theme) ? data.theme : null;
   } catch (err) {
-    console.warn('Email theme: default look used (' + err.message + ')');
+    console.warn('Email theme: default look used (' + (err && err.message) + ')');
     return null;
   }
 }

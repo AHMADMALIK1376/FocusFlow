@@ -61,7 +61,7 @@ function buildReminderEmail(n, appUrl, theme) {
   try {
     return reminderEmail(n, appUrl, theme);
   } catch (err) {
-    console.warn('Email theme: default look used (' + err.message + ')');
+    console.warn('Email theme: default look used (' + (err && err.message) + ')');
     return reminderEmail(n, appUrl, null);
   }
 }

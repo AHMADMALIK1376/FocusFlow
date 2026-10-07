@@ -5,8 +5,8 @@ import { COLOR_ALLOWLIST } from './colorAllowlist';
 // Hard-coded colours do not follow the student's theme. This scans the app's code for them: a new one
 // fails here (use a token, or allow it with a reason), and an allowed one that has gone must be removed.
 const ROOT = path.join(__dirname, '..', '..'); // frontend/
-const HEX = /(?<![&\w])#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3,4})(?![\w-])/g;
-const FUNC = /\b(?:rgba?|hsla?)\(\s*\d[^)]*\)/gi;
+const HEX = /(?<![&A-Za-z0-9])#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3,4})(?![\w-])/g;
+const FUNC = /(?<![A-Za-z0-9])(?:rgba?|hsla?)\(\s*\d[^)]*\)/gi;
 
 function listFiles(dir, out = []) {
   fs.readdirSync(dir, { withFileTypes: true }).forEach((e) => {
