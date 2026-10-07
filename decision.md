@@ -26,6 +26,11 @@ Update this file with every change.
 
 ### Readability guard (WCAG 2)
 After deriving, `GUARD` checks text colours against their backdrops and nudges the text lightness in 0.01 steps (keeping tint) until it passes. If text hits pure white or black and still fails a secondary backdrop, that backdrop is nudged instead. Flags list what was moved.
+- **Text keeps to one side.** Everything read on the page or on cards (entries whose first backdrop is `--canvas` or `--surface`) moves in the same direction as the final `--ink`. The guard then repeats until a full pass finds nothing to fix.
+  - The tester's 200 random palettes found mid-tone backgrounds where `--ink` went white and `--muted` black. No `--highlight` could suit both, which left 4.48 < 4.5.
+  - Muted text that is the opposite of the main text would also look wrong.
+  - With the fix, 5000 random palettes pass. A 200-palette test stays in the suite.
+- **Rejected:** only adding the repeat loop. It cannot settle when two text colours pull a shared backdrop in opposite directions.
 
 | Pair | Needed | Today's ratio |
 |---|---|---|
@@ -50,10 +55,15 @@ After deriving, `GUARD` checks text colours against their backdrops and nudges t
 ### No flash on load: an inline script
 - `public/index.html` has a small inline script that reads `focusflow:theme.colors` and sets the tokens before anything paints. The splash renders before `PreferencesProvider` mounts, so only an inline script can theme it.
 - There is no Content-Security-Policy on the app's pages (`vercel.json` sets none; the helmet CSP only covers API responses), so inline is allowed. **Rejected:** a separate script file (one more blocking request before first paint).
-- **All or nothing:** one bad entry (wrong version, a name that is not `--lowercase`, a value with `;` or `url(`) and nothing is applied. `readThemeCache` applies the same checks in code, and a test keeps the script's key and version in step with `applyTheme.js`.
+- **All or nothing:** one bad entry (wrong version, a name that is not `--lowercase`, a character outside `0-9 a-z . , % ( ) / # -`, or any CSS function other than `rgb(`, `linear-gradient(` and `var(` in any letter case) and nothing is applied.
+  - `readThemeCache` applies the same checks in code. Tests run both on about 45 bad caches, and keep the script's key and version in step with `applyTheme.js`.
+  - The first version only refused a lowercase `url(`. The tester showed `URL(`, `image-set(` and `expression(` got through. An allow-list of the three functions a theme uses closes the whole class.
+  - **Rejected:** adding blocked words one at a time.
 - **Cache shape:** `{ v: 1, tokens, scheme, meta }`. Bump `THEME_CACHE_VERSION` (and the `c.v` in the script) whenever recipes or tokens change. The default palette stores no cache (the stylesheet already has it).
 - **Sign-out:** `useServerSync` resets preferences to default, so the default is applied and the cache is removed. Same rule as the preferences themselves (shared lab computers: the next student sees the normal colours); the theme returns from the account on sign-in. Cost: the login page after sign-out uses the default colours.
-- **Preview:** `previewTheme` shows colours without saving, syncing or caching. `setTheme`, `resetTheme` and `resetPreferences` end it. The editor (next task) must call `previewTheme(null)` when it closes without saving.
+- **Preview:** `previewTheme` shows colours without saving, syncing or caching. `setTheme`, `resetTheme`, `resetPreferences` and signing out end it. The editor (next task) must call `previewTheme(null)` when it closes without saving.
+  - Signing out used to leave a preview on screen, because `useServerSync` resets only the saved preferences.
+  - `PreferencesProvider` now listens for the signed-out event and drops the preview too.
 
 ### Other choices
 - Schema v3 migration: v2 and v3 documents are kept, an invalid or missing `theme` becomes the default; any other schema version still takes the v1 path. Old open tabs that save a v2 document lose the theme (nothing else), a known small risk during deploy.
