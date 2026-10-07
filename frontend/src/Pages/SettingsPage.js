@@ -1,7 +1,7 @@
 import React, { useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ArrowRight, BellRing, ChevronRight, Languages, LayoutGrid, Palette, ShieldCheck, Smile, UserRound } from "lucide-react";
+import { ArrowRight, BellRing, ChevronRight, Languages, LayoutGrid, Palette, Paintbrush, ShieldCheck, Smile, UserRound } from "lucide-react";
 import { usePreferences } from "../preferences/usePreferences";
 import { useToast } from "../components/ui/Toast";
 import {
@@ -19,6 +19,7 @@ import WidgetManager from "../components/dashboard/WidgetManager";
 import DashboardSwitcher from "../components/dashboard/DashboardSwitcher";
 import RemindersSettings from "../features/notifications/RemindersSettings";
 import CookieChoice from "../components/consent/CookieChoice";
+import DesignStudio from "../components/studio/DesignStudio";
 import Mascot from "../components/common/Mascot";
 import { DEFAULT_MASCOT } from "../components/common/PageMascot";
 
@@ -124,6 +125,9 @@ export default function SettingsPage() {
   const navigate = useNavigate();
   const pushedOpen = useRef(false);
 
+  // The Studio replaces the Appearance entry, so there is still one pushed entry to go back over.
+  const openStudio = () => setParams({ open: "studio" }, { replace: true });
+
   const cards = [
     {
       id: "profile", icon: UserRound, title: t("settings.profile", "Profile"),
@@ -139,11 +143,15 @@ export default function SettingsPage() {
     },
     {
       id: "appearance", icon: Palette, title: t("settings.appearance", "Appearance"),
-      subtitle: "Pick a font. Changes apply instantly across the whole app.",
+      subtitle: "Pick a font and design your colours. Changes apply across the whole app.",
       body: (
         <>
           <Group title="Font"><FontSelector /></Group>
-          {/* The colour studio goes here, as its own Group, when it is built. */}
+          <Group title="Colours" subtitle="Pick a ready-made palette or mix your own.">
+            <Button variant="primary" size="sm" onClick={openStudio} className="gap-1.5">
+              <Paintbrush size={15} /> Design your dashboard
+            </Button>
+          </Group>
         </>
       ),
     },
@@ -190,7 +198,8 @@ export default function SettingsPage() {
   // and the phone's back button closes it. A card click adds a history entry, so
   // closing goes back over it; a pop-up opened by a link just clears the address.
   const active = cards.find((c) => c.id === params.get("open")) || null;
-  if (!active) pushedOpen.current = false; // closed some other way (e.g. the back button)
+  const studioOpen = params.get("open") === "studio";
+  if (!active && !studioOpen) pushedOpen.current = false; // closed some other way (e.g. the back button)
   // Keep the last card's content while the pop-up animates closed.
   const lastShown = useRef(null);
   if (active) lastShown.current = active;
@@ -198,6 +207,11 @@ export default function SettingsPage() {
   const openCard = (id) => {
     pushedOpen.current = true;
     setParams({ open: id });
+  };
+  // The Studio was closed by Back with unsaved changes: put its address back.
+  const onReopen = () => {
+    pushedOpen.current = true;
+    setParams({ open: "studio" });
   };
   const close = () => {
     if (pushedOpen.current) {
@@ -249,6 +263,8 @@ export default function SettingsPage() {
         {shown && <p className="text-sm text-muted -mt-2 mb-5">{shown.subtitle}</p>}
         {shown?.body}
       </Modal>
+
+      <DesignStudio open={studioOpen} onClose={close} onReopen={onReopen} />
     </div>
   );
 }
