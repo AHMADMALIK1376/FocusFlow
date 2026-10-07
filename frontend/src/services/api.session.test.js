@@ -48,3 +48,25 @@ test("already on the login page: no redirect loop", async () => {
   await expect(subjectAPI.getAll()).rejects.toThrow();
   expect(assign).not.toHaveBeenCalled();
 });
+
+// Sliding session: the server sends a fresh login once ours is a day old.
+const withHeader = (status, body, headers) => ({ ...makeResponse(status, body), headers: { get: (k) => headers[k] ?? null } });
+
+test("a renewed login from the server replaces the saved one", async () => {
+  global.fetch = jest.fn(() => Promise.resolve(withHeader(200, [], { "X-Refreshed-Token": "fresh-token" })));
+  await subjectAPI.getAll();
+  expect(localStorage.getItem("focus_token")).toBe("fresh-token");
+});
+
+test("no renewal header: the saved login is left alone", async () => {
+  global.fetch = jest.fn(() => Promise.resolve(withHeader(200, [], {})));
+  await subjectAPI.getAll();
+  expect(localStorage.getItem("focus_token")).toBe("abc");
+});
+
+test("a signed-out request never picks up a token from a reply", async () => {
+  localStorage.removeItem("focus_token");
+  global.fetch = jest.fn(() => Promise.resolve(withHeader(200, [], { "X-Refreshed-Token": "sneaky" })));
+  await subjectAPI.getAll();
+  expect(localStorage.getItem("focus_token")).toBeNull();
+});

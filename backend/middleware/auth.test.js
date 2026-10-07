@@ -60,3 +60,24 @@ test('a bad token is still refused', async () => {
     assert.strictEqual(res.code, 401);
     assert.strictEqual(res.body.code, 'INVALID_TOKEN');
 });
+
+
+test('a login older than a day comes back renewed in a header; a fresh one does not', async () => {
+    auth.clearUserCache();
+    const old = jwt.sign({ userId: 1, email: 'a@b.c', iat: Math.floor(Date.now() / 1000) - 2 * 24 * 3600 }, process.env.JWT_SECRET, { expiresIn: '19d' });
+    const fresh = tokenFor(1);
+    const call = (token) => new Promise((resolve) => {
+        const headers = {};
+        const req = { header: () => 'Bearer ' + token, method: 'GET', path: '/x' };
+        const res = { setHeader(k, v) { headers[k] = v; }, status(c) { this.code = c; return this; }, json(b) { resolve({ code: this.code, body: b }); } };
+        auth(req, res, () => resolve({ code: 200, headers }));
+    });
+    const a = await call(old);
+    assert.equal(a.code, 200);
+    const renewed = jwt.verify(a.headers['X-Refreshed-Token'], process.env.JWT_SECRET);
+    assert.equal(renewed.userId, 1);
+    assert.equal(renewed.exp - renewed.iat, 20 * 24 * 3600);
+    const b = await call(fresh);
+    assert.equal(b.code, 200);
+    assert.equal(b.headers['X-Refreshed-Token'], undefined);
+});

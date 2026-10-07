@@ -1,7 +1,7 @@
 ﻿const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
 const { getConnection } = require('../config/database');
 const { generateId } = require('../utils/helpers');
+const { signSession } = require('../utils/session');
 const { generateVerificationCode, sendVerificationEmail, sendPasswordResetCode } = require('../services/emailService');
 
 // ==============================================
@@ -32,12 +32,7 @@ const getJWTSecret = () => {
 const generateToken = (userId, email) => {
     try {
         const secret = getJWTSecret();
-        const token = jwt.sign(
-            { userId, email },
-            secret,
-            { expiresIn: '7d' }
-        );
-        return token;
+        return signSession(userId, email, secret);
     } catch (err) {
         console.error('❌ JWT generation failed:', err.message);
         throw err;
@@ -682,6 +677,7 @@ exports.googleAuth = async (req, res) => {
         
         let userId;
         let fullName = userInfo.name || userInfo.email.split('@')[0];
+        const isNewUser = existingUser.rows.length === 0;
         
         if (existingUser.rows.length === 0) {
             // Create new user
@@ -722,6 +718,9 @@ exports.googleAuth = async (req, res) => {
         res.json({
             success: true,
             token,
+            // true only the first time this Google account signs in: the app
+            // shows its welcome set-up then, never on later sign-ins.
+            isNewUser,
             user: {
                 userId,
                 email: userInfo.email,

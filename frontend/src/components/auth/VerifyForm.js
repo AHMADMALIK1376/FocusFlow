@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Mail } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { markNeedsOnboarding } from "../../features/onboarding/needsOnboarding";
 import { useUser } from "./UserContext";
 
 export default function VerifyForm() {
@@ -54,7 +55,9 @@ export default function VerifyForm() {
 
     if (result.success) {
       sessionStorage.removeItem("pendingVerificationEmail");
-      navigate("/dashboard");
+      // First time in: the welcome set-up comes next, right after the code.
+      markNeedsOnboarding();
+      navigate("/onboarding");
     } else {
       setError(result.error || "Verification failed");
     }

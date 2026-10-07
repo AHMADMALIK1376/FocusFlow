@@ -32,6 +32,31 @@ Update this file with every change.
 
 ---
 
+## 2026-10-07 — Staying signed in, and onboarding only for new accounts
+
+### A sliding 20-day session (`backend/utils/session.js`, `middleware/auth.js`, `services/api.js`)
+- **Decision:** a sign-in lasts 20 days. Whenever the app is used and the saved login is more than a day old, the server sends back a fresh one (`X-Refreshed-Token`) and the app saves it. A student is asked to sign in again only after 20 days of not opening the app.
+- **Why:** you didn't want to sign in each visit, like other apps. The old login was a fixed 7 days and never renewed, so everyone was signed out after a week even if they used the app daily.
+- **Rejected:** a plain 30-day login with no renewal. It signs out a daily user after 30 days, and it leaves a stolen login valid for 30 days.
+- **Also:** CORS now exposes that header, so the browser can read it.
+
+### Opening the site no longer asks you to sign in (`components/auth/GuestOnly.js`)
+- **Cause:** the saved login was already kept, but "/" went to the login page and the login page never checked for it.
+- **Fix:** "/", "/login" and "/signup" send a signed-in student straight to the dashboard.
+
+### The welcome set-up appears only after a new account's verification code (`features/onboarding/needsOnboarding.js`)
+- **Cause:** "has finished onboarding" was kept only in each browser's own storage, so any new browser, device or website address showed the set-up after sign-in.
+- **Decision:** a flag is switched on when a new account's email code is accepted (or a Google account signs in for the very first time, `isNewUser` from the server) and switched off when the set-up is finished. Signing in never brings it back.
+- **Trade-off:** the flag is also stored in the browser, so closing the tab half way resumes the set-up on that device. Profile choices (workspace name, pronouns) still live in one browser; syncing them across devices is a separate piece of work.
+- **Checked in your Chrome:**
+  - Signed in, "/", "/login" and "/signup" all land on the dashboard.
+  - With this browser's preferences wiped (the old trigger), it opens straight to the page asked for.
+  - With the flag on, the dashboard sends you to onboarding.
+  - Without the flag, "/onboarding" sends you to the dashboard.
+  - Your preferences were backed up first and restored afterwards.
+
+---
+
 ## 2026-10-07 — Before deploying
 
 ### CORS locked to the app's own address (`backend/middleware/cors.js`)

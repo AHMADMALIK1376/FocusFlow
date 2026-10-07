@@ -21,6 +21,7 @@ import Splash from "./components/layout/Splash";
 import { UserProvider } from "./components/auth/UserContext";
 import { AppProvider } from "./components/context/AppContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import GuestOnly from "./components/auth/GuestOnly";
 import RequireOnboarding from "./components/auth/RequireOnboarding";
 import Layout from "./components/layout/Layout";
 import { ThemeProvider } from "./theme/ThemeProvider";
@@ -116,9 +117,10 @@ function App() {
                       {/* AUTH ROUTES (No layout, no authentication needed) */}
                       {/* ============================================== */}
                       <Route element={<AuthPage />}>
-                        <Route path="/" element={<Navigate to="/login" replace />} />
-                        <Route path="/login" element={<LoginForm />} />
-                        <Route path="/signup" element={<RegisterForm />} />
+                        {/* Already signed in? These go straight to the dashboard (GuestOnly). */}
+                        <Route path="/" element={<GuestOnly><Navigate to="/login" replace /></GuestOnly>} />
+                        <Route path="/login" element={<GuestOnly><LoginForm /></GuestOnly>} />
+                        <Route path="/signup" element={<GuestOnly><RegisterForm /></GuestOnly>} />
                         <Route path="/verify" element={<VerifyForm />} />
                         <Route path="/forgot-password" element={<ForgotPasswordForm />} />
                         <Route path="/reset-password-verify" element={<ResetPasswordVerify />} />

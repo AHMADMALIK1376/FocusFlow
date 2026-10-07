@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Lottie from "lottie-react";
 import workAnim from "../assets/animation/Man Working on Laptop in Office.json";
 import { usePreferences } from "../preferences/usePreferences";
+import { needsOnboarding, clearNeedsOnboarding } from "../features/onboarding/needsOnboarding";
 import { ageFromDOB, segmentFromAge } from "../preferences/segment";
 import { Field, Input, Select, Button, Badge, Pill, useToast } from "../components/ui";
 import FontSelector from "../components/dashboard/FontSelector";
@@ -50,7 +51,6 @@ const slide = {
 export default function OnboardingPage() {
   const navigate = useNavigate();
   const {
-    onboardingComplete,
     updateProfile,
     completeOnboarding,
     activeDashboard,
@@ -79,7 +79,8 @@ export default function OnboardingPage() {
     dashboardName: "",
   });
 
-  if (onboardingComplete) return <Navigate to="/dashboard" replace />;
+  // Only for a brand new account; anyone else who lands here goes to the dashboard.
+  if (!needsOnboarding()) return <Navigate to="/dashboard" replace />;
 
   const patch = (k, v) => setDraft((p) => ({ ...p, [k]: v }));
   const goNext = () => { setDir(1); setStep((s) => Math.min(STEPS - 1, s + 1)); };
@@ -117,6 +118,7 @@ export default function OnboardingPage() {
       renameDashboard(activeDashboardId, draft.dashboardName.trim());
     }
     completeOnboarding();
+    clearNeedsOnboarding();
     navigate("/dashboard");
   }
 

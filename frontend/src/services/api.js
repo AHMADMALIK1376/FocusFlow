@@ -66,6 +66,11 @@ const authFetch = async (endpoint, options = {}) => {
         reportServerTrouble();
     }
 
+    // Sliding session: the server sends a fresh login once ours is a day old,
+    // so a student who keeps using the app is never signed out.
+    const renewed = response.headers && response.headers.get && response.headers.get('X-Refreshed-Token');
+    if (renewed && token) setToken(renewed);
+
     // The saved login no longer works (account deleted, token expired or bad):
     // forget it and go to the sign-in page instead of failing every save.
     if (response.status === 401 && token) {

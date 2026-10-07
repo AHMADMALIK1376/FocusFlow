@@ -68,6 +68,17 @@ Update this file with every change.
    - `startNotificationScheduler()` (`services/notificationScheduler.js`) starts the per-minute reminder job.
    - `app.listen(PORT)`.
 
+### Staying signed in
+1. The login (JWT) is saved in `localStorage` and lasts 20 days.
+2. `middleware/auth.js`: if the token is more than a day old, the reply carries `X-Refreshed-Token`.
+3. `authFetch` in `services/api.js` saves it, so the 20 days start again.
+4. `GuestOnly` (`components/auth/GuestOnly.js`) wraps "/", "/login" and "/signup": if you're signed in it goes to `/dashboard`.
+
+### Welcome set-up (onboarding)
+- Sign-up → email code → `VerifyForm` calls `markNeedsOnboarding()` → `/onboarding`.
+- First-ever Google sign-in: the server replies `isNewUser`, and the app does the same.
+- `RequireOnboarding` sends you to `/onboarding` only while that flag is on. `OnboardingPage` clears it when you finish. Signing in never sets it.
+
 ### One request, start to finish
 1. Browser request.
 2. CORS (`middleware/cors.js`): in production only `APP_URL` and `ALLOWED_ORIGINS` are let through.

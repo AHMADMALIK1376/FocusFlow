@@ -1,5 +1,6 @@
 ﻿const jwt = require('jsonwebtoken');
 const { getConnection } = require('../config/database');
+const { signSession, shouldRefresh } = require('../utils/session');
 
 // A token stays valid after its account is deleted, so every request also
 // checks the user still exists. Found users are remembered for a minute so this
@@ -101,6 +102,12 @@ module.exports = async (req, res, next) => {
                 error: 'This account no longer exists. Please sign in again.',
                 code: 'USER_NOT_FOUND'
             });
+        }
+
+        // Sliding session: a login more than a day old is swapped for a fresh one,
+        // so the student is only signed out after SESSION_DAYS of not using the app.
+        if (shouldRefresh(decoded) && typeof res.setHeader === 'function') {
+            res.setHeader('X-Refreshed-Token', signSession(decoded.userId, decoded.email, secret));
         }
 
         next();

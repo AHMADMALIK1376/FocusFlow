@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { markNeedsOnboarding } from "../features/onboarding/needsOnboarding";
 import Lottie from "lottie-react"; 
 
 import workingAnimationData from "../assets/animation/Man Working on Laptop in Office.json"; 
@@ -59,7 +60,9 @@ export default function AuthPage() {
           if (data.success && data.token) {
             localStorage.setItem('focus_token', data.token);
             localStorage.setItem('focus_username', data.user?.fullName || data.user?.email || 'User');
-            navigate('/dashboard');
+            // A first-ever Google sign-in gets the welcome set-up; later ones go straight in.
+            if (data.isNewUser) markNeedsOnboarding();
+            navigate(data.isNewUser ? '/onboarding' : '/dashboard');
           } else {
             setGoogleError(data.error || "Google login failed");
             alert(data.error || "Google login failed");
