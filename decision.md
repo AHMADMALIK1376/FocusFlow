@@ -67,7 +67,7 @@ The colours a student picks now show on the pages before sign-in, the error and 
 - **Rejected:** replacing the art with new vector pictures (a lot of work for little gain).
 
 ### Guards
-- `design/colorGuard.test.js` scans the app's code for hex and numeric `rgb()/hsl()` colours; a new one fails with how to fix it. Data colours (subjects, routines, categories, status, third-party logos, neutral black/white effects, fallbacks) are listed with a reason in `design/colorAllowlist.js`; an entry whose colour is gone fails too. The engine (`design/theme/`) and `tokens.css` are the token source and are not scanned. The backend email guard is described above.
+- `design/colorGuard.test.js` scans the app's code for hex and numeric `rgb()/hsl()` colours; a new one fails with how to fix it. Data colours (subjects, routines, categories, status, third-party logos, neutral black/white effects, fallbacks) are listed with a reason in `design/colorAllowlist.js`; an entry whose colour is gone fails too. The engine (`design/theme/`) and `tokens.css` are the token source and are not scanned. The backend email guard is described above. The allowlist is per file and colour code, not per line, so a new interface use of an already-allowed code in the same file passes unnoticed; Tailwind default-palette classes (text-gray-500) are not scanned.
 
 ---
 

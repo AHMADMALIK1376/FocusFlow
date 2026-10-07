@@ -9,7 +9,7 @@ const { reminderEmail } = require('../services/emailTemplates');
 
 const args = process.argv.slice(2);
 const themeAt = args.indexOf('--theme');
-const themeName = themeAt >= 0 ? args[themeAt + 1] : null;
+const themeName = themeAt >= 0 ? args[themeAt + 1] || '' : null;
 const firstArg = args[0];
 const to = firstArg && !firstArg.startsWith('--') ? firstArg : null;
 
@@ -41,8 +41,8 @@ const to = firstArg && !firstArg.startsWith('--') ? firstArg : null;
     console.log(`✅ Test email sent: ${info.response}`);
     console.log('   → Check your inbox AND spam/promotions folders.');
 
-    if (themeName) {
-      if (!(themeName in sampleThemes)) throw new Error(`Unknown theme "${themeName}". Use one of: ${Object.keys(sampleThemes).join(', ')}`);
+    if (themeName !== null) {
+      if (!Object.prototype.hasOwnProperty.call(sampleThemes, themeName)) throw new Error(`Unknown theme "${themeName}". Use one of: ${Object.keys(sampleThemes).join(', ')}`);
       // The same reminder the Settings "send a test" button sends.
       const sample = {
         key: 't', kind: 'test', title: 'FocusFlow reminders are working', body: 'This is how your class reminders will look.', url: '/settings',

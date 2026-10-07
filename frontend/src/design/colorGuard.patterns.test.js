@@ -45,8 +45,7 @@ describe('what the colour guard flags', () => {
     expect(hits(text)).toEqual([]);
   });
 
-  // KNOWN HOLE (see .pipeline/test-results.md): Tailwind writes spaces as underscores inside [ ], so a colour
-  // that follows an underscore is not seen: the hex lookbehind and the \b before rgb( both treat _ as a letter.
+  // Tailwind writes spaces as underscores inside [ ], so a colour can follow an underscore.
   it('flags colours that follow an underscore inside a Tailwind arbitrary value', () => {
     expect(hits('shadow-[0_2px_4px_#ff0000]')).toEqual(['#ff0000']);
     expect(hits('shadow-[0_0_8px_rgba(0,0,0,0.3)]')).toEqual(['rgba(0,0,0,0.3)']);
