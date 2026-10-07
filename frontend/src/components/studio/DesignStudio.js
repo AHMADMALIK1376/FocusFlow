@@ -66,7 +66,7 @@ function PaletteTile({ palette, selected, onPick }) {
       className={[
         'relative text-left rounded-token-md bg-surface-2 p-2 transition-transform motion-reduce:transition-none',
         'hover:-translate-y-0.5 motion-reduce:hover:translate-y-0',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand',
+        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand',
         selected ? 'ring-2 ring-ink' : '',
       ].join(' ')}
     >
@@ -106,6 +106,7 @@ export default function DesignStudio({ open, onClose, onReopen }) {
   const reopening = useRef(false);
   const skipPreview = useRef(false);
   const keepRef = useRef(null);
+  const saveRef = useRef(null);
   const pending = useRef(null);
   const frame = useRef(null);
   const dragRole = useRef(null);
@@ -174,9 +175,25 @@ export default function DesignStudio({ open, onClose, onReopen }) {
     return () => window.removeEventListener('beforeunload', warn);
   }, [open, dirty]);
 
+  // Focus follows the question: into it when it opens, and back to Save when it closes while the
+  // Studio stays open (its Keep editing button has just disappeared).
+  const wasConfirming = useRef(false);
   useEffect(() => {
     if (confirming && keepRef.current) keepRef.current.focus();
+    else if (wasConfirming.current && !confirming && saveRef.current) saveRef.current.focus();
+    wasConfirming.current = confirming;
   }, [confirming]);
+
+  // A server update that lands while the draft is untouched becomes the new starting point,
+  // so Save cannot overwrite it and Escape does not ask about changes nobody made.
+  const prevTheme = useRef(theme);
+  useEffect(() => {
+    const before = prevTheme.current;
+    prevTheme.current = theme;
+    if (open && before !== theme && stateRef.current.past.length === 0 && sameColours(stateRef.current.draft, before)) {
+      dispatch({ type: 'open', theme });
+    }
+  }, [theme, open]);
 
   // Never dispatch after unmount.
   useEffect(() => () => {
@@ -221,8 +238,8 @@ export default function DesignStudio({ open, onClose, onReopen }) {
   const save = () => {
     const live = stateRef.current.draft;
     if (readabilityNotes(live, deriveTokens(live)).status === 'unreadable') return;
+    if (setTheme(live) === false) return;
     closingByUs.current = true;
-    setTheme(live);
     toast('Colours saved', { tone: 'success' });
     onClose();
   };
@@ -389,7 +406,7 @@ export default function DesignStudio({ open, onClose, onReopen }) {
               <RotateCcw size={15} aria-hidden="true" /> Reset to FocusFlow colours
             </Button>
             <Button type="button" variant="neu" size="sm" onClick={finish}>Cancel</Button>
-            <Button type="button" variant="primary" size="sm" disabled={unreadable} onClick={save}>Save</Button>
+            <Button type="button" variant="primary" size="sm" ref={saveRef} disabled={unreadable} onClick={save}>Save</Button>
           </>
         )}
       </div>

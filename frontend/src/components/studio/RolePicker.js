@@ -4,10 +4,17 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { normalizeHex } from '../../design/theme/studio';
 
-// The typed hex box. The parent keys it on the current value, so it reseeds after a pick.
+// The typed hex box. It reseeds from the current value when that changes (a swatch, Undo, a palette),
+// but is never remounted: a remount would drop the keyboard focus out of the dialog after Enter.
 function CustomHex({ role, value, onPick }) {
   const [text, setText] = useState(value === 'auto' ? '' : value);
   const [error, setError] = useState(false);
+  const [seen, setSeen] = useState(value);
+  if (value !== seen) {
+    setSeen(value);
+    setText(value === 'auto' ? '' : value);
+    setError(false);
+  }
   const id = `studio-hex-${role}`;
   const errorId = `${id}-error`;
   const hintId = `${id}-hint`;
@@ -43,7 +50,7 @@ function CustomHex({ role, value, onPick }) {
         className="!py-2 !px-3 text-sm font-mono"
       />
       {error ? (
-        <p id={errorId} className="mt-1.5 text-xs font-semibold text-focus">That isn&apos;t a colour code. Try something like #EC706D.</p>
+        <p id={errorId} className="mt-1.5 text-xs font-semibold text-warn-ink">That isn&apos;t a colour code. Try something like #EC706D.</p>
       ) : (
         <p id={hintId} className="mt-1.5 text-xs text-muted">Press Enter to apply.</p>
       )}
@@ -61,7 +68,7 @@ function Swatch({ swatch, selected, onPick }) {
       style={{ backgroundColor: swatch.hex }}
       className={[
         'relative w-8 h-8 rounded-full border border-[rgb(var(--border))] transition-transform motion-reduce:transition-none',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand',
+        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand',
         selected ? 'ring-2 ring-ink ring-offset-2 ring-offset-surface' : 'hover:scale-110 motion-reduce:hover:scale-100',
       ].join(' ')}
     >
@@ -111,7 +118,7 @@ export default function RolePicker({
           <p className="text-xs font-black uppercase tracking-wider text-muted mb-1.5">Custom colour</p>
           <div className="flex items-end gap-3">
             <div className="flex-1 min-w-0">
-              <CustomHex key={value} role={role} value={value} onPick={onPick} />
+              <CustomHex role={role} value={value} onPick={onPick} />
             </div>
             <input
               type="color"

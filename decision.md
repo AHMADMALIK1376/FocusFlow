@@ -56,6 +56,16 @@ Update this file with every change.
 - No database change and no migration. Theme version stays 1, schema stays 3. New `presetId` values (`custom`, the library ids) already match `PRESET_RE` and the server's check.
 - jsdom drops inline `rgb(var(--x))` colours and `mask-image`, so tests of those styles read the markup from `renderToStaticMarkup`.
 
+### Found in review and testing, and fixed
+- **Signing out with the Studio open** brought the old preview back. The saved colours reset to the defaults, which re-ran the preview effect. The Studio now restarts from the default colours on sign-out.
+- **The action bar** used `sticky bottom-0` inside a padded dialog, so page content showed in a strip under it. It now sticks at `-bottom-6`, flush with the dialog edge. (Seen in a real browser, not in tests.)
+- **Enter in the hex box** replaced the box (it was keyed on the value), so a keyboard user's focus dropped out of the dialog. The box is no longer remounted; it reseeds from the current value instead.
+- **Focus when the "Unsaved changes" question closes** now goes to Save on purpose. The reviewer feared focus was lost. In practice React reuses the same button element, so it was not, but that was luck and is now explicit.
+- **A server update arriving while the draft is untouched** becomes the new starting point. Before, Escape asked about changes nobody made, and Save would have overwritten the synced theme.
+- **Smaller:** the error text uses the guarded `warn-ink` colour (about 4.5:1 instead of about 3.4:1); a selected swatch or palette still shows a focus outline; `save()` stops if `setTheme` refuses.
+- **Known limit, left as is:** pressing the browser's Back button on a `?open=studio` link while there are unsaved changes leaves Settings and drops the edits. The app uses `BrowserRouter`, which cannot block Back. The preview ends correctly. When the Studio was opened from the Appearance card, Back is caught and asks first.
+- **Known limit, rare:** two Back presses in very quick succession can race the "put the Studio back" step.
+
 ---
 
 ## 2026-10-07 — Theme engine (foundation)
