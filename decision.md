@@ -32,6 +32,19 @@ Update this file with every change.
 
 ---
 
+## 2026-10-07 — CI (`.github/workflows/ci.yml`)
+
+- **Decision:** a small GitHub Actions workflow runs on every push to `main` and `feat/**` branches, and on pull requests to `main`. Two jobs run side by side: **Backend tests** (`npm ci`, `npm test`) and **Frontend tests and build** (`npm ci`, tests, then `CI=true npm run build`). About 3 minutes, free.
+- **Why:** Vercel and Render already deploy from GitHub (the CD half), but nothing checked a change first, so a broken push to `main` would go live. The build step uses `CI=true` because Vercel does, and that turns lint warnings into failures.
+- **Node 22 on the robot:** the backend test script uses `node --test` with file patterns, which needs Node 21 or newer.
+- **Checked before pushing:** a clean checkout of the repo (no `.env`, none of my local files) was installed and tested the way the robot does: 82 backend tests, 418 frontend tests, and a strict build, all passing.
+- **Not done, on purpose:** Docker, staging environments, automatic database migrations and browser end-to-end tests. They cost more upkeep than they save for a project this size.
+- **Still to switch on by hand (GitHub and Render settings, not code):**
+  - Render: Auto-Deploy set to "After CI checks pass", so a red build is never deployed.
+  - GitHub: require the two checks on `main`. That also means changes go through pull requests, so it's best turned on once your friends start contributing.
+
+---
+
 ## 2026-10-07 — Cookies: a secure sign-in, a cookie notice, and preferences on the account
 
 ### The sign-in is an HttpOnly cookie, not a token the page can read (`utils/sessionCookie.js`, `middleware/auth.js`, `services/api.js`)

@@ -13,6 +13,7 @@ Scan your timetable or date sheet, and FocusFlow tells you when your next class 
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Supabase-4169E1?logo=postgresql&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3-06B6D4?logo=tailwindcss&logoColor=white)
 ![PWA](https://img.shields.io/badge/PWA-installable-5A0FC8?logo=pwa&logoColor=white)
+[![CI](https://github.com/AHMADMALIK1376/FocusFlow/actions/workflows/ci.yml/badge.svg)](https://github.com/AHMADMALIK1376/FocusFlow/actions/workflows/ci.yml)
 
 </div>
 
@@ -359,6 +360,8 @@ Run these from the `backend/` folder. All of them read `backend/.env`.
 ---
 
 ## Running the tests
+
+The same checks run automatically on GitHub for every push and pull request (`.github/workflows/ci.yml`): backend tests, frontend tests, and the production build with `CI=true`, which is how Vercel builds.
 
 **Backend** (GPA, flashcard scheduling, reminder rules, email messages, auth, rate limiting):
 

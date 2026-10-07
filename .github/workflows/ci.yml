@@ -1,0 +1,61 @@
+# The CI robot: on every push and pull request it runs FocusFlow's tests and the
+# production build on a clean machine, so a broken change shows up as a red
+# cross here instead of going live. (Vercel and Render still do the deploying.)
+name: CI
+
+on:
+  push:
+    branches: [main, feat/**]
+  pull_request:
+    branches: [main]
+
+# A newer push to the same branch cancels the older run that is still going.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22   # the test script uses node --test with file patterns (Node 21 or newer)
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - run: npm test
+
+  frontend:
+    name: Frontend tests and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - name: Tests
+        run: npm test -- --watchAll=false
+        env:
+          CI: "true"
+      # CI=true makes lint warnings fail the build, exactly like Vercel does.
+      - name: Production build
+        run: npm run build
+        env:
+          CI: "true"
