@@ -36,6 +36,7 @@ const layer = { position: 'absolute', inset: 0, backgroundSize: '300% 300%', bac
 
 const matches = (query) => typeof window.matchMedia === 'function' && window.matchMedia(query).matches;
 
+// size: a number of px, or any CSS length ("100%" fills a square parent).
 export default function Mascot({ directions, reactions, size = 140, className, label = 'mascot' }) {
   const buttonRef = useRef(null);
   const squashRef = useRef(null);

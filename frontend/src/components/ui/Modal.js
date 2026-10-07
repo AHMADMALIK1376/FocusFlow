@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import React, { useEffect, useRef } from 'react';
+import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import { cx } from './cx';
 import './fancyControls.css';
@@ -15,16 +15,57 @@ function useEscape(open, onClose) {
   }, [open, onClose]);
 }
 
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+// Opt-in: focus moves into the dialog, Tab and Shift+Tab stay inside it, and focus
+// goes back to whatever opened it when it closes.
+function useFocusTrap(open, ref, enabled) {
+  useEffect(() => {
+    const node = ref.current;
+    if (!open || !enabled || !node) return undefined;
+    const opener = document.activeElement;
+    if (!node.contains(document.activeElement)) node.focus();
+
+    const onKey = (e) => {
+      if (e.key !== 'Tab') return;
+      const items = Array.from(node.querySelectorAll(FOCUSABLE));
+      if (!items.length) { e.preventDefault(); return; }
+      const first = items[0];
+      const last = items[items.length - 1];
+      const inside = node.contains(document.activeElement);
+      if (e.shiftKey && (!inside || document.activeElement === first || document.activeElement === node)) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && (!inside || document.activeElement === last)) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      if (opener && typeof opener.focus === 'function') opener.focus();
+    };
+  }, [open, ref, enabled]);
+}
+
+// trapFocus and fullHeightOnMobile (a full-height sheet below the sm breakpoint, above the
+// phone tab bar and below toasts, so a save message still shows) are opt-in.
+// Animations follow the system's reduce-motion setting.
 export function Modal({
   open, onClose, title, children, className = '',
   maxWidthClassName = 'max-w-lg', noScrollbar = false, showClose = false,
+  trapFocus = false, fullHeightOnMobile = false,
 }) {
+  const panelRef = useRef(null);
   useEscape(open, onClose);
+  useFocusTrap(open, panelRef, trapFocus);
   return (
+    <MotionConfig reducedMotion="user">
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-[1000] grid place-items-center p-4"
+          className={cx('fixed inset-0 grid place-items-center', fullHeightOnMobile ? 'z-[1500] p-0 sm:p-4' : 'z-[1000] p-4')}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -35,6 +76,8 @@ export function Modal({
             aria-hidden="true"
           />
           <motion.div
+            ref={panelRef}
+            tabIndex={trapFocus ? -1 : undefined}
             role="dialog"
             aria-modal="true"
             aria-label={title}
@@ -43,7 +86,10 @@ export function Modal({
             exit={{ scale: 0.95, y: 10, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 300, damping: 26 }}
             className={cx(
-              'relative w-full bg-surface text-ink rounded-token-lg shadow-glass p-6 max-h-[85vh] overflow-y-auto',
+              'relative w-full bg-surface text-ink shadow-glass p-6 overflow-y-auto outline-none',
+              fullHeightOnMobile
+                ? 'h-[100dvh] max-h-[100dvh] rounded-none sm:h-auto sm:max-h-[85vh] sm:rounded-token-lg'
+                : 'max-h-[85vh] rounded-token-lg',
               maxWidthClassName,
               noScrollbar && 'ff-modal-no-scrollbar',
               className
@@ -65,6 +111,7 @@ export function Modal({
         </motion.div>
       )}
     </AnimatePresence>
+    </MotionConfig>
   );
 }
 
