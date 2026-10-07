@@ -98,3 +98,24 @@ test("a draft with changes keeps them when a server update arrives", async () =>
   fireEvent.keyDown(window, { key: "Escape" });
   expect(await screen.findByText("Unsaved changes")).toBeInTheDocument();
 });
+
+test("reopening after Discard changes starts focus in the dialog, not on Save", async () => {
+  function Reopenable() {
+    const [open, setOpen] = useState(true);
+    return (
+      <>
+        <button type="button" onClick={() => setOpen(true)}>reopen</button>
+        <DesignStudio open={open} onClose={() => setOpen(false)} onReopen={() => setOpen(true)} />
+      </>
+    );
+  }
+  render(<PreferencesProvider><ThemeApplier /><Probe /><ToastProvider><Reopenable /></ToastProvider></PreferencesProvider>);
+  fireEvent.click(palette(MIDNIGHT));
+  fireEvent.keyDown(window, { key: "Escape" });
+  fireEvent.click(await screen.findByRole("button", { name: "Discard changes" }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  fireEvent.click(screen.getByText("reopen"));
+  const dlg = await screen.findByRole("dialog");
+  await waitFor(() => expect(dlg.contains(document.activeElement)).toBe(true));
+  expect(document.activeElement).not.toBe(screen.getByRole("button", { name: /^Save$/ }));
+});

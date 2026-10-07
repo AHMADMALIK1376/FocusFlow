@@ -106,6 +106,7 @@ export default function DesignStudio({ open, onClose, onReopen }) {
   const reopening = useRef(false);
   const skipPreview = useRef(false);
   const keepRef = useRef(null);
+  const wasConfirming = useRef(false);
   const saveRef = useRef(null);
   const pending = useRef(null);
   const frame = useRef(null);
@@ -128,6 +129,7 @@ export default function DesignStudio({ open, onClose, onReopen }) {
       }
       skipPreview.current = true;
       dispatch({ type: 'open', theme: saved });
+      wasConfirming.current = false; // a question left showing when it closed must not steal the new start focus
       setConfirming(false);
       setRole('background');
       setAdvancedOpen(false);
@@ -177,7 +179,6 @@ export default function DesignStudio({ open, onClose, onReopen }) {
 
   // Focus follows the question: into it when it opens, and back to Save when it closes while the
   // Studio stays open (its Keep editing button has just disappeared).
-  const wasConfirming = useRef(false);
   useEffect(() => {
     if (confirming && keepRef.current) keepRef.current.focus();
     else if (wasConfirming.current && !confirming && saveRef.current) saveRef.current.focus();
