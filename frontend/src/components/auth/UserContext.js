@@ -44,8 +44,8 @@ export const UserProvider = ({ children }) => {
         try {
             const response = await authAPI.login(email, password);
             
-            if (response.success && response.token) {
-                setTokenAPI(response.token);
+            if (response.success) {
+                setTokenAPI('session'); // the sign-in itself is an HttpOnly cookie the server just set
                 const name = response.user?.fullName || email.split('@')[0];
                 setUserName(name);
                 setUserEmail(email);
@@ -91,8 +91,8 @@ export const UserProvider = ({ children }) => {
                     };
                 }
                 
-                if (response.token) {
-                    setTokenAPI(response.token);
+                if (response.user) {
+                    setTokenAPI('session');
                     setUserName(fullName || email.split('@')[0]);
                     setUserEmail(email);
                 }
@@ -118,8 +118,8 @@ export const UserProvider = ({ children }) => {
         try {
             const response = await authAPI.verifyEmail(email, code);
             
-            if (response.success && response.token) {
-                setTokenAPI(response.token);
+            if (response.success) {
+                setTokenAPI('session'); // the sign-in itself is an HttpOnly cookie the server just set
                 const name = response.user?.fullName || email.split('@')[0];
                 setUserName(name);
                 setUserEmail(email);
@@ -127,7 +127,6 @@ export const UserProvider = ({ children }) => {
                 
                 return { 
                     success: true, 
-                    token: response.token,
                     user: response.user 
                 };
             } else {

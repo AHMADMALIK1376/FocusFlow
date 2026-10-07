@@ -442,3 +442,11 @@ ALTER TABLE NOTIFICATION_SETTINGS ADD COLUMN IF NOT EXISTS quiz_followup_min   I
 ALTER TABLE SUBJECTS ADD COLUMN IF NOT EXISTS remind_before_min    INTEGER;  -- NULL = use settings
 ALTER TABLE SUBJECTS ADD COLUMN IF NOT EXISTS attendance_after_min INTEGER;  -- NULL = use settings
 ALTER TABLE EXAMS_DEADLINES ADD COLUMN IF NOT EXISTS duration_min  INTEGER;  -- quiz/exam length
+
+-- Dashboard layout, workspace name, profile and mascot choice, so they follow the
+-- student to any browser or phone (one JSON document per account).
+CREATE TABLE IF NOT EXISTS USER_PREFERENCES (
+  user_id    VARCHAR(50) PRIMARY KEY REFERENCES USERS(user_id) ON DELETE CASCADE,
+  data       TEXT NOT NULL,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

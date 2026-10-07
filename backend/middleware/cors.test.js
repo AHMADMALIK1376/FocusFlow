@@ -40,7 +40,6 @@ test('middleware: allowed origin gets headers and continues', () => {
   const r = run(PROD, 'https://focusflow.vercel.app');
   assert.equal(r.headers['Access-Control-Allow-Origin'], 'https://focusflow.vercel.app');
   assert.equal(r.nexted, true);
-  assert.equal(r.headers['Access-Control-Expose-Headers'], 'X-Refreshed-Token');
 });
 
 test('middleware: preflight is answered 204 for allowed, 403 for others', () => {

@@ -2,6 +2,7 @@
 const { getConnection } = require('../config/database');
 const { generateId } = require('../utils/helpers');
 const { signSession } = require('../utils/session');
+const { setSessionCookie, clearSessionCookie } = require('../utils/sessionCookie');
 const { generateVerificationCode, sendVerificationEmail, sendPasswordResetCode } = require('../services/emailService');
 
 // ==============================================
@@ -220,12 +221,11 @@ exports.verifyEmail = async (req, res) => {
         
         if (user.IS_VERIFIED === 1) {
             console.log('✅ User already verified, logging in:', email);
-            const token = generateToken(user.USER_ID, email);
+            setSessionCookie(res, generateToken(user.USER_ID, email));
             
             return res.json({
                 success: true,
                 message: 'Email already verified. Logging you in...',
-                token: token,
                 user: {
                     userId: user.USER_ID,
                     email: email,
@@ -253,14 +253,13 @@ exports.verifyEmail = async (req, res) => {
             [email]
         );
         
-        const token = generateToken(user.USER_ID, email);
+        setSessionCookie(res, generateToken(user.USER_ID, email));
         
         console.log('✅ Email verified successfully for:', email);
         
         res.json({
             success: true,
             message: 'Email verified successfully!',
-            token: token,
             user: {
                 userId: user.USER_ID,
                 email: email,
@@ -386,13 +385,12 @@ exports.login = async (req, res) => {
             return res.status(401).json({ error: 'Invalid email or password.' });
         }
         
-        const token = generateToken(user.USER_ID, user.EMAIL);
+        setSessionCookie(res, generateToken(user.USER_ID, user.EMAIL));
         
         console.log('✅ Login successful for:', email);
         
         res.json({
             success: true,
-            token,
             user: {
                 userId: user.USER_ID,
                 email: user.EMAIL,
@@ -631,6 +629,7 @@ exports.getMe = async (req, res) => {
 // LOGOUT
 // ==============================================
 exports.logout = async (req, res) => {
+    clearSessionCookie(res);
     res.json({ success: true, message: 'Logged out successfully.' });
 };
 
@@ -712,12 +711,11 @@ exports.googleAuth = async (req, res) => {
             console.log('✅ Existing user logged in via Google:', userInfo.email);
         }
         
-        // Generate JWT token
-        const token = generateToken(userId, userInfo.email);
+        // Sign them in: the login goes in an HttpOnly cookie, not in the reply.
+        setSessionCookie(res, generateToken(userId, userInfo.email));
         
         res.json({
             success: true,
-            token,
             // true only the first time this Google account signs in: the app
             // shows its welcome set-up then, never on later sign-ins.
             isNewUser,

@@ -3,7 +3,13 @@
 // ==============================================
 // API CONFIGURATION
 // ==============================================
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5555';
+// Empty means "the same address the app is served from": in production Vercel
+// passes /api on to the server (vercel.json), in development the dev server does
+// (package.json "proxy"). One address keeps the sign-in cookie first-party.
+const API_BASE_URL = process.env.REACT_APP_API_URL || '';
+
+const SIGNED_IN_KEY = 'focus_signedin';
+const LEGACY_TOKEN_KEY = 'focus_token';
 const API_URL = `${API_BASE_URL}/api`;
 
 // Helper function to handle responses
@@ -15,7 +21,7 @@ const handleResponse = async (response) => {
     return data;
 };
 
-const SESSION_OVER = ['USER_NOT_FOUND', 'TOKEN_EXPIRED', 'INVALID_TOKEN'];
+const SESSION_OVER = ['USER_NOT_FOUND', 'TOKEN_EXPIRED', 'INVALID_TOKEN', 'NO_TOKEN'];
 
 // A request got no answer, or a 502/503/504 from the host. The connection
 // gate (components/errors/ConnectionGate) hears this, asks /api/health itself,
@@ -39,23 +45,32 @@ export const pingServer = async (timeoutMs = 6000) => {
     }
 };
 
-// Helper for authorized requests
+// Helper for authorized requests.
+// The sign-in itself is an HttpOnly cookie the browser attaches by itself, so
+// no script (ours or anyone else's) can read it. What the page keeps is only a
+// "signed in" marker (SIGNED_IN_KEY), to decide which screens to show.
+// X-Requested-With is the CSRF guard the server asks for on every change.
 const authFetch = async (endpoint, options = {}) => {
-    const token = localStorage.getItem('focus_token');
+    const signedIn = !!getToken();
+    const legacyToken = localStorage.getItem(LEGACY_TOKEN_KEY);
     const headers = {
         'Content-Type': 'application/json',
+        'X-Requested-With': 'FocusFlow',
         ...options.headers,
     };
-    
-    if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
+
+    // Browsers signed in before the cookie existed still hold the old login.
+    // It is sent one last time; the server answers by setting the cookie.
+    if (legacyToken) {
+        headers['Authorization'] = `Bearer ${legacyToken}`;
     }
-    
+
     let response;
     try {
         response = await fetch(`${API_URL}${endpoint}`, {
             ...options,
             headers,
+            credentials: 'include',
         });
     } catch (err) {
         // No answer at all: offline, or the server is down.
@@ -66,14 +81,15 @@ const authFetch = async (endpoint, options = {}) => {
         reportServerTrouble();
     }
 
-    // Sliding session: the server sends a fresh login once ours is a day old,
-    // so a student who keeps using the app is never signed out.
-    const renewed = response.headers && response.headers.get && response.headers.get('X-Refreshed-Token');
-    if (renewed && token) setToken(renewed);
+    // The old login worked, so the cookie is now set: stop keeping the old one
+    // where scripts can read it.
+    if (legacyToken && response.ok) {
+        setToken('session');
+    }
 
-    // The saved login no longer works (account deleted, token expired or bad):
+    // The saved login no longer works (account deleted, expired, cookie gone):
     // forget it and go to the sign-in page instead of failing every save.
-    if (response.status === 401 && token) {
+    if (response.status === 401 && signedIn) {
         const body = await response.clone().json().catch(() => ({}));
         if (SESSION_OVER.includes(body.code)) {
             clearAllUserData();
@@ -86,17 +102,41 @@ const authFetch = async (endpoint, options = {}) => {
     return handleResponse(response);
 };
 
-// Token management
-export const setToken = (token) => {
-    if (token) {
-        localStorage.setItem('focus_token', token);
-    } else {
-        localStorage.removeItem('focus_token');
-    }
+// Tells the rest of the app when this browser signs in or out (the saved
+// preferences listen: they are loaded from the account on sign-in and cleared
+// on sign-out, so the next person on this computer starts clean).
+export const AUTH_EVENT = 'ff:auth';
+const announceAuth = (signedIn) => {
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(AUTH_EVENT, { detail: { signedIn } }));
 };
 
+// "Signed in" marker. (The name is kept from when the login itself was saved
+// here.) Passing any value marks the browser as signed in; null signs it out.
+export const setToken = (token) => {
+    localStorage.removeItem(LEGACY_TOKEN_KEY);
+    if (token) {
+        localStorage.setItem(SIGNED_IN_KEY, '1');
+    } else {
+        localStorage.removeItem(SIGNED_IN_KEY);
+    }
+    announceAuth(!!token);
+};
+
+// Truthy while this browser is signed in.
 export const getToken = () => {
-    return localStorage.getItem('focus_token');
+    return localStorage.getItem(LEGACY_TOKEN_KEY) || (localStorage.getItem(SIGNED_IN_KEY) ? 'session' : null);
+};
+
+// ==============================================
+// PREFERENCES (dashboard layout, workspace name, profile, mascot)
+// ==============================================
+export const prefsAPI = {
+    get: async () => authFetch('/preferences'),
+    save: async (data, options = {}) => authFetch('/preferences', {
+        method: 'PUT',
+        body: JSON.stringify({ data }),
+        ...options,
+    }),
 };
 
 // ==============================================
@@ -153,6 +193,13 @@ export const authAPI = {
     },
     
     logout: () => {
+        // The server empties the sign-in cookie (the page can't touch it itself).
+        fetch(`${API_URL}/auth/logout`, {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'FocusFlow' },
+            credentials: 'include',
+            keepalive: true,
+        }).catch(() => {});
         setToken(null);
         localStorage.removeItem('focus_username');
         localStorage.removeItem('focus_email');
@@ -391,7 +438,9 @@ export const dashboardAPI = {
 // UTILITY - Clear all user data on logout
 // ==============================================
 export const clearAllUserData = () => {
-    localStorage.removeItem('focus_token');
+    localStorage.removeItem(LEGACY_TOKEN_KEY);
+    localStorage.removeItem(SIGNED_IN_KEY);
+    announceAuth(false);
     localStorage.removeItem('focus_username');
     localStorage.removeItem('focus_email');
     sessionStorage.clear();

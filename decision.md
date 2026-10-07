@@ -32,6 +32,42 @@ Update this file with every change.
 
 ---
 
+## 2026-10-07 — Cookies: a secure sign-in, a cookie notice, and preferences on the account
+
+### The sign-in is an HttpOnly cookie, not a token the page can read (`utils/sessionCookie.js`, `middleware/auth.js`, `services/api.js`)
+- **Decision:** the server sets `ff_session` (HttpOnly, Secure in production, SameSite=Lax, 20 days, no Domain). The login reply no longer contains a token. The page keeps only a "signed in" marker (`focus_signedin`).
+- **Why:** a token in `localStorage` can be read by any script that ever runs on the page. An HttpOnly cookie cannot.
+- **No domain needed:** the app and API were on different addresses (Vercel and Render), and browsers block that kind of cookie. `frontend/vercel.json` now passes `/api` on to Render, so the browser sees one address. In development the same is done by the `proxy` setting in `package.json`, so `REACT_APP_API_URL` must stay unset.
+- **CSRF guard:** a cookie-signed request that changes data must carry `X-Requested-With: FocusFlow`. Other websites cannot add that header without the CORS lock refusing them.
+- **Upgrade path:** browsers still holding the old saved login send it once more. The server accepts it, sets the cookie, and the page then deletes the old token. Checked on your real session: the old token was gone afterwards and the dashboard kept working.
+- **Cleaned up:** logout now clears the cookie on the server; an expired, invalid or deleted-account cookie is cleared; a cookie that has vanished while the page thinks it's signed in (`NO_TOKEN`) signs out cleanly. The renewal header `X-Refreshed-Token` was removed, because renewal now happens in the cookie.
+- **Rate limits behind two proxies:** with Vercel in front, `trust proxy` is now 2 hops (`TRUST_PROXY_HOPS` to change it), otherwise every student would share Vercel's address. Someone calling Render directly could fake the address, so wrong passwords are also counted **per account** (`loginEmailLimiter`, 10 per 15 min).
+- **Google sign-in bug found and fixed:** the button called `http://localhost:5555` directly, so it could never work on the deployed site. It now uses `/api`.
+- **Trade-off:** Vercel stops waiting for a proxied call after about 30 s, so a request made while Render is waking up can fail once. The 503 page handles it and retries.
+
+### Cookie notice, privacy page, and Google only on request (`features/consent/`, `components/consent/CookieBanner.js`, `Pages/PrivacyPage.js`)
+- **Decision:** a notice on the first visit (sign-up and sign-in pages included) with **Accept all** and **Essential only**. `/privacy` lists every cookie and browser key, what the servers keep, who handles the data (Vercel, Render, Supabase, Gmail, Google), and lets the choice be changed. It is also in the account menu.
+- **Why the choice is real:** the only optional third party is Google sign-in. Its script used to load on every page. It is now removed from `index.html` and loaded only after "Accept all", or when the student clicks Sign in with Google and agrees in a small prompt. With Essential only, no request goes to Google.
+- **Honest limits:** Google Fonts is still loaded on every page (it is how the typefaces arrive), and the privacy page says so. FocusFlow has no ads or analytics. Bump `CONSENT_VERSION` if anything optional is ever added, so everyone is asked again.
+- **Checked in Chrome:** banner on first visit; nothing requested from Google before a choice; Essential only then Google button shows the prompt, with no Google request.
+- **Not done:** the privacy page points to the GitHub issues page for deletion requests; there is no "delete my account" button yet.
+
+### Preferences follow the account (`preferences/useServerSync.js`, `USER_PREFERENCES`, `/api/preferences`)
+- **Decision:** dashboard layout, workspace name, profile and mascot are saved on the account (one JSON document). On sign-in the account's copy wins. If the account has none yet, this browser's layout is uploaded. Changes are saved 1.5 s after the last edit, or straight away when the tab is hidden. If the server is asleep at start-up it tries again 3 times, 20 s apart.
+- **Isolation:** signing out wipes this browser's copy, so the next person on the computer neither sees nor uploads it. Nothing is sent before the first load finishes, so a fresh browser can't overwrite a saved layout with defaults.
+- **Not synced:** light or dark mode, language, sidebar folding and the cookie choice stay per browser. Very large pasted-in photos (over about 60 KB) are not uploaded; the mascot is.
+- **Migration:** `backend/scripts/migrate-preferences.js` (also in `postgres-init.sql`). It was run on the live database; it only adds a table.
+- **Checked end to end with two throwaway accounts (deleted afterwards):**
+  - the first sign-in uploaded this browser's layout;
+  - a mascot change reached the account within seconds;
+  - signing out reset the browser, and signing back in brought the layout back;
+  - a second account got defaults, not the first account's layout.
+
+### Testing note
+- The logout button uses the browser's own "Are you sure?" popup, which blocks automated clicks and looks out of place in the app. It is on the list in the README roadmap.
+
+---
+
 ## 2026-10-07 — Staying signed in, and onboarding only for new accounts
 
 ### A sliding 20-day session (`backend/utils/session.js`, `middleware/auth.js`, `services/api.js`)

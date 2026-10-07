@@ -1,14 +1,16 @@
 const test = require('node:test');
 const assert = require('node:assert');
 const express = require('express');
-const { globalLimiter, loginLimiter, emailLimiter, codeLimiter } = require('./rateLimiters');
+const { globalLimiter, loginLimiter, loginEmailLimiter, emailLimiter, codeLimiter } = require('./rateLimiters');
 
 // The same mounts server.js uses, with fake handlers behind them.
 function start() {
     const app = express();
     app.set('trust proxy', 1);
     app.use('/api/', globalLimiter);
+    app.use(express.json());
     app.use('/api/auth/login', loginLimiter);
+    app.use('/api/auth/login', loginEmailLimiter);
     app.use(['/api/auth/register', '/api/auth/resend-verification', '/api/auth/forgot-password'], emailLimiter);
     app.use(['/api/auth/verify-email', '/api/auth/verify-reset-code', '/api/auth/reset-password'], codeLimiter);
     app.post('/api/auth/login', (req, res) => (req.query.ok ? res.json({ ok: true }) : res.status(401).json({ error: 'bad' })));
@@ -81,4 +83,19 @@ test('standard RateLimit headers are sent', async () => {
         const res = await hit(url, '/api/things', 'GET', newClient());
         assert.ok(res.headers.get('ratelimit') || res.headers.get('ratelimit-limit'));
     } finally { server.close(); }
+});
+
+test('wrong passwords against ONE account are blocked even when they come from many addresses', async () => {
+    const { server, url } = await start();
+    try {
+        const guess = (ip, email) => fetch(url + '/api/auth/login', { method: 'POST', headers: { 'X-Forwarded-For': ip, 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
+        for (let i = 0; i < 10; i++) assert.strictEqual((await guess('10.9.0.' + (i + 1), 'Victim@Example.com')).status, 401);
+        const blocked = await guess('10.9.0.200', 'victim@example.com');
+        assert.strictEqual(blocked.status, 429);
+        assert.match((await blocked.json()).error, /Too many login attempts/);
+        // another account, from the same new address, is not affected
+        assert.strictEqual((await guess('10.9.0.200', 'someone-else@example.com')).status, 401);
+    } finally {
+        server.close();
+    }
 });

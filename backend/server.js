@@ -24,6 +24,7 @@ const assignmentRoutes = require('./routes/assignmentRoutes');
 const habitRoutes = require('./routes/habitRoutes');
 const studyHoursRoutes = require('./routes/studyHoursRoutes');
 const notifyRoutes = require('./routes/notifyRoutes');
+const preferencesRoutes = require('./routes/preferencesRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -76,12 +77,14 @@ app.use(compression({
 // ==============================================
 // RATE LIMITING
 // ==============================================
-// Behind Render's proxy every request arrives from the proxy's address; trusting
-// one hop makes the limiter see the real client IP instead of counting all
-// users together.
-app.set('trust proxy', 1);
+// Requests reach the API through Vercel (which passes /api on) and then Render's
+// own proxy, so the real client IP is two hops back. With one hop every student
+// would share Vercel's address and the limits would be counted together.
+// (Someone calling Render directly can fake the IP, which is why logins are also
+// limited per account below.)
+app.set('trust proxy', Number(process.env.TRUST_PROXY_HOPS) || 2);
 
-const { globalLimiter, loginLimiter, emailLimiter, codeLimiter } = require('./middleware/rateLimiters');
+const { globalLimiter, loginLimiter, loginEmailLimiter, emailLimiter, codeLimiter } = require('./middleware/rateLimiters');
 
 app.use('/api/', globalLimiter);
 app.use('/api/auth/login', loginLimiter);
@@ -91,6 +94,9 @@ app.use(['/api/auth/verify-email', '/api/auth/verify-reset-code', '/api/auth/res
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Needs the parsed body (it counts wrong passwords per email address).
+app.use('/api/auth/login', loginEmailLimiter);
 
 // Request timeout
 const REQUEST_TIMEOUT_MS = 30000;
@@ -147,6 +153,7 @@ app.use('/api/assignments', assignmentRoutes);
 app.use('/api/habits', habitRoutes);
 app.use('/api/study-hours', studyHoursRoutes);
 app.use('/api/notify', notifyRoutes);
+app.use('/api/preferences', preferencesRoutes);
 
 // ==============================================
 // HEALTH CHECK

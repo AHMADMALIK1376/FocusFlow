@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import ErrorBoundary from "./components/common/ErrorBoundary";
 import ErrorBoundaryRoute from "./components/common/ErrorBoundaryRoute";
 import ConnectionGate from "./components/errors/ConnectionGate";
+import CookieBanner from "./components/consent/CookieBanner";
 
 // ==============================================
 // LOADING COMPONENT
@@ -49,6 +50,7 @@ const RoutineView = lazy(() => import("./components/routine/RoutineView"));
 const FocusModePage = lazy(() => import("./Pages/FocusModePage"));
 const AttendanceSkylinePage = lazy(() => import("./Pages/AttendanceSkylinePage"));
 const OnboardingPage = lazy(() => import("./Pages/OnboardingPage"));
+const PrivacyPage = lazy(() => import("./Pages/PrivacyPage"));
 const SettingsPage = lazy(() => import("./Pages/SettingsPage"));
 
 // ======================================================
@@ -127,6 +129,9 @@ function App() {
                         <Route path="/reset-password" element={<ResetPassword />} />
                       </Route>
 
+                      {/* Public: what FocusFlow stores and who handles it */}
+                      <Route path="/privacy" element={<PrivacyPage />} />
+
                       {/* ============================================== */}
                       {/* ONBOARDING — protected but no Layout shell */}
                       {/* ============================================== */}
@@ -178,6 +183,8 @@ function App() {
                       <Route path="*" element={<ErrorBoundaryRoute />} />
                     </Routes>
                   </Suspense>
+                  {/* First visit: cookie and privacy choice */}
+                  <CookieBanner />
                 </BrowserRouter>
                 </ToastProvider>
               </AppProvider>

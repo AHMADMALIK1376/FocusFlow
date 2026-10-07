@@ -2,6 +2,7 @@
 // API, so the app shows the message as-is. They run after CORS, so the browser
 // can read the 429 instead of reporting a CORS failure.
 const rateLimit = require('express-rate-limit');
+const { ipKeyGenerator } = rateLimit;
 
 const MIN = 60 * 1000;
 
@@ -22,6 +23,16 @@ module.exports = {
 
     // Wrong passwords only: a successful login does not count.
     loginLimiter: limiter(15 * MIN, 10, 'Too many login attempts. Please wait 15 minutes and try again.', { skipSuccessfulRequests: true }),
+
+    // The same limit per ACCOUNT: password guessing against one email is stopped
+    // however many addresses it comes from. Mounted after the body is parsed.
+    loginEmailLimiter: limiter(15 * MIN, 10, 'Too many login attempts. Please wait 15 minutes and try again.', {
+        skipSuccessfulRequests: true,
+        keyGenerator: (req) => {
+            const email = String((req.body && req.body.email) || '').trim().toLowerCase().slice(0, 200);
+            return email ? `email:${email}` : ipKeyGenerator(req.ip);
+        },
+    }),
 
     // Endpoints that send an email (sign-up, resend code, forgot password).
     emailLimiter: limiter(15 * MIN, 8, 'Too many emails requested. Please wait 15 minutes and try again.'),

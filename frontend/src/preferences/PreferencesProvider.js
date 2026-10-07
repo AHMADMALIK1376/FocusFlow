@@ -6,6 +6,7 @@ import React, {
   useState,
 } from 'react';
 import storage from '../storage/storageAdapter';
+import { useServerSync } from './useServerSync';
 import { segmentFromAge } from './segment';
 import { migratePreferences } from './migrate';
 import {
@@ -48,6 +49,9 @@ export function PreferencesProvider({ children }) {
   useEffect(() => {
     storage.set(KEY, state);
   }, [state]);
+
+  // ...and keep a copy on the student's account, so it follows them to any device.
+  useServerSync(state, setState, KEY);
 
   // ── Derived: active dashboard ─────────────────────────────────────────────
   const activeDashboard = useMemo(() => {

@@ -122,7 +122,7 @@ flowchart LR
     end
 
     subgraph API["Express API (backend/)"]
-        MW["Rate limiter, then JWT auth"]
+        MW["Rate limiter, then sign-in check"]
         CTRL["Controllers"]
         SCHED["Reminder scheduler<br/>(every minute)"]
     end
@@ -132,7 +132,7 @@ flowchart LR
     MAIL["Gmail (SMTP)"]
     WA["WhatsApp<br/>(CallMeBot, optional)"]
 
-    UI -- "fetch /api/* + Bearer token" --> MW --> CTRL --> DB
+    UI -- "fetch /api/* (same address, sign-in cookie)" --> MW --> CTRL --> DB
     OCR -. "scanned text" .-> UI
     SCHED --> DB
     SCHED --> PUSH --> SW
@@ -274,11 +274,7 @@ npm install
 
 > `frontend/.npmrc` sets `legacy-peer-deps=true`, so a plain `npm install` works with React 19.
 
-`frontend/.env` already points the app at the local API:
-
-```env
-REACT_APP_API_URL=http://localhost:5555
-```
+The app calls `/api` on its own address, and the dev server passes it on to the backend on port 5555 (the `proxy` setting in `frontend/package.json`), so there is nothing to configure. Start the backend first.
 
 Start the app:
 
@@ -312,7 +308,7 @@ The Google button uses the OAuth client ID set in `frontend/src/Pages/Authpage.j
 
 | Variable | Required | Purpose |
 |---|:---:|---|
-| `JWT_SECRET` | Yes | Signs login tokens. Use at least 32 characters; the server warns if it's shorter. |
+| `JWT_SECRET` | Yes | Signs the sign-in. Use at least 32 characters; the server warns if it's shorter. |
 | `PGHOST` | Yes | Postgres host |
 | `PGUSER` | Yes | Postgres user |
 | `PGPASSWORD` | Yes | Postgres password |
@@ -335,7 +331,7 @@ The server **refuses to start** if any required variable is missing and prints w
 
 | Variable | Purpose |
 |---|---|
-| `REACT_APP_API_URL` | Base address of the API, for example `http://localhost:5555` locally or your Render address in production |
+| `REACT_APP_API_URL` | **Leave it unset.** The app then calls `/api` on its own address, which keeps the sign-in cookie first-party. Setting it sends calls straight to another address, where the cookie is not kept. |
 
 > Never commit `backend/.env`. It's already in `.gitignore`.
 
@@ -390,7 +386,7 @@ The scanner tests use real OCR output from university portal screenshots, stored
 
 ## API overview
 
-All routes are under `/api`. Every route except the auth routes and health checks needs an `Authorization: Bearer <token>` header.
+All routes are under `/api`. Every route except the auth routes and health checks needs the sign-in cookie, and any request that changes data also needs the header `X-Requested-With: FocusFlow` (the app adds it).
 
 | Area | Base path | Main endpoints |
 |---|---|---|
@@ -466,7 +462,9 @@ Every timing and channel can be changed in **Settings > Reminders**, and some ca
 
 ## Security
 
-- Passwords are hashed with **bcrypt**. Logins use **JWT** bearer tokens.
+- Passwords are hashed with **bcrypt**.
+- The sign-in is an **HttpOnly, Secure, SameSite=Lax cookie** (`ff_session`). Scripts on the page cannot read it, and it lasts 20 days, renewed whenever you use the app. Requests that change data must also carry `X-Requested-With: FocusFlow`, which other websites cannot add, so they cannot ride on a student's cookie.
+- A cookie and privacy notice is shown on the first visit (`/privacy` explains everything). Google's sign-in script is loaded only if the student allows it.
 - Accounts must be **verified by email code** before use. Password reset also uses an emailed code.
 - **Deleted accounts are signed out.** After checking the token, the API confirms the user still exists (cached for 60 seconds). The app clears the saved login if the user is gone. A short database outage doesn't sign anyone out.
 - **Rate limiting** (`middleware/rateLimiters.js`), counted per real client IP (`trust proxy` is set for Render):
@@ -489,7 +487,7 @@ The planned production setup uses free tiers only:
 
 | Part | Host | Notes |
 |---|---|---|
-| Frontend | **Vercel** | Root directory `frontend`, build `npm run build`, output `build`. Set `REACT_APP_API_URL` to the backend address. |
+| Frontend | **Vercel** | Root directory `frontend`, build `npm run build`, output `build`. **Do not set `REACT_APP_API_URL`.** `frontend/vercel.json` passes `/api` on to the backend, so the app and API share one address. If your Render address is different, change it in that file. |
 | Backend | **Render** (web service) | Root directory `backend`, start `npm start`. Add every variable from `backend/.env`, with `APP_URL` and `PUBLIC_API_URL` set to the real addresses. |
 | Database | **Supabase** | Run `node scripts/run-init.js` once against the production database. |
 
@@ -523,7 +521,7 @@ Once deployed, open the Vercel address on your phone and use **Add to Home scree
 FocusFlow is being tested daily on Android before a wider release. Still planned:
 
 - [ ] Production deployment (Vercel, Render and Supabase) with the keep-alive ping
-- [ ] Final security hardening before release (for example, limiting CORS to the production frontend)
+- [ ] Replace the browser's "Are you sure you want to log out?" popup with an in-app confirmation
 - [ ] Study planner and revision scheduler
 - [ ] Study groups and sharing
 - [ ] More complete translations for the languages that currently fall back to English

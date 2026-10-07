@@ -69,10 +69,20 @@ Update this file with every change.
    - `app.listen(PORT)`.
 
 ### Staying signed in
-1. The login (JWT) is saved in `localStorage` and lasts 20 days.
-2. `middleware/auth.js`: if the token is more than a day old, the reply carries `X-Refreshed-Token`.
-3. `authFetch` in `services/api.js` saves it, so the 20 days start again.
-4. `GuestOnly` (`components/auth/GuestOnly.js`) wraps "/", "/login" and "/signup": if you're signed in it goes to `/dashboard`.
+1. Signing in (or verifying a new account's email, or Google) makes the server set the `ff_session` cookie (HttpOnly, Secure, SameSite=Lax, 20 days). The page keeps only the marker `focus_signedin` (`setToken('session')` in `services/api.js`).
+2. Every call goes to `/api` on the app's own address: `vercel.json` passes it to Render in production, and `package.json` "proxy" passes it to port 5555 in development. `authFetch` sends the cookie (`credentials: 'include'`) and `X-Requested-With: FocusFlow`.
+3. `middleware/auth.js` reads the cookie (or the old Authorization header and upgrades it to a cookie), refuses changes that lack the header (`CSRF`), and re-sets the cookie when the login is more than a day old.
+4. Signing out: `authAPI.logout()` asks the server to clear the cookie and clears the marker. A dead cookie is cleared by the server.
+5. `GuestOnly` (`components/auth/GuestOnly.js`) wraps "/", "/login" and "/signup": if you're signed in it goes to `/dashboard`.
+
+### Cookie choice
+- `CookieBanner` (mounted in `App.js`) asks on the first visit and stores the choice in `features/consent/consent.js`.
+- Google's sign-in script is added by `features/consent/googleSignIn.js` only after "Accept all", or when the Google button is pressed and the student agrees. `/privacy` (`Pages/PrivacyPage.js`) explains everything and can change the choice.
+
+### Preferences on the account
+- `PreferencesProvider` calls `useServerSync` (`preferences/useServerSync.js`). On sign-in (the `ff:auth` event from `setToken`) it loads `GET /api/preferences`; the account's copy wins, and if there is none this browser's copy is uploaded.
+- Edits are saved with `PUT /api/preferences` after 1.5 s (or when the tab is hidden). Signing out wipes the browser's copy.
+- Backend: `routes/preferencesRoutes.js` → `controllers/preferencesController.js` → table `USER_PREFERENCES` (`utils/preferences.js` checks the document).
 
 ### Welcome set-up (onboarding)
 - Sign-up → email code → `VerifyForm` calls `markNeedsOnboarding()` → `/onboarding`.

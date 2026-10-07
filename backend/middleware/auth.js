@@ -1,6 +1,14 @@
 ﻿const jwt = require('jsonwebtoken');
 const { getConnection } = require('../config/database');
 const { signSession, shouldRefresh } = require('../utils/session');
+const { readSessionToken, setSessionCookie, clearSessionCookie } = require('../utils/sessionCookie');
+
+// A request that changes data and is signed in by cookie must carry this header.
+// Another website can't add a custom header without the browser asking this API
+// first (and the CORS lock says no), so it can't ride on a student's cookie.
+const SAFE_METHODS = ['GET', 'HEAD', 'OPTIONS'];
+const CSRF_HEADER = 'X-Requested-With';
+const CSRF_VALUE = 'FocusFlow';
 
 // A token stays valid after its account is deleted, so every request also
 // checks the user still exists. Found users are remembered for a minute so this
@@ -54,27 +62,21 @@ const getJWTSecret = () => {
 // JWT VERIFICATION MIDDLEWARE
 // ==============================================
 module.exports = async (req, res, next) => {
-    // Get authorization header
-    const authHeader = req.header('Authorization');
-    
-    // Check if header exists
-    if (!authHeader) {
+    // The login: the HttpOnly cookie, or (browsers signed in before the cookie
+    // existed) the older Authorization header.
+    const { token, from } = readSessionToken(req);
+
+    if (!token) {
         console.warn(`⚠️ Unauthorized access attempt: No token provided for ${req.method} ${req.path}`);
         return res.status(401).json({ 
             error: 'Access denied. No token provided.',
             code: 'NO_TOKEN'
         });
     }
-    
-    // Extract token from Bearer header
-    const token = authHeader.replace('Bearer ', '');
-    
-    if (!token) {
-        console.warn(`⚠️ Unauthorized access attempt: Invalid token format for ${req.method} ${req.path}`);
-        return res.status(401).json({ 
-            error: 'Access denied. Invalid token format.',
-            code: 'INVALID_FORMAT'
-        });
+
+    if (from === 'cookie' && !SAFE_METHODS.includes(req.method) && req.header(CSRF_HEADER) !== CSRF_VALUE) {
+        console.warn(`⚠️ Blocked ${req.method} ${req.path}: cookie login without the ${CSRF_HEADER} header`);
+        return res.status(403).json({ error: 'Request blocked.', code: 'CSRF' });
     }
     
     try {
@@ -98,16 +100,18 @@ module.exports = async (req, res, next) => {
         
         if (!(await userExists(decoded.userId))) {
             console.warn(`⚠️ Token for a deleted account (user ${decoded.userId}) on ${req.method} ${req.path}`);
+            if (from === 'cookie') clearSessionCookie(res);
             return res.status(401).json({
                 error: 'This account no longer exists. Please sign in again.',
                 code: 'USER_NOT_FOUND'
             });
         }
 
-        // Sliding session: a login more than a day old is swapped for a fresh one,
+        // Sliding session: a login more than a day old is swapped for a fresh cookie,
         // so the student is only signed out after SESSION_DAYS of not using the app.
-        if (shouldRefresh(decoded) && typeof res.setHeader === 'function') {
-            res.setHeader('X-Refreshed-Token', signSession(decoded.userId, decoded.email, secret));
+        // A login that arrived by the older header is moved into the cookie too.
+        if ((from === 'header' || shouldRefresh(decoded)) && typeof res.append === 'function') {
+            setSessionCookie(res, signSession(decoded.userId, decoded.email, secret));
         }
 
         next();
@@ -116,6 +120,7 @@ module.exports = async (req, res, next) => {
         // Handle specific JWT errors with appropriate messages
         if (err.name === 'TokenExpiredError') {
             console.warn(`⚠️ Token expired for request: ${req.method} ${req.path}`);
+            if (from === 'cookie') clearSessionCookie(res);
             return res.status(401).json({ 
                 error: 'Token expired. Please login again.',
                 code: 'TOKEN_EXPIRED',
@@ -125,6 +130,7 @@ module.exports = async (req, res, next) => {
         
         if (err.name === 'JsonWebTokenError') {
             console.warn(`⚠️ Invalid token: ${err.message} for ${req.method} ${req.path}`);
+            if (from === 'cookie') clearSessionCookie(res);
             return res.status(401).json({ 
                 error: 'Invalid token.',
                 code: 'INVALID_TOKEN',

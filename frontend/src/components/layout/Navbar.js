@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Target, Zap, Settings, ChevronDown, Camera } from "lucide-react";
+import { Target, Zap, Settings, ShieldCheck, ChevronDown, Camera } from "lucide-react";
 import { useUser } from "../auth/UserContext";
 import { useApp } from "../context/AppContext";
 import { usePreferences } from "../../preferences/usePreferences";
@@ -136,6 +136,12 @@ export default function Navbar() {
                 className="w-full text-left px-4 py-2.5 text-[0.85rem] font-medium text-ink hover:bg-surface-2 transition-colors flex items-center gap-2.5"
               >
                 <Settings size={16} className="text-muted" /> {t("nav.settings")}
+              </button>
+              <button
+                onClick={() => { navigate("/privacy"); setShowDropdown(false); }}
+                className="w-full text-left px-4 py-2.5 text-[0.85rem] font-medium text-ink hover:bg-surface-2 transition-colors flex items-center gap-2.5"
+              >
+                <ShieldCheck size={16} className="text-muted" /> Privacy and cookies
               </button>
               <div className="px-4 py-2.5 flex items-center">
                 <LogoutButton onClick={handleLogout} />

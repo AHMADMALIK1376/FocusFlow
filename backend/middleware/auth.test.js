@@ -62,22 +62,68 @@ test('a bad token is still refused', async () => {
 });
 
 
-test('a login older than a day comes back renewed in a header; a fresh one does not', async () => {
-    auth.clearUserCache();
-    const old = jwt.sign({ userId: 1, email: 'a@b.c', iat: Math.floor(Date.now() / 1000) - 2 * 24 * 3600 }, process.env.JWT_SECRET, { expiresIn: '19d' });
-    const fresh = tokenFor(1);
-    const call = (token) => new Promise((resolve) => {
+// ---- cookie sign-in (the app's login lives in an HttpOnly cookie) ----
+const COOKIE = (t) => 'ff_session=' + encodeURIComponent(t);
+function call({ token, cookie, method = 'GET', csrf = false }) {
+    return new Promise((resolve) => {
         const headers = {};
-        const req = { header: () => 'Bearer ' + token, method: 'GET', path: '/x' };
-        const res = { setHeader(k, v) { headers[k] = v; }, status(c) { this.code = c; return this; }, json(b) { resolve({ code: this.code, body: b }); } };
-        auth(req, res, () => resolve({ code: 200, headers }));
+        const req = {
+            headers: cookie ? { cookie: COOKIE(cookie) } : {},
+            header: (k) => (k === 'Authorization' && token ? 'Bearer ' + token : k === 'X-Requested-With' && csrf ? 'FocusFlow' : undefined),
+            method, path: '/x',
+        };
+        const res = { append(k, v) { (headers[k] = headers[k] || []).push(v); }, status(c) { this.code = c; return this; }, json(b) { resolve({ code: this.code, body: b, headers }); } };
+        auth(req, res, () => resolve({ code: 200, headers, user: req.user }));
     });
-    const a = await call(old);
+}
+const agedToken = (days) => jwt.sign({ userId: 1, email: 'a@b.c', iat: Math.floor(Date.now() / 1000) - days * 24 * 3600 }, process.env.JWT_SECRET, { expiresIn: '19d' });
+
+test('a cookie login is accepted for reading', async () => {
+    auth.clearUserCache();
+    const r = await call({ cookie: tokenFor(1) });
+    assert.equal(r.code, 200);
+    assert.equal(r.user.userId, 1);
+});
+
+test('a cookie login cannot change data without the FocusFlow header (blocks other websites)', async () => {
+    auth.clearUserCache();
+    const blocked = await call({ cookie: tokenFor(1), method: 'POST' });
+    assert.equal(blocked.code, 403);
+    assert.equal(blocked.body.code, 'CSRF');
+    assert.equal((await call({ cookie: tokenFor(1), method: 'DELETE' })).code, 403);
+    assert.equal((await call({ cookie: tokenFor(1), method: 'POST', csrf: true })).code, 200);
+});
+
+test('the older header login still works, and is moved into a cookie', async () => {
+    auth.clearUserCache();
+    const r = await call({ token: tokenFor(1), method: 'POST' });
+    assert.equal(r.code, 200);
+    assert.match(r.headers['Set-Cookie'][0], /^ff_session=.+; Path=\/; HttpOnly; SameSite=Lax/);
+});
+
+test('a login older than a day is renewed in the cookie; a fresh one is left alone', async () => {
+    auth.clearUserCache();
+    const a = await call({ cookie: agedToken(2) });
     assert.equal(a.code, 200);
-    const renewed = jwt.verify(a.headers['X-Refreshed-Token'], process.env.JWT_SECRET);
-    assert.equal(renewed.userId, 1);
-    assert.equal(renewed.exp - renewed.iat, 20 * 24 * 3600);
-    const b = await call(fresh);
+    const renewed = decodeURIComponent(a.headers['Set-Cookie'][0].split(';')[0].split('=')[1]);
+    const d = jwt.verify(renewed, process.env.JWT_SECRET);
+    assert.equal(d.userId, 1);
+    assert.equal(d.exp - d.iat, 20 * 24 * 3600);
+    const b = await call({ cookie: tokenFor(1) });
     assert.equal(b.code, 200);
-    assert.equal(b.headers['X-Refreshed-Token'], undefined);
+    assert.equal(b.headers['Set-Cookie'], undefined);
+});
+
+test('a dead cookie (deleted account) is cleared so the browser stops sending it', async () => {
+    auth.clearUserCache();
+    const r = await call({ cookie: tokenFor(2) });
+    assert.equal(r.code, 401);
+    assert.equal(r.body.code, 'USER_NOT_FOUND');
+    assert.match(r.headers['Set-Cookie'][0], /^ff_session=; .*Max-Age=0/);
+});
+
+test('no login at all is refused', async () => {
+    const r = await call({});
+    assert.equal(r.code, 401);
+    assert.equal(r.body.code, 'NO_TOKEN');
 });

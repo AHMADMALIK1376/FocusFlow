@@ -1,8 +1,11 @@
 // src/Pages/Authpage.js
 import React, { useState, useEffect } from "react";
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
-import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { markNeedsOnboarding } from "../features/onboarding/needsOnboarding";
+import { setToken } from "../services/api";
+import { allowsGoogle, setConsent } from "../features/consent/consent";
+import { loadGoogleScript } from "../features/consent/googleSignIn";
 import Lottie from "lottie-react"; 
 
 import workingAnimationData from "../assets/animation/Man Working on Laptop in Office.json"; 
@@ -14,6 +17,7 @@ export default function AuthPage() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [googleError, setGoogleError] = useState("");
+  const [askGoogle, setAskGoogle] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setIsLoaded(true), 100);
@@ -25,10 +29,25 @@ export default function AuthPage() {
   const syncTransition = "transition-all duration-[700ms] ease-[cubic-bezier(0.4,0,0.2,1)]";
 
   // Google Sign-In Handler using native API
-  const handleGoogleSignIn = () => {
-    setIsGoogleLoading(true);
+  const handleGoogleSignIn = async () => {
     setGoogleError("");
-    
+
+    // Google's script only loads once the student allowed it (cookie choice).
+    if (!allowsGoogle()) {
+      setAskGoogle(true);
+      return;
+    }
+    setAskGoogle(false);
+    setIsGoogleLoading(true);
+
+    try {
+      await loadGoogleScript();
+    } catch {
+      setGoogleError("Google Sign-In could not be loaded. Check your connection and try again.");
+      setIsGoogleLoading(false);
+      return;
+    }
+
     if (!window.google) {
       console.error("Google API not loaded");
       setGoogleError("Google Sign-In is loading. Please try again.");
@@ -45,7 +64,8 @@ export default function AuthPage() {
         
         try {
           // Send token to backend
-          const response = await fetch('http://localhost:5555/api/auth/google', {
+          const response = await fetch(`${process.env.REACT_APP_API_URL || ''}/api/auth/google`, {
+            credentials: 'include',
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -57,8 +77,8 @@ export default function AuthPage() {
           
           const data = await response.json();
           
-          if (data.success && data.token) {
-            localStorage.setItem('focus_token', data.token);
+          if (data.success) {
+            setToken('session');
             localStorage.setItem('focus_username', data.user?.fullName || data.user?.email || 'User');
             // A first-ever Google sign-in gets the welcome set-up; later ones go straight in.
             if (data.isNewUser) markNeedsOnboarding();
@@ -126,6 +146,25 @@ export default function AuthPage() {
                   </div>
                 )}
                 
+                {askGoogle && (
+                  <div className="w-full p-3 rounded-token-md bg-surface-2 shadow-neu-inset text-center" role="alert">
+                    <p className="text-[11px] text-muted leading-relaxed">
+                      Signing in with Google loads Google&apos;s own script, and Google may set its cookies.
+                    </p>
+                    <div className="flex gap-2 justify-center mt-2">
+                      <button type="button" onClick={() => { setConsent("all"); handleGoogleSignIn(); }}
+                        className="px-4 py-2 rounded-token-md bg-grad-hero text-on-brand shadow-clay-brand text-[10px] font-black tracking-widest uppercase">
+                        Allow and continue
+                      </button>
+                      <button type="button" onClick={() => setAskGoogle(false)}
+                        className="px-4 py-2 rounded-token-md bg-surface text-ink shadow-neu-sm text-[10px] font-black tracking-widest uppercase">
+                        Not now
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {!askGoogle && (
                 <button 
                   onClick={handleGoogleSignIn}
                   disabled={isGoogleLoading}
@@ -152,6 +191,11 @@ export default function AuthPage() {
                     </>
                   )}
                 </button>
+                )}
+
+                <Link to="/privacy" className="mt-3 text-[10px] font-bold text-muted hover:text-brand transition-colors">
+                  Privacy and cookies
+                </Link>
               </div>
             )}
           </div>
