@@ -148,10 +148,10 @@ export default function ProgressCubeStack({ data }) {
         <svg width={w} height={height} viewBox={`0 0 ${w} ${height}`} style={{ position: "absolute", top: 0, left: 0 }}>
           <defs>
             <filter id="cubeShadow" x="-40%" y="-40%" width="200%" height="200%">
-              <feDropShadow dx="0" dy="5" stdDeviation="4.5" floodColor="#BEA07A" floodOpacity="0.32" />
+              <feDropShadow dx="0" dy="5" stdDeviation="4.5" floodOpacity="0.32" style={{ floodColor: "rgb(var(--shadow-color))" }} />
             </filter>
             <filter id="cubeShadowHot" x="-55%" y="-55%" width="230%" height="230%">
-              <feDropShadow dx="0" dy="10" stdDeviation="9" floodColor="#BEA07A" floodOpacity="0.4" />
+              <feDropShadow dx="0" dy="10" stdDeviation="9" floodOpacity="0.4" style={{ floodColor: "rgb(var(--shadow-color))" }} />
             </filter>
             {blocks.map((b) => (
               <linearGradient key={`g-${b.i}`} id={`cube-${b.i}`} x1="0" y1="0" x2="0.3" y2="1">

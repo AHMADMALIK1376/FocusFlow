@@ -43,7 +43,8 @@ export default function PrivacyPage() {
           <ul className="space-y-2.5 mt-2">
             <Row name="ff_session (cookie)">Keeps you signed in. It is <b className="text-ink">HttpOnly</b> (scripts on the page cannot read it), <b className="text-ink">Secure</b> (sent over HTTPS only) and <b className="text-ink">SameSite</b> (not sent along with requests started by other websites). It lasts 20 days and is renewed whenever you use the app. Signing out removes it.</Row>
             <Row name="focus_signedin, focus_username, focus_email">Remember that you are signed in and your name, so the right screens show.</Row>
-            <Row name="focusflow:preferences">Your dashboard layout, workspace name, profile and mascot choice.</Row>
+            <Row name="focusflow:preferences">Your dashboard layout, workspace name, profile, mascot choice and colour theme.</Row>
+            <Row name="focusflow:theme.colors">The colours of your theme, so the app opens in them before it has loaded. Removed when you sign out.</Row>
             <Row name="focusflow:theme.mode, focusflow:i18n.language, focusflow:sidebar.collapsed">Light or dark mode, your language, and whether the sidebar is folded.</Row>
             <Row name="focusflow:consent">The choice you make below.</Row>
           </ul>

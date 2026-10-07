@@ -121,7 +121,7 @@ export default function AuthPage() {
       </div>
 
       {/* MAIN AUTH CARD */}
-      <div className="relative z-10 bg-surface rounded-[50px] shadow-[0_30px_60px_-24px_rgb(236_112_109/0.38),inset_0_6px_12px_rgb(255_255_255/0.9)] w-[900px] max-w-[95%] min-h-[620px] overflow-hidden border border-[rgb(var(--ink)/0.06)] animate-in fade-in duration-500">
+      <div className="relative z-10 bg-surface rounded-[50px] shadow-[0_30px_60px_-24px_rgb(var(--brand)/0.38),inset_0_6px_12px_rgb(var(--highlight)/0.9)] w-[900px] max-w-[95%] min-h-[620px] overflow-hidden border border-[rgb(var(--ink)/0.06)] animate-in fade-in duration-500">
         
         {/* TOP TITLE */}
         <div className="absolute top-10 w-full flex justify-center items-center gap-4 z-[1000] tracking-[4px] pointer-events-none">
@@ -168,7 +168,7 @@ export default function AuthPage() {
                 <button 
                   onClick={handleGoogleSignIn}
                   disabled={isGoogleLoading}
-                  className="w-full flex items-center justify-center gap-3 py-4 rounded-token-md bg-surface text-ink shadow-[0_14px_26px_-12px_rgb(120_190_150/0.45),0_6px_12px_-8px_rgb(120_190_150/0.3),inset_0_-6px_12px_rgb(205_232_214/0.4),inset_0_6px_10px_rgb(255_255_255/0.95)] hover:-translate-y-0.5 active:scale-95 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full flex items-center justify-center gap-3 py-4 rounded-token-md bg-surface text-ink shadow-[0_14px_26px_-12px_rgb(120_190_150/0.45),0_6px_12px_-8px_rgb(120_190_150/0.3),inset_0_-6px_12px_rgb(205_232_214/0.4),inset_0_6px_10px_rgb(var(--highlight)/0.95)] hover:-translate-y-0.5 active:scale-95 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isGoogleLoading ? (
                     <>
@@ -224,7 +224,7 @@ export default function AuthPage() {
                 {!isVerify && (
                   <button
                     type="button"
-                    className="mt-8 px-10 py-3 rounded-2xl font-black text-xs tracking-widest uppercase transition-all duration-300 border-2 border-white text-on-brand hover:bg-white hover:text-brand"
+                    className="mt-8 px-10 py-3 rounded-2xl font-black text-xs tracking-widest uppercase transition-all duration-300 border-2 border-on-brand text-on-brand hover:bg-on-brand hover:text-brand"
                     onClick={() => navigate(isLogin ? "/signup" : "/login")}
                   >
                     {isLogin ? "Join the Tribe" : "Enter Portal"}

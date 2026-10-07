@@ -25,5 +25,5 @@ test("done slices read the date and are light sage", () => {
   expect(isTaskCompleted(done, "Wed")).toBe(true);
   expect(isTaskMissed(done, "Wed", "Wed")).toBe(false);
   expect(getTaskColor(done, "Wed", false, "Wed")).toBe(DONE_COLOR);
-  expect(DONE_COLOR).toBe("#B8DCC4");
+  expect(DONE_COLOR).toBe("rgb(var(--sage))");
 });

@@ -8,7 +8,7 @@ import { selectSorted } from '../../../features/notes/notesLogic';
 import WidgetShell, { WidgetEmpty } from './WidgetShell';
 
 // Pastel clay sticky notes (sunshine / sage / coral / cream).
-const TINTS = ['bg-[rgb(255_243_196)]', 'bg-[rgb(220_238_226)]', 'bg-[rgb(255_222_220)]', 'bg-[rgb(250_240_225)]'];
+const TINTS = ['bg-[rgb(var(--note-1))]', 'bg-[rgb(var(--note-2))]', 'bg-[rgb(var(--note-3))]', 'bg-[rgb(var(--note-4))]'];
 
 export default function NotesCard() {
   const { t } = useTranslation();

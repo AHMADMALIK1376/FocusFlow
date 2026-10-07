@@ -53,7 +53,7 @@ export default function HabitsCard() {
                   {week.map((d) => {
                     const done = !!(habit.log && habit.log[d.key]);
                     const cls = done
-                      ? 'bg-[linear-gradient(160deg,rgb(150_206_170),rgb(118_184_142))] shadow-neu-sm'  // deeper sage: stands out on the sage card
+                      ? 'bg-grad-sage-deep shadow-neu-sm'  // deeper sage: stands out on the sage card
                       : 'bg-surface-2 shadow-neu-inset';
                     return d.today ? (
                       <button

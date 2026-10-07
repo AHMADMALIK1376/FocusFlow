@@ -75,14 +75,14 @@
   width: 16px;
 }
 .ff-logout-sign svg path {
-  fill: #fff;
+  fill: rgb(var(--on-brand));
 }
 .ff-logout-text {
   position: absolute;
   right: 0;
   width: 0;
   opacity: 0;
-  color: #fff;
+  color: rgb(var(--on-brand));
   font-size: 0.95rem;
   font-weight: 700;
   white-space: nowrap;
@@ -234,7 +234,7 @@
   flex-shrink: 0;
 }
 .ff-cardbin-ghost .ff-cardbin-icon path {
-  fill: rgb(20, 20, 20);
+  fill: rgb(var(--ink-strong));
   transition: fill 0.3s;
 }
 .ff-cardbin-ghost:hover .ff-cardbin-icon path {

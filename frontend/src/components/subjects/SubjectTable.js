@@ -100,7 +100,7 @@ export default function SubjectTable({ subjects, onOpen, onEdit, onDelete }) {
       <div key={s.id} className="flex gap-4 items-start animate-in fade-in duration-300">
         <div
           className="relative shrink-0 w-24 h-24 sm:w-28 sm:h-28 rounded-3xl flex items-center justify-center shadow-neu-sm"
-          style={{ background: "rgb(255 253 249 / 0.7)", color: pal.deep }}
+          style={{ background: "rgb(var(--surface) / 0.7)", color: pal.deep }}
         >
           <span className="absolute top-2 left-3 text-[11px] font-bold opacity-70">{active + 1}</span>
           <svg className="absolute inset-0 w-full h-full opacity-40" viewBox="-50 -50 100 100" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.2">

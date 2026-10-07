@@ -119,10 +119,10 @@ export default function SpendingPuckStack({ data, formatValue }) {
         <svg width={w} height={height} viewBox={`0 0 ${w} ${height}`}>
           <defs>
             <filter id="tierShadow" x="-60%" y="-60%" width="220%" height="220%">
-              <feDropShadow dx="0" dy="7" stdDeviation="6" floodColor="#BEA07A" floodOpacity="0.3" />
+              <feDropShadow dx="0" dy="7" stdDeviation="6" floodOpacity="0.3" style={{ floodColor: "rgb(var(--shadow-color))" }} />
             </filter>
             <filter id="tierShadowHot" x="-70%" y="-70%" width="240%" height="240%">
-              <feDropShadow dx="0" dy="12" stdDeviation="10" floodColor="#BEA07A" floodOpacity="0.38" />
+              <feDropShadow dx="0" dy="12" stdDeviation="10" floodOpacity="0.38" style={{ floodColor: "rgb(var(--shadow-color))" }} />
             </filter>
             {pucks.map((p) => (
               <radialGradient key={`g-${p.i}`} id={`tier-${p.i}`} cx="34%" cy="26%" r="82%">

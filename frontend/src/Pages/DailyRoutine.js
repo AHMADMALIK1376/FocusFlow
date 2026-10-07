@@ -345,7 +345,7 @@ export default function DailyRoutine() {
                   className={`px-4 py-2 rounded-full font-black text-[11px] uppercase tracking-wider transition-all duration-200 flex-shrink-0
                     ${activeDay === 'ALL'
                       ? 'bg-grad-hero text-on-brand shadow-[0_6px_16px_rgb(var(--brand)/0.45)] hover:-translate-y-0.5'
-                      : 'bg-white text-muted border border-[rgb(var(--ink)/0.08)] shadow-[0_3px_8px_rgba(0,0,0,0.1)] hover:shadow-[0_5px_14px_rgba(0,0,0,0.16)] hover:-translate-y-0.5'}`}>
+                      : 'bg-highlight text-muted border border-[rgb(var(--ink)/0.08)] shadow-[0_3px_8px_rgba(0,0,0,0.1)] hover:shadow-[0_5px_14px_rgba(0,0,0,0.16)] hover:-translate-y-0.5'}`}>
                   All
                 </button>
                 {daysOfWeek.map((day) => {
@@ -357,7 +357,7 @@ export default function DailyRoutine() {
                       className={`px-3.5 py-2 rounded-full font-black text-[11px] uppercase tracking-wider transition-all duration-200 flex-shrink-0
                         ${isActive ? 'bg-grad-hero text-on-brand shadow-[0_6px_16px_rgb(var(--brand)/0.45)] hover:-translate-y-0.5' :
                           isToday ? 'bg-surface text-brand ring-2 ring-brand/30 shadow-[0_3px_8px_rgba(0,0,0,0.1)] hover:shadow-[0_5px_14px_rgba(0,0,0,0.16)] hover:-translate-y-0.5' :
-                          'bg-white text-muted border border-[rgb(var(--ink)/0.08)] shadow-[0_3px_8px_rgba(0,0,0,0.1)] hover:shadow-[0_5px_14px_rgba(0,0,0,0.16)] hover:-translate-y-0.5'}`}>
+                          'bg-highlight text-muted border border-[rgb(var(--ink)/0.08)] shadow-[0_3px_8px_rgba(0,0,0,0.1)] hover:shadow-[0_5px_14px_rgba(0,0,0,0.16)] hover:-translate-y-0.5'}`}>
                       {day}{count > 0 && <span className="ml-1 opacity-70">{count}</span>}
                     </button>
                   );
@@ -595,7 +595,7 @@ export default function DailyRoutine() {
               className={`px-4 py-2 rounded-full font-bold text-xs transition-all duration-200
                 ${selectedDays.includes("All Days")
                   ? "bg-grad-hero text-on-brand shadow-[0_6px_16px_rgb(var(--brand)/0.45)] hover:-translate-y-0.5"
-                  : "bg-white text-muted shadow-[0_3px_8px_rgba(0,0,0,0.1)] hover:shadow-[0_5px_14px_rgba(0,0,0,0.16)] hover:-translate-y-0.5"}`}
+                  : "bg-highlight text-muted shadow-[0_3px_8px_rgba(0,0,0,0.1)] hover:shadow-[0_5px_14px_rgba(0,0,0,0.16)] hover:-translate-y-0.5"}`}
             >
               All Days
             </button>
@@ -607,7 +607,7 @@ export default function DailyRoutine() {
                 className={`px-4 py-2 rounded-full font-bold text-xs transition-all duration-200
                   ${selectedDays.includes("All Days") ? "opacity-40 cursor-not-allowed shadow-none" :
                     selectedDays.includes(day) ? "bg-grad-hero text-on-brand shadow-[0_6px_16px_rgb(var(--brand)/0.45)] hover:-translate-y-0.5" :
-                    "bg-white text-muted shadow-[0_3px_8px_rgba(0,0,0,0.1)] hover:shadow-[0_5px_14px_rgba(0,0,0,0.16)] hover:-translate-y-0.5"}`}
+                    "bg-highlight text-muted shadow-[0_3px_8px_rgba(0,0,0,0.1)] hover:shadow-[0_5px_14px_rgba(0,0,0,0.16)] hover:-translate-y-0.5"}`}
               >
                 {day}
               </button>

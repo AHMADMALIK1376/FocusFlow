@@ -71,7 +71,7 @@ export function Modal({
           exit={{ opacity: 0 }}
         >
           <div
-            className="absolute inset-0 bg-[rgb(190_160_122/0.35)] backdrop-blur-sm"
+            className="absolute inset-0 bg-[rgb(var(--shadow-color)/0.35)] backdrop-blur-sm"
             onClick={onClose}
             aria-hidden="true"
           />
@@ -127,7 +127,7 @@ export function Sheet({ open, onClose, children, className = '' }) {
           exit={{ opacity: 0 }}
         >
           <div
-            className="absolute inset-0 bg-[rgb(190_160_122/0.35)] backdrop-blur-sm"
+            className="absolute inset-0 bg-[rgb(var(--shadow-color)/0.35)] backdrop-blur-sm"
             onClick={onClose}
             aria-hidden="true"
           />

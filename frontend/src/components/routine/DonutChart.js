@@ -8,8 +8,8 @@ import { WEEK, isDoneOn, isFutureDay } from "../../features/routine/routineDays"
 export const daysOfWeek = WEEK;
 
 // Light sage for a ticked-off slice (the theme's --sage).
-export const DONE_COLOR = '#B8DCC4';
-const TICK_DONE = '#8FCDA6';
+export const DONE_COLOR = 'rgb(var(--sage))';
+const TICK_DONE = 'rgb(var(--sage-mid))';
 
 export const getFullDayName = (shortDay) => {
   const dayMap = {

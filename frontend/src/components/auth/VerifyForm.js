@@ -120,7 +120,7 @@ export default function VerifyForm() {
               value={code[i]}
               onChange={(e) => handleChange(e, i)}
               onKeyDown={(e) => handleKeyDown(e, i)}
-              className="w-12 h-14 bg-surface shadow-[inset_0_4px_8px_rgb(184_220_196/0.55),inset_0_-2px_4px_rgb(255_255_255/0.9)] rounded-token-sm text-center font-black text-xl text-brand outline-none border border-sage focus:ring-2 focus:ring-sage-deep/60 transition-all"
+              className="w-12 h-14 bg-surface shadow-[inset_0_4px_8px_rgb(var(--sage)/0.55),inset_0_-2px_4px_rgb(var(--highlight)/0.9)] rounded-token-sm text-center font-black text-xl text-brand outline-none border border-sage focus:ring-2 focus:ring-sage-deep/60 transition-all"
             />
           ))}
         </div>

@@ -63,7 +63,7 @@ function Tile({ active, color, delay }) {
 export default function Clock() {
   const [time, setTime] = useState(new Date());
   const [weather, setWeather] = useState(null);
-  const { accent } = chartColors();
+  const { accent, sage } = chartColors();
 
   useEffect(() => {
     const t = setInterval(() => setTime(new Date()), 1000);
@@ -98,7 +98,7 @@ export default function Clock() {
   const w = weather ? weatherFor(weather.code) : null;
 
   // Tile colours on the coral card: sunshine hours, sage minutes, cream seconds.
-  const C = { H: accent || "#FFD700", M: "#B8DCC4", S: "#FFF3D6" };
+  const C = { H: accent || "#FFD700", M: sage, S: "#FFF3D6" };
   const ROWS = [
     { key: "H", value: h24, color: C.H },
     { key: "M", value: m, color: C.M },

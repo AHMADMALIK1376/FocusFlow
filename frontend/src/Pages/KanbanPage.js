@@ -163,12 +163,12 @@ export default function KanbanPage() {
             {(cw) => (
               <BarChart width={cw} height={230} data={statusData} margin={{ top: 18, right: 8, left: -18, bottom: 0 }}>
                 <CartesianGrid vertical={false} strokeDasharray="3 4" stroke={hexToRgba(brand, 0.1)} />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} dy={4} tick={{ fontSize: 12, fontWeight: 700, fill: "#8A93A0" }} />
-                <YAxis axisLine={false} tickLine={false} width={28} allowDecimals={false} tick={{ fontSize: 11, fill: "#8A93A0" }} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} dy={4} tick={{ fontSize: 12, fontWeight: 700, fill: "rgb(var(--chart-axis))" }} />
+                <YAxis axisLine={false} tickLine={false} width={28} allowDecimals={false} tick={{ fontSize: 11, fill: "rgb(var(--chart-axis))" }} />
                 <Tooltip cursor={{ fill: hexToRgba(brand, 0.05) }} contentStyle={CHART_TOOLTIP} />
                 <Bar dataKey="value" radius={[8, 8, 0, 0]} maxBarSize={64}>
                   {statusData.map((d, i) => <Cell key={i} fill={d.fill} />)}
-                  <LabelList dataKey="value" position="top" style={{ fontSize: 13, fontWeight: 800, fill: "rgb(54 54 54)" }} />
+                  <LabelList dataKey="value" position="top" style={{ fontSize: 13, fontWeight: 800, fill: "rgb(var(--chart-label))" }} />
                 </Bar>
               </BarChart>
             )}
