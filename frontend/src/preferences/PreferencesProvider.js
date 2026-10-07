@@ -7,10 +7,11 @@ import React, {
 } from 'react';
 import storage from '../storage/storageAdapter';
 import { useServerSync } from './useServerSync';
-import { AUTH_EVENT } from '../services/api';
+import { AUTH_EVENT, getToken } from '../services/api';
 import { segmentFromAge } from './segment';
 import { migratePreferences } from './migrate';
 import { DEFAULT_THEME, sanitizeTheme } from '../design/theme/theme';
+import { readDeviceTheme, writeDeviceTheme, pickShownTheme } from '../design/theme/deviceTheme';
 import {
   addDashboard,
   deleteDashboard,
@@ -48,6 +49,9 @@ export function PreferencesProvider({ children }) {
   const [state, setState] = useState(() => migratePreferences(load()));
   // Colours being tried in the editor: shown, but never stored or synced.
   const [themePreview, setThemePreview] = useState(null);
+  const [signedIn, setSignedIn] = useState(() => !!getToken());
+  // The theme this browser remembers for the sign-in page (see design/theme/deviceTheme.js).
+  const [deviceTheme, setDeviceTheme] = useState(() => readDeviceTheme());
 
   // Persist whole v3 object whenever state changes
   useEffect(() => {
@@ -55,12 +59,26 @@ export function PreferencesProvider({ children }) {
   }, [state]);
 
   // ...and keep a copy on the student's account, so it follows them to any device.
-  useServerSync(state, setState, KEY);
+  const accountLoaded = useServerSync(state, setState, KEY);
+  const own = signedIn && accountLoaded;
 
-  // Signing out resets the saved preferences (useServerSync); drop any colour preview too,
-  // so the next person at this computer sees the normal colours.
+  // While signed in and loaded, this browser remembers the account's theme (or forgets it when it is the default).
+  useEffect(() => {
+    if (own) setDeviceTheme(writeDeviceTheme(state.theme));
+  }, [own, state.theme]);
+
+  // shownTheme: what is painted. Signed in and loaded: the account theme. Otherwise the theme
+  // this browser remembers (so the sign-in page keeps the last student's colours), else the saved one.
+  const shownTheme = useMemo(
+    () => pickShownTheme({ own, theme: state.theme, deviceTheme }),
+    [own, state.theme, deviceTheme]
+  );
+
+  // Signing out resets the saved preferences (useServerSync); drop any colour preview too.
+  // The sign-in page then shows the colours this browser remembers (shownTheme).
   useEffect(() => {
     const onAuth = (e) => {
+      setSignedIn(!!(e.detail && e.detail.signedIn));
       if (!(e.detail && e.detail.signedIn)) setThemePreview(null);
     };
     window.addEventListener(AUTH_EVENT, onAuth);
@@ -241,6 +259,7 @@ export function PreferencesProvider({ children }) {
       updateDashboard,
       // Colour theme
       theme: state.theme,
+      shownTheme,
       themePreview,
       setTheme,
       resetTheme,
@@ -265,6 +284,7 @@ export function PreferencesProvider({ children }) {
       reorderWidgets,
       updateDashboard,
       state.theme,
+      shownTheme,
       themePreview,
       setTheme,
       resetTheme,

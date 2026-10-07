@@ -26,8 +26,8 @@ const serverPrefs = () => {
 // A tiny stand-in for PreferencesProvider: state + the hook.
 function useHarness(initial) {
   const [state, setState] = useState(initial);
-  useServerSync(state, setState, KEY);
-  return { state, setState };
+  const loaded = useServerSync(state, setState, KEY);
+  return { state, setState, loaded };
 }
 
 const flush = () => act(async () => { await Promise.resolve(); await Promise.resolve(); });
@@ -149,4 +149,32 @@ test("a very large pasted-in photo is not uploaded; a mascot id and small pictur
   expect(forServer(big).profile.mascot).toBe("fox");
   expect(forServer(small).profile.avatarUrl).toBe("data:image/png;base64,AAAA");
   expect(forServer(base)).toBe(base);
+});
+
+test("reports when the first load has finished: after a load, after a failure, and not when signed out", async () => {
+  mockGet.mockResolvedValue({ data: serverPrefs() });
+  const a = renderHook(() => useHarness(localPrefs()));
+  expect(a.result.current.loaded).toBe(false);
+  await flush();
+  expect(a.result.current.loaded).toBe(true);
+  await act(async () => { mockSignedIn = false; window.dispatchEvent(new CustomEvent("ff:auth", { detail: { signedIn: false } })); await Promise.resolve(); });
+  expect(a.result.current.loaded).toBe(false);
+
+  mockSignedIn = true;
+  mockGet.mockReset();
+  mockGet.mockResolvedValue({ data: null });
+  const b = renderHook(() => useHarness(localPrefs()));
+  await flush();
+  expect(b.result.current.loaded).toBe(true); // nothing saved yet counts as loaded
+
+  mockGet.mockReset();
+  mockGet.mockRejectedValue(new Error("asleep"));
+  const c = renderHook(() => useHarness(localPrefs()));
+  await flush();
+  expect(c.result.current.loaded).toBe(true); // the app works from this browser's copy
+
+  mockSignedIn = false;
+  const d = renderHook(() => useHarness(localPrefs()));
+  await flush();
+  expect(d.result.current.loaded).toBe(false);
 });

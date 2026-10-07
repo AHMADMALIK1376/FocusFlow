@@ -16,7 +16,7 @@ jest.mock("../ui/LogoutButton", () => ({ LogoutButton: () => null }));
 jest.mock("../ui/MascotPicker", () => ({ MascotPicker: () => null }));
 
 const withTheme = (theme, ui, preview = null) => (
-  <PreferencesContext.Provider value={{ theme, themePreview: preview, profile: {}, updateProfile: jest.fn() }}>
+  <PreferencesContext.Provider value={{ theme, shownTheme: theme, themePreview: preview, profile: {}, updateProfile: jest.fn() }}>
     {ui}
   </PreferencesContext.Provider>
 );

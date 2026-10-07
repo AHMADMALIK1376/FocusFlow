@@ -57,3 +57,12 @@ describe("useActiveTheme", () => {
     expect(seen[seen.length - 1]).toBe(seen[0]);
   });
 });
+
+describe("useActiveTheme outside the provider", () => {
+  it("gives the colours this browser remembers", () => {
+    const PURPLE = { ...DEFAULT_THEME, presetId: "purple", background: "#1A0B3D", brand: "#FF6B6B", accent: "#4ECDC4" };
+    localStorage.setItem("focusflow:theme.device", JSON.stringify(PURPLE));
+    render(<Probe />);
+    expect(active).toEqual(PURPLE);
+  });
+});

@@ -10,7 +10,8 @@
 //  - On sign-out the browser's copy is reset, so the next person on this computer
 //    neither sees nor uploads it.
 // If the server is unreachable the app keeps working from this browser's copy.
-import { useCallback, useEffect, useRef } from 'react';
+// Returns true once the first load for this sign-in has finished (or failed).
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { prefsAPI, getToken, AUTH_EVENT } from '../services/api';
 import { migratePreferences } from './migrate';
 import storage from '../storage/storageAdapter';
@@ -32,6 +33,7 @@ export function forServer(state) {
 }
 
 export function useServerSync(state, setState, storageKey) {
+  const [loaded, setLoaded] = useState(false);
   const ready = useRef(false);          // first load for this sign-in is done
   const lastSent = useRef(null);        // JSON of what the server holds (as far as we know)
   const timer = useRef(null);
@@ -65,15 +67,18 @@ export function useServerSync(state, setState, storageKey) {
         setState(next);
         ready.current = true;
         retries.current = 0;
+        setLoaded(true);
       } else {
         lastSent.current = null;        // nothing saved yet: upload what this browser has
         ready.current = true;
         retries.current = 0;
+        setLoaded(true);
         send();
       }
     } catch {
       // Offline or the server is waking up: keep working from this browser's copy
       // and try again a few times.
+      setLoaded(true);
       if (retries.current < MAX_RETRIES) {
         retries.current += 1;
         retryTimer.current = setTimeout(pull, RETRY_DELAY_MS);
@@ -94,6 +99,7 @@ export function useServerSync(state, setState, storageKey) {
         ready.current = false;
         lastSent.current = null;
         retries.current = 0;
+        setLoaded(false);
         storage.remove(storageKey);
         setState(migratePreferences(null));
       }
@@ -124,4 +130,6 @@ export function useServerSync(state, setState, storageKey) {
       window.removeEventListener('pagehide', flush);
     };
   }, [send]);
+
+  return loaded;
 }

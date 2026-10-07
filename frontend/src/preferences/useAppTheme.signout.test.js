@@ -1,22 +1,25 @@
 import React from "react";
-import { render, act } from "@testing-library/react";
+import { render, act, waitFor } from "@testing-library/react";
 import { PreferencesProvider } from "./PreferencesProvider";
 import { usePreferences } from "./usePreferences";
 import ThemeApplier from "./ThemeApplier";
 import { useAppTheme } from "./useAppTheme";
 import { DEFAULT_THEME } from "../design/theme/theme";
 import { migratePreferences } from "./migrate";
+import { prefsAPI } from "../services/api";
 import { THEME_CACHE_VERSION } from "../design/theme/applyTheme";
 
+let mockSignedIn = false;
 jest.mock("../services/api", () => ({
   AUTH_EVENT: "ff:auth",
-  getToken: () => null,
+  getToken: () => (mockSignedIn ? "session" : null),
   prefsAPI: { get: jest.fn(), save: jest.fn() },
 }));
 
 const root = document.documentElement;
 const PREFS = "focusflow:preferences";
 const CACHE = "focusflow:theme.colors";
+const DEVICE = "focusflow:theme.device";
 const BLACK = { ...DEFAULT_THEME, presetId: "black", background: "#000000" };
 const PURPLE = { ...DEFAULT_THEME, presetId: "purple", background: "#1A0B3D", brand: "#FF6B6B", accent: "#4ECDC4" };
 const DEFAULT_CANVAS = "245 239 230";
@@ -36,37 +39,51 @@ const canvas = () => root.style.getPropertyValue("--canvas");
 beforeEach(() => {
   localStorage.clear();
   root.removeAttribute("style");
+  mockSignedIn = false;
+  prefsAPI.get.mockResolvedValue({ data: null }); // CRA resets mocks between tests
+  prefsAPI.save.mockResolvedValue({});
 });
 
-describe("sign-out", () => {
-  it("with a saved theme: default applied, device cache removed", () => {
-    mount();
-    act(() => { api.setTheme(PURPLE); });
-    expect(localStorage.getItem(CACHE)).not.toBeNull();
-    signOut();
-    expect(canvas()).toBe(DEFAULT_CANVAS);
-    expect(localStorage.getItem(CACHE)).toBeNull();
-    expect(api.theme).toEqual(DEFAULT_THEME);
-  });
+// Signed in with PURPLE saved on the account, and the account has loaded.
+async function mountSignedInWithPurple() {
+  mockSignedIn = true;
+  prefsAPI.get.mockResolvedValue({ data: { ...migratePreferences(null), theme: PURPLE } });
+  mount();
+  await waitFor(() => expect(canvas()).toBe("26 11 61"));
+  await waitFor(() => expect(localStorage.getItem(DEVICE)).not.toBeNull());
+}
 
-  it("with a preview open: preview ends, default applied, cache gone, nothing stored", () => {
-    mount();
-    act(() => { api.setTheme(PURPLE); });
-    act(() => { api.previewTheme(BLACK); });
-    expect(canvas()).toBe("0 0 0");
+describe("sign-out", () => {
+  it("with a saved theme: the sign-in page keeps the colours, the account copy is gone", async () => {
+    await mountSignedInWithPurple();
+    mockSignedIn = false;
     signOut();
-    expect(prefs.themePreview).toBeNull();
-    expect(canvas()).toBe(DEFAULT_CANVAS);
-    expect(localStorage.getItem(CACHE)).toBeNull();
+    expect(canvas()).toBe("26 11 61");
+    expect(JSON.parse(localStorage.getItem(CACHE)).tokens["--canvas"]).toBe("26 11 61");
+    expect(JSON.parse(localStorage.getItem(DEVICE)).brand).toBe(PURPLE.brand);
+    expect(api.theme).toEqual(DEFAULT_THEME);
     expect(JSON.parse(localStorage.getItem(PREFS)).theme).toEqual(DEFAULT_THEME);
   });
 
-  it("with only a preview open (default saved): preview ends", () => {
+  it("with a preview open: the preview ends and the remembered colours show; nothing previewed is stored", async () => {
+    await mountSignedInWithPurple();
+    act(() => { api.previewTheme(BLACK); });
+    expect(canvas()).toBe("0 0 0");
+    mockSignedIn = false;
+    signOut();
+    expect(prefs.themePreview).toBeNull();
+    expect(canvas()).toBe("26 11 61");
+    expect(JSON.parse(localStorage.getItem(CACHE)).tokens["--canvas"]).toBe("26 11 61");
+    expect(JSON.parse(localStorage.getItem(DEVICE)).presetId).toBe("purple");
+  });
+
+  it("with only a preview open (default saved, nothing remembered): the preview ends", () => {
     mount();
     act(() => { api.previewTheme(BLACK); });
     signOut();
     expect(canvas()).toBe(DEFAULT_CANVAS);
     expect(localStorage.getItem(CACHE)).toBeNull();
+    expect(localStorage.getItem(DEVICE)).toBeNull();
   });
 
   it("a sign-in event does not end a preview", () => {
