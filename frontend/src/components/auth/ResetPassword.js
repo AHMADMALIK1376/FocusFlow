@@ -50,7 +50,7 @@ export default function ResetPassword() {
     }
   };
 
-  const inputCls = "w-[80%] p-4 bg-surface rounded-token-md border border-sage shadow-[inset_0_4px_8px_rgb(184_220_196/0.55),inset_0_-2px_4px_rgb(255_255_255/0.9)] outline-none text-sm text-ink placeholder:text-muted focus:border-sage-deep transition-all";
+  const inputCls = "w-[80%] p-4 bg-surface rounded-token-md border border-sage shadow-[inset_0_4px_8px_rgb(var(--sage)/0.55),inset_0_-2px_4px_rgb(var(--highlight)/0.9)] outline-none text-sm text-ink placeholder:text-muted focus:border-sage-deep transition-all";
 
   return (
     <div className="w-full flex flex-col items-center p-0">

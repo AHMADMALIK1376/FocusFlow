@@ -34,9 +34,9 @@ function persistedFontStack() {
   }
 }
 
-// Brand colors are fixed (design/tokens.css) — this provider now only tracks
-// light/dark mode. Dark currently mirrors light in tokens.css, so toggling
-// only flips the `.dark` class; there's no color-scheme state to apply.
+// Colours come from the colour theme (design/theme/, applied by ThemeApplier) — this
+// provider only tracks light/dark mode. Dark currently mirrors light in tokens.css, so
+// toggling only flips the `.dark` class; there's no color-scheme state to apply.
 export function ThemeProvider({ children }) {
   const [mode, setModeState] = useState(
     () => storage.get(KEY_MODE) || (systemPrefersDark() ? 'dark' : 'light')

@@ -112,8 +112,8 @@ export default function NotesPage() {
                 </linearGradient>
               </defs>
               <CartesianGrid vertical={false} strokeDasharray="3 4" stroke={hexToRgba(brand, 0.1)} />
-              <XAxis dataKey="label" axisLine={false} tickLine={false} dy={4} tick={{ fontSize: 11, fontWeight: 700, fill: "#8A93A0" }} />
-              <YAxis axisLine={false} tickLine={false} width={28} allowDecimals={false} tick={{ fontSize: 11, fill: "#8A93A0" }} />
+              <XAxis dataKey="label" axisLine={false} tickLine={false} dy={4} tick={{ fontSize: 11, fontWeight: 700, fill: "rgb(var(--chart-axis))" }} />
+              <YAxis axisLine={false} tickLine={false} width={28} allowDecimals={false} tick={{ fontSize: 11, fill: "rgb(var(--chart-axis))" }} />
               <Tooltip cursor={{ fill: hexToRgba(brand, 0.05) }} contentStyle={CHART_TOOLTIP} />
               <Bar dataKey="count" name="Notes" radius={[6, 6, 0, 0]} fill="url(#ffNotes)" maxBarSize={34} />
             </BarChart>

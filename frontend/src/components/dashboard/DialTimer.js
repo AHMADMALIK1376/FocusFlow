@@ -204,7 +204,7 @@ export default function DialTimer({
           type="button"
           aria-label={isActive || startTime ? "Stop and save" : "Reset"}
           onClick={onReset}
-          className="w-10 h-10 rounded-full flex items-center justify-center bg-grad-hero text-white shadow-clay-brand hover:-translate-y-0.5 transition"
+          className="w-10 h-10 rounded-full flex items-center justify-center bg-grad-hero text-on-brand shadow-clay-brand hover:-translate-y-0.5 transition"
         >
           <RotateCcw size={16} />
         </button>

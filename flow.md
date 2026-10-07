@@ -14,7 +14,8 @@ Update this file with every change.
 3. Calls `registerServiceWorker()` (`features/notifications/push.js`). This enables reminder pop-ups and installing the app on a phone.
 
 ### `App.js` — providers, outer to inner
-`ThemeProvider` → `PreferencesProvider` → `UserProvider` (login state) → `AppProvider` (shared data) → `ToastProvider` → `Routes`
+Before React starts, the inline script in `public/index.html` paints the cached colour theme (see "Colour theme").
+`ThemeProvider` → splash → `PreferencesProvider` (with `ThemeApplier` inside: font + colours, preview first) → `UserProvider` (login state) → `AppProvider` (shared data) → `ToastProvider` → `Routes`
 
 ### Routes
 - **Sign-in screens:** `/login`, `/signup`, `/verify`, `/forgot-password`, `/reset-password-verify`, `/reset-password`.
@@ -34,6 +35,18 @@ Update this file with every change.
   - When the server answers again, it reloads.
 - **Device offline:** the browser's `offline` event → the gate's offline page. The `online` event → check → reload.
 - **App can't load at all:** `public/sw.js` handles failed page loads (`navigate` requests) by serving the cached `public/offline.html`.
+
+### Colour theme
+1. A component calls `useAppTheme()` (`preferences/useAppTheme.js`): `theme`, `setTheme`, `resetTheme`, `previewTheme`.
+2. `PreferencesProvider` holds `state.theme` (saved, part of the v3 preferences) and `themePreview` (not saved).
+   - `setTheme(next)` cleans it with `sanitizeTheme`, ends any preview and saves; it returns `false` for an invalid theme.
+   - `previewTheme(next)` shows colours without saving; `previewTheme(null)` ends the preview. **The editor must call `previewTheme(null)` when it closes without saving.**
+3. `ThemeApplier` runs `useApplyColorTheme()`. In a layout effect it calls `deriveTokens(themePreview || theme)` (`design/theme/deriveTokens.js`), then `applyTheme` (every token inline on `<html>`, `color-scheme`, the `theme-color` meta).
+4. A saved theme (not a preview) is also written to `focusflow:theme.colors` by `writeThemeCache`. The default palette removes that key.
+5. Next page load: the inline script in `public/index.html` reads the cache and sets the same tokens before the first paint (the splash included).
+6. Sync: the theme is a field of the preferences document, so `useServerSync` sends it to `USER_PREFERENCES` with everything else. `backend/utils/preferences.js` checks its shape (only `#RRGGBB` colours). `savePreferences` refuses (409) a save with a lower `schemaVersion` than the stored one, so an out-of-date tab cannot overwrite a newer document.
+7. Sign-out: `useServerSync` resets preferences to default, and `PreferencesProvider` drops any preview on the same signed-out event. So the default colours are applied and the cache key is removed.
+8. Charts read `--brand` and `--sage` from `<html>` through `chartColors()` (`tokenHex`).
 
 ### Settings page — `Pages/SettingsPage.js`
 1. The header card shows the student's mascot (`components/common/Mascot.js`). "Choose mascot" opens `MascotPicker`, which saves through `updateProfile`.

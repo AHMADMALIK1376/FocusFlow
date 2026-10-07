@@ -64,10 +64,10 @@ export default function GoalsPage() {
                     </linearGradient>
                   </defs>
                   <XAxis type="number" domain={[0, 100]} hide />
-                  <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} width={120} tick={{ fontSize: 12, fontWeight: 700, fill: "rgb(54 54 54)" }} />
+                  <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} width={120} tick={{ fontSize: 12, fontWeight: 700, fill: "rgb(var(--chart-label))" }} />
                   <Tooltip cursor={{ fill: hexToRgba(brand, 0.05) }} contentStyle={CHART_TOOLTIP} formatter={(v) => [`${v}%`, "Progress"]} />
                   <Bar dataKey="value" radius={[0, 8, 8, 0]} fill="url(#ffGoals)" maxBarSize={22} background={{ fill: hexToRgba(brand, 0.07) }}>
-                    <LabelList dataKey="value" position="right" formatter={(v) => `${v}%`} style={{ fontSize: 12, fontWeight: 800, fill: "rgb(54 54 54)" }} />
+                    <LabelList dataKey="value" position="right" formatter={(v) => `${v}%`} style={{ fontSize: 12, fontWeight: 800, fill: "rgb(var(--chart-label))" }} />
                   </Bar>
                 </BarChart>
               )}

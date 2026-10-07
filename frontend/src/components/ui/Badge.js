@@ -5,7 +5,7 @@ const TONES = {
   brand: 'bg-brand/10 text-brand',
   success: 'bg-success/15 text-success',
   info: 'bg-info/15 text-info',
-  warn: 'bg-warn/20 text-[rgb(133_79_11)] dark:text-warn',
+  warn: 'bg-warn/20 text-warn-ink dark:text-warn',
   focus: 'bg-focus/15 text-focus',
   muted: 'bg-[rgb(var(--ink)/0.08)] text-muted',
 };

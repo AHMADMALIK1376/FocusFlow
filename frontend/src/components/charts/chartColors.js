@@ -1,12 +1,10 @@
-// Shared chart colour helpers — concrete hex/rgba for the fixed brand palette
-// (recharts/SVG fills can't resolve CSS custom properties), matching
-// design/tokens.css's --brand / --brand-soft.
-
-const BRAND_HEX = "#EC706D"; // coral
-const ACCENT_HEX = "#FFD700"; // sunshine
+// Shared chart colour helpers. Recharts/SVG and the `${hex}66` trick need hex, so the
+// brand and accent are read from the theme applied on <html> (tokenHex), with today's
+// colours as the fallback. Sunshine is fixed.
+import { tokenHex } from "../../design/theme/applyTheme";
 
 export function chartColors() {
-  return { brand: BRAND_HEX, accent: ACCENT_HEX };
+  return { brand: tokenHex("--brand", "#EC706D"), accent: "#FFD700", sage: tokenHex("--sage", "#B8DCC4") };
 }
 
 export function hexToRgba(hex, a = 1) {

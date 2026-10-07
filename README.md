@@ -175,7 +175,7 @@ FocusFlow/
 │       ├── components/          Layout, dashboard widgets, subjects, charts, UI kit
 │       ├── features/            Logic and hooks per feature (scanner, grades, exams, ...)
 │       ├── services/api.js      Every API call goes through here
-│       ├── design/tokens.css    Colour tokens for the clay theme
+│       ├── design/tokens.css    Default colour tokens (the theme engine in design/theme/ overrides them)
 │       ├── i18n/                Translations (locales/*.json)
 │       └── preferences/         Dashboard layouts and user preferences
 │
@@ -502,7 +502,7 @@ Once deployed, open the Vercel address on your phone and use **Add to Home scree
 
 ## Design system
 
-- **Claymorphism:** soft, raised "clay" surfaces in **cream, coral, sage and sunshine**. All colours are CSS variables in [`frontend/src/design/tokens.css`](frontend/src/design/tokens.css) and are used through Tailwind, so the palette changes in one place.
+- **Claymorphism:** soft, raised "clay" surfaces in **cream, coral, sage and sunshine**. All colours are CSS variables in [`frontend/src/design/tokens.css`](frontend/src/design/tokens.css) and are used through Tailwind, so the palette changes in one place. Colours come from a theme (`frontend/src/design/theme/deriveTokens.js`) that is saved with the account; the default is cream, coral, sage and sunshine.
 - **Line icons only.** The app, emails and notifications use [lucide](https://lucide.dev) line icons and never emoji, because emoji look different on every phone and email client. Email icons are pre-rendered PNGs in `backend/assets/icons/`, made by the scripts in `frontend/scripts/`.
 - **Shared UI kit** in `frontend/src/components/ui/` (Button, Card, Modal, Badge, Toast, EmptyState, and more).
 

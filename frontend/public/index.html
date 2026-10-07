@@ -5,6 +5,30 @@
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#E86562" />
+    <!-- Paints the student's last colour theme before the app loads (no flash).
+         Written by src/design/theme/applyTheme.js; anything unexpected is ignored. -->
+    <script id="ff-theme-boot">
+      (function () {
+        try {
+          var c = JSON.parse(localStorage.getItem('focusflow:theme.colors') || 'null');
+          if (!c || c.v !== 1 || !c.tokens || typeof c.tokens !== 'object') return;
+          var name = /^--[a-z0-9-]+$/, safe = /^[0-9a-z .,%()\/#-]+$/i, fn = /([a-z-]+)\(/gi;
+          var ok = /^(rgb|linear-gradient|var)$/, keys = [], k, v, f;
+          for (k in c.tokens) {
+            v = c.tokens[k];
+            if (!name.test(k) || typeof v !== 'string' || !safe.test(v)) return;
+            fn.lastIndex = 0; // only the CSS functions a theme uses (no url(, image-set(, ...)
+            while ((f = fn.exec(v))) if (!ok.test(f[1])) return;
+            keys.push(k);
+          }
+          var root = document.documentElement;
+          for (var i = 0; i < keys.length; i++) root.style.setProperty(keys[i], c.tokens[keys[i]]);
+          if (c.scheme === 'light' || c.scheme === 'dark') root.style.setProperty('color-scheme', c.scheme);
+          var m = document.querySelector('meta[name="theme-color"]');
+          if (m && /^#[0-9a-fA-F]{6}$/.test(c.meta)) m.setAttribute('content', c.meta);
+        } catch (e) { /* unreadable: the built-in colours stay */ }
+      })();
+    </script>
     <meta
       name="description"
       content="FocusFlow - Stay Focused & Productive - Complete Student Productivity System"

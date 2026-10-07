@@ -83,7 +83,7 @@ export default function EditRoutinePopup({ routine, onClose, onSave }) {
   return (
     <div
       className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-300 ease-in-out
-        ${isVisible ? 'bg-[rgb(190_160_122/0.3)]' : 'bg-transparent'}`}
+        ${isVisible ? 'bg-[rgb(var(--shadow-color)/0.3)]' : 'bg-transparent'}`}
       onClick={handleClose}
     >
       <div

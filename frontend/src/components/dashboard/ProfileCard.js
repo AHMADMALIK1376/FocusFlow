@@ -25,7 +25,7 @@ export default function ProfileCard({ displayName, streak, doneTasks, focusSessi
       data-testid="profile-card"
       className={cx(
         "group rounded-token-lg bg-grad-hero p-6 shadow-glass relative overflow-hidden min-h-[260px] lg:min-h-[460px] flex flex-col",
-        filled ? "text-white" : "text-on-brand"
+        "text-on-brand"
       )}
     >
       {avatarUrl && <img src={avatarUrl} alt={displayName} className="absolute inset-0 w-full h-full object-cover" />}
@@ -70,12 +70,12 @@ export default function ProfileCard({ displayName, streak, doneTasks, focusSessi
             Pick a mascot
           </button>
         )}
-        <span className={cx("inline-block w-fit px-3 py-1 rounded-full text-xs font-bold", sheets ? "bg-[rgb(var(--brand)/0.9)] text-on-brand" : "bg-white/16 backdrop-blur")}>
+        <span className={cx("inline-block w-fit px-3 py-1 rounded-full text-xs font-bold", sheets ? "bg-[rgb(var(--brand)/0.9)] text-on-brand" : "bg-on-brand/16 backdrop-blur")}>
           {profile?.segment && profile.segment !== "Unknown" ? profile.segment : "FocusFlow Member"}
         </span>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 relative z-10 pt-4 mt-4 border-t border-white/20">
+      <div className="grid grid-cols-3 gap-2 relative z-10 pt-4 mt-4 border-t border-on-brand/20">
         <div className="text-center"><p className="text-lg font-black">{streak || 0}</p><p className="text-[9px] uppercase tracking-wider opacity-75">Streak</p></div>
         <div className="text-center"><p className="text-lg font-black">{doneTasks}</p><p className="text-[9px] uppercase tracking-wider opacity-75">Done</p></div>
         <div className="text-center"><p className="text-lg font-black">{focusSessions || 0}</p><p className="text-[9px] uppercase tracking-wider opacity-75">Focus</p></div>

@@ -94,28 +94,28 @@ export const SkeletonLoader = ({ type = 'card', count = 1 }) => {
     if (type === 'card') {
       skeletons.push(
         <div key={i} className="bg-surface-2 rounded-token-lg p-6 animate-pulse">
-          <div className="h-4 bg-[rgb(214_192_162/0.3)] rounded w-1/4 mb-4"></div>
-          <div className="h-8 bg-[rgb(214_192_162/0.3)] rounded w-3/4 mb-2"></div>
-          <div className="h-4 bg-[rgb(214_192_162/0.3)] rounded w-1/2"></div>
+          <div className="h-4 bg-[rgb(var(--shade)/0.3)] rounded w-1/4 mb-4"></div>
+          <div className="h-8 bg-[rgb(var(--shade)/0.3)] rounded w-3/4 mb-2"></div>
+          <div className="h-4 bg-[rgb(var(--shade)/0.3)] rounded w-1/2"></div>
         </div>
       );
     } else if (type === 'list') {
       skeletons.push(
         <div key={i} className="flex items-center gap-4 p-4 animate-pulse">
-          <div className="w-12 h-12 bg-[rgb(214_192_162/0.3)] rounded-full"></div>
+          <div className="w-12 h-12 bg-[rgb(var(--shade)/0.3)] rounded-full"></div>
           <div className="flex-1">
-            <div className="h-4 bg-[rgb(214_192_162/0.3)] rounded w-3/4 mb-2"></div>
-            <div className="h-3 bg-[rgb(214_192_162/0.3)] rounded w-1/2"></div>
+            <div className="h-4 bg-[rgb(var(--shade)/0.3)] rounded w-3/4 mb-2"></div>
+            <div className="h-3 bg-[rgb(var(--shade)/0.3)] rounded w-1/2"></div>
           </div>
         </div>
       );
     } else if (type === 'table') {
       skeletons.push(
         <div key={i} className="animate-pulse">
-          <div className="h-10 bg-[rgb(214_192_162/0.3)] rounded w-full mb-2"></div>
-          <div className="h-10 bg-[rgb(214_192_162/0.18)] rounded w-full mb-2"></div>
-          <div className="h-10 bg-[rgb(214_192_162/0.3)] rounded w-full mb-2"></div>
-          <div className="h-10 bg-[rgb(214_192_162/0.18)] rounded w-full"></div>
+          <div className="h-10 bg-[rgb(var(--shade)/0.3)] rounded w-full mb-2"></div>
+          <div className="h-10 bg-[rgb(var(--shade)/0.18)] rounded w-full mb-2"></div>
+          <div className="h-10 bg-[rgb(var(--shade)/0.3)] rounded w-full mb-2"></div>
+          <div className="h-10 bg-[rgb(var(--shade)/0.18)] rounded w-full"></div>
         </div>
       );
     }

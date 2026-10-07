@@ -10,7 +10,7 @@ const Digit = ({ children }) => (
   <span
     aria-hidden="true"
     className="text-[76px] sm:text-[120px] leading-none font-black bg-grad-hero bg-clip-text text-transparent select-none"
-    style={{ filter: "drop-shadow(0 8px 12px rgb(236 112 109 / 0.25))" }}
+    style={{ filter: "drop-shadow(0 8px 12px rgb(var(--brand) / 0.25))" }}
   >
     {children}
   </span>

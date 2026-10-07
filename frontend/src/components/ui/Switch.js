@@ -21,7 +21,7 @@ export function Switch({ checked, onChange, label, className = '' }) {
       <span className={cx('absolute right-3 text-[10px] font-black tracking-wider text-muted transition-opacity duration-200', checked ? 'opacity-0' : 'opacity-100')}>OFF</span>
       <span
         className={cx(
-          'absolute top-1 h-[22px] w-[36px] rounded-full bg-white shadow-[0_2px_6px_rgb(190_160_122/0.4)] transition-all duration-300 ease-spring',
+          'absolute top-1 h-[22px] w-[36px] rounded-full bg-highlight shadow-[0_2px_6px_rgb(var(--shadow-color)/0.4)] transition-all duration-300 ease-spring',
           checked ? 'left-[40px]' : 'left-1'
         )}
       />

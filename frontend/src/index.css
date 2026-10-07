@@ -27,7 +27,7 @@ h1, h2, h3, h4,
 }
 /* Big headings get a soft clay highlight + light-blue drop (no dark shadow). */
 h1 {
-  text-shadow: 0 2px 0 rgb(255 255 255 / 0.85), 0 6px 14px rgb(190 160 122 / 0.28);
+  text-shadow: var(--shadow-heading);
 }
 /* Gradient-filled text is transparent — a text-shadow would show through it. */
 .bg-clip-text { text-shadow: none; }

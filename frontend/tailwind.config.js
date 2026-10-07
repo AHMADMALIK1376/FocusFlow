@@ -21,10 +21,12 @@ module.exports = {
         sage: rgb('--sage'),
         'on-sage': rgb('--on-sage'),
         'sage-deep': rgb('--sage-deep'),
+        icon: rgb('--icon'),
         blush: rgb('--blush'),
         success: rgb('--success'),
         info: rgb('--info'),
         warn: rgb('--warn'),
+        'warn-ink': rgb('--warn-ink'),
         focus: rgb('--focus'),
         canvas: rgb('--canvas'),
         surface: {
@@ -33,11 +35,7 @@ module.exports = {
         },
         ink: rgb('--ink'),
         muted: rgb('--muted'),
-
-        // ---- Legacy brand colors (kept for not-yet-redesigned screens) ----
-        focusPurple: '#6c5ce7',
-        focusDark: '#2d3436',
-        neuBg: "#f0f2f5",
+        highlight: rgb('--highlight'),
       },
       backgroundImage: {
         'grad-hero': 'var(--grad-hero)',
@@ -46,6 +44,7 @@ module.exports = {
         'grad-sage': 'var(--grad-sage)',
         'grad-blush': 'var(--grad-blush)',
         'grad-sage-card': 'var(--grad-sage-card)',
+        'grad-sage-deep': 'var(--grad-sage-deep)',
       },
       borderRadius: {
         'token-sm': 'var(--radius-sm)',
@@ -103,19 +102,6 @@ module.exports = {
           '0%, 100%': { transform: 'translate3d(0,0,0) scale(1)' },
           '50%': { transform: 'translate3d(2%,-2%,0) scale(1.05)' },
         },
-        // Orb Effects
-        'orbPulse': {
-          '0%, 100%': {
-            transform: 'scale(1)',
-            boxShadow: '10px 10px 20px #d1d9e6, -10px -10px 20px #ffffff',
-            'border-color': 'rgba(108, 92, 231, 0.1)'
-          },
-          '50%': {
-            transform: 'scale(1.05)',
-            boxShadow: '15px 15px 30px #c1c9d6, -15px -15px 30px #ffffff, 0 0 20px rgba(108, 92, 231, 0.2)',
-            'border-color': 'rgba(108, 92, 231, 0.5)'
-          },
-        },
       },
       animation: {
         'float-slow': 'logo-float 3.5s ease-in-out infinite',
@@ -124,7 +110,6 @@ module.exports = {
         'shimmer-swipe': 'shimmer-swipe 2.2s infinite ease-in-out',
         'orbit': 'orbit 20s infinite linear',
         'content-reveal': 'content-reveal 1.2s cubic-bezier(0.16, 1, 0.3, 1)',
-        'orbPulse': 'orbPulse 3s infinite ease-in-out',
         'fade-in': 'fadeIn 0.5s ease-in-out',
         'fadeInUp': 'fadeInUp 0.8s ease-out forwards',
         'popIn': 'popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
@@ -137,9 +122,6 @@ module.exports = {
         'neu-inset': 'var(--shadow-neu-inset)',
         glass: 'var(--shadow-glass)',
         'clay-brand': 'var(--shadow-clay-brand)',
-        // Legacy presets (kept for not-yet-redesigned screens)
-        'neu-flat': '20px 20px 60px #d1d9e6, -20px -20px 60px #ffffff',
-        'neu-pressed': 'inset 6px 6px 12px #d1d9e6, inset -6px -6px 12px #ffffff',
       },
     },
   },

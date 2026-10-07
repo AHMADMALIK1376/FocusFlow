@@ -115,8 +115,8 @@ export default function FinancePage() {
             {(cw) => (
               <BarChart width={cw} height={210} data={cashFlow} margin={{ top: 10, right: 8, left: -18, bottom: 0 }} barGap={2}>
                 <CartesianGrid vertical={false} strokeDasharray="3 4" stroke={hexToRgba(brand, 0.1)} />
-                <XAxis dataKey="label" axisLine={false} tickLine={false} dy={4} tick={{ fontSize: 11, fontWeight: 700, fill: "#8A93A0" }} />
-                <YAxis axisLine={false} tickLine={false} width={40} tickFormatter={(v) => (Math.abs(v) >= 1000 ? `${+(v / 1000).toFixed(1)}k` : v)} tick={{ fontSize: 11, fill: "#8A93A0" }} />
+                <XAxis dataKey="label" axisLine={false} tickLine={false} dy={4} tick={{ fontSize: 11, fontWeight: 700, fill: "rgb(var(--chart-axis))" }} />
+                <YAxis axisLine={false} tickLine={false} width={40} tickFormatter={(v) => (Math.abs(v) >= 1000 ? `${+(v / 1000).toFixed(1)}k` : v)} tick={{ fontSize: 11, fill: "rgb(var(--chart-axis))" }} />
                 <Tooltip cursor={{ fill: hexToRgba(brand, 0.05) }} contentStyle={CHART_TOOLTIP} formatter={(v, n) => [fmt(v), n]} />
                 <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, fontWeight: 700, paddingTop: 6 }} />
                 <Bar dataKey="income" name="Income" radius={[5, 5, 0, 0]} fill={INCOME_COLOR} maxBarSize={18} />
