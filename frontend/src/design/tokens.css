@@ -8,6 +8,7 @@
    plus a white inner highlight. Nothing uses dark shading.
    Light-only for now (dark mode mirrors light -> toggle is a no-op).
    Color values are space-separated RGB triplets: rgb(var(--brand) / <alpha-value>)
+   The values below are the DEFAULT theme; design/theme/deriveTokens.js overrides them at runtime on <html>.
    ========================================================================== */
 
 :root {
@@ -21,13 +22,20 @@
   --sage: 184 220 196;        /* soft sage #B8DCC4 — third colour, used sparingly */
   --on-sage: 40 70 52;
   --sage-deep: 108 178 136;   /* sage for big numbers/text (pale sage is too light to read) */
+  --sage-mid: 143 205 166;    /* done ticks on the routine dial */
+  --icon: 108 178 136;        /* icons in sage tiles (theme can override) */
   --blush: 255 226 222;       /* soft pink card tint (light coral) */
   --logo: 255 246 232;        /* cream logo on coral */
+  --note-1: 255 243 196;      /* sticky-note tints: sunshine, sage, coral, cream */
+  --note-2: 220 238 226;
+  --note-3: 255 222 220;
+  --note-4: 250 240 225;
 
   /* Semantic accents (soft, never dark) */
   --success: 62 160 108;
   --info: 84 150 222;
   --warn: 236 170 20;
+  --warn-ink: 133 79 11;      /* warn as text (warn itself is too light to read) */
   --focus: 232 84 96;         /* danger */
 
   /* Neutrals — light mocha-crème canvas, warm-white clay cards. Ink is the
@@ -36,8 +44,14 @@
   --surface: 255 253 249;
   --surface-2: 250 244 235;
   --ink: 52 46 62;
+  --ink-strong: 20 20 20;     /* strongest text/icon tone (hover bin icon) */
   --muted: 128 116 108;
   --border: 200 176 146;
+  --highlight: 255 255 255;   /* brightest clay tone: inner highlights, white chips */
+  --shadow-color: 190 160 122;/* soft clay shadow, also modal backdrops */
+  --shade: 214 192 162;       /* sunken areas, loading skeletons */
+  --chart-label: 54 54 54;    /* chart value labels */
+  --chart-axis: 138 147 160;  /* chart axis ticks */
 
   /* Depth — clay: soft warm-mocha drop + white top highlight + faint warm
      bottom tint. No dark shading anywhere. */
@@ -58,6 +72,7 @@
     0 14px 26px -12px rgb(236 112 109 / 0.50),
     inset 0 6px 10px rgb(255 255 255 / 0.38),
     inset 0 -6px 12px rgb(255 190 185 / 0.35);
+  --shadow-heading: 0 2px 0 rgb(255 255 255 / 0.85), 0 6px 14px rgb(190 160 122 / 0.28);
 
   /* Glass (dropdowns, popovers) */
   --glass-bg: 255 253 249;
@@ -79,6 +94,7 @@
   --grad-blush: linear-gradient(160deg, rgb(255 236 233), rgb(var(--blush)));
   /* sage card: lighter than the sage chip so content on it stays readable */
   --grad-sage-card: linear-gradient(160deg, rgb(226 242 231), rgb(206 232 214));
+  --grad-sage-deep: linear-gradient(160deg, rgb(150 206 170), rgb(118 184 142));
 
   /* Motion */
   --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
