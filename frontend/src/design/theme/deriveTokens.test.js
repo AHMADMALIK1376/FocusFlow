@@ -57,6 +57,14 @@ describe('default theme', () => {
     expect([...Object.keys(result.tokens), ...NON_THEME_VARS].sort()).toEqual(Object.keys(css).sort());
   });
 
+  it('hands the backend its email colours as extras (never stored as tokens)', () => {
+    expect(result.extras).toEqual({
+      shadowTint: '232 214 190', heroStart: '245 140 137', brandHighlight: '255 255 255', brandTint: '255 190 185',
+      sageLight: '206 234 214', blushLight: '255 236 233', sageCardA: '226 242 231',
+    });
+    expect(Object.keys(result.tokens)).not.toContain('extras');
+  });
+
   it('has no flags, is light, and keeps the status bar colour', () => {
     expect(result.flags).toEqual([]);
     expect(result.scheme).toBe('light');
@@ -91,7 +99,7 @@ describe('other palettes', () => {
 
       it('makes only well-formed triplets', () => {
         Object.entries(tokens).forEach(([k, v]) => {
-          if (/^--(shadow-(neu|neu-sm|neu-inset|clay-brand|heading|glass)|grad-.*)$/.test(k)) return;
+          if (/^--(shadow-(neu|neu-sm|neu-inset|clay-brand|clay-sage|heading|glass)|grad-.*)$/.test(k)) return;
           expect(v).toMatch(/^\d{1,3} \d{1,3} \d{1,3}$/);
           v.split(' ').forEach((x) => expect(Number(x)).toBeLessThanOrEqual(255));
         });

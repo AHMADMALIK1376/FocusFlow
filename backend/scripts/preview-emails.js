@@ -1,5 +1,7 @@
 // Renders every email and answer page FocusFlow sends, from sample data, into
 // backend/email-previews/ so you can open them in a browser — nothing is sent.
+// Emails are written three times (email-previews/default, bold and dark) so you can judge a theme;
+// answer pages and WhatsApp stay in the normal look.
 // Usage: node scripts/preview-emails.js   →  open email-previews/index.html
 const fs = require('fs');
 const path = require('path');
@@ -10,6 +12,7 @@ process.env.APP_URL = process.env.APP_URL || 'http://localhost:3000';
 const { reminderEmail, codeEmail, LOGO_ATTACHMENT, LOGO_CID } = require('../services/emailTemplates');
 const { whatsappText } = require('../services/notifyChannels');
 const { withAnswerLink } = require('../services/notificationScheduler');
+const sampleThemes = require('./sampleThemes');
 const { localParts, computeDue, DEFAULT_SETTINGS, attendanceReport, attendanceView } = require('../utils/reminders');
 const notify = require('../controllers/notifyController');
 
@@ -51,8 +54,8 @@ const summaries = [
 const marked = { status: 'Present', subjectName: 'Compiler Construction' };
 samples.push(['report', { key: 'r', kind: 'report', title: 'Your attendance so far', body: attendanceReport(summaries, marked), url: '/attendance', view: attendanceView(summaries, marked) }]);
 samples.push(['test', {
-  key: 't', kind: 'test', title: 'FocusFlow reminders are working ✅', body: '', url: '/settings',
-  view: { headline: 'Your reminders are working!', sub: 'This is how FocusFlow will nudge you before classes, exams and deadlines.', facts: [{ icon: '📅', label: 'Today', value: 'Tuesday 6 October' }, { icon: '🌍', label: 'Time zone', value: 'Asia/Karachi' }] },
+  key: 't', kind: 'test', title: 'FocusFlow reminders are working', body: '', url: '/settings',
+  view: { headline: 'Your reminders are working!', sub: 'This is how FocusFlow will nudge you before classes, exams and deadlines.', facts: [{ icon: 'calendar-days', label: 'Today', value: 'Tuesday 6 October' }, { icon: 'globe', label: 'Time zone', value: 'Asia/Karachi' }] },
 }]);
 
 // Answer pages are served by the API; render them through the real handlers.
@@ -66,21 +69,30 @@ function renderPage(handler, req) {
 (async () => {
   fs.mkdirSync(OUT, { recursive: true });
   const links = [];
-  const write = (name, html, label) => {
-    // emails embed the logo and line icons by cid; answer pages load the logo from the API (logo.png)
-    const icon = (file) => `data:image/png;base64,${fs.readFileSync(path.join(__dirname, '..', 'assets', 'icons', `${file}.png`)).toString('base64')}`;
-    const inlined = html.split(`cid:${LOGO_CID}`).join(logo).split('"logo.png"').join(`"${logo}"`)
-      .replace(/cid:ffi-([\w-]+)/g, (_, file) => icon(file));
+  const dataUri = (buf) => `data:image/png;base64,${buf.toString('base64')}`;
+  // `attachments` are the email's own (cid -> image); answer pages have none and load the logo as logo.png
+  const write = (name, html, label, attachments = [], group = links) => {
+    let inlined = html.split(`cid:${LOGO_CID}`).join(logo).split('"logo.png"').join(`"${logo}"`);
+    for (const a of attachments) {
+      if (a.cid !== LOGO_CID) inlined = inlined.split(`cid:${a.cid}`).join(dataUri(a.content || fs.readFileSync(a.path)));
+    }
+    fs.mkdirSync(path.dirname(path.join(OUT, `${name}.html`)), { recursive: true });
     fs.writeFileSync(path.join(OUT, `${name}.html`), inlined);
-    links.push(`<li><a href="${name}.html">${label}</a></li>`);
+    group.push(`<li><a href="${name}.html">${label}</a></li>`);
   };
 
-  for (const [name, n] of samples) {
-    const email = reminderEmail(withAnswerLink(n, 'preview-user'), APP);
-    write(`email-${name}`, email.html, `Email · ${email.subject}`);
+  const themeSections = [];
+  for (const [themeName, theme] of Object.entries(sampleThemes)) {
+    const group = [];
+    const put = (name, email, label) => write(`${themeName}/${name}`, email.html, label, email.attachments, group);
+    for (const [name, n] of samples) {
+      const email = reminderEmail(withAnswerLink(n, 'preview-user'), APP, theme);
+      put(`email-${name}`, email, `Email · ${email.subject}`);
+    }
+    put('email-verify', codeEmail({ purpose: 'verify', code: '4827' }, theme), 'Email · Verify your email');
+    put('email-reset', codeEmail({ purpose: 'reset', code: '9031' }, theme), 'Email · Password reset');
+    themeSections.push(`<h2>${themeName} theme</h2><ul style="line-height:2">${group.join('')}</ul>`);
   }
-  write('email-verify', codeEmail({ purpose: 'verify', code: '4827' }).html, 'Email · Verify your email');
-  write('email-reset', codeEmail({ purpose: 'reset', code: '9031' }).html, 'Email · Password reset');
 
   const att = withAnswerLink(samples.find(([k]) => k === 'attendance')[1], 'preview-user');
   const sub = withAnswerLink(samples.find(([k]) => k === 'submit')[1], 'preview-user');
@@ -95,7 +107,7 @@ function renderPage(handler, req) {
   write('whatsapp', `<!doctype html><meta charset="utf-8"><body style="font-family:sans-serif;background:#e5ddd5;padding:20px">${wa}</body>`, 'WhatsApp messages');
 
   fs.writeFileSync(path.join(OUT, 'index.html'), `<!doctype html><meta charset="utf-8"><title>FocusFlow email previews</title>
-<body style="font-family:Poppins,Segoe UI,sans-serif;background:#F5EFE6;color:#342E3E;padding:24px"><h1 style="color:#EC706D">FocusFlow messages</h1><ul style="line-height:2">${links.join('')}</ul></body>`);
-  console.log(`Wrote ${links.length} previews → ${path.join(OUT, 'index.html')}`);
+<body style="font-family:Poppins,Segoe UI,sans-serif;background:#F5EFE6;color:#342E3E;padding:24px"><h1 style="color:#EC706D">FocusFlow messages</h1>${themeSections.join('')}<h2>Answer pages and WhatsApp (normal look)</h2><ul style="line-height:2">${links.join('')}</ul></body>`);
+  console.log(`Wrote ${themeSections.length} themes of emails and ${links.length} other previews → ${path.join(OUT, 'index.html')}`);
   process.exit(0);
 })().catch((e) => { console.error(e); process.exit(1); });

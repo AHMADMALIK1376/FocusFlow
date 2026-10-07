@@ -5,6 +5,9 @@
 // crash page renders outside the router.
 import React from "react";
 import { ProgressRing } from "../ui/ProgressRing";
+import ThemedMark from "../common/ThemedMark";
+import { useActiveTheme } from "../../preferences/useActiveTheme";
+import { DEFAULT_THEME } from "../../design/theme/theme";
 
 const Digit = ({ children }) => (
   <span
@@ -17,10 +20,19 @@ const Digit = ({ children }) => (
 );
 
 export default function ErrorScreen({ code, dial = 0, dialColor, dialCenter, title, message, children, actions }) {
+  // The app icon is coral; on another brand colour it becomes a tile in that colour (like the loading logo).
+  const t = useActiveTheme();
+  const themed = !!t && t.brand !== DEFAULT_THEME.brand;
   return (
     <main className="min-h-screen bg-canvas flex flex-col items-center justify-center px-4 py-10 text-center">
       <div className="flex items-center gap-2.5 mb-8">
-        <img src="/logo192.png" alt="" className="w-10 h-10 rounded-xl shadow-neu-sm" />
+        {themed ? (
+          <span aria-hidden="true" className="w-10 h-10 rounded-xl shadow-neu-sm bg-grad-hero grid place-items-center">
+            <ThemedMark src="/logo/focusflow-mark.png" fill={t.logo ? "rgb(var(--logo))" : null} className="w-[85%] h-[85%] object-contain" />
+          </span>
+        ) : (
+          <img src="/logo192.png" alt="" className="w-10 h-10 rounded-xl shadow-neu-sm" />
+        )}
         <span className="text-lg font-black tracking-tight text-ink">FocusFlow</span>
       </div>
 

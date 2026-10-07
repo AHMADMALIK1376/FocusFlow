@@ -15,9 +15,10 @@
 // contrast WARN is discharged by construction: every block is directly
 // labelled, so identity is never carried by colour alone.
 import React, { useEffect, useRef, useState } from "react";
+import { useCategoryColors } from "./categoryColors";
 
-// Theme palette: coral, sunshine, baby blue (deepened), mint.
-const SERIES_COLORS = ["#EC706D", "#F5C842", "#8FCDA6", "#F4A98A"]; // coral, sun, sage, peach
+// Theme palette: coral, sun, sage, peach. On a custom theme the first colour follows the brand and the
+// rest are picked to stay apart (categoryColors.js).
 
 const BLOCK_W_MAX = 118;
 const BLOCK_W_MIN = 64;
@@ -46,6 +47,7 @@ const css = (rgb) => `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
 const pts = (arr) => arr.map((p) => `${p[0]},${p[1]}`).join(" ");
 
 export default function ProgressCubeStack({ data }) {
+  const series = useCategoryColors().slice(0, 4);
   const ref = useRef(null);
   const [box, setBox] = useState({ w: 0, h: 0 });
   const [hovered, setHovered] = useState(null);
@@ -79,10 +81,10 @@ export default function ProgressCubeStack({ data }) {
     const h = heights[i];
     const y = cursorY;
     cursorY += h + gap;
-    const c = rgbOf(SERIES_COLORS[i % SERIES_COLORS.length]);
+    const c = rgbOf(series[i % series.length]);
     return {
       ...row, i, pct, y, h,
-      hex: SERIES_COLORS[i % SERIES_COLORS.length],
+      hex: series[i % series.length],
       front: css(c),
       frontLit: css(lighten(c, 0.38)),
       top: css(lighten(c, 0.34)),

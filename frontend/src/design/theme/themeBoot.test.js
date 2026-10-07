@@ -63,7 +63,7 @@ describe('inline theme boot script', () => {
   it('ignores the wrong version', () => {
     writeThemeCache(BLACK_THEME, deriveTokens(BLACK_THEME));
     const c = JSON.parse(localStorage.getItem(RAW));
-    c.v = 2;
+    c.v = THEME_CACHE_VERSION + 1;
     localStorage.setItem(RAW, JSON.stringify(c));
     run();
     nothingSet();

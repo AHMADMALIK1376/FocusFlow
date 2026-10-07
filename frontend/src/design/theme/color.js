@@ -87,3 +87,13 @@ export function contrastRatio(a, b) {
   const ya = relativeLuminance(a), yb = relativeLuminance(b);
   return (Math.max(ya, yb) + 0.05) / (Math.min(ya, yb) + 0.05);
 }
+
+// Distance between two colours in OKLab (0 = identical; about 0.02 is just noticeable).
+export function deltaE(a, b) {
+  const x = rgbToOklch(a), y = rgbToOklch(b);
+  return Math.hypot(
+    x.L - y.L,
+    x.C * Math.cos(x.h) - y.C * Math.cos(y.h),
+    x.C * Math.sin(x.h) - y.C * Math.sin(y.h),
+  );
+}

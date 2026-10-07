@@ -28,3 +28,10 @@ test("the choice can be changed here, and the page shows the current one", () =>
   expect(getConsent()).toBe("all");
   expect(screen.getByText(/Accept all \(Google sign-in allowed\)/)).toBeInTheDocument();
 });
+
+test("lists the remembered sign-in colours and how to remove them", () => {
+  render(<PrivacyPage />);
+  expect(screen.getByText("focusflow:theme.device")).toBeInTheDocument();
+  expect(screen.getByText(/keeps them after signing out/)).toBeInTheDocument();
+  expect(screen.getByText(/Resetting to FocusFlow colours/)).toBeInTheDocument();
+});

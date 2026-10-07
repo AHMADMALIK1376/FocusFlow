@@ -1,6 +1,6 @@
 import {
   hexToRgb, rgbToHex, rgbToTriplet, tripletToRgb, rgbToOklch, oklchToRgb,
-  relativeLuminance, contrastRatio, WHITE, BLACK,
+  relativeLuminance, contrastRatio, deltaE, WHITE, BLACK,
 } from './color';
 
 const REFS = [
@@ -89,5 +89,19 @@ describe('OKLCH', () => {
     expect(oklchToRgb({ L: 0, C: 0.2, h: 1 })).toEqual(BLACK);
     expect(oklchToRgb({ L: 2, C: 0, h: 0 })).toEqual(WHITE);
     expect(oklchToRgb({ L: -1, C: 0, h: 0 })).toEqual(BLACK);
+  });
+});
+
+describe('deltaE', () => {
+  it('is 0 for the same colour and 1 between black and white', () => {
+    expect(deltaE([236, 112, 109], [236, 112, 109])).toBe(0);
+    expect(Math.abs(deltaE(BLACK, WHITE) - 1)).toBeLessThan(1e-3);
+  });
+
+  it('is symmetric and grows with the difference', () => {
+    const a = [236, 112, 109], b = [184, 220, 196], c = [237, 113, 109];
+    expect(deltaE(a, b)).toBeCloseTo(deltaE(b, a), 12);
+    expect(deltaE(a, c)).toBeLessThan(0.01);
+    expect(deltaE(a, b)).toBeGreaterThan(0.1);
   });
 });

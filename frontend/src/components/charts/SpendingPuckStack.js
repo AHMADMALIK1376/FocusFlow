@@ -15,9 +15,10 @@
 // adjacent pair to ΔE 12.8. The checker's contrast WARN is discharged by the
 // always-visible legend, so identity never rests on colour alone.
 import React, { useEffect, useRef, useState } from "react";
+import { useCategoryColors } from "./categoryColors";
 
-// Theme palette: coral, sunshine, deep baby blue, mint, navy, peach.
-export const SPEND_COLORS = ["#EC706D", "#F5C842", "#8FCDA6", "#F4A98A", "#9EC3EA", "#D7B98E"]; // coral, sun, sage, peach, powder, mocha
+// Theme palette: coral, sun, sage, peach, powder, mocha. On a custom theme the first colour follows the
+// brand and the rest are picked to stay apart (categoryColors.js).
 
 const MIN_RX = 40;          // smallest disk radius at full size
 const RX_RANGE = 62;        // largest disk adds up to this at full size
@@ -39,6 +40,7 @@ const darken = (rgb, k) => rgb.map((c) => Math.round(c * k));
 const css = (rgb) => `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
 
 export default function SpendingPuckStack({ data, formatValue }) {
+  const colors = useCategoryColors();
   const ref = useRef(null);
   const [w, setW] = useState(0);
   const [hovered, setHovered] = useState(null);
@@ -80,7 +82,7 @@ export default function SpendingPuckStack({ data, formatValue }) {
     // Advance by the two radii so tiers just meet, then pull back to overlap.
     if (i > 0) cursorY += (prevRy + ry) * STACK_TIGHTNESS;
     prevRy = ry;
-    const rgb = rgbOf(SPEND_COLORS[colorIdx % SPEND_COLORS.length]);
+    const rgb = rgbOf(colors[colorIdx % colors.length]);
     return {
       ...row, i, pct, rx, ry, depth,
       cy: cursorY,
@@ -172,7 +174,7 @@ export default function SpendingPuckStack({ data, formatValue }) {
           <span key={d.name} className="inline-flex items-center gap-1.5">
             <span
               className="w-2 h-2 rounded-full shrink-0"
-              style={{ background: SPEND_COLORS[i % SPEND_COLORS.length] }}
+              style={{ background: colors[i % colors.length] }}
             />
             <span className="text-[11px] font-bold text-ink">{d.name}</span>
           </span>

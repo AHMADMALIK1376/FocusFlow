@@ -10,6 +10,7 @@ import Lottie from "lottie-react";
 
 import workingAnimationData from "../assets/animation/Man Working on Laptop in Office.json"; 
 import securityAnimationData from "../assets/animation/Profile Password Unlock.json"; 
+import { useThemedLottie } from "../preferences/useThemedLottie";
 
 export default function AuthPage() {
   const location = useLocation();
@@ -26,6 +27,7 @@ export default function AuthPage() {
 
   const isLogin = location.pathname === "/login";
   const isVerify = location.pathname === "/verify";
+  const animationData = useThemedLottie(isVerify ? securityAnimationData : workingAnimationData); // decoration follows the brand colour
   const syncTransition = "transition-all duration-[700ms] ease-[cubic-bezier(0.4,0,0.2,1)]";
 
   // Google Sign-In Handler using native API
@@ -168,7 +170,7 @@ export default function AuthPage() {
                 <button 
                   onClick={handleGoogleSignIn}
                   disabled={isGoogleLoading}
-                  className="w-full flex items-center justify-center gap-3 py-4 rounded-token-md bg-surface text-ink shadow-[0_14px_26px_-12px_rgb(120_190_150/0.45),0_6px_12px_-8px_rgb(120_190_150/0.3),inset_0_-6px_12px_rgb(205_232_214/0.4),inset_0_6px_10px_rgb(var(--highlight)/0.95)] hover:-translate-y-0.5 active:scale-95 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full flex items-center justify-center gap-3 py-4 rounded-token-md bg-surface text-ink shadow-clay-sage hover:-translate-y-0.5 active:scale-95 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isGoogleLoading ? (
                     <>
@@ -210,7 +212,7 @@ export default function AuthPage() {
                 {isLoaded && (
                   <Lottie 
                     key={isVerify ? "v-anim" : "a-anim"}
-                    animationData={isVerify ? securityAnimationData : workingAnimationData} 
+                    animationData={animationData} 
                     loop={true} 
                     className="w-full h-full transition-opacity duration-500" 
                   />
