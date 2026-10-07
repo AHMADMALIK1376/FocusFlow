@@ -5,6 +5,7 @@
 const webpush = require('web-push');
 const { sendBulkEmailQueued } = require('./emailQueueService');
 const { reminderEmail, escapeHtml } = require('./emailTemplates');
+const { loadUserTheme } = require('./emailTheme');
 
 const pushReady = Boolean(process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY);
 if (pushReady) {
@@ -55,8 +56,18 @@ async function sendPush(connection, userId, n) {
   return { sent, devices: subs.rows.length };
 }
 
-async function sendEmail(to, n) {
-  const { subject, html, text, attachments } = reminderEmail(n, APP_URL());
+// The email in the student's colours; if that goes wrong in any way, in the normal colours.
+function buildReminderEmail(n, appUrl, theme) {
+  try {
+    return reminderEmail(n, appUrl, theme);
+  } catch (err) {
+    console.warn('Email theme: default look used (' + err.message + ')');
+    return reminderEmail(n, appUrl, null);
+  }
+}
+
+async function sendEmail(to, n, theme = null) {
+  const { subject, html, text, attachments } = buildReminderEmail(n, APP_URL(), theme);
   const queued = await sendBulkEmailQueued(to, subject, html, text, attachments);
   return { queued: Boolean(queued) };
 }
@@ -93,7 +104,7 @@ async function deliver(connection, user, settings, n) {
   const result = {};
   const jobs = [
     ['push', () => sendPush(connection, user.userId, n)],
-    settings.emailEnabled && user.email && ['email', () => sendEmail(user.email, n)],
+    settings.emailEnabled && user.email && ['email', async () => sendEmail(user.email, n, await loadUserTheme(connection, user.userId))],
     settings.whatsappEnabled && settings.whatsappPhone && settings.whatsappApikey &&
       ['whatsapp', () => sendWhatsApp(settings.whatsappPhone, settings.whatsappApikey, n)],
   ].filter(Boolean);
@@ -108,4 +119,4 @@ async function deliver(connection, user, settings, n) {
   return result;
 }
 
-module.exports = { deliver, sendPush, sendEmail, sendWhatsApp, whatsappUrl, whatsappText, escapeHtml, pushReady };
+module.exports = { deliver, sendPush, sendEmail, buildReminderEmail, sendWhatsApp, whatsappUrl, whatsappText, escapeHtml, pushReady };

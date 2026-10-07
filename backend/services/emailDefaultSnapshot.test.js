@@ -8,6 +8,8 @@ const path = require('node:path');
 
 process.env.JWT_SECRET = 'test-secret';
 const { reminderEmail, codeEmail } = require('./emailTemplates');
+const { buildReminderEmail } = require('./notifyChannels');
+const { DEFAULT_THEME } = require('./theme/theme');
 const { withAnswerLink } = require('./notificationScheduler');
 const { localParts, computeDue, DEFAULT_SETTINGS, attendanceView } = require('../utils/reminders');
 
@@ -70,4 +72,33 @@ test('default emails are byte-identical to the snapshot taken before the theme r
   const saved = JSON.parse(fs.readFileSync(FIXTURE, 'utf8'));
   assert.deepEqual(Object.keys(now), Object.keys(saved));
   for (const k of Object.keys(saved)) assert.deepEqual(now[k], saved[k], `email "${k}" changed`);
+});
+
+// A theme that is missing, the default, broken or hostile must give exactly the same default emails.
+const THROWING = new Proxy({}, { ownKeys() { throw new Error('x'); } });
+const quiet = (fn) => {
+  const warn = console.warn;
+  console.warn = () => {};
+  try { return fn(); } finally { console.warn = warn; }
+};
+
+for (const [label, themeArg] of [
+  ['null', null],
+  ['the default theme', DEFAULT_THEME],
+  ['a theme with bad colours', { brand: 'red' }],
+  ['a theme that throws when read', THROWING],
+]) {
+  test(`reminder emails with ${label} are the default emails`, () => {
+    const saved = JSON.parse(fs.readFileSync(FIXTURE, 'utf8'));
+    const now = quiet(() => snapshot(themeArg));
+    for (const k of Object.keys(saved)) assert.deepEqual(now[k], saved[k], `email "${k}" changed`);
+  });
+}
+
+test('buildReminderEmail falls back to the default look when the theme is hostile', () => {
+  const saved = JSON.parse(fs.readFileSync(FIXTURE, 'utf8'));
+  const n = { kind: 'mystery', title: 'Hello', body: 'Line one\nLine two', url: '/' };
+  for (const theme of [THROWING, null, DEFAULT_THEME, { brand: 'red' }]) {
+    assert.deepEqual(plain(quiet(() => buildReminderEmail(n, APP, theme))), saved.mystery);
+  }
 });
