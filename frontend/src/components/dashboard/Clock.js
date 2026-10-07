@@ -5,7 +5,7 @@
 import React, { useState, useEffect } from "react";
 import { renderIcon } from "../ui/renderIcon";
 import { Sun, CloudSun, Cloud, CloudFog, CloudDrizzle, CloudRain, Snowflake, CloudSnow, CloudLightning, Thermometer, MapPin } from "lucide-react";
-import { chartColors } from "../charts/chartColors";
+import { useChartColors } from "../charts/chartColors";
 
 const COLS = 6;
 const toBits = (val) => {
@@ -63,7 +63,7 @@ function Tile({ active, color, delay }) {
 export default function Clock() {
   const [time, setTime] = useState(new Date());
   const [weather, setWeather] = useState(null);
-  const { accent, sage } = chartColors();
+  const { accent, sage } = useChartColors();
 
   useEffect(() => {
     const t = setInterval(() => setTime(new Date()), 1000);

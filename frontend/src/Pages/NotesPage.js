@@ -5,7 +5,7 @@ import { Button, Input, Textarea, EmptyState, DeleteButton } from "../components
 import { PageShell, PageHeader, StatTile, Panel } from "../components/dashboard/DashKit";
 import { PageLoading, useFirstLoad } from "../components/common/LoadingSpinner";
 import ChartBox from "../components/charts/ChartBox";
-import { chartColors, hexToRgba, CHART_TOOLTIP } from "../components/charts/chartColors";
+import { useChartColors, hexToRgba, CHART_TOOLTIP } from "../components/charts/chartColors";
 import { useNotes } from "../features/notes/useNotes";
 import { renderInline } from "../features/notes/notesLogic";
 
@@ -14,7 +14,7 @@ const wordCount = (s) => (s ? s.trim().split(/\s+/).filter(Boolean).length : 0);
 export default function NotesPage() {
   const { notes, loading, create, update, remove } = useNotes();
   const firstLoad = useFirstLoad(loading);
-  const { brand } = chartColors();
+  const { brand } = useChartColors();
 
   const [selectedId, setSelectedId] = useState(null);
   const [editing, setEditing] = useState(false);
