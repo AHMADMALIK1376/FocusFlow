@@ -95,6 +95,7 @@ All data is saved per account in a PostgreSQL database, so it's the same on your
 - **Onboarding** for new accounts.
 - **26 languages** to choose from in Settings, with full translations for English, Spanish, French, German, Portuguese, Arabic, Chinese, Hindi and Urdu. The others fall back to English. Right-to-left layout works for Arabic, Urdu, Persian and Hebrew.
 - **Light and dark mode.**
+- **Design Studio** (Settings > Appearance): ready-made palettes and custom colours for the background, brand, accent, text, logo and icons, with a live preview and a readability check.
 - **Installable PWA** with its own icons, a home-screen shortcut and a service worker for notifications.
 - **12-hour times** everywhere in the interface. Data is stored as 24-hour time underneath.
 

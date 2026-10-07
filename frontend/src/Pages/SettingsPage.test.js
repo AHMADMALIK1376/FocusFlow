@@ -5,6 +5,7 @@ import SettingsPage from "./SettingsPage";
 import { PreferencesContext } from "../preferences/PreferencesProvider";
 import { ToastProvider } from "../components/ui";
 import { getConsent } from "../features/consent/consent";
+import { DEFAULT_THEME } from "../design/theme/theme";
 
 // The address holds the open card (?open=...). A tiny stand-in for the router keeps a
 // history of addresses, so tests can see what was pushed, replaced and gone back over.
@@ -38,10 +39,12 @@ jest.mock("../components/dashboard/WidgetManager", () => () => <div data-testid=
 jest.mock("../components/dashboard/DashboardSwitcher", () => () => <div data-testid="workspace-controls" />);
 
 let updateProfile;
+let previewTheme;
 function page(profile = { displayName: "Ahmad", mascot: "cap" }) {
   updateProfile = jest.fn();
+  previewTheme = jest.fn();
   return render(
-    <PreferencesContext.Provider value={{ profile, updateProfile }}>
+    <PreferencesContext.Provider value={{ profile, updateProfile, theme: DEFAULT_THEME, setTheme: jest.fn(), resetTheme: jest.fn(), previewTheme }}>
       <ToastProvider><SettingsPage /></ToastProvider>
     </PreferencesContext.Provider>
   );
@@ -164,4 +167,66 @@ test("closing a pop-up opened by a link clears the address without going back", 
   fireEvent.keyDown(window, { key: "Escape" });
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   expect(mockHistory).toEqual(["", ""]);
+});
+
+describe("Design Studio", () => {
+  const studio = () => screen.getByRole("dialog", { name: "Design your dashboard" });
+  const openFromAppearance = () => {
+    fireEvent.click(screen.getByRole("button", { name: /^Appearance/ }));
+    fireEvent.click(within(screen.getByRole("dialog", { name: "Appearance" })).getByRole("button", { name: /Design your dashboard/ }));
+  };
+
+  test("Appearance has the Colours group and the button", () => {
+    page();
+    fireEvent.click(screen.getByRole("button", { name: /^Appearance/ }));
+    const dialog = screen.getByRole("dialog", { name: "Appearance" });
+    expect(within(dialog).getByText("Pick a font and design your colours. Changes apply across the whole app.")).toBeInTheDocument();
+    expect(within(dialog).getByText("Colours")).toBeInTheDocument();
+    expect(within(dialog).getByText("Pick a ready-made palette or mix your own.")).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: /Design your dashboard/ })).toBeInTheDocument();
+  });
+
+  test("the button swaps Appearance for the Studio in the address, and Escape goes back over it", async () => {
+    page();
+    openFromAppearance();
+    expect(mockHistory).toEqual(["", "open=studio"]);
+    expect(studio()).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Appearance" })).toBeNull());
+    fireEvent.keyDown(window, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(mockHistory).toEqual([""]);
+    expect(previewTheme).toHaveBeenLastCalledWith(null);
+  });
+
+  test("a link to ?open=studio opens it, and closing clears the address without going back", async () => {
+    mockHistory = ["", "open=studio"];
+    page();
+    expect(studio()).toBeInTheDocument();
+    fireEvent.keyDown(window, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(mockHistory).toEqual(["", ""]);
+  });
+
+  test("Back with unsaved changes keeps the Studio open and asks first", async () => {
+    page();
+    openFromAppearance();
+    fireEvent.click(screen.getByRole("button", { name: "Midnight palette" }));
+    goBack();
+    await waitFor(() => expect(screen.getByText("Unsaved changes")).toBeInTheDocument());
+    expect(studio()).toBeInTheDocument();
+    expect(mockHistory[mockHistory.length - 1]).toBe("open=studio");
+  });
+
+  test("Back with no changes closes it", async () => {
+    page();
+    openFromAppearance();
+    goBack();
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(mockHistory).toEqual([""]);
+  });
+});
+
+test("the mascot backdrop follows the Accent colour", () => {
+  const { container } = page();
+  expect(container.querySelector(".bg-\\[rgb\\(var\\(--sage\\)\\/0\\.3\\)\\]")).not.toBeNull();
 });

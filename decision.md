@@ -6,6 +6,68 @@ Update this file with every change.
 
 ---
 
+## 2026-10-07 — Design Studio
+
+### Where it lives
+- **Decision:** the Studio is a Settings pop-up of its own at `?open=studio`. The "Design your dashboard" button in Appearance swaps the Appearance entry for the Studio in the address (`setParams(..., { replace: true })`), so there is one pushed history entry and closing goes back over it. A link to `?open=studio` opens it; closing then clears the address (the existing `close` logic).
+- **Rejected:** a pop-up on top of a pop-up (two focus traps, two Escape handlers, and Back would be unclear).
+
+### Draft, undo, Save, Cancel
+- **Decision:** the Studio keeps a draft in a reducer (`studioReducer`, `design/theme/studio.js`). Each change calls `previewTheme(draft)`; Save calls `setTheme(draft)`; Cancel, Discard, closing and unmounting call `previewTheme(null)`, so a preview cannot get stuck. Undo keeps up to 20 steps (`UNDO_LIMIT`). One colour-picker drag is one step (merged until the picker loses focus).
+- **Reset** ("Reset to FocusFlow colours") changes the draft, like every other change: it can be undone and needs Save (OQ4).
+- **Rejected:** a single undo step (a student who tries five palettes cannot get back to the second); Reset that saves at once (surprising, and not undoable).
+- If the saved theme changes while the Studio is open (a server sync, for example): a draft with changes is kept, `dirty` compares against the new saved theme, and the preview effect depends on `theme` so the draft is shown again (a save or sync ends a preview). A draft nobody has touched becomes the new saved theme instead, so Save cannot overwrite the update.
+
+### Unsaved changes
+- **Decision:** Escape, the X and the backdrop with changes show a question inside the dialog (Save and close / Discard changes / Keep editing). Escape while it shows hides it. Cancel is an explicit discard and asks nothing. `beforeunload` is blocked only while there are unsaved changes.
+- **The Back button:** `BrowserRouter` has no blocker, so Back cannot be stopped. When the address closes the Studio and it was not us (no `closingByUs`) and the draft is dirty, the Studio calls `onReopen()` (Settings pushes `?open=studio` again), keeps the preview and shows the question.
+- **Rejected:** `window.confirm` (an unstyled browser box, and the logout one is already on the roadmap to be removed); a data router with `useBlocker` (a big routing change for one dialog).
+
+### Hex input rules
+- Accepts `RRGGBB`, `#RRGGBB`, `RGB` and `#RGB`, any case, with spaces around. Anything else is refused: an error under the box, `aria-invalid`, and nothing changes (not the draft, not the preview, not `<html>`). Empty does nothing. Typing clears the error. A code equal to the current value is not applied again (no pointless undo step).
+
+### Speed
+- **Decision:** colour-input drags are limited to one change per animation frame (`requestAnimationFrame`, with a 16 ms timeout fallback; a pending frame is cancelled on unmount). The readability notes use `useDeferredValue`, so a drag never waits for the extra `deriveTokens` call (about 18 ms). Save re-checks the live (not deferred) draft synchronously.
+- **Rejected:** debouncing (the preview would lag behind the finger); calling `deriveTokens` on every input event.
+
+### Readability notes (reviewer note O4)
+- **Decision:** the Studio calls `deriveTokens(draft)` itself and turns the guard's flags into plain sentences through the pure `readabilityNotes` (`studio.js`). Flags are grouped by what the student sees (text, buttons, pills, cards, icons, status); every flag the guard can raise is in a group (a test runs 200 seeded random palettes).
+- **Rejected:** widening `useAppTheme` to expose flags (every caller would re-derive, and the hook's job is only to read and save).
+- An unreadable mix (a contrast rule that no nudge can fix) switches Save and "Save and close" off and says why. The default palette is exempt from the guard.
+
+### Charts and the clock (reviewer note O1)
+- **Decision:** `useChartColors()` (`components/charts/chartColors.js`) reads the active theme from context through `useActiveTheme()` (the preview if open, else the saved theme), so charts and the clock re-render on every preview and save. Its values are the theme's own brand and accent (the guard never moves them). Without a provider it falls back to `chartColors()`. The seven callers (Kanban, Notes, Habits, Time track, Finance, Goals, and the Clock) now use it.
+- **Rejected:** re-reading `<html>` during render. The theme is applied in a layout effect, so at render time `<html>` still holds the old colours.
+
+### Logo and loader marks
+- **Decision:** `ThemedMark` shows the PNG as it is, or (only when told a colour) the same shape painted with a CSS mask. Auto logo colour (no `logo` key) always shows the real PNG on every palette (OQ2); only an explicit logo colour paints the mask. The logo is not text, so the guard does not move it. If the chosen logo colour is below 3:1 against the brand, the Readability check warns, but Save stays on.
+- The loader keeps its coral PNGs while the brand is the default coral, and paints both lines in `--brand` on any other brand. The wipe mask lives on the `.ff-loader-line` wrapper, because an inline mask on the image would replace it.
+- **Rejected:** the mask always. `focusflow-mark.png` has shading, not one flat colour, so a mask would not be pixel-identical, and the default must not change.
+
+### The palette library (OQ1) and swatches
+- **Rule (checked by `palettes.test.js` for every palette):** (a) no contrast failures; (b) `--canvas`, `--brand`, `--sage` equal the palette's background, brand and accent, and `--ink` equals its text; (c) neither `--ink` nor `--surface` is flagged. So the four chosen colours and the cards are exactly as designed. Other flags (such as the label shade on the brand colour) are allowed and are reported in the Readability check. Requiring no flags at all is not possible: the `--on-brand` recipe gives about 3.4 to 3.9:1 for almost any brand, so the guard nudges it nearly every time.
+- **Tuned values:** a throwaway script ran every palette through the real `deriveTokens`. All 24 starting palettes passed the rule as written. Five dark palettes had `--muted` nudged by the guard, which would print "We tuned the text shades" on a ready-made palette, so their `text` was lightened by a hair: Midnight `#E8ECF5` to `#E9ECF5`, Charcoal Coral `#F3ECE6` to `#F4EEE9`, Night Lavender `#EEE8F8` to `#F1ECF9`, Espresso `#F5EBE0` to `#F6EDE3`, Slate Gold `#E9EDF2` to `#F3F6F8`.
+- **Text swatches (OQ3):** Soft/Bold/Dark does not fit text colours, so only the Text picker has two rows, "Dark text" and "Light text".
+- Palette and swatch hex values are data, shown with inline styles, the same as subject colours. They are not app colours, so they do not go through tokens.
+
+### Other
+- Choosing a palette clears the logo and icon overrides. Choosing the palette that is already selected is a no-op (no undo step).
+- The mascot backdrops (`ProfileCard.js`, `SettingsPage.js`) already use `--sage`, which is the Accent, so they follow Accent with no code change.
+- No database change and no migration. Theme version stays 1, schema stays 3. New `presetId` values (`custom`, the library ids) already match `PRESET_RE` and the server's check.
+- jsdom drops inline `rgb(var(--x))` colours and `mask-image`, so tests of those styles read the markup from `renderToStaticMarkup`.
+
+### Found in review and testing, and fixed
+- **Signing out with the Studio open** brought the old preview back. The saved colours reset to the defaults, which re-ran the preview effect. The Studio now restarts from the default colours on sign-out.
+- **The action bar** used `sticky bottom-0` inside a padded dialog, so page content showed in a strip under it. It now sticks at `-bottom-6`, flush with the dialog edge. (Seen in a real browser, not in tests.)
+- **Enter in the hex box** replaced the box (it was keyed on the value), so a keyboard user's focus dropped out of the dialog. The box is no longer remounted; it reseeds from the current value instead.
+- **Focus when the "Unsaved changes" question closes** now goes to Save on purpose. The reviewer feared focus was lost. In practice React reuses the same button element, so it was not, but that was luck and is now explicit.
+- **A server update arriving while the draft is untouched** becomes the new starting point. Before, Escape asked about changes nobody made, and Save would have overwritten the synced theme.
+- **Smaller:** the error text uses the guarded `warn-ink` colour (about 4.5:1 instead of about 3.4:1); a selected swatch or palette still shows a focus outline; `save()` stops if `setTheme` refuses.
+- **Known limit, left as is:** pressing the browser's Back button on a `?open=studio` link while there are unsaved changes leaves Settings and drops the edits. The app uses `BrowserRouter`, which cannot block Back. The preview ends correctly. When the Studio was opened from the Appearance card, Back is caught and asks first.
+- **Known limit, rare:** two Back presses in very quick succession can race the "put the Studio back" step.
+
+---
+
 ## 2026-10-07 — Theme engine (foundation)
 
 ### The model: three colours in, every token out

@@ -1,7 +1,11 @@
 import React from "react";
+import ThemedMark from "../common/ThemedMark";
+import { useActiveTheme } from "../../preferences/useActiveTheme";
 
 export default function Logo({ size = "small", showText = false }) {
   const isLarge = size === "large";
+  const t = useActiveTheme();
+  const logoFill = t && t.logo ? "rgb(var(--logo))" : null;
 
   return (
     <div className={`flex items-center justify-center gap-2.5 w-full ${isLarge ? 'flex-col' : 'flex-row justify-start w-auto gap-3'}`}>
@@ -14,8 +18,9 @@ export default function Logo({ size = "small", showText = false }) {
             : 'w-[50px] h-[50px] rounded-[15px] m-0 animate-[logo-float-small_3s_ease-in-out_infinite]'}
         `}
       >
-        <img
+        <ThemedMark
           src="/logo/focusflow-mark.png"
+          fill={logoFill}
           alt="FocusFlow"
           className="w-[85%] h-[85%] object-contain"
           width="85"

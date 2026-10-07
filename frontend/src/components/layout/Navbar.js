@@ -5,6 +5,8 @@ import { Target, Zap, Settings, ShieldCheck, ChevronDown, Camera } from "lucide-
 import { useUser } from "../auth/UserContext";
 import { useApp } from "../context/AppContext";
 import { usePreferences } from "../../preferences/usePreferences";
+import { useActiveTheme } from "../../preferences/useActiveTheme";
+import ThemedMark from "../common/ThemedMark";
 import { LogoutButton } from "../ui/LogoutButton";
 import { MascotPicker } from "../ui/MascotPicker";
 import { mascotSrc } from "../ui/mascots";
@@ -15,6 +17,8 @@ export default function Navbar() {
   const { userName, logout } = useUser();
   const { pendingCount, routineTodayDone, routineTodayTotal } = useApp();
   const { profile, updateProfile } = usePreferences();
+  const activeTheme = useActiveTheme();
+  const logoFill = activeTheme && activeTheme.logo ? "rgb(var(--logo))" : null;
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
   const fileRef = useRef(null);
@@ -54,7 +58,7 @@ export default function Navbar() {
   return (
     <nav className="sticky top-3 z-[900] mx-3 mt-3 h-[68px] px-3 sm:px-5 flex items-center justify-between bg-grad-hero text-on-brand rounded-token-lg shadow-clay-brand">
       <button onClick={() => navigate("/dashboard")} className="flex items-center gap-2.5 min-w-0" aria-label="FocusFlow home">
-        <img src="/logo/focusflow-mark.png" alt="" className="w-12 h-12 -my-1 object-contain shrink-0" />
+        <ThemedMark src="/logo/focusflow-mark.png" fill={logoFill} alt="" className="w-12 h-12 -my-1 object-contain shrink-0" />
         <span className="font-black tracking-tight text-on-brand text-lg truncate hidden sm:block">FocusFlow</span>
       </button>
 

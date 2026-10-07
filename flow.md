@@ -27,6 +27,7 @@ Before React starts, the inline script in `public/index.html` paints the cached 
 ### Loading
 - Switching pages: `Suspense` → `PageLoader` (the logo, "Loading page…").
 - Inside a page: `PageLoading` / `PanelLoading` (`components/common/LoadingSpinner.js`). Pages wrap the hook's `loading` in `useFirstLoad()`, so the logo shows only on the first load.
+- The loader's two lines are the coral PNGs while the brand is the default coral. On any other brand each line is a `ThemedMark` painted in `rgb(var(--brand))`, inside a `.ff-loader-line` wrapper that carries the wipe mask.
 
 ### Errors and lost connection
 - **App crash:** `ErrorBoundary` → `components/errors/CrashScreen.js` (500, or "FocusFlow was updated" for a failed page chunk).
@@ -46,7 +47,8 @@ Before React starts, the inline script in `public/index.html` paints the cached 
 5. Next page load: the inline script in `public/index.html` reads the cache and sets the same tokens before the first paint (the splash included).
 6. Sync: the theme is a field of the preferences document, so `useServerSync` sends it to `USER_PREFERENCES` with everything else. `backend/utils/preferences.js` checks its shape (only `#RRGGBB` colours). `savePreferences` refuses (409) a save with a lower `schemaVersion` than the stored one, so an out-of-date tab cannot overwrite a newer document.
 7. Sign-out: `useServerSync` resets preferences to default, and `PreferencesProvider` drops any preview on the same signed-out event. So the default colours are applied and the cache key is removed.
-8. Charts read `--brand` and `--sage` from `<html>` through `chartColors()` (`tokenHex`).
+8. Charts and the dashboard clock call `useChartColors()` (`components/charts/chartColors.js`). It reads the active theme from context through `useActiveTheme()` (`preferences/useActiveTheme.js`: the preview if one is open, else the saved theme, cleaned), so they re-render on every preview and save. Outside a provider it falls back to `chartColors()`, which reads `<html>` (`tokenHex`).
+9. The logo marks: `components/layout/Logo.js` and the navbar read `useActiveTheme()`. With no logo colour they render the PNG as it is. With one, `ThemedMark` paints the same shape in `rgb(var(--logo))` with a CSS mask. The loader paints in `rgb(var(--brand))` only when the brand is not the default coral (see Loading).
 
 ### Settings page — `Pages/SettingsPage.js`
 1. The header card shows the student's mascot (`components/common/Mascot.js`). "Choose mascot" opens `MascotPicker`, which saves through `updateProfile`.
@@ -56,6 +58,16 @@ Before React starts, the inline script in `public/index.html` paints the cached 
    - The modal uses `trapFocus` and `fullHeightOnMobile`.
    - The controls are `RemindersSettings`, `FontSelector`, `WidgetManager` with `DashboardSwitcher`, `LanguageSelect`, `components/consent/CookieChoice.js`, or the profile form.
 5. Escape, the close button or the back button removes `?open=`, and the pop-up closes.
+
+### Design Studio — `components/studio/DesignStudio.js`
+1. Appearance has a "Design your dashboard" button. It sets `?open=studio` with `replace`, so the Appearance entry becomes the Studio entry. A link to `?open=studio` opens it too. `SettingsPage` always renders `<DesignStudio open={...} />`, so it can see the Back button.
+2. On open the Studio copies the saved theme into a draft (`studioReducer`: `draft` and an undo list of up to 20).
+3. Every change (a palette, a swatch, a hex code, the colour input, Auto, Undo, Reset) goes through `withPalette` / `withRole` into the draft. Colour-input drags are limited to one change per animation frame and merge into one undo step until blur.
+4. `previewTheme(draft)` runs after each change, so the whole app (and the small preview card) shows the draft. `useDeferredValue` feeds `deriveTokens` and `readabilityNotes`, which write the Readability check and decide if Save is on.
+5. Save: re-checks the live draft, calls `setTheme(draft)` (which saves, caches, syncs and ends the preview), shows the toast and closes.
+6. Cancel and Discard: `previewTheme(null)` and close. Escape, the X or the backdrop with unsaved changes show the question inside the dialog (Save and close / Discard changes / Keep editing); with none, they close.
+7. Back with unsaved changes: the address no longer says `studio`, the Studio sees it did not close itself, calls `onReopen()` (Settings pushes `?open=studio` again) and shows the question. Closing the tab with unsaved changes gets the browser's own prompt (`beforeunload`).
+8. Whenever it closes or unmounts, `previewTheme(null)` runs, so a preview cannot get stuck.
 
 ### Dashboard profile card — `components/dashboard/ProfileCard.js`
 - `Home.js` renders it with the name, streak, done count and focus count. It reads `profile` from preferences itself.

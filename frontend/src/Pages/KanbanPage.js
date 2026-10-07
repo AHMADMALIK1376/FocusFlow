@@ -12,7 +12,7 @@ import { Card, Button, Input, ProgressRing, cx, useToast } from "../components/u
 import { StatTile } from "../components/dashboard/DashKit";
 import { PageLoading, useFirstLoad } from "../components/common/LoadingSpinner";
 import ChartBox from "../components/charts/ChartBox";
-import { chartColors, hexToRgba, CHART_TOOLTIP } from "../components/charts/chartColors";
+import { useChartColors, hexToRgba, CHART_TOOLTIP } from "../components/charts/chartColors";
 import { useKanban } from "../features/kanban/useKanban";
 import { cardsByColumn } from "../features/kanban/kanbanLogic";
 import { useSubjects } from "../features/subjects/useSubjects";
@@ -57,7 +57,7 @@ export default function KanbanPage() {
   const { toast } = useToast();
   const [scanOpen, setScanOpen] = useState(false);
   const scanCtx = useMemo(() => ({ subjects, cards: state.cards }), [subjects, state.cards]);
-  const { brand, accent } = chartColors();
+  const { brand, accent } = useChartColors();
 
   const [newCardText, setNewCardText] = useState({});
   const [editCard, setEditCard] = useState(null);

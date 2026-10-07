@@ -6,7 +6,7 @@ import { PageShell, PageHeader, StatTile, Panel } from "../components/dashboard/
 import { PageLoading, useFirstLoad } from "../components/common/LoadingSpinner";
 import ChartBox from "../components/charts/ChartBox";
 import SpendingPuckStack from "../components/charts/SpendingPuckStack";
-import { chartColors, hexToRgba, CHART_TOOLTIP } from "../components/charts/chartColors";
+import { useChartColors, hexToRgba, CHART_TOOLTIP } from "../components/charts/chartColors";
 import { useFinance } from "../features/finance/useFinance";
 import { totals, byCategory } from "../features/finance/financeLogic";
 
@@ -19,7 +19,7 @@ const CURRENCIES = { PKR: "Rs ", USD: "$", EUR: "€", GBP: "£", INR: "₹", AE
 export default function FinancePage() {
   const { state, entries, settings, loading, addEntry, removeEntry, saveSettings } = useFinance();
   const firstLoad = useFirstLoad(loading);
-  const { brand } = chartColors();
+  const { brand } = useChartColors();
 
   const [type, setType] = useState("expense");
   const [amount, setAmount] = useState("");
