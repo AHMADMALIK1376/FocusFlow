@@ -50,5 +50,5 @@ test("fullHeightOnMobile: a full-height sheet on phones, above the tab bar", () 
   fireEvent.click(screen.getByRole("button", { name: "Open" }));
   const dialog = screen.getByRole("dialog", { name: "Test" });
   expect(dialog).toHaveClass("h-[100dvh]", "rounded-none", "sm:max-h-[85vh]", "sm:rounded-token-lg");
-  expect(dialog.parentElement).toHaveClass("z-[2100]", "p-0", "sm:p-4");
+  expect(dialog.parentElement).toHaveClass("z-[1500]", "p-0", "sm:p-4");
 });

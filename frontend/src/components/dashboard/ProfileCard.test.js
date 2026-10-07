@@ -58,3 +58,10 @@ test("Change mascot opens the picker and saves the pick", () => {
   fireEvent.click(within(screen.getByRole("dialog", { name: "Choose your mascot" })).getByText("Rocket Bot"));
   expect(updateProfile).toHaveBeenCalledWith({ mascot: "rocket", avatarUrl: null });
 });
+
+test("the top row lets pokes through to the mascot's head, but its button still works", () => {
+  card({ mascot: "cap" });
+  const button = screen.getByRole("button", { name: /change mascot/i });
+  expect(button).toHaveClass("pointer-events-auto");
+  expect(button.parentElement).toHaveClass("pointer-events-none");
+});

@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ArrowRight, BellRing, ChevronRight, Languages, LayoutGrid, Palette, ShieldCheck, Smile, UserRound } from "lucide-react";
 import { usePreferences } from "../preferences/usePreferences";
@@ -121,6 +121,8 @@ function MascotCard() {
 export default function SettingsPage() {
   const { t } = useTranslation();
   const [params, setParams] = useSearchParams();
+  const navigate = useNavigate();
+  const pushedOpen = useRef(false);
 
   const cards = [
     {
@@ -147,15 +149,16 @@ export default function SettingsPage() {
     },
     {
       id: "dashboard", icon: LayoutGrid, title: "Dashboard and workspaces",
-      subtitle: "Which features show on your dashboard, and your workspaces.",
+      subtitle: "Your workspaces, and which features show on your dashboard.",
       wide: true,
       body: (
         <>
-          <Group title={t("settings.widgets", "Dashboard features")} subtitle="Turn features on to show them on your dashboard. Drag to reorder.">
-            <WidgetManager />
-          </Group>
+          {/* Workspaces first: the features list is long, and the workspace menu opens downwards. */}
           <Group title={t("dashboards.title", "Workspaces")} subtitle="Switch workspaces from the top bar, or manage them here.">
             <DashboardSwitcher />
+          </Group>
+          <Group title={t("settings.widgets", "Dashboard features")} subtitle="Turn features on to show them on your dashboard. Drag to reorder.">
+            <WidgetManager />
           </Group>
         </>
       ),
@@ -184,14 +187,26 @@ export default function SettingsPage() {
   ];
 
   // The open card lives in the address (?open=reminders), so a link can open it
-  // and the phone's back button closes it.
+  // and the phone's back button closes it. A card click adds a history entry, so
+  // closing goes back over it; a pop-up opened by a link just clears the address.
   const active = cards.find((c) => c.id === params.get("open")) || null;
+  if (!active) pushedOpen.current = false; // closed some other way (e.g. the back button)
   // Keep the last card's content while the pop-up animates closed.
   const lastShown = useRef(null);
   if (active) lastShown.current = active;
   const shown = active || lastShown.current;
-  const openCard = (id) => setParams({ open: id });
-  const close = () => setParams({}, { replace: true });
+  const openCard = (id) => {
+    pushedOpen.current = true;
+    setParams({ open: id });
+  };
+  const close = () => {
+    if (pushedOpen.current) {
+      pushedOpen.current = false;
+      navigate(-1);
+    } else {
+      setParams({}, { replace: true });
+    }
+  };
 
   return (
     <div className="p-4 sm:p-5 md:p-8 max-w-5xl mx-auto w-full">

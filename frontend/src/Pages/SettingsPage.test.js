@@ -1,23 +1,35 @@
 // Settings is a grid of cards; each card opens its existing controls in a pop-up.
 import React from "react";
-import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within, act } from "@testing-library/react";
 import SettingsPage from "./SettingsPage";
 import { PreferencesContext } from "../preferences/PreferencesProvider";
 import { ToastProvider } from "../components/ui";
 import { getConsent } from "../features/consent/consent";
 
-// The address holds the open card (?open=...). A tiny stand-in for the router keeps it in state.
-let mockSearch = "";
+// The address holds the open card (?open=...). A tiny stand-in for the router keeps a
+// history of addresses, so tests can see what was pushed, replaced and gone back over.
+let mockHistory = [""];
+const mockListeners = new Set();
 jest.mock("react-router-dom", () => {
   const React = require("react");
+  const notify = () => mockListeners.forEach((f) => f());
   return {
     Link: ({ to, children, ...p }) => <a href={to} {...p}>{children}</a>,
     useSearchParams: () => {
-      const [params, set] = React.useState(() => new URLSearchParams(mockSearch));
-      return [params, (next) => set(new URLSearchParams(next))];
+      const [, rerender] = React.useReducer((x) => x + 1, 0);
+      React.useEffect(() => { mockListeners.add(rerender); return () => mockListeners.delete(rerender); }, []);
+      const set = (next, opts) => {
+        const search = new URLSearchParams(next).toString();
+        if (opts && opts.replace) mockHistory[mockHistory.length - 1] = search;
+        else mockHistory.push(search);
+        notify();
+      };
+      return [new URLSearchParams(mockHistory[mockHistory.length - 1]), set];
     },
+    useNavigate: () => (n) => { if (n === -1) { mockHistory.pop(); notify(); } },
   };
 }, { virtual: true });
+const goBack = () => act(() => { mockHistory.pop(); mockListeners.forEach((f) => f()); });
 jest.mock("../features/consent/googleSignIn", () => ({ loadGoogleScript: () => Promise.resolve() }));
 // The heavy controls have their own tests; here we only check each lands in the right pop-up.
 jest.mock("../features/notifications/RemindersSettings", () => () => <div data-testid="reminders-controls" />);
@@ -44,7 +56,7 @@ const CARDS = [
   ["Privacy and cookies", () => screen.getByRole("link", { name: /read the privacy details/i })],
 ];
 
-beforeEach(() => { mockSearch = ""; window.localStorage.clear(); });
+beforeEach(() => { mockHistory = [""]; window.localStorage.clear(); });
 
 test("shows one card per group, and no pop-up yet", () => {
   page();
@@ -87,14 +99,14 @@ test("Tab stays inside the pop-up", () => {
 });
 
 test("a link with ?open=reminders opens that card", () => {
-  mockSearch = "open=reminders";
+  mockHistory = ["open=reminders"];
   page();
   expect(screen.getByRole("dialog", { name: "Reminders" })).toBeInTheDocument();
   expect(screen.getByTestId("reminders-controls")).toBeInTheDocument();
 });
 
 test("an unknown ?open= opens nothing", () => {
-  mockSearch = "open=nope";
+  mockHistory = ["open=nope"];
   page();
   expect(screen.queryByRole("dialog")).toBeNull();
 });
@@ -127,4 +139,29 @@ test("the privacy pop-up changes the cookie choice", () => {
   fireEvent.click(screen.getByRole("button", { name: /essential only/i }));
   expect(getConsent()).toBe("essential");
   expect(screen.getByTestId("current-choice")).toHaveTextContent("Essential only");
+});
+
+test("opening a card adds one history entry, and closing goes back over it", async () => {
+  page();
+  fireEvent.click(screen.getByRole("button", { name: /^Appearance/ }));
+  expect(mockHistory).toEqual(["", "open=appearance"]);
+  fireEvent.keyDown(window, { key: "Escape" });
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect(mockHistory).toEqual([""]);
+});
+
+test("the back button closes the pop-up, and a later close does not go back again", async () => {
+  page();
+  fireEvent.click(screen.getByRole("button", { name: /^Language/ }));
+  goBack();
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect(mockHistory).toEqual([""]);
+});
+
+test("closing a pop-up opened by a link clears the address without going back", async () => {
+  mockHistory = ["", "open=reminders"];
+  page();
+  fireEvent.keyDown(window, { key: "Escape" });
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect(mockHistory).toEqual(["", ""]);
 });

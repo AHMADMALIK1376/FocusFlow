@@ -14,7 +14,7 @@ Update this file with every change.
   1. The coral card itself (`bg-grad-hero`), as before.
   2. The mascot backdrop. It covers the whole card (`absolute inset-0`), like the photo: `bg-surface` with a `--sage` wash at 30% on top. That is the token mix you asked for, with no hex code.
   3. The mascot, standing on the card's bottom edge.
-  4. The coral fade from the bottom. It is shorter than the photo's (gone by 40% of the height), so the face is not tinted. It ignores the pointer, so poking the mascot still works.
+  4. The coral fade from the bottom. It is shorter than the photo's (gone by 40% of the height), so the face is not tinted. It ignores the pointer, and so do the text rows except their own buttons, so poking the mascot works everywhere, even at the top of its head.
   5. The label, the stats and "Change mascot".
 - **Size:** the backdrop is a CSS size container. The mascot is a square of `min(125% of the card's width, the card's height)`.
   - A character fills about 62% of its sprite cell, more when it turns its head, and its face ends about 60% down.
@@ -39,7 +39,7 @@ Update this file with every change.
   | Profile | the profile form |
   | Reminders | `RemindersSettings` |
   | Appearance | `FontSelector`, with a marked slot for the colour studio |
-  | Dashboard and workspaces | `WidgetManager`, `DashboardSwitcher` |
+  | Dashboard and workspaces | `DashboardSwitcher`, then `WidgetManager` (workspaces first, because their menu opens downwards and the features list is long) |
   | Language | `LanguageSelect` |
   | Privacy and cookies | a link to `/privacy` and the cookie choice |
 
@@ -47,18 +47,29 @@ Update this file with every change.
   - The mascot got its own header card instead of sharing "Profile and mascot". It is the thing a student changes most, and it shows the live mascot without opening anything.
   - "Language and theme mode" is just "Language". Dark mode currently mirrors light (see `tokens.css`), so a switch would do nothing visible. It belongs with the colour studio task.
 - **Address:**
-  - The open card is kept in the address as `?open=<id>`. Clicking a card adds it, and closing removes it (replacing the entry).
-  - So `/settings?open=reminders` opens Reminders, and the phone's back button closes a pop-up.
+  - The open card is kept in the address as `?open=<id>`. Clicking a card adds a history entry, and closing goes back over it.
+  - So the phone's back button closes a pop-up, and opening and closing never leaves a dead Back step.
+  - `/settings?open=reminders` opens Reminders. Closing a pop-up opened by a link like that just clears the address.
   - Ids: `profile`, `reminders`, `appearance`, `dashboard`, `language`, `privacy`.
 - **`Modal` (`components/ui/Modal.js`):** two opt-in props, used only by Settings, so no other pop-up changes.
   - `trapFocus`: focus moves into the pop-up, Tab and Shift+Tab stay inside it, and focus goes back to the card on close.
-  - `fullHeightOnMobile`: a full-height sheet below the `sm` width, at `z-[2100]` so it covers the phone tab bar. The tab bar and modals were both `z-[1000]`.
+  - `fullHeightOnMobile`: a full-height sheet below the `sm` width.
+    - It sits at `z-[1500]`, so it covers the phone tab bar. The tab bar and modals were both `z-[1000]`.
+    - It stays below toasts and menus (`z-[2000]`), so "Profile saved" and the reminder messages still show on top.
   - Its animations now honour `prefers-reduced-motion` for every modal (framer-motion `MotionConfig reducedMotion="user"`). The cards skip their hover lift for those users too.
 - **Cookie choice:** moved out of `PrivacyPage.js` into `components/consent/CookieChoice.js`, so the privacy page and Settings share one control. The privacy page looks and works the same.
+- **Escape:** inside a pop-up, Escape closes it. In the workspace name boxes (rename and new), Escape still only cancels the typing (`stopPropagation` in `DashboardSwitcher.js`), as before.
+- **Trade-off:** the profile form is rebuilt each time its pop-up opens. Half-typed changes are dropped if you close without saving, which the long page kept. In return, the form always shows the latest saved profile.
 - **Rejected:** a separate settings route per group. A pop-up keeps the student on one page, and the address already makes each one linkable.
 
 ### Checked
-- **Tests:** new tests for the cards, every pop-up and its controls, Escape and the close button, the focus trap, the deep link, the mascot and the picker, saving the profile, and the cookie choice in Settings. Also the profile card's three cases and the `Modal` options. All frontend and backend tests pass, and so does the `CI=true` build.
+- **Review:** the repository's reviewer agent read the diff. Its findings are fixed:
+  - toasts hidden under the sheet;
+  - the dead Back step;
+  - the top row blocking pokes;
+  - Escape in the workspace boxes;
+  - an out-of-date spec.
+- **Tests:** new tests for the cards, every pop-up and its controls, Escape and the close button, the focus trap, history (push, back, link), the deep link, the mascot and the picker, saving the profile, the cookie choice in Settings, and Escape in the workspace boxes. Also the profile card's three cases and the `Modal` options. All frontend and backend tests pass, and so does the `CI=true` build.
 - **Headless Chromium, fake API:**
   - The profile card with four mascots at 1400 px and 375 px.
   - Settings at 1280 px and 360 px.

@@ -95,7 +95,8 @@ export default function DashboardSwitcher({ triggerClassName } = {}) {
                     onChange={(e) => setEditName(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') handleRename(db.id);
-                      if (e.key === 'Escape') setEditingId(null);
+                      // stopPropagation: Escape cancels the rename only, not a pop-up around it
+                      if (e.key === 'Escape') { e.stopPropagation(); setEditingId(null); }
                     }}
                     className="text-sm py-2 px-3"
                     autoFocus
@@ -161,7 +162,7 @@ export default function DashboardSwitcher({ triggerClassName } = {}) {
                 placeholder={t('dashboards.namePlaceholder', { defaultValue: 'Workspace name…' })}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleCreate();
-                  if (e.key === 'Escape') setCreatingNew(false);
+                  if (e.key === 'Escape') { e.stopPropagation(); setCreatingNew(false); }
                 }}
                 className="text-sm py-2 px-3"
                 autoFocus

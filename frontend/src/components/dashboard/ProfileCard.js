@@ -47,10 +47,10 @@ export default function ProfileCard({ displayName, streak, doneTasks, focusSessi
       {avatarUrl && <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-[rgb(var(--brand)/0.9)] via-[rgb(var(--brand)/0.35)] to-transparent" />}
       {sheets && <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-[rgb(var(--brand)/0.95)] via-[rgb(var(--brand)/0.7)] via-20% to-transparent to-40%" />}
 
-      <div className="flex items-center justify-end gap-3 relative z-10">
+      <div className="flex items-center justify-end gap-3 relative z-10 pointer-events-none">
         <button onClick={() => setPickerOpen(true)}
           className={cx(
-            "flex items-center gap-1.5 text-[11px] font-bold opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity",
+            "pointer-events-auto flex items-center gap-1.5 text-[11px] font-bold opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity",
             sheets && "px-2.5 py-1 rounded-full bg-[rgb(var(--brand)/0.9)] text-on-brand shadow-clay-brand"
           )}>
           <Smile size={13} /> Change mascot

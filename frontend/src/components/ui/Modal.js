@@ -50,7 +50,7 @@ function useFocusTrap(open, ref, enabled) {
 }
 
 // trapFocus and fullHeightOnMobile (a full-height sheet below the sm breakpoint, above the
-// phone tab bar) are opt-in.
+// phone tab bar and below toasts, so a save message still shows) are opt-in.
 // Animations follow the system's reduce-motion setting.
 export function Modal({
   open, onClose, title, children, className = '',
@@ -65,7 +65,7 @@ export function Modal({
     <AnimatePresence>
       {open && (
         <motion.div
-          className={cx('fixed inset-0 grid place-items-center', fullHeightOnMobile ? 'z-[2100] p-0 sm:p-4' : 'z-[1000] p-4')}
+          className={cx('fixed inset-0 grid place-items-center', fullHeightOnMobile ? 'z-[1500] p-0 sm:p-4' : 'z-[1000] p-4')}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
