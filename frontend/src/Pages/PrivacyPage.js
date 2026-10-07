@@ -1,11 +1,10 @@
 // Public page (no sign-in needed): what FocusFlow stores, where, and who handles it.
 // Keep this honest and in step with the code: if the app starts storing or sending
 // something new, this page and features/consent/consent.js (CONSENT_VERSION) change too.
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Cookie, Database, Share2, ShieldCheck, SlidersHorizontal } from "lucide-react";
-import { getConsent, setConsent } from "../features/consent/consent";
-import { loadGoogleScript } from "../features/consent/googleSignIn";
+import CookieChoice from "../components/consent/CookieChoice";
 
 const Section = ({ icon: Icon, title, children }) => (
   <section className="rounded-token-lg bg-surface shadow-neu p-6">
@@ -25,19 +24,6 @@ const Row = ({ name, children }) => (
 );
 
 export default function PrivacyPage() {
-  const [choice, setChoice] = useState(() => getConsent());
-  useEffect(() => {
-    const sync = () => setChoice(getConsent());
-    window.addEventListener("ff:consent", sync);
-    return () => window.removeEventListener("ff:consent", sync);
-  }, []);
-
-  const pick = (c) => {
-    setConsent(c);
-    setChoice(c);
-    if (c === "all") loadGoogleScript().catch(() => {});
-  };
-
   return (
     <main className="min-h-screen bg-canvas px-4 py-8">
       <div className="max-w-3xl mx-auto space-y-5">
@@ -85,14 +71,7 @@ export default function PrivacyPage() {
         </Section>
 
         <Section icon={SlidersHorizontal} title="Your choice">
-          <p>
-            Now: <b className="text-ink" data-testid="current-choice">{choice === "all" ? "Accept all (Google sign-in allowed)" : choice === "essential" ? "Essential only" : "not chosen yet"}</b>
-          </p>
-          <div className="flex flex-wrap gap-2.5 pt-1">
-            <button onClick={() => pick("all")} className="px-5 py-2.5 rounded-token-md bg-grad-hero text-on-brand shadow-clay-brand font-black text-xs tracking-wider uppercase hover:-translate-y-0.5 transition-transform">Accept all</button>
-            <button onClick={() => pick("essential")} className="px-5 py-2.5 rounded-token-md bg-surface text-ink shadow-neu-sm font-black text-xs tracking-wider uppercase hover:-translate-y-0.5 transition-transform">Essential only</button>
-          </div>
-          <p className="text-xs pt-1">With Essential only you can still use FocusFlow fully. Signing in with Google simply asks again first.</p>
+          <CookieChoice />
         </Section>
 
         <Section icon={ShieldCheck} title="Questions or deleting your data">
