@@ -8,6 +8,7 @@ import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { useToast } from '../ui/Toast';
 import { useAppTheme } from '../../preferences/useAppTheme';
+import { AUTH_EVENT } from '../../services/api';
 import { DEFAULT_THEME } from '../../design/theme/theme';
 import { deriveTokens } from '../../design/theme/deriveTokens';
 import { rgbToHex, tripletToRgb } from '../../design/theme/color';
@@ -149,6 +150,18 @@ export default function DesignStudio({ open, onClose, onReopen }) {
     }
     previewTheme(state.draft);
   }, [open, state.draft, theme, previewTheme]);
+
+  // Signing out resets the saved colours to the defaults, so a draft built on the old ones is
+  // dropped: the Studio starts again from the defaults instead of bringing the old preview back.
+  useEffect(() => {
+    const onAuth = (e) => {
+      if (e.detail && e.detail.signedIn) return;
+      dispatch({ type: 'open', theme: { ...DEFAULT_THEME } });
+      setConfirming(false);
+    };
+    window.addEventListener(AUTH_EVENT, onAuth);
+    return () => window.removeEventListener(AUTH_EVENT, onAuth);
+  }, []);
 
   // A preview can never get stuck: leaving the page ends it.
   useEffect(() => () => previewTheme(null), [previewTheme]);
@@ -356,7 +369,7 @@ export default function DesignStudio({ open, onClose, onReopen }) {
 
       <div aria-live="polite" className="sr-only">{announce}</div>
 
-      <div className="sticky bottom-0 -mx-6 -mb-6 px-6 py-3 bg-surface border-t border-[rgb(var(--border)/0.5)] flex flex-wrap gap-2 justify-end">
+      <div className="sticky -bottom-6 -mx-6 -mb-6 px-6 py-3 bg-surface border-t border-[rgb(var(--border)/0.5)] flex flex-wrap gap-2 justify-end">
         {confirming ? (
           <>
             <div role="alert" className="basis-full">
