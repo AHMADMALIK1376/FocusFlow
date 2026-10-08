@@ -387,6 +387,7 @@ export const notifyAPI = {
     subscribe: async (subscription) => authFetch('/notify/subscribe', { method: 'POST', body: JSON.stringify({ subscription }) }),
     unsubscribe: async (endpoint) => authFetch('/notify/unsubscribe', { method: 'POST', body: JSON.stringify({ endpoint }) }),
     sendTest: async (kind = 'basic') => authFetch('/notify/test', { method: 'POST', body: JSON.stringify({ kind }) }),
+    getStatus: async () => authFetch('/notify/status'),
 };
 
 export const routineAPI = {

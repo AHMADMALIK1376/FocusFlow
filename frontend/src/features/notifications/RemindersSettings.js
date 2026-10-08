@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { BellRing, Mail, MessageCircle, Send } from "lucide-react";
+import { BellRing, Mail, MessageCircle, Send, TriangleAlert } from "lucide-react";
 import { Button, Input, Select, Field, Switch, Badge } from "../../components/ui";
 import { useToast } from "../../components/ui/Toast";
 import { notifyAPI } from "../../services/api";
@@ -73,15 +73,34 @@ function TimeSelect({ value, onChange, options, disabled, fmt, label }) {
   );
 }
 
+const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+
+// The three plain status lines (and the stale warning) from GET /notify/status.
+function statusLines(st) {
+  const mins = st.lastCheck && st.lastCheck.minutesAgo;
+  const e = st.email || {};
+  let email = "not checked yet";
+  if (e.state === "working") email = "working";
+  else if (e.state === "failing") email = `not working${e.reason ? ` (${e.reason})` : ""}`;
+  else if (e.state === "not_configured") email = "not set up on the server yet";
+  return [
+    `Last reminder check: ${mins == null ? "unknown" : mins < 1 ? "less than a minute ago" : `${plural(mins, "minute")} ago`}`,
+    st.pushDevices > 0 ? `Pop-ups: on for ${plural(st.pushDevices, "device")}` : "Pop-ups: no device has them on",
+    `Email: ${email}`,
+  ];
+}
+
 export default function RemindersSettings() {
   const { toast } = useToast();
   const [s, setS] = useState(null);
   const [push, setPush] = useState("off");
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
+  const [status, setStatus] = useState(null); // stays null (lines hidden) if it cannot be loaded
 
   useEffect(() => {
     notifyAPI.getSettings().then(setS).catch((e) => setError(e.message));
+    Promise.resolve().then(() => notifyAPI.getStatus()).then(setStatus).catch(() => setStatus(null));
     pushStatus().then(setPush).catch(() => setPush("unsupported"));
   }, []);
 
@@ -137,6 +156,17 @@ export default function RemindersSettings() {
       {/* Where reminders go */}
       <div>
         <h3 className="text-sm font-black text-ink uppercase tracking-wider mb-2">Where to remind me</h3>
+        {status && (
+          <div className="mb-2 space-y-0.5" aria-label="Reminder status">
+            {statusLines(status).map((line) => <p key={line} className="text-xs text-muted">{line}</p>)}
+            {status.lastCheck && status.lastCheck.stale && (
+              <p className="text-xs text-warn flex items-start gap-1.5">
+                <TriangleAlert size={14} className="mt-px shrink-0" />
+                The reminder server has not checked in for {status.lastCheck.minutesAgo} minutes, so reminders may be late.
+              </p>
+            )}
+          </div>
+        )}
         <div className="rounded-token-md bg-surface-2/60 p-3.5 space-y-2">
           <div className="flex items-start gap-3">
             <BellRing size={18} className="mt-0.5 text-brand shrink-0" />
