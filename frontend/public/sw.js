@@ -5,7 +5,7 @@
    purpose. */
 
 // The offline page and the logos it shows. Bump the name when they change (and with THEME_CACHE_VERSION: offline.html checks it).
-const OFFLINE_CACHE = 'ff-offline-v4';
+const OFFLINE_CACHE = 'ff-offline-v5';
 const OFFLINE_FILES = ['/offline.html', '/logo192.png', '/logo/focusflow-mark.png'];
 
 self.addEventListener('install', (event) => {

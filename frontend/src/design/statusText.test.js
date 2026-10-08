@@ -53,4 +53,11 @@ describe('status text', () => {
     expect(read('components/subjects/AssignmentsPanel.js')).toContain('bg-success border-success text-on-success');
     expect(read('components/ui/Button.js')).toContain('bg-focus text-on-focus');
   });
+
+  it('a done habit cell uses the text colour of its own fill, never text-on-brand on a status colour', () => {
+    const src = read('Pages/HabitsPage.js');
+    expect(src).toContain('success: "text-on-success", info: "text-on-info", warn: "text-on-warn", focus: "text-on-focus"');
+    expect(src).not.toMatch(/grid\[i\] \? "text-on-brand"/);
+    expect(src.match(/grid\[i\] \? onClass/g)).toHaveLength(2);
+  });
 });

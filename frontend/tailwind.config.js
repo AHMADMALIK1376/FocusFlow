@@ -35,6 +35,7 @@ module.exports = {
         'on-focus': rgb('--on-focus'),
         'on-warn': rgb('--on-warn'),
         'on-success': rgb('--on-success'),
+        'on-info': rgb('--on-info'),
         focus: rgb('--focus'),
         'focus-ring': rgb('--ring'),
         canvas: rgb('--canvas'),

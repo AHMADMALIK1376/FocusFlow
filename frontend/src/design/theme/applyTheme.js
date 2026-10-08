@@ -5,7 +5,7 @@ import { tripletToRgb, rgbToHex } from './color';
 import { isDefaultPalette } from './theme';
 
 export const THEME_CACHE_KEY = 'theme.colors'; // localStorage 'focusflow:theme.colors'
-export const THEME_CACHE_VERSION = 4; // bump whenever recipes/tokens change, and bump OFFLINE_CACHE in public/sw.js with it (a changed offline.html is only re-fetched when sw.js changes)
+export const THEME_CACHE_VERSION = 5; // bump whenever recipes/tokens change, and bump OFFLINE_CACHE in public/sw.js with it (a changed offline.html is only re-fetched when sw.js changes)
 
 // Sets every token inline on <html>, the colour scheme, and the browser bar colour.
 // The .dark class is ThemeProvider's business and is left alone.

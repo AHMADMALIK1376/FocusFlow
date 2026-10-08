@@ -166,18 +166,18 @@ describe("3a. corrupted or partly missing stored theme", () => {
       expect(canvas()).toBe(DEFAULT_CANVAS);
       act(() => { prefs.setTheme(X); });
       const c = JSON.parse(localStorage.getItem(CACHE));
-      expect(c.v).toBe(4);
+      expect(c.v).toBe(5);
       expect(c.tokens["--canvas"]).toBe(canvas());
     });
     it("a stale cache from another theme is overwritten by the saved theme on load (signed out, saved theme X)", () => {
       localStorage.setItem(PREFS, JSON.stringify({ ...migratePreferences(null), theme: X }));
-      localStorage.setItem(CACHE, JSON.stringify({ v: 4, tokens: { "--canvas": "1 2 3" }, scheme: "light", meta: "#000000" }));
+      localStorage.setItem(CACHE, JSON.stringify({ v: 5, tokens: { "--canvas": "1 2 3" }, scheme: "light", meta: "#000000" }));
       mount();
       expect(JSON.parse(localStorage.getItem(CACHE)).tokens["--canvas"]).toBe(canvas());
       expect(canvas()).not.toBe("1 2 3");
     });
     it("cache says default-looking but saved theme is default: cache is removed", () => {
-      localStorage.setItem(CACHE, JSON.stringify({ v: 4, tokens: {}, scheme: "light", meta: "#000000" }));
+      localStorage.setItem(CACHE, JSON.stringify({ v: 5, tokens: {}, scheme: "light", meta: "#000000" }));
       mount();
       expect(localStorage.getItem(CACHE)).toBeNull();
     });

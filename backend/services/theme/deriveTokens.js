@@ -86,10 +86,11 @@ const FIXED = {
   '--success-ink': [62, 160, 108],
   '--info-ink': [84, 150, 222],
   '--focus-ink': [232, 84, 96],
-  // Text on a solid status fill, as it is today (white on red and green, the dark sun ink on warn).
+  // Text on a solid status fill, as it is today (white on red, green and blue, the dark sun ink on warn).
   '--on-focus': [255, 255, 255],
   '--on-warn': [40, 52, 78],
   '--on-success': [255, 255, 255],
+  '--on-info': [255, 255, 255],
 };
 
 // Measure every recipe once, from the literal references above.
@@ -150,7 +151,8 @@ const GUARD = [
   // one of the two always reaches 4.5 on any colour, so the fill itself is never moved for it.
   { fg: '--on-focus', against: [['--focus', 4.5]], free: true },
   { fg: '--on-warn', against: [['--warn', 4.5]], free: true },
-  { fg: '--on-success', against: [['--success', 3]], free: true }, // the tick is an icon: 3:1
+  { fg: '--on-success', against: [['--success', 4.5]], free: true }, // the done tick and the habit day letters
+  { fg: '--on-info', against: [['--info', 4.5]], free: true }, // the habit day letters
 ];
 
 // The tint a Badge / StatCard puts behind its text: [the tone's colour, the alpha it uses] over the card.
@@ -165,7 +167,7 @@ const WASHES = {
 };
 
 // Readable text tokens whose changes are not worth a note to the student (like --ring).
-const QUIET = ['--ring', '--success-ink', '--info-ink', '--focus-ink', '--brand-ink', '--muted-ink', '--on-focus', '--on-warn', '--on-success'];
+const QUIET = ['--ring', '--success-ink', '--info-ink', '--focus-ink', '--brand-ink', '--muted-ink', '--on-focus', '--on-warn', '--on-success', '--on-info'];
 
 // Gradient stops that are not tokens on their own -> the gradient token that holds them.
 const STOP_OWNER = {
@@ -386,6 +388,7 @@ function deriveTokens(theme) {
     '--on-focus': trip('--on-focus'),
     '--on-warn': trip('--on-warn'),
     '--on-success': trip('--on-success'),
+    '--on-info': trip('--on-info'),
     '--focus': trip('--focus'),
     '--ring': trip('--ring'),
     '--canvas': trip('--canvas'),

@@ -82,13 +82,13 @@ describe('random palettes (property test)', () => {
     expect(bad).toEqual([]);
   });
 
-  it('text on the solid status fills reaches 4.5:1 (3:1 for the tick) for every palette', () => {
+  it('text on the solid status fills reaches 4.5:1 for every palette', () => {
     const bad = [];
     palettes.forEach((theme) => {
       const { tokens } = deriveTokens(theme);
       const c = (a, b) => contrastRatio(tripletToRgb(tokens[a]), tripletToRgb(tokens[b]));
-      const r = [c('--on-focus', '--focus'), c('--on-warn', '--warn'), c('--on-success', '--success')];
-      if (r[0] < 4.5 || r[1] < 4.5 || r[2] < 3) bad.push({ theme, r });
+      const r = [c('--on-focus', '--focus'), c('--on-warn', '--warn'), c('--on-success', '--success'), c('--on-info', '--info')];
+      if (r[0] < 4.5 || r[1] < 4.5 || r[2] < 4.5 || r[3] < 4.5) bad.push({ theme, r });
     });
     expect(bad).toEqual([]);
   });
@@ -101,7 +101,7 @@ describe('random palettes (property test)', () => {
       if (isDefaultPalette(theme)) return; // the default keeps today's colours (exempt)
       const { tokens } = deriveTokens(theme);
       const c = (a, b) => contrastRatio(tripletToRgb(tokens[a]), tripletToRgb(tokens[b]));
-      if (c('--on-focus', '--focus') < 4.5 || c('--on-warn', '--warn') < 4.5 || c('--on-success', '--success') < 3) bad.push({ background, brand });
+      if (c('--on-focus', '--focus') < 4.5 || c('--on-warn', '--warn') < 4.5 || c('--on-success', '--success') < 4.5 || c('--on-info', '--info') < 4.5) bad.push({ background, brand });
     }));
     expect(bad).toEqual([]);
   });

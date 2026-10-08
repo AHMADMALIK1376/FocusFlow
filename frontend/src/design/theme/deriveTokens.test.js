@@ -92,6 +92,8 @@ describe('default theme', () => {
       '--brand-ink on brandWash: 2.64 < 3.8',
       '--muted-ink on --surface: 4.46 < 4.5',
       '--on-focus on --focus: 3.58 < 4.5',
+      '--on-success on --success: 3.26 < 4.5',
+      '--on-info on --info: 3.09 < 4.5',
     ]);
   });
 
@@ -108,6 +110,7 @@ describe('default theme', () => {
   it('the text-on-status tokens are exactly the text colours used on the status fills before', () => {
     expect(result.tokens['--on-focus']).toBe('255 255 255');
     expect(result.tokens['--on-success']).toBe('255 255 255');
+    expect(result.tokens['--on-info']).toBe('255 255 255');
     expect(result.tokens['--on-warn']).toBe(result.tokens['--on-sun']);
   });
 });

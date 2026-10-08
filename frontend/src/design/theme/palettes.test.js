@@ -104,12 +104,13 @@ describe('palette library contrast matrix', () => {
     expect(tokens['--brand']).toBe(rgbToTriplet(hexToRgb(theme.brand)));
   });
 
-  it.each(PALETTES.map((p) => [p.name, p]))('%s: text on the solid status fills is readable (4.5:1; 3:1 for the done tick)', (_n, p) => {
+  it.each(PALETTES.map((p) => [p.name, p]))('%s: text on the solid status fills is readable (4.5:1)', (_n, p) => {
     const { tokens } = deriveTokens(paletteTheme(p));
     const c = (a, b) => contrastRatio(rgb(tokens, a), rgb(tokens, b));
     expect(c('--on-focus', '--focus')).toBeGreaterThanOrEqual(4.5);
     expect(c('--on-warn', '--warn')).toBeGreaterThanOrEqual(4.5);
-    expect(c('--on-success', '--success')).toBeGreaterThanOrEqual(3);
+    expect(c('--on-success', '--success')).toBeGreaterThanOrEqual(4.5);
+    expect(c('--on-info', '--info')).toBeGreaterThanOrEqual(4.5);
   });
 
   it.each(PALETTES.map((p) => [p.name, p]))('%s: the focus ring shows (3:1) on the card and on the page, and brand is untouched', (_n, p) => {
