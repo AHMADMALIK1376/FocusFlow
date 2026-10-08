@@ -228,7 +228,7 @@ export default function FocusModePage() {
                           <CardDeleteButton onClick={() => handleDeleteSession(item.id)} className="absolute top-2 right-2" />
                           <RepeatButton onClick={() => handleRepeat(item)} className="absolute bottom-2 right-2" />
                           <div className="pr-10">
-                            <span className={`inline-block px-2 py-1 text-[10px] font-black rounded uppercase mb-2 tracking-tighter ${done ? 'bg-success/10 text-success' : 'bg-focus/10 text-focus'}`}>
+                            <span className={`inline-block px-2 py-1 text-[10px] font-black rounded uppercase mb-2 tracking-tighter ${done ? 'bg-success/10 text-ink' : 'bg-focus/10 text-ink'}`}>
                               {item.status}
                             </span>
                             <p className="font-bold text-ink text-lg">{item.activity}</p>
