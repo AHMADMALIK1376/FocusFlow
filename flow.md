@@ -38,6 +38,23 @@ How an email leaves the server, for sign-up codes, password resets, reminders an
 
 ---
 
+## Reminders that survive sleep (Package 3)
+
+Who starts a check, and what one check does:
+1. Three callers, one lock (`runExclusive` in `services/notificationScheduler.js`): the minute cron, one check at boot (`startNotificationScheduler()`), and `GET|POST /api/cron/tick`.
+   A caller that finds the lock taken gets `{ busy: true }` (the endpoint answers 200 `busy`).
+2. The endpoint (`routes/cronRoutes.js`): `cronLimiter` (mounted in `server.js`) → `requireCronSecret` (`middleware/cronAuth.js`: Bearer, else `X-Cron-Secret`, else `?key=`; 503 if unset, 401 if wrong)
+   → `controllers/cronController.js` races the check against 25 s (200 with counts, or 202 still running).
+3. `runTick(now)`: for each verified student, `localParts` in their timezone → `loadUserData` → `computeDue` (`utils/reminders.js`, windows `[from, until)`, wording from the minutes left).
+4. For each due reminder: `claim` (atomic insert; a conflict counts `skipped`) → `withAnswerLink` → `deliver` (push, email, WhatsApp) → verdict:
+   `isDelivered` keeps the claim; `wasAttempted` but not delivered runs `release` (the next check tries again while the window lasts); nothing attempted keeps it.
+   One log line per reminder says which.
+5. Before closing the connection `services/heartbeat.js` writes `tick` (and `email`, once its state is known). A missing table is logged once and ignored.
+6. `GET /api/notify/status` (signed in) reads the heartbeat and this student's push devices; `RemindersSettings.js` shows the lines and the stale warning.
+7. Operator endpoints `/api/health/detailed` and `/api/email/queue/stats` (`routes/adminRoutes.js`) go through the same `requireCronSecret`.
+
+---
+
 ## 1. Frontend (React, Create React App) — `frontend/`
 
 ### Entry point
@@ -191,7 +208,7 @@ Solid status fills (delete pop-up, danger `Button`, the done tick) take `text-on
 
 ### Reminders
 1. `notificationScheduler.js`, every minute.
-2. `utils/reminders.js` decides what is due (class, exam, attendance question, morning digest).
+2. `utils/reminders.js` decides what is due (class, exam, attendance question, morning digest), each inside its own window (see "Reminders that survive sleep" above).
 3. `services/notifyChannels.js` sends it:
    - web push
    - email through `emailService.js` → `emailQueueService.js`, using the templates in `emailTemplates.js`

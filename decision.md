@@ -94,6 +94,42 @@ Plan: `docs/superpowers/specs/2026-10-08-reminders-email-and-session.md`, Part A
 
 ---
 
+## 2026-10-08 — Reminders that survive a sleeping server (Package 3)
+
+Plan: `docs/superpowers/specs/2026-10-08-reminders-email-and-session.md`, Parts B and D. Render's free plan sleeps when idle and the reminder job lives inside the
+process, so a reminder due while it slept was never sent; and a reminder whose every channel failed was never retried.
+
+- **Release the claim, with a plain verdict.** `deliver()` still returns `{ push?, email?, whatsapp? }`. `isDelivered` is true when a pop-up reached a device, the email was
+  sent or is still queued (`pending`), or WhatsApp answered ok. `wasAttempted` is true when a device existed, or email or WhatsApp was tried. The tick keeps the claim
+  when delivered, deletes it when something was tried and nothing arrived, and keeps it when nothing could be tried. The insert stays an atomic
+  `INSERT ... ON CONFLICT DO NOTHING`, so two ticks cannot both send. Rejected: a `channels` column on `NOTIFICATION_LOG` to retry only the missing channels. A retry only
+  happens when nothing was delivered, so there is nothing to skip; a column would need a second migration and more code. Rejected: releasing when nothing was tried (a student with no
+  device, email off and WhatsApp off would churn the row every minute for hours). Rejected: releasing a `pending` email (the message is still queued; a retry would send it twice).
+- **Windows instead of "5 minutes".** `utils/reminders.js` has `inWindow(now, from, until)` and `beforeWindow(target, lead)`. Before-events run from `target - lead` until the
+  thing starts; attendance and quiz follow-ups run 6 hours; the digest 4 hours. A lead of 0 has no room before the start, so it keeps the old 5 minutes after it and says "now".
+  The wording is worked out from the minutes actually left, never the original lead (`leadText` is unchanged, so 60 reads "in 1 hour", 50 "in 50 minutes"; 1 reads "in 1 minutes").
+  Windows of day-keyed kinds end at local midnight because the next day's lists differ; "Did you submit?" crosses midnight through its day offset and a date-based key, so it is not repeated.
+  Rejected: a longer fixed catch-up (it would send "in 1 hour" for a class that starts in 10 minutes). Known limit: a class reminder window cannot start before 00:00 of the class day.
+- **One tick at a time.** `runExclusive(source)` holds a lock shared by the minute cron, one tick at boot, and the HTTP endpoint; a second caller gets `{ busy: true }`. The boot tick
+  runs inside `startNotificationScheduler()`, so `server.js` has no extra call. Every promise there ends in `.catch` (the process exits on an unhandled rejection).
+- **Outside trigger.** `GET|POST /api/cron/tick` is secured by `CRON_SECRET`: `Authorization: Bearer`, else `X-Cron-Secret`, else `?key=`. Both sides are SHA-256 hashed and compared with
+  `crypto.timingSafeEqual` (equal length, so it never throws). Unset secret: 503 (closed). Wrong or missing: 401. Rate limited (30 per 15 minutes per address, wrong keys count).
+  The request logger prints `req.method req.path` only, and the 404 answer no longer echoes the query string, so a `?key=` never reaches a log or a response; the code never logs a header.
+  The answer is counts only. A tick already running gives 200 `busy` (a pinger must not see a failure); one still running after 25 s gives 202. HEAD runs through the GET handler.
+  Rejected: a secret in the path (shows in every access log), a JWT (a pinger cannot sign one), leaving it open (anyone could trigger sends).
+- **Heartbeat.** Table `SYSTEM_HEARTBEAT (name, last_at TIMESTAMPTZ, ok, detail, counts)`, rows `tick` and `email`. The age is worked out in SQL (`NOW() - last_at`), so the server's timezone
+  cannot skew it. Every read and write is wrapped: with the table missing a write logs one hint ("run backend/scripts/migrate-heartbeat.js") and a read says unknown. The owner must run
+  the migration; I could not (no database). The SQL has no `::` casts (the database layer would read them as binds); `CAST()` is the rule if one is ever needed.
+- **Status for the student.** `GET /api/notify/status` (signed in): minutes since the last check (floored), a stale flag above 15 minutes, this student's push device count, and the email state
+  (not set up, else the live in-memory state, else the stored heartbeat, else unknown). No secret, no env names, nothing about other students. Settings, Reminders shows three lines and a warning
+  when stale; if the call fails the lines are hidden with no error.
+- **Closing the admin endpoints (Part D).** `/api/health/detailed` and `/api/email/queue/stats` moved to `routes/adminRoutes.js` behind the same secret check (closed when unset). `DELETE /api/email/queue/clear`
+  is gone (nothing used it, and anyone could empty the queue). `/api/health` stays public and does no database work.
+- **Cost of the pinger.** Every 5 minutes keeps the service up about 744 hours a month, almost all of Render's 750-hour free allowance, and stops Supabase pausing for inactivity.
+  With a failing email, a due reminder is retried once a minute (one send attempt each) until its window ends.
+
+---
+
 ## 2026-10-08 — Accessibility fixes (from the keyboard and screen-reader audit)
 
 Source: `.pipeline/audit-a11y.md`. Each item below was fixed in its own commit.

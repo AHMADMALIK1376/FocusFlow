@@ -327,6 +327,7 @@ The Google button uses the OAuth client ID set in `frontend/src/Pages/Authpage.j
 | `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` | No | Turn on web push. Without them, push is skipped and email still works. |
 | `ALLOWED_ORIGINS` | No | Extra websites allowed to call the API, comma separated. In production only these and `APP_URL` are allowed. |
 | `VAPID_SUBJECT` | No | Contact for the push service, for example `mailto:you@example.com` |
+| `CRON_SECRET` | For reliable reminders | A long random string. The outside pinger sends it to `/api/cron/tick`; `/api/health/detailed` and `/api/email/queue/stats` need it too. Unset means all three answer 503 (closed). |
 | `DEFAULT_TZ` | No | Default reminder timezone. Defaults to `Asia/Karachi`. |
 | `NODE_ENV` | No | `development` or `production` |
 
@@ -340,6 +341,28 @@ Render's free plan blocks outbound SMTP ports, so `EMAIL_PROVIDER=smtp` cannot s
 2. Publish the consent screen to "In production" first (a refresh token made while it is in "Testing" expires after 7 days), then create the refresh token for the scope `https://www.googleapis.com/auth/gmail.send` with the sender Gmail account.
 3. On Render set `EMAIL_PROVIDER`, `EMAIL_USER` (that same Gmail), `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN`.
 4. In the app open Settings, Reminders and press "Send test email". If it fails, the message says why.
+
+### Keep the reminders running (the pinger)
+
+Render's free plan sleeps when nobody calls it, and while it sleeps no reminder is sent. A free pinger wakes it every 5 minutes and runs the reminder check (`GET /api/cron/tick`). Set `CRON_SECRET` on Render first (any long random string), then set up one of these.
+
+**cron-job.org (recommended: the key travels in a header, not in the address)**
+1. Create a free account at cron-job.org and press "Create cronjob".
+2. URL: `https://<your-render-address>/api/cron/tick` (the Render address, for example `https://focusflow-api.onrender.com`).
+3. Execution schedule: every 5 minutes.
+4. Under Advanced, request method `GET`, and add the header `Authorization` with the value `Bearer <your CRON_SECRET>` (the word Bearer, a space, then the secret).
+5. Set the request timeout to 60 seconds or more, then save.
+
+**UptimeRobot (if you prefer it)**
+1. Add a monitor of type "HTTP(s)", URL `https://<your-render-address>/api/cron/tick?key=<your CRON_SECRET>`, interval 5 minutes, and a timeout of 60 seconds or more.
+2. UptimeRobot's free plan cannot send headers, so the secret sits in the address. Addresses with `?key=` can show up in request logs (Render, the pinger). FocusFlow never prints the query string, but the header form is safer. HEAD requests also work.
+
+Good to know:
+- A successful call answers `{"ok":true,"ran":true,"counts":{...}}` with numbers only. If a check is already running it answers 200 with `busy: true`; if one takes longer than 25 seconds it answers 202.
+- A wrong or missing key answers 401. If `CRON_SECRET` is not set on the server, 503.
+- Render can still cold-start: the first call after a long sleep can take about 50 seconds, which is why the pinger timeout should be 60 seconds or more. Reminders missed while it slept are sent when it wakes, as long as they are still useful (a class reminder until the class starts).
+- Calling every 5 minutes keeps the service awake all month, about 744 hours. Render's free allowance is 750 hours per workspace, so this uses almost all of it: do not run a second free service in the same workspace.
+- Run `node backend/scripts/migrate-heartbeat.js` once against the database before deploying. It adds one small table (`SYSTEM_HEARTBEAT`) that records when the last check ran. Without it everything still works, but Settings, Reminders shows "Last reminder check: unknown".
 
 ### Frontend (`frontend/.env`)
 
@@ -369,6 +392,7 @@ Run these from the `backend/` folder. All of them read `backend/.env`.
 | `node scripts/sync-theme-engine.js` | Refreshes the backend's copy of the app's theme engine (`services/theme/`) after the frontend one changes. A test fails when it is out of date. |
 | `node scripts/seed-user.js` | Fills a demo account with sample data |
 | `node scripts/reset-db.js` | **Deletes all accounts and data.** Use with care. |
+| `node scripts/migrate-heartbeat.js` | Adds the `SYSTEM_HEARTBEAT` table (when the last reminder check ran). Safe to run again. Run it before deploying. |
 | `node scripts/migrate-*.js` | Older one-off migrations kept for existing databases. A fresh database only needs `run-init.js`. |
 
 ---
@@ -422,8 +446,9 @@ All routes are under `/api`. Every route except the auth routes and health check
 | Study hours | `/api/study-hours` | `GET /`, `POST /`, `DELETE /:id` |
 | Budget | `/api/budget` | `GET /`, `POST /entries`, `DELETE /entries/:id`, `PUT /settings` |
 | Dashboard | `/api/dashboard` | `GET /complete`, `GET /stats` |
-| Reminders | `/api/notify` | `GET`/`PUT /settings`, `POST /subscribe`, `POST /unsubscribe`, `POST /test`, `GET`/`POST /answer` |
-| Health | `/api/health` | `GET /api/health`, `GET /api/health/detailed` (database, connection pool and email queue status) |
+| Reminders | `/api/notify` | `GET`/`PUT /settings`, `GET /status`, `POST /subscribe`, `POST /unsubscribe`, `POST /test`, `GET`/`POST /answer` |
+| Reminder trigger | `/api/cron` | `GET`/`POST /tick` (needs `CRON_SECRET`; for the pinger) |
+| Health | `/api/health` | `GET /api/health` (public); `GET /api/health/detailed` and `GET /api/email/queue/stats` need `CRON_SECRET` |
 
 ### Database
 
@@ -455,7 +480,7 @@ It also handles common OCR mistakes. For example, a misread course code is match
 
 ## How reminders work
 
-Once a minute, `services/notificationScheduler.js` loads each verified user's data and asks `utils/reminders.js` what is due in that user's own timezone. `NOTIFICATION_LOG` makes sure each reminder is sent only once, and reminders missed while the server was briefly busy are still sent within a 5-minute catch-up window.
+Once a minute, `services/notificationScheduler.js` loads each verified user's data and asks `utils/reminders.js` what is due in that user's own timezone. `NOTIFICATION_LOG` makes sure each reminder is claimed by one check at a time. If every channel that was tried fails, the claim is given back and a later check tries again. Each reminder has a window instead of a single minute: before-events (class, exam, routine, "Did you submit?") until they start, attendance and quiz questions for 6 hours, the morning digest for 4 hours (a lead of 0 keeps a 5-minute window). A server that wakes late still sends them, and the wording uses the minutes actually left ("in 20 minutes"). One check also runs the moment the server starts.
 
 | Reminder | When (default) |
 |---|---|
@@ -508,7 +533,7 @@ The planned production setup uses free tiers only:
 | Backend | **Render** (web service) | Root directory `backend`, start `npm start`. Add every variable from `backend/.env`, with `APP_URL` and `PUBLIC_API_URL` set to the real addresses. |
 | Database | **Supabase** | Run `node scripts/run-init.js` once against the production database. |
 
-> **Keep the backend awake.** Render's free tier sleeps after about 15 minutes without traffic, which would pause the once-a-minute reminder job. Use a free uptime monitor to call `/api/health` every few minutes.
+> **Keep the backend awake.** Render's free tier sleeps after about 15 minutes without traffic, which would pause the once-a-minute reminder job. Set `CRON_SECRET` and a free pinger on `/api/cron/tick` every 5 minutes: see "Keep the reminders running (the pinger)" above.
 
 Once deployed, open the Vercel address on your phone and use **Add to Home screen** to install FocusFlow as an app.
 
