@@ -70,7 +70,7 @@ export default function LoginForm() {
         </div>
 
         <div className="w-[85%] text-right mt-2">
-          <Link to="/forgot-password" className="text-[10px] font-bold text-sage-deep hover:text-on-sage transition-colors">
+          <Link to="/forgot-password" className="text-[10px] font-bold text-sage-deep hover:text-ink transition-colors">
             Forgot Password?
           </Link>
         </div>

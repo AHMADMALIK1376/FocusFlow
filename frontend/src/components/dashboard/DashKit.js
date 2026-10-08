@@ -36,7 +36,7 @@ export function StatTile({ icon, label, value, sub, primary, tone }) {
       {primary && <div className="absolute -top-8 -right-8 w-28 h-28 rounded-full bg-[rgb(var(--on-brand)/0.12)] blur-2xl" />}
       <span className={cx(
         "w-9 h-9 rounded-xl flex items-center justify-center relative z-10",
-        primary ? "bg-[rgb(var(--on-brand)/0.2)]" : t === "sage" ? "bg-surface text-on-sage shadow-neu-sm" : "bg-grad-sage text-on-sage shadow-neu-sm"
+        primary ? "bg-[rgb(var(--on-brand)/0.2)]" : t === "sage" ? "bg-surface text-ink shadow-neu-sm" : "bg-grad-sage text-on-sage shadow-neu-sm"
       )}>{icon}</span>
       <p className="text-3xl font-black mt-3 relative z-10">{value}</p>
       <p className={cx("text-xs font-bold uppercase tracking-wider mt-0.5 relative z-10", primary ? "opacity-90" : "text-muted")}>{label}</p>
