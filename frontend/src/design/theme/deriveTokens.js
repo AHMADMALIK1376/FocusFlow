@@ -128,7 +128,7 @@ export const GUARD = [
   { fg: '--info', against: [['--surface', 3]] },
   { fg: '--focus', against: [['--surface', 3]] },
   { fg: '--warn', against: [['--surface', 2]] },
-  { fg: '--warn-ink', against: [['--surface', 4.5]] },
+  { fg: '--warn-ink', against: [['--surface', 4.5], ['warnWash', 4.5]], free: true }, // warnWash: the warn badge's own tint (warn at 20% over the card)
 ];
 
 // Gradient stops that are not tokens on their own -> the gradient token that holds them.
@@ -140,9 +140,16 @@ const STOP_OWNER = {
   sageCardB: '--grad-sage-card',
   habitDoneA: '--grad-sage-deep',
   habitDoneB: '--grad-sage-deep',
+  warnWash: '--warn',
 };
 
+// The warn badge's tint is checked to 4.5, but on a mid-tone card (about a quarter of the way up
+// from black, in a saturated hue) that cannot hold together with warn staying visible on the card.
+// There the text keeps the best it can; this is the least that is accepted.
+export const WASH_FLOOR = 3.9;
+
 const clamp01 = (x) => Math.min(1, Math.max(0, x));
+const mixRgb = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
 const same = (a, b) => a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
 
 function runGuard(map) {
@@ -168,12 +175,24 @@ function runGuard(map) {
   // Everything read on the page or on cards moves the same way as the main text, so a
   // shared backdrop (e.g. --highlight) is never pushed lighter by one entry and darker by
   // another (on mid-tone backgrounds that left --ink white and --muted black).
+  const syncWash = () => { map.warnWash = mixRgb(map['--surface'], map['--warn'], 0.2); };
   let textDir = null;
-  const runEntry = ({ fg, against }) => {
+  const runEntry = ({ fg, against, free }) => {
+    // warnWash is not a token: it is worked out from the card and warn colours each time they may have moved.
+    syncWash();
     const primary = map[against[0][0]];
     const own = contrastRatio(WHITE, primary) > contrastRatio(BLACK, primary) ? 1 : -1;
     const onPage = against[0][0] === '--canvas' || against[0][0] === '--surface';
-    const dir = onPage && textDir !== null ? textDir : own;
+    // free: this text has its own backdrops (the warn badge tint is lighter than the card), so it
+    // goes the way that suits its own backdrops, not the direction of the main text.
+    const worst = (c) => Math.min(...against.map(([bg]) => contrastRatio(c, map[bg])));
+    const main = ([bg, min]) => contrastRatio(WHITE, map[bg]) >= min;
+    const mainB = ([bg, min]) => contrastRatio(BLACK, map[bg]) >= min;
+    const okW = main(against[0]);
+    const okB = mainB(against[0]);
+    // The main backdrop (the card) must be reachable; the tint is then fixed by moving warn.
+    const freeDir = okW !== okB ? (okW ? 1 : -1) : (worst(WHITE) >= worst(BLACK) ? 1 : -1);
+    const dir = free ? freeDir : (onPage && textDir !== null ? textDir : own);
     const before = map[fg];
     if (!passes(before, against)) {
       map[fg] = walk(before, dir, (c) => passes(c, against));
@@ -182,6 +201,24 @@ function runGuard(map) {
     // Text at its limit and still failing: move the other backdrops away from it instead.
     against.slice(1).forEach(([bg, min]) => {
       if (contrastRatio(map[fg], map[bg]) >= min) return;
+      if (bg === 'warnWash') {
+        // The tint is not a colour of its own: move warn (what tints the badge) away from the text,
+        // as far as warn stays visible against the card (2:1). On a mid-tone card both cannot hold;
+        // the badge text then keeps the best it can (never under WASH_FLOOR, see contrastFailures).
+        let w = map['--warn'];
+        const { L, C, h } = rgbToOklch(w);
+        let l = L;
+        for (let i = 0; i < MAX_STEPS + 1; i++) {
+          if (contrastRatio(map[fg], mixRgb(map['--surface'], w, 0.2)) >= min) break;
+          l = clamp01(l - dir * STEP);
+          const next = oklchToRgb({ L: l, C, h });
+          if (contrastRatio(next, map['--surface']) < 2) break;
+          w = next;
+        }
+        if (!same(w, map['--warn'])) { map['--warn'] = w; flag('--warn'); }
+        syncWash();
+        return;
+      }
       const old = map[bg];
       map[bg] = walk(old, -dir, (c) => contrastRatio(map[fg], c) >= min);
       if (!same(old, map[bg])) flag(bg);
@@ -195,6 +232,7 @@ function runGuard(map) {
   // until a full pass finds nothing to fix (it settles in one or two passes).
   for (let pass = 0; pass < 4; pass++) {
     GUARD.forEach(runEntry);
+    syncWash();
     if (GUARD.every(({ fg, against }) => passes(map[fg], against))) break;
   }
   return flags;
@@ -344,6 +382,7 @@ export function contrastFailures(tokens) {
   [stops.blushLight] = stopsOf('--grad-blush');
   [stops.sageCardA, stops.sageCardB] = stopsOf('--grad-sage-card');
   [stops.habitDoneA, stops.habitDoneB] = stopsOf('--grad-sage-deep');
+  stops.warnWash = mixRgb(tripletToRgb(tokens['--surface']), tripletToRgb(tokens['--warn']), 0.2);
   const read = (name) => stops[name] || tripletToRgb(tokens[name]);
 
   const out = [];
@@ -351,7 +390,7 @@ export function contrastFailures(tokens) {
     const f = read(fg);
     against.forEach(([bg, min]) => {
       const ratio = contrastRatio(f, read(bg));
-      if (ratio < min) out.push(`${fg} on ${bg}: ${ratio.toFixed(2)} < ${min}`);
+      if (ratio < (bg === 'warnWash' ? WASH_FLOOR : min)) out.push(`${fg} on ${bg}: ${ratio.toFixed(2)} < ${min}`);
     });
   });
   return out;

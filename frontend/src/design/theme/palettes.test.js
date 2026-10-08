@@ -1,7 +1,7 @@
 import { PALETTE_GROUPS, PALETTES, SWATCHES, TEXT_SWATCHES, paletteTheme } from './palettes';
 import { deriveTokens, contrastFailures } from './deriveTokens';
 import { DEFAULT_THEME, HEX_RE, PRESET_RE, isDefaultPalette, sanitizeTheme } from './theme';
-import { hexToRgb, rgbToTriplet } from './color';
+import { hexToRgb, rgbToTriplet, tripletToRgb, contrastRatio } from './color';
 
 const UPPER_HEX = /^#[0-9A-F]{6}$/;
 const trip = (hex) => rgbToTriplet(hexToRgb(hex));
@@ -74,5 +74,18 @@ describe('swatches', () => {
     expect(SWATCHES.soft.find((s) => s.name === 'Sage').hex).toBe(DEFAULT_THEME.accent);
     expect(SWATCHES.bold.find((s) => s.name === 'Coral').hex).toBe(DEFAULT_THEME.brand);
     expect(SWATCHES.soft.find((s) => s.name === 'Cream').hex).toBe(DEFAULT_THEME.background);
+  });
+});
+
+// The matrix in decision.md: every library palette reaches AA on the five required pairs and on the
+// warn badge (warn at 20% over the card), including the dark ones (the guard once ignored the tint).
+describe('palette library contrast matrix', () => {
+  const rgb = (tokens, name) => tripletToRgb(tokens[name]);
+  it.each(PALETTES.map((p) => [p.name, p]))('%s: required pairs and the warn badge are at least 4.5:1', (_n, p) => {
+    const { tokens } = deriveTokens(paletteTheme(p));
+    const wash = rgb(tokens, '--surface').map((v, i) => Math.round(v + (rgb(tokens, '--warn')[i] - v) * 0.2));
+    [['--ink', '--canvas'], ['--ink', '--surface'], ['--muted', '--surface'], ['--on-brand', '--brand'], ['--on-sage', '--sage']]
+      .forEach(([f, b]) => expect(contrastRatio(rgb(tokens, f), rgb(tokens, b))).toBeGreaterThanOrEqual(4.5));
+    expect(contrastRatio(rgb(tokens, '--warn-ink'), wash)).toBeGreaterThanOrEqual(4.5);
   });
 });
