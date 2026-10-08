@@ -37,6 +37,12 @@
   --warn: 236 170 20;
   --warn-ink: 133 79 11;      /* warn as text (warn itself is too light to read) */
   --focus: 232 84 96;         /* danger */
+  /* Text on a tone's own tint (Badge, StatCard). Same as the tone itself here; other themes get a shade that reads (4.5:1) on the card and on the tint. */
+  --success-ink: 62 160 108;
+  --info-ink: 84 150 222;
+  --focus-ink: 232 84 96;
+  --brand-ink: 236 112 109;
+  --muted-ink: 128 116 108;
   --ring: 236 112 109;        /* keyboard focus ring: same as --brand here; other themes get a shade that shows on cards and page */
 
   /* Neutrals — light mocha-crème canvas, warm-white clay cards. Ink is the

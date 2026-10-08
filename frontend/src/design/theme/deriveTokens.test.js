@@ -81,7 +81,27 @@ describe('default theme', () => {
       '--on-brand on --brand: 2.96 < 4.5',
       '--ring on --surface: 2.91 < 3',
       '--ring on --canvas: 2.59 < 3',
+      // text on a badge tint: the default keeps today's tone colours (exempt, like the rest of the default)
+      '--success-ink on --surface: 3.20 < 4.5',
+      '--success-ink on successWash: 2.74 < 3.8',
+      '--info-ink on --surface: 3.04 < 4.5',
+      '--info-ink on infoWash: 2.63 < 3.8',
+      '--focus-ink on --surface: 3.52 < 4.5',
+      '--focus-ink on focusWash: 2.95 < 3.8',
+      '--brand-ink on --surface: 2.91 < 4.5',
+      '--brand-ink on brandWash: 2.64 < 3.8',
+      '--muted-ink on --surface: 4.46 < 4.5',
     ]);
+  });
+
+  it('the badge text tokens are exactly the text colours the badges used before', () => {
+    const t = result.tokens;
+    expect(t['--success-ink']).toBe(t['--success']);
+    expect(t['--info-ink']).toBe(t['--info']);
+    expect(t['--focus-ink']).toBe(t['--focus']);
+    expect(t['--brand-ink']).toBe(t['--brand']);
+    expect(t['--muted-ink']).toBe(t['--muted']);
+    expect(t['--warn-ink']).toBe('133 79 11');
   });
 });
 

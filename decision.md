@@ -49,43 +49,44 @@ Source: `.pipeline/audit-a11y.md`. Each item below was fixed in its own commit.
 A no-new-features pass over the whole colour-theme feature. Plan: `docs/superpowers/specs/2026-10-08-theme-audit.md`. Two rounds of audit, fix and re-audit, with a tester, an accessibility auditor, a coder and the reviewer.
 
 ### Contrast matrix (library palettes and the default)
-Ratios are WCAG contrast, measured on the colours the engine produces. The first five columns are the required pairs; "warn badge" is the badge text on its own tint. Every library palette is at least 4.5:1 on all six. The default keeps its two known exceptions (white on coral 2.96:1, muted text on cards 4.46:1): it is exempt so it looks exactly as it always has (decision OQ1, option A, from the theme-engine task; changing it changes how the default looks, so it needs the owner's word). A test (`palettes.test.js`, "palette library contrast matrix") now fails if a library palette drops under 4.5:1 on any of these.
+Ratios are WCAG contrast, measured on the colours the engine produces. The first five columns are the required pairs; the six "badge" columns are the Badge / StatCard text (`--warn-ink`, `--success-ink`, `--info-ink`, `--focus-ink`, `--brand-ink`, `--muted-ink`) on the tone's own tint (the tone colour at the badge alpha over the card: warn 20%, success/info/focus 15%, brand 10%, muted text on ink at 8%); each is also at least 4.5:1 on the card itself. Every library palette is at least 4.5:1 on all eleven. The default's badge columns show what its badges read today (success 2.74, info 2.63, focus 2.95, brand 2.64, muted 3.85): they are exempt like the rest of the default. The default keeps its two known exceptions (white on coral 2.96:1, muted text on cards 4.46:1): it is exempt so it looks exactly as it always has (decision OQ1, option A, from the theme-engine task; changing it changes how the default looks, so it needs the owner's word). A test (`palettes.test.js`, "palette library contrast matrix") now fails if a library palette drops under 4.5:1 on any of these.
 
-| Palette | ink/canvas | ink/surface | muted/surface | on-brand/brand | on-sage/sage | warn badge | tightest extra pair | fixed by guard |
-|---|---|---|---|---|---|---|---|---|
-| Default | 11.44 | 12.87 | 4.46 | 2.96 | 6.98 | 5.76 | --on-brand on --brand 2.96/4.5 | 0 |
-| Matcha Latte | 12.69 | 14.23 | 4.83 | 4.61 | 7.11 | 5.80 | --sage-deep on --surface 2.41/2.4 | 4 |
-| Peach Fuzz | 12.28 | 13.67 | 4.60 | 4.51 | 7.28 | 5.85 | --on-brand on --brand 4.51/4.5 | 2 |
-| Lavender Haze | 12.90 | 14.40 | 4.78 | 4.66 | 7.28 | 5.85 | --warn on --surface 2.03/2 | 2 |
-| Sky Notes | 13.14 | 14.56 | 4.81 | 4.60 | 7.20 | 5.85 | --warn on --surface 2.03/2 | 4 |
-| Butter Toast | 13.19 | 14.26 | 4.72 | 4.56 | 7.11 | 5.85 | --sage-deep on --surface 2.42/2.4 | 4 |
-| Rose Water | 12.88 | 14.35 | 4.75 | 4.53 | 7.27 | 5.85 | --on-brand on --brand 4.53/4.5 | 2 |
-| Mint Chip | 12.71 | 13.85 | 4.61 | 4.60 | 6.80 | 5.85 | --sage-deep on --surface 2.41/2.4 | 3 |
-| Cloud Grey | 13.30 | 14.87 | 4.95 | 4.51 | 7.22 | 5.85 | --on-brand on --brand 4.51/4.5 | 2 |
-| Electric Blue | 15.74 | 17.14 | 5.49 | 4.54 | 6.82 | 5.85 | --on-sage on habitDoneB 4.41/4.4 | 3 |
-| Hot Pink | 15.88 | 17.16 | 5.47 | 4.56 | 7.26 | 5.85 | --warn on --surface 2.03/2 | 2 |
-| Tangerine | 15.42 | 16.59 | 5.30 | 4.50 | 7.13 | 5.85 | --on-brand on --brand 4.50/4.5 | 4 |
-| Lime Pop | 14.92 | 15.71 | 5.03 | 4.60 | 6.94 | 5.85 | --warn on --surface 2.03/2 | 4 |
-| Grape Soda | 15.24 | 17.00 | 5.46 | 4.60 | 7.37 | 5.85 | --warn on --surface 2.03/2 | 2 |
-| Cherry Cola | 16.17 | 17.80 | 5.75 | 4.63 | 7.20 | 5.85 | --warn on --surface 2.03/2 | 2 |
-| Teal Wave | 13.94 | 15.19 | 4.98 | 4.53 | 6.85 | 5.85 | --on-brand on --brand 4.53/4.5 | 3 |
-| Sunset Drive | 15.19 | 16.48 | 5.29 | 4.58 | 7.14 | 5.85 | --warn on --surface 2.03/2 | 2 |
-| Midnight | 15.57 | 12.95 | 4.70 | 4.71 | 7.24 | 4.63 | --chart-axis on --surface 3.00/3 | 2 |
-| Charcoal Coral | 15.49 | 12.74 | 4.67 | 4.51 | 7.20 | 4.60 | --on-brand on --brand 4.51/4.5 | 2 |
-| Deep Forest | 15.49 | 12.84 | 4.71 | 4.56 | 6.89 | 4.64 | --on-brand on --brand 4.56/4.5 | 3 |
-| Night Lavender | 15.75 | 13.08 | 4.74 | 4.51 | 7.48 | 4.59 | --on-brand on --brand 4.51/4.5 | 3 |
-| Ocean Night | 15.27 | 12.48 | 4.66 | 4.62 | 6.97 | 4.55 | --muted on --highlight 4.55/4.5 | 3 |
-| Espresso | 15.57 | 12.82 | 4.66 | 4.53 | 7.40 | 4.65 | --muted on --highlight 4.51/4.5 | 3 |
-| Neon Arcade | 17.24 | 14.73 | 5.06 | 4.65 | 7.14 | 4.64 | --warn-ink on warnWash 4.64/4.5 | 2 |
-| Slate Gold | 15.26 | 12.21 | 4.65 | 4.56 | 7.43 | 4.53 | --muted on --highlight 4.50/4.5 | 3 |
+| Palette | ink/canvas | ink/surface | muted/surface | on-brand/brand | on-sage/sage | warn badge | success badge | info badge | focus badge | brand badge | muted badge | tightest extra pair | fixed by guard |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Default | 11.44 | 12.87 | 4.46 | 2.96 | 6.98 | 5.76 | 2.74 | 2.63 | 2.95 | 2.64 | 3.85 | --on-brand on --brand 2.96/4.5 | 0 |
+| Matcha Latte | 12.69 | 14.23 | 4.83 | 4.61 | 7.11 | 5.80 | 4.53 | 4.68 | 4.51 | 4.55 | 4.54 | --sage-deep on --surface 2.41/2.4 | 4 |
+| Peach Fuzz | 12.28 | 13.67 | 4.60 | 4.51 | 7.28 | 5.85 | 4.57 | 4.53 | 4.53 | 4.53 | 4.52 | --on-brand on --brand 4.51/4.5 | 2 |
+| Lavender Haze | 12.90 | 14.40 | 4.78 | 4.66 | 7.28 | 5.85 | 4.57 | 4.53 | 4.53 | 4.95 | 4.50 | --warn on --surface 2.03/2 | 2 |
+| Sky Notes | 13.14 | 14.56 | 4.81 | 4.60 | 7.20 | 5.85 | 4.57 | 4.53 | 4.53 | 4.86 | 4.51 | --warn on --surface 2.03/2 | 4 |
+| Butter Toast | 13.19 | 14.26 | 4.72 | 4.56 | 7.11 | 5.85 | 4.57 | 4.53 | 4.53 | 4.68 | 4.64 | --sage-deep on --surface 2.42/2.4 | 4 |
+| Rose Water | 12.88 | 14.35 | 4.75 | 4.53 | 7.27 | 5.85 | 4.57 | 4.53 | 4.53 | 4.54 | 4.65 | --on-brand on --brand 4.53/4.5 | 2 |
+| Mint Chip | 12.71 | 13.85 | 4.61 | 4.60 | 6.80 | 5.85 | 4.57 | 4.53 | 4.53 | 4.52 | 4.52 | --sage-deep on --surface 2.41/2.4 | 3 |
+| Cloud Grey | 13.30 | 14.87 | 4.95 | 4.51 | 7.22 | 5.85 | 4.57 | 4.53 | 4.53 | 6.95 | 4.66 | --on-brand on --brand 4.51/4.5 | 2 |
+| Electric Blue | 15.74 | 17.14 | 5.49 | 4.54 | 6.82 | 5.85 | 4.57 | 4.53 | 4.53 | 5.61 | 4.69 | --on-sage on habitDoneB 4.41/4.4 | 3 |
+| Hot Pink | 15.88 | 17.16 | 5.47 | 4.56 | 7.26 | 5.85 | 4.57 | 4.53 | 4.53 | 4.52 | 4.65 | --warn on --surface 2.03/2 | 2 |
+| Tangerine | 15.42 | 16.59 | 5.30 | 4.50 | 7.13 | 5.85 | 4.57 | 4.53 | 4.53 | 4.65 | 4.53 | --on-brand on --brand 4.50/4.5 | 4 |
+| Lime Pop | 14.92 | 15.71 | 5.03 | 4.60 | 6.94 | 5.85 | 4.57 | 4.53 | 4.53 | 4.63 | 4.51 | --warn on --surface 2.03/2 | 4 |
+| Grape Soda | 15.24 | 17.00 | 5.46 | 4.60 | 7.37 | 5.85 | 4.57 | 4.53 | 4.53 | 5.00 | 4.64 | --warn on --surface 2.03/2 | 2 |
+| Cherry Cola | 16.17 | 17.80 | 5.75 | 4.63 | 7.20 | 5.85 | 4.57 | 4.53 | 4.53 | 4.95 | 4.89 | --warn on --surface 2.03/2 | 2 |
+| Teal Wave | 13.94 | 15.19 | 4.98 | 4.53 | 6.85 | 5.85 | 4.57 | 4.53 | 4.53 | 4.60 | 4.67 | --on-brand on --brand 4.53/4.5 | 3 |
+| Sunset Drive | 15.19 | 16.48 | 5.29 | 4.58 | 7.14 | 5.85 | 4.57 | 4.53 | 4.53 | 4.56 | 4.52 | --warn on --surface 2.03/2 | 2 |
+| Midnight | 15.57 | 12.95 | 4.70 | 4.71 | 7.24 | 4.63 | 4.64 | 4.62 | 4.56 | 4.96 | 4.54 | --chart-axis on --surface 3.00/3 | 2 |
+| Charcoal Coral | 15.49 | 12.74 | 4.67 | 4.51 | 7.20 | 4.60 | 4.60 | 4.59 | 4.68 | 4.62 | 4.64 | --on-brand on --brand 4.51/4.5 | 2 |
+| Deep Forest | 15.49 | 12.84 | 4.71 | 4.56 | 6.89 | 4.64 | 4.61 | 4.66 | 4.60 | 5.42 | 4.52 | --on-brand on --brand 4.56/4.5 | 3 |
+| Night Lavender | 15.75 | 13.08 | 4.74 | 4.51 | 7.48 | 4.59 | 4.62 | 4.59 | 4.50 | 4.75 | 4.57 | --on-brand on --brand 4.51/4.5 | 3 |
+| Ocean Night | 15.27 | 12.48 | 4.66 | 4.62 | 6.97 | 4.55 | 4.62 | 4.65 | 4.66 | 4.89 | 4.66 | --muted on --highlight 4.55/4.5 | 3 |
+| Espresso | 15.57 | 12.82 | 4.66 | 4.53 | 7.40 | 4.65 | 4.50 | 4.66 | 4.53 | 5.39 | 4.66 | --muted on --highlight 4.51/4.5 | 3 |
+| Neon Arcade | 17.24 | 14.73 | 5.06 | 4.65 | 7.14 | 4.64 | 4.59 | 4.59 | 4.70 | 4.78 | 4.54 | --chart-axis on --surface 3.14/3 | 2 |
+| Slate Gold | 15.26 | 12.21 | 4.65 | 4.56 | 7.43 | 4.53 | 4.68 | 4.51 | 4.52 | 5.58 | 4.58 | --muted on --highlight 4.50/4.5 | 3 |
 
-"Tightest extra pair" is the closest-to-its-limit of the other guarded pairs (extras use "never worse than today" or a lower target such as 3:1 for chart axes; they are listed in `GUARD` in `deriveTokens.js`).
+"Tightest extra pair" is the closest-to-its-limit of the other guarded pairs (not the badge pairs, which have their own columns) (extras use "never worse than today" or a lower target such as 3:1 for chart axes; they are listed in `GUARD` in `deriveTokens.js`).
 
 ### Problems found and fixed
 - **Tooltips, year drop-downs and the routine day tooltip were fixed white with black text** (BudgetGauge, AttendanceHeatmap, AttendanceSkylinePage, SpendingPuckStack, DailyRoutine). Now surface and ink, so they follow the theme. In the default the card colour is the warm white, not pure white (a barely visible change).
 - **Focus mode used green-500 and red-500** for done / not done. Now the `success` and `focus` tokens for the tint and the dot border (the colour signal); the 10px chip text is `text-ink` (coloured text on its own tint was 2.9 to 4.4:1, under AA on all 24 palettes; ink on these tints is above 9:1). The default's chip text is therefore ink, not red/green.
 - **`text-on-brand` sat on the fixed status red and gold in the routine pop-ups** (1.1:1 to 2:1 on some palettes). Now white on the red (same 3.6:1 as the default) and the dark `on-sun` ink on the gold.
 - **The warn badge on dark palettes was under 4.5:1**, and in dark mode (the `t` key, or a phone set to dark) its text swapped to a colour that was under 4.5:1 on most themes. The guard now checks the badge text against the badge's own tint (warn at 20% over the card), moving the text first and the warn colour second; and the `dark:` variant is gone (it was the only one in the code). On a mid-tone, saturated card colour the two goals (badge text and warn staying visible on the card) cannot both hold; there the badge text keeps at least 3.9:1 (`WASH_FLOOR`). No library palette is affected.
+- **Badge and StatCard text was under 4.5:1 on the library palettes** (success, info and focus on all 24, brand on 9, muted on 18; the review's numbers). Decided: five new guarded tokens `--success-ink`, `--info-ink`, `--focus-ink`, `--brand-ink`, `--muted-ink`, built like `--warn-ink`. In `tokens.css` each equals the text colour the badge had (so the default is pixel-identical and exempt); for other themes the engine walks only that text colour until it is 4.5:1 on the card and on the badge's own tint (`WASHES` in `deriveTokens.js`: the tone's colour at the badge alpha over the card). The base colours (brand, success, info, focus) are never moved for their tint. On a mid-tone, saturated card the text cannot reach 4.5 on both; it then keeps at least `TINT_FLOOR` 3.8 (3.9 `WASH_FLOOR` for warn, which can also move warn). No library palette and none of the 13,823 non-default Studio-swatch themes is affected (all 4.5 or better); the worst of 30,000 random colour sets is 3.82. Like `--ring`, these are not added to the readability notes. The `StatCard` warn icon now uses `text-warn-ink` (it was 1.74:1). The matrix above has a column for each tone. Rejected: the review's option (b), listing it as a known exception; moving the status colours to suit the text.
 - **Answer pages opened from reminder links were still the default coral** (the earlier task themed the emails but missed them). They now use the student's email palette; see the section below.
 - **The hard-coded colour guard** now also sees Tailwind palette classes (`bg-white`, `text-gray-500`, `border-red-500/10`), and every allowlist entry pins how many times the colour is used, so one more use of an allowed code in the same file fails until the count is raised on purpose. Allowed Tailwind uses left: white text on the fixed status red and green, white on a student-picked routine colour, and a scrim and icon over the avatar photo.
 - **Not scanned, by design:** `fill="white"` and `stroke="black"` in SVG geometry and CSS masks (CardDeleteButton, the sprite masks): they define a shape and are never painted.

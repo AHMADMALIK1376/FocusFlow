@@ -82,6 +82,10 @@ const FIXED = {
   '--warn': [236, 170, 20],
   '--focus': [232, 84, 96],
   '--warn-ink': [133, 79, 11],
+  // Each tone's text on its own tint (Badge, StatCard) starts as today's text colour, so the default is unchanged.
+  '--success-ink': [62, 160, 108],
+  '--info-ink': [84, 150, 222],
+  '--focus-ink': [232, 84, 96],
 };
 
 // Measure every recipe once, from the literal references above.
@@ -131,8 +135,28 @@ const GUARD = [
   { fg: '--focus', against: [['--surface', 3]] },
   { fg: '--ring', against: [['--surface', 3], ['--canvas', 3]] }, // the keyboard focus ring: starts as the brand colour, then walks until it shows on both
   { fg: '--warn', against: [['--surface', 2]] },
-  { fg: '--warn-ink', against: [['--surface', 4.5], ['warnWash', 4.5]], free: true }, // warnWash: the warn badge's own tint (warn at 20% over the card)
+  // Badge and StatCard text on the tone's own tint (see WASHES): each walks until it reaches 4.5 on the card and on the tint.
+  { fg: '--warn-ink', against: [['--surface', 4.5], ['warnWash', 4.5]], free: true },
+  { fg: '--success-ink', against: [['--surface', 4.5], ['successWash', 4.5]], free: true },
+  { fg: '--info-ink', against: [['--surface', 4.5], ['infoWash', 4.5]], free: true },
+  { fg: '--focus-ink', against: [['--surface', 4.5], ['focusWash', 4.5]], free: true },
+  { fg: '--brand-ink', against: [['--surface', 4.5], ['brandWash', 4.5]], free: true },
+  { fg: '--muted-ink', against: [['--surface', 4.5], ['mutedWash', 4.5]], free: true },
 ];
+
+// The tint a Badge / StatCard puts behind its text: [the tone's colour, the alpha it uses] over the card.
+// They are not tokens: they are worked out from the card and the colour each time either may have moved.
+const WASHES = {
+  warnWash: ['--warn', 0.2],
+  successWash: ['--success', 0.15],
+  infoWash: ['--info', 0.15],
+  focusWash: ['--focus', 0.15],
+  brandWash: ['--brand', 0.1],
+  mutedWash: ['--ink', 0.08],
+};
+
+// Readable text tokens whose changes are not worth a note to the student (like --ring).
+const QUIET = ['--ring', '--success-ink', '--info-ink', '--focus-ink', '--brand-ink', '--muted-ink'];
 
 // Gradient stops that are not tokens on their own -> the gradient token that holds them.
 const STOP_OWNER = {
@@ -146,10 +170,15 @@ const STOP_OWNER = {
   warnWash: '--warn',
 };
 
-// The warn badge's tint is checked to 4.5, but on a mid-tone card (about a quarter of the way up
-// from black, in a saturated hue) that cannot hold together with warn staying visible on the card.
-// There the text keeps the best it can; this is the least that is accepted.
+// A badge tint is checked to 4.5, but on a mid-tone card (about a quarter of the way up
+// from black, in a saturated hue) that cannot hold together with the tone's colour staying visible
+// on the card (warn moves, the others never do). There the text keeps the best it can; this is the
+// least that is accepted, for every tint in WASHES.
 const WASH_FLOOR = 3.9;
+// The same for the other tints. Their colour (brand, success, info, focus) is never moved to help the
+// text, so the least accepted is a little lower. Measured: no theme made of Studio swatches gets near it
+// (all 13,823 reach 4.5); the worst of 30,000 random colour sets is 3.82.
+const TINT_FLOOR = 3.8;
 
 const clamp01 = (x) => Math.min(1, Math.max(0, x));
 const mixRgb = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
@@ -158,7 +187,7 @@ const same = (a, b) => a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
 function runGuard(map) {
   const flags = [];
   const flag = (name) => {
-    if (name === '--ring') return; // an invisible tweak: no readability note for it
+    if (QUIET.includes(name)) return; // an invisible tweak: no readability note for it
     const token = STOP_OWNER[name] || name;
     if (!flags.includes(token)) flags.push(token);
   };
@@ -179,10 +208,12 @@ function runGuard(map) {
   // Everything read on the page or on cards moves the same way as the main text, so a
   // shared backdrop (e.g. --highlight) is never pushed lighter by one entry and darker by
   // another (on mid-tone backgrounds that left --ink white and --muted black).
-  const syncWash = () => { map.warnWash = mixRgb(map['--surface'], map['--warn'], 0.2); };
+  const syncWash = () => {
+    Object.entries(WASHES).forEach(([name, [colour, alpha]]) => { map[name] = mixRgb(map['--surface'], map[colour], alpha); });
+  };
   let textDir = null;
   const runEntry = ({ fg, against, free }) => {
-    // warnWash is not a token: it is worked out from the card and warn colours each time they may have moved.
+    // The tints are not tokens: they are worked out from the card and the colours each time they may have moved.
     syncWash();
     const primary = map[against[0][0]];
     const own = contrastRatio(WHITE, primary) > contrastRatio(BLACK, primary) ? 1 : -1;
@@ -205,6 +236,7 @@ function runGuard(map) {
     // Text at its limit and still failing: move the other backdrops away from it instead.
     against.slice(1).forEach(([bg, min]) => {
       if (contrastRatio(map[fg], map[bg]) >= min) return;
+      if (bg in WASHES && bg !== 'warnWash') return; // the colour itself (brand, status) is never moved for its tint: the text keeps the best it can
       if (bg === 'warnWash') {
         // The tint is not a colour of its own: move warn (what tints the badge) away from the text,
         // as far as warn stays visible against the card (2:1). On a mid-tone card both cannot hold;
@@ -296,6 +328,8 @@ function deriveTokens(theme) {
   Object.keys(RECIPES).forEach((name) => {
     if (name !== 'inkAuto') map[name] = make(name);
   });
+  map['--brand-ink'] = brand; // starts as the text colour of today's brand badge; the guard moves only this copy
+  map['--muted-ink'] = map['--muted'];
   if (t.logo) map['--logo'] = hexToRgb(t.logo);
   if (t.icon) map['--icon'] = hexToRgb(t.icon);
 
@@ -335,6 +369,11 @@ function deriveTokens(theme) {
     '--info': trip('--info'),
     '--warn': trip('--warn'),
     '--warn-ink': trip('--warn-ink'),
+    '--success-ink': trip('--success-ink'),
+    '--info-ink': trip('--info-ink'),
+    '--focus-ink': trip('--focus-ink'),
+    '--brand-ink': trip('--brand-ink'),
+    '--muted-ink': trip('--muted-ink'),
     '--focus': trip('--focus'),
     '--ring': trip('--ring'),
     '--canvas': trip('--canvas'),
@@ -388,7 +427,9 @@ function contrastFailures(tokens) {
   [stops.blushLight] = stopsOf('--grad-blush');
   [stops.sageCardA, stops.sageCardB] = stopsOf('--grad-sage-card');
   [stops.habitDoneA, stops.habitDoneB] = stopsOf('--grad-sage-deep');
-  stops.warnWash = mixRgb(tripletToRgb(tokens['--surface']), tripletToRgb(tokens['--warn']), 0.2);
+  Object.entries(WASHES).forEach(([name, [colour, alpha]]) => {
+    stops[name] = mixRgb(tripletToRgb(tokens['--surface']), tripletToRgb(tokens[colour]), alpha);
+  });
   const read = (name) => stops[name] || tripletToRgb(tokens[name]);
 
   const out = [];
@@ -396,10 +437,11 @@ function contrastFailures(tokens) {
     const f = read(fg);
     against.forEach(([bg, min]) => {
       const ratio = contrastRatio(f, read(bg));
-      if (ratio < (bg === 'warnWash' ? WASH_FLOOR : min)) out.push(`${fg} on ${bg}: ${ratio.toFixed(2)} < ${min}`);
+      const floor = bg === 'warnWash' ? WASH_FLOOR : bg in WASHES ? TINT_FLOOR : min; // the floor that actually applied
+      if (ratio < floor) out.push(`${fg} on ${bg}: ${ratio.toFixed(2)} < ${floor}`);
     });
   });
   return out;
 }
 
-module.exports = { NON_THEME_VARS, GUARD, WASH_FLOOR, deriveTokens, contrastFailures };
+module.exports = { NON_THEME_VARS, GUARD, WASHES, WASH_FLOOR, TINT_FLOOR, deriveTokens, contrastFailures };

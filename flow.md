@@ -68,6 +68,9 @@ Before React starts, the inline script in `public/index.html` paints the cached 
 ### Focus ring colour
 `deriveTokens()` puts `--ring` in the token set (the brand colour on the default; for other themes the brand colour walked lighter or darker until it is 3:1 on the card and the page). Components use `focus-visible:ring-focus-ring` (or `outline-focus-ring`). `design/focusRing.test.js` fails if a file goes back to a brand-coloured focus ring.
 
+### Text on tinted badges
+`Badge` and `StatCard` put `text-<tone>-ink` on `bg-<tone>/NN`. `deriveTokens()` outputs `--success-ink`, `--info-ink`, `--focus-ink`, `--brand-ink`, `--muted-ink` (and `--warn-ink`): equal to today's colours on the default; on other themes the guard walks each until it is 4.5:1 on the card and on its own tint (`WASHES`). `design/statusText.test.js` fails if a badge goes back to plain tone text.
+
 ### Design Studio — `components/studio/DesignStudio.js`
 1. Appearance has a "Design your dashboard" button. It sets `?open=studio` with `replace`, so the Appearance entry becomes the Studio entry. A link to `?open=studio` opens it too. `SettingsPage` always renders `<DesignStudio open={...} />`, so it can see the Back button.
 2. On open the Studio copies the saved theme into a draft (`studioReducer`: `draft` and an undo list of up to 20).

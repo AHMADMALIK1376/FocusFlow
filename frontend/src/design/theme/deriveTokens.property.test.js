@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { deriveTokens, contrastFailures, NON_THEME_VARS } from './deriveTokens';
+import { deriveTokens, contrastFailures, NON_THEME_VARS, WASH_FLOOR, TINT_FLOOR } from './deriveTokens';
 import { DEFAULT_THEME } from './theme';
 import { tripletToRgb, hexToRgb, rgbToTriplet, contrastRatio } from './color';
 
@@ -58,6 +58,25 @@ describe('random palettes (property test)', () => {
       });
       if (!['light', 'dark'].includes(r.scheme) || !/^#[0-9A-F]{6}$/.test(r.metaColor)) bad.push({ theme, scheme: r.scheme, meta: r.metaColor });
       if (Object.keys(r.tokens).some((k) => NON_THEME_VARS.includes(k))) bad.push({ theme, motion: true });
+    });
+    expect(bad).toEqual([]);
+  });
+
+  it('badge text reaches 4.5:1 on the card and at least the tint floor on its tint, for every palette', () => {
+    const mix = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
+    const tints = [['--warn-ink', '--warn', 0.2, WASH_FLOOR], ['--success-ink', '--success', 0.15, TINT_FLOOR], ['--info-ink', '--info', 0.15, TINT_FLOOR],
+      ['--focus-ink', '--focus', 0.15, TINT_FLOOR], ['--brand-ink', '--brand', 0.1, TINT_FLOOR], ['--muted-ink', '--ink', 0.08, TINT_FLOOR]];
+    const bad = [];
+    palettes.forEach((theme) => {
+      const { tokens } = deriveTokens(theme);
+      const card = tripletToRgb(tokens['--surface']);
+      tints.forEach(([text, colour, alpha, floor]) => {
+        const f = tripletToRgb(tokens[text]);
+        const onCard = contrastRatio(f, card);
+        const onTint = contrastRatio(f, mix(card, tripletToRgb(tokens[colour]), alpha));
+        if (onTint < floor || onCard < 4.5) bad.push({ theme, text, onCard, onTint });
+      });
+      if (tokens['--brand'] !== rgbToTriplet(hexToRgb(theme.brand))) bad.push({ theme, brandMoved: true });
     });
     expect(bad).toEqual([]);
   });

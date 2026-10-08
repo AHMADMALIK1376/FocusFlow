@@ -2,12 +2,12 @@ import React from 'react';
 import { cx } from './cx';
 
 const TONES = {
-  brand: 'bg-brand/10 text-brand',
-  success: 'bg-success/15 text-success',
-  info: 'bg-info/15 text-info',
+  brand: 'bg-brand/10 text-brand-ink',
+  success: 'bg-success/15 text-success-ink',
+  info: 'bg-info/15 text-info-ink',
   warn: 'bg-warn/20 text-warn-ink',
-  focus: 'bg-focus/15 text-focus',
-  muted: 'bg-[rgb(var(--ink)/0.08)] text-muted',
+  focus: 'bg-focus/15 text-focus-ink',
+  muted: 'bg-[rgb(var(--ink)/0.08)] text-muted-ink',
 };
 
 export function Badge({ tone = 'brand', className = '', children, ...props }) {

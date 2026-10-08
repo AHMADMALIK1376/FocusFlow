@@ -3,11 +3,11 @@ import { cx } from './cx';
 import { renderIcon } from './renderIcon';
 
 const TONES = {
-  brand: 'bg-brand/10 text-brand',
-  success: 'bg-success/15 text-success',
-  info: 'bg-info/15 text-info',
-  warn: 'bg-warn/20 text-warn',
-  focus: 'bg-focus/15 text-focus',
+  brand: 'bg-brand/10 text-brand-ink',
+  success: 'bg-success/15 text-success-ink',
+  info: 'bg-info/15 text-info-ink',
+  warn: 'bg-warn/20 text-warn-ink',
+  focus: 'bg-focus/15 text-focus-ink',
 };
 
 export function StatCard({ icon, label, value, tone = 'brand', className = '' }) {
