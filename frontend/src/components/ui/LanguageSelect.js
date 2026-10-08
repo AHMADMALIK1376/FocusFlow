@@ -10,6 +10,7 @@ export function LanguageSelect({ className = '' }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');
   const ref = useRef(null);
+  const triggerRef = useRef(null);
 
   const currentLang = AVAILABLE_LANGUAGES.find((l) => l.code === current) || AVAILABLE_LANGUAGES[0];
 
@@ -29,14 +30,26 @@ export function LanguageSelect({ className = '' }) {
     );
   }, [q]);
 
-  function pick(code) { setLanguage(code); setOpen(false); setQ(''); }
+  function pick(code) { setLanguage(code); setOpen(false); setQ(''); triggerRef.current?.focus(); }
 
   return (
-    <div className={cx('relative', className)} ref={ref}>
+    <div
+      className={cx('relative', className)}
+      ref={ref}
+      onKeyDown={(e) => {
+        // stopPropagation: Escape closes the list only, not a pop-up around it
+        if (e.key === 'Escape' && open) {
+          e.stopPropagation();
+          setOpen(false);
+          setQ('');
+          triggerRef.current?.focus();
+        }
+      }}
+    >
       <button
         type="button"
+        ref={triggerRef}
         onClick={() => setOpen((o) => !o)}
-        aria-haspopup="listbox"
         aria-expanded={open}
         className="flex items-center gap-2.5 h-11 px-4 rounded-token-md bg-surface text-ink font-bold text-sm shadow-neu-sm hover:-translate-y-0.5 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
       >
@@ -52,6 +65,7 @@ export function LanguageSelect({ className = '' }) {
               <Search size={15} className="text-muted shrink-0" />
               <input
                 autoFocus
+                aria-label="Search language"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Search language…"
@@ -59,17 +73,20 @@ export function LanguageSelect({ className = '' }) {
               />
             </div>
           </div>
-          <ul className="max-h-72 overflow-y-auto py-1.5" role="listbox">
+          <ul className="max-h-72 overflow-y-auto py-1.5">
             {filtered.length === 0 ? (
               <li className="px-4 py-3 text-sm text-muted text-center">No language found</li>
             ) : (
               filtered.map((l) => {
                 const active = l.code === current;
                 return (
-                  <li key={l.code} role="option" aria-selected={active}>
+                  <li key={l.code}>
                     <button
+                      type="button"
                       onClick={() => pick(l.code)}
-                      className={cx('w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors', active ? 'bg-brand/10' : 'hover:bg-surface-2')}
+                      aria-current={active ? 'true' : undefined}
+                      aria-label={l.native}
+                      className={cx('w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus-ring', active ? 'bg-brand/10' : 'hover:bg-surface-2')}
                     >
                       <span className={cx('w-8 shrink-0 text-center rounded-md py-0.5 text-[10px] font-black uppercase tracking-wide', active ? 'bg-brand text-on-brand' : 'bg-surface-2 text-muted')}>{l.code}</span>
                       <span className="flex-1 min-w-0">

@@ -36,6 +36,10 @@ Source: `.pipeline/audit-a11y.md`. Each item below was fixed in its own commit.
 - **Decided:** the toast container (always on the page) is `role="status" aria-live="polite"`, so "Colours saved" and "Profile saved" are read out; it also follows the reduce-motion setting like `Modal` (`MotionConfig reducedMotion="user"`).
 - **Rejected:** `role="alert"` for error toasts (assertive interruptions; no error toast was reported as missed).
 
+### 7. Language list
+- **Decided:** the simpler option: a plain list of buttons (no `listbox`/`option` roles, which promised arrow-key behaviour it never had). Each button is named by the language's own name ("Deutsch"), the chosen one has `aria-current`, the search box is labelled "Search language", Escape closes the open list only (the pop-up behind stays), and choosing a language or pressing Escape puts focus back on the control.
+- **Rejected:** the full listbox pattern (arrow keys, `aria-activedescendant`): much more code to keep right for a list this small.
+
 ## 2026-10-08 — Theme audit (final quality gate)
 
 A no-new-features pass over the whole colour-theme feature. Plan: `docs/superpowers/specs/2026-10-08-theme-audit.md`. Two rounds of audit, fix and re-audit, with a tester, an accessibility auditor, a coder and the reviewer.
