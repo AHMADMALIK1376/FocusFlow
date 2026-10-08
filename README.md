@@ -231,7 +231,8 @@ PGDATABASE=postgres
 PGUSER=postgres
 PGPASSWORD=your-database-password
 
-# Email (Gmail + App Password)
+# Email (local: Gmail + App Password. On Render use EMAIL_PROVIDER=gmail_api, see "Email on Render")
+EMAIL_PROVIDER=smtp
 EMAIL_USER=you@gmail.com
 EMAIL_PASS=your-16-char-app-password
 
@@ -316,8 +317,10 @@ The Google button uses the OAuth client ID set in `frontend/src/Pages/Authpage.j
 | `PGPASSWORD` | Yes | Postgres password |
 | `PGPORT` | No | Defaults to `5432` |
 | `PGDATABASE` | No | Defaults to `postgres` |
-| `EMAIL_USER` | Yes | Gmail address that sends emails |
-| `EMAIL_PASS` | Yes | Gmail App Password (not your normal password) |
+| `EMAIL_PROVIDER` | No | `smtp` (default, Gmail App Password) or `gmail_api` (needed on Render's free plan). An unknown value means email is "not configured". |
+| `EMAIL_USER` | For email | Gmail address that sends emails (both providers) |
+| `EMAIL_PASS` | `smtp` only | Gmail App Password (not your normal password) |
+| `GMAIL_CLIENT_ID` / `GMAIL_CLIENT_SECRET` / `GMAIL_REFRESH_TOKEN` | `gmail_api` only | Google OAuth credentials for sending through the Gmail API |
 | `PORT` | No | API port. Defaults to `5000`, but the frontend expects `5555` locally. |
 | `APP_URL` | No | Frontend address used in email links. Defaults to `http://localhost:3000`. |
 | `PUBLIC_API_URL` | No | Public API address used in "answer from the email" links. Defaults to `http://localhost:5555`. |
@@ -327,7 +330,16 @@ The Google button uses the OAuth client ID set in `frontend/src/Pages/Authpage.j
 | `DEFAULT_TZ` | No | Default reminder timezone. Defaults to `Asia/Karachi`. |
 | `NODE_ENV` | No | `development` or `production` |
 
-The server **refuses to start** if any required variable is missing and prints which ones.
+The server **refuses to start** if any required variable is missing and prints which ones. Missing email settings do not stop it: it prints a warning, and sign-up codes, password resets and email reminders fail with a plain message until they are set.
+
+### Email on Render
+
+Render's free plan blocks outbound SMTP ports, so `EMAIL_PROVIDER=smtp` cannot send there. Use `EMAIL_PROVIDER=gmail_api`, which sends from your own Gmail over HTTPS (about 500 emails a day):
+
+1. In Google Cloud, enable the Gmail API and create an OAuth client (web application).
+2. Publish the consent screen to "In production" first (a refresh token made while it is in "Testing" expires after 7 days), then create the refresh token for the scope `https://www.googleapis.com/auth/gmail.send` with the sender Gmail account.
+3. On Render set `EMAIL_PROVIDER`, `EMAIL_USER` (that same Gmail), `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN`.
+4. In the app open Settings, Reminders and press "Send test email". If it fails, the message says why.
 
 ### Frontend (`frontend/.env`)
 
