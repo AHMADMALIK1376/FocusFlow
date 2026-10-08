@@ -22,6 +22,10 @@ Source: `.pipeline/audit-a11y.md`. Each item below was fixed in its own commit.
 - **Decided:** switches are named with the on-screen title ("Goals"), not the id. The drag handle keeps its place in the Tab order because dnd-kit's keyboard sensor already reorders with Space and the arrow keys; it gets a visible ring, a bigger target and a per-feature name ("Reorder Goals").
 - **Rejected:** building our own keyboard reordering, or removing the handle from the Tab order.
 
+### 4. Design Studio: sticky Save bar, Undo, typed-colour error, typo
+- **Decided:** the Studio panel gets `scroll-pb-40` (10rem), the value the audit measured: with it 0 focused controls end up under the Save bar on a 360px phone and a short desktop (6rem left 17). Undo uses `aria-disabled` and ignores the click when there is nothing to undo, so focus stays on it instead of dropping to the page. The typed-colour error is `role="alert"`. "Pick a icon colour" now reads "Pick the icon colour".
+- **Rejected:** moving focus to Save when Undo runs out (the user did not ask to go there); a smaller or fixed-height Save bar (changes the look).
+
 ## 2026-10-08 — Theme audit (final quality gate)
 
 A no-new-features pass over the whole colour-theme feature. Plan: `docs/superpowers/specs/2026-10-08-theme-audit.md`. Two rounds of audit, fix and re-audit, with a tester, an accessibility auditor, a coder and the reviewer.

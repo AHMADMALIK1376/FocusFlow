@@ -77,6 +77,7 @@ test("a bad code shows the error and applies nothing; typing clears it", () => {
   expect(input).toHaveAttribute("aria-invalid", "true");
   const error = screen.getByText("That isn't a colour code. Try something like #EC706D.");
   expect(input).toHaveAttribute("aria-describedby", error.id);
+  expect(error).toHaveAttribute("role", "alert");
   fireEvent.change(input, { target: { value: "zz1" } });
   expect(screen.queryByText("That isn't a colour code. Try something like #EC706D.")).toBeNull();
   expect(input).not.toHaveAttribute("aria-invalid");
@@ -92,7 +93,7 @@ test("an empty box, or the value that is already set, applies nothing", () => {
 
 test("the colour input shows the Auto colour, and reports drags and blur", () => {
   const { onDrag, onDragEnd } = setup({ value: "auto", role: "text", title: "Text", autoAllowed: true, rows: [{ label: "Dark text", swatches: TEXT_SWATCHES.dark }] });
-  const color = screen.getByLabelText("Pick a text colour");
+  const color = screen.getByLabelText("Pick the text colour");
   expect(color).toHaveAttribute("type", "color");
   expect(color.value).toBe("#123456");
   fireEvent.change(color, { target: { value: "#654321" } });

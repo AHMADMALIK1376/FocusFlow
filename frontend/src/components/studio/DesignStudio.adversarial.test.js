@@ -94,7 +94,7 @@ describe("hex box: nothing odd is applied or previewed", () => {
     fireEvent.blur(input);
     await settle();
     expect(v("--canvas")).toBe(DEFAULT_CANVAS);
-    expect(footer(/Undo/)).toBeDisabled();
+    expect(footer(/Undo/)).toHaveAttribute("aria-disabled", "true");
     expect(storedTheme()).toEqual(DEFAULT_THEME);
     // every preview call since the start shows the default background (or ends the preview)
     mockPreviewCalls.slice(before).forEach((t) => { if (t) expect(t.background).toBe(DEFAULT_THEME.background); });
@@ -164,7 +164,7 @@ describe("races and sequences", () => {
     await waitFor(() => expect(dialog()).toBeInTheDocument());
     expect(screen.queryByText("Unsaved changes")).toBeNull();
     expect(palette(MIDNIGHT)).toHaveAttribute("aria-pressed", "false");
-    expect(footer(/Undo/)).toBeDisabled();
+    expect(footer(/Undo/)).toHaveAttribute("aria-disabled", "true");
   });
 
   it("close and open in the same tick with changes does not crash or leave a preview behind on Cancel", async () => {
@@ -212,16 +212,16 @@ describe("races and sequences", () => {
 
   it("undo merging: drag background, switch to Brand mid-drag, drag brand = separate undo steps", async () => {
     mount();
-    fireEvent.change(screen.getByLabelText("Pick a background colour"), { target: { value: "#123456" } });
+    fireEvent.change(screen.getByLabelText("Pick the background colour"), { target: { value: "#123456" } });
     await waitFor(() => expect(v("--canvas")).toBe(trip("#123456")));
-    fireEvent.change(screen.getByLabelText("Pick a background colour"), { target: { value: "#223456" } });
+    fireEvent.change(screen.getByLabelText("Pick the background colour"), { target: { value: "#223456" } });
     await waitFor(() => expect(v("--canvas")).toBe(trip("#223456")));
     // switch role without any blur reaching the old input
     fireEvent.click(screen.getByRole("button", { name: "Brand" }));
-    fireEvent.change(screen.getByLabelText("Pick a brand colour"), { target: { value: "#336699" } });
+    fireEvent.change(screen.getByLabelText("Pick the brand colour"), { target: { value: "#336699" } });
     await waitFor(() => expect(v("--brand")).toBe(trip("#336699")));
     fireEvent.click(screen.getByRole("button", { name: "Background" }));
-    fireEvent.change(screen.getByLabelText("Pick a background colour"), { target: { value: "#445566" } });
+    fireEvent.change(screen.getByLabelText("Pick the background colour"), { target: { value: "#445566" } });
     await waitFor(() => expect(v("--canvas")).toBe(trip("#445566")));
     // 3 steps: bg(merged), brand, bg again
     fireEvent.click(footer(/Undo/));
@@ -232,16 +232,16 @@ describe("races and sequences", () => {
     expect(v("--canvas")).toBe(trip("#223456"));
     fireEvent.click(footer(/Undo/));
     await waitFor(() => expect(v("--canvas")).toBe(DEFAULT_CANVAS));
-    expect(footer(/Undo/)).toBeDisabled();
+    expect(footer(/Undo/)).toHaveAttribute("aria-disabled", "true");
   });
 
   it("a drag followed by a swatch click never merges into the drag", async () => {
     mount();
-    fireEvent.change(screen.getByLabelText("Pick a background colour"), { target: { value: "#123456" } });
+    fireEvent.change(screen.getByLabelText("Pick the background colour"), { target: { value: "#123456" } });
     await waitFor(() => expect(v("--canvas")).toBe(trip("#123456")));
     fireEvent.click(screen.getByRole("button", { name: "Blush #F9D9D6" }));
     await waitFor(() => expect(v("--canvas")).toBe(trip("#F9D9D6")));
-    fireEvent.change(screen.getByLabelText("Pick a background colour"), { target: { value: "#654321" } });
+    fireEvent.change(screen.getByLabelText("Pick the background colour"), { target: { value: "#654321" } });
     await waitFor(() => expect(v("--canvas")).toBe(trip("#654321")));
     fireEvent.click(footer(/Undo/));
     await waitFor(() => expect(v("--canvas")).toBe(trip("#F9D9D6")));
@@ -273,7 +273,7 @@ describe("Reset, Save, reload", () => {
     fireEvent.click(screen.getByText("outside-open"));
     await waitFor(() => expect(dialog()).toBeInTheDocument());
     expect(palette(MIDNIGHT)).toHaveAttribute("aria-pressed", "true");
-    expect(footer(/Undo/)).toBeDisabled();
+    expect(footer(/Undo/)).toHaveAttribute("aria-disabled", "true");
     fireEvent.click(palette(MATCHA));
     await waitFor(() => expect(v("--canvas")).toBe(trip(MATCHA.background)));
     fireEvent.click(footer("Cancel"));

@@ -50,7 +50,7 @@ function CustomHex({ role, value, onPick }) {
         className="!py-2 !px-3 text-sm font-mono"
       />
       {error ? (
-        <p id={errorId} className="mt-1.5 text-xs font-semibold text-warn-ink">That isn&apos;t a colour code. Try something like #EC706D.</p>
+        <p id={errorId} role="alert" className="mt-1.5 text-xs font-semibold text-warn-ink">That isn&apos;t a colour code. Try something like #EC706D.</p>
       ) : (
         <p id={hintId} className="mt-1.5 text-xs text-muted">Press Enter to apply.</p>
       )}
@@ -123,7 +123,7 @@ export default function RolePicker({
             <input
               type="color"
               value={native}
-              aria-label={`Pick a ${role} colour`}
+              aria-label={`Pick the ${role} colour`}
               onChange={(e) => onDrag(e.target.value)}
               onBlur={onDragEnd}
               className="w-10 h-10 mb-6 p-0 rounded-token-sm border border-[rgb(var(--border))] bg-transparent cursor-pointer shrink-0"

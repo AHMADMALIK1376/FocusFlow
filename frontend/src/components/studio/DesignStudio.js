@@ -245,6 +245,7 @@ export default function DesignStudio({ open, onClose, onReopen }) {
     onClose();
   };
   const undo = () => {
+    if (stateRef.current.past.length === 0) return;
     dragRole.current = null;
     dispatch({ type: 'undo' });
     setAnnounce('Undid the last change');
@@ -280,6 +281,7 @@ export default function DesignStudio({ open, onClose, onReopen }) {
       trapFocus
       fullHeightOnMobile
       maxWidthClassName="max-w-4xl"
+      className="scroll-pb-40"
     >
       <p className="text-sm text-muted -mt-2 mb-5">
         Pick a palette or mix your own. The app behind this window changes as you go, and nothing is saved until you press Save.
@@ -339,7 +341,7 @@ export default function DesignStudio({ open, onClose, onReopen }) {
             className="mb-6 rounded-token-md bg-surface-2 p-3"
             onToggle={(e) => setAdvancedOpen(e.currentTarget.open)}
           >
-            <summary className="cursor-pointer text-sm font-bold text-ink">Advanced: logo and icon colours</summary>
+            <summary className="cursor-pointer py-2 text-sm font-bold text-ink">Advanced: logo and icon colours</summary>
             {advancedOpen && (
               <div className="mt-4 space-y-6">
                 {ADVANCED.map((a) => (
@@ -400,7 +402,14 @@ export default function DesignStudio({ open, onClose, onReopen }) {
           </>
         ) : (
           <>
-            <Button type="button" variant="ghost" size="sm" disabled={state.past.length === 0} onClick={undo}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              aria-disabled={state.past.length === 0}
+              className="aria-disabled:opacity-50 aria-disabled:pointer-events-none"
+              onClick={undo}
+            >
               <Undo2 size={15} aria-hidden="true" /> Undo
             </Button>
             <Button type="button" variant="ghost" size="sm" onClick={() => change({ ...DEFAULT_THEME }, 'Back to FocusFlow colours')}>
