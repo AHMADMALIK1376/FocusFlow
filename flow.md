@@ -5,6 +5,24 @@ Update this file with every change.
 
 ---
 
+## Staying signed in, 401s and sign-out reasons (Package 2)
+
+Talking to the backend (`services/api.js`, `authFetch`):
+1. A 401 on a signed-in browser is read for its `code`.
+2. `USER_NOT_FOUND` or `TOKEN_EXPIRED`: `signOutForReason(code)` at once.
+3. `NO_TOKEN` or `INVALID_TOKEN`: `confirmSessionOver()` sends one raw `GET /api/auth/me` (shared by parallel requests while it is in flight). Only a 401 with a known code
+   from it signs out; 200, 5xx, 408, 429, 403 and network errors do nothing. If the failing request was `/auth/me`, no second call is made.
+4. `signOutForReason` runs once (it stops when the marker is already gone): `clearAllUserData()`, then `saveSignOutReason(code)` into `localStorage`, then
+   `window.location.assign('/login')` unless already on an auth page. The caller still gets the error.
+5. `setToken('session')` forgets the saved reason; `authAPI.logout()` saves the reason `manual`.
+
+On the server (`middleware/auth.js`): every 401 first writes one `auth 401 ...` line through `describe401` (see decision.md), then answers as before.
+
+The sign-in page (`LoginForm`): reads the saved reason once and shows its calm line (`signOutMessage`); then, unless the reason is `manual`, one `restoreSession()`
+(`/auth/me`) runs: on success the marker and name are restored and it navigates to `/dashboard`.
+
+---
+
 ## Sending email (Package 1)
 
 How an email leaves the server, for sign-up codes, password resets, reminders and the test button:
@@ -110,7 +128,7 @@ Solid status fills (delete pop-up, danger `Button`, the done tick) take `text-on
 3. `authFetch()` adds the `X-Requested-With: FocusFlow` header and calls `fetch('/api/...')` on the app's own address (Vercel passes `/api` on to the server; the dev server does the same). The sign-in is the HttpOnly cookie `ff_session`, which the browser attaches by itself, so no script reads it and nothing is kept in `localStorage` but a "signed in" marker. `REACT_APP_API_URL` must stay unset.
 4. `handleResponse()` checks the reply:
    - Not OK: it throws the server's `error` message.
-   - **401 with `USER_NOT_FOUND`, `TOKEN_EXPIRED` or `INVALID_TOKEN`:** it clears the saved login (`clearAllUserData`) and goes to `/login`.
+   - **401 with `USER_NOT_FOUND` or `TOKEN_EXPIRED`:** it clears the saved login (`clearAllUserData`), saves the reason and goes to `/login`. `NO_TOKEN` / `INVALID_TOKEN` do the same only after `/auth/me` confirms (see the Package 2 section at the top).
 
 ---
 

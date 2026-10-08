@@ -6,6 +6,63 @@ Update this file with every change.
 
 ---
 
+## 2026-10-08 — Why was the owner signed out? Log, confirm, say why, recover (Package 2)
+
+Plan: `docs/superpowers/specs/2026-10-08-reminders-email-and-session.md`, Part C.
+
+**The real cause could not be proven from here.** There is no access to the Render log, the Render environment or the phone, and
+the sign-out has not been reproduced. What follows is a ranked list of suspects, each with what the code shows, plus changes that
+(a) make the next sign-out identify itself in the server log, (b) stop a one-off glitch from ending a session, and (c) tell the
+student why and bring them back in when the cookie is still good. No likely root cause was found in the code.
+
+### Ranked suspects (most to least likely, by judgement, not by proof)
+1. **The "signed in" marker and the cookie disagree.** The marker `focus_signedin` is in localStorage, the login is the HttpOnly cookie
+   `ff_session`; browsers can clear one without the other (clear cookies only, a cookie cleaner, storage pressure). Marker kept and cookie gone
+   gives `NO_TOKEN` from `middleware/auth.js` and `api.js` used to sign out on the first one. Cookie kept and marker gone gives no 401 at
+   all: `GuestOnly`/`ProtectedRoute` look only at the marker and the name, so the login page shows although the session is good.
+2. **`JWT_SECRET` changed or differs after a redeploy.** `auth.js` verifies with `process.env.JWT_SECRET`; tokens carry no secret version, so
+   every cookie turns into `INVALID_TOKEN` ("invalid signature") and `auth.js` clears the cookie on that code. This is a real sign-out, once for
+   everyone. The new log line says "invalid signature", which tells this apart from the rest. A missing secret is not it: that answers 500
+   `CONFIG_ERROR`, which never signs anyone out.
+3. **The cookie is not sent: another host, or another cookie jar.** The cookie has no `Domain`, so it belongs to exactly one address. A Vercel
+   preview or alias host, or an installed PWA whose cookie jar differs from Chrome's, would have its own jar. Whether an installed Android PWA
+   shares Chrome's cookies could not be checked here. On a different host the marker is missing too (localStorage is per address), which is
+   suspect 1's login-page case, not a 401. The new log line records `cookieHeader`, `ffSession`, `via` and a browser family to tell these apart.
+4. **`Set-Cookie` lost through the Vercel rewrite, or on an error or cold-start response.** `utils/sessionCookie.js` sets
+   `Path=/; HttpOnly; SameSite=Lax; Max-Age=1728000` plus `Secure` only when `NODE_ENV=production` (so a Render service without that variable
+   sets no `Secure`; it still works over HTTPS). A test now pins the exact string. Vercel's own 502/504 for a sleeping Render has no
+   `Set-Cookie`, and a response without `Set-Cookie` never deletes a cookie. Whether Vercel forwards `Set-Cookie` unchanged cannot be tested here.
+5. **A real expiry.** Sessions last 20 days (`utils/session.js`); the cookie is renewed on use once the login is a day old
+   (`shouldRefresh`), so a daily user never gets near it; 20 days without opening the app gives `TOKEN_EXPIRED`. Unlikely for a daily tester.
+6. **`USER_NOT_FOUND` or a database blip.** `userExists` answers true when the check itself fails (connection or query error), so a blip
+   cannot sign anyone out; a test proves it and proves no cookie is cleared or re-sent badly in that case. A genuinely missing account row
+   (for example the owner's test account was deleted and recreated) is a real, definitive sign-out.
+
+Where the cookie is cleared (the whole list): `auth.js` on `USER_NOT_FOUND`, `TOKEN_EXPIRED` and `INVALID_TOKEN` when the login came from the
+cookie, and `logout`. Never on a 5xx, the CSRF 403, the database-blip path, or an error thrown by a route (tested with a real Express app).
+
+### What changed
+- **One log line per 401** (`describe401` in `middleware/auth.js`): `auth 401 code=... reason="..." METHOD /path tokenAgeSec=N user=ID
+  cookieHeader=yes|no ffSession=yes|empty|no via=cookie|header|none ua=<family>`. No token text, no query string, no raw user-agent (only a family
+  such as Android-Chrome), no emoji. The plan said token age in minutes; seconds were chosen because it distinguishes "just issued" from "old".
+- **Confirm before signing out** (`services/api.js`): `NO_TOKEN` and `INVALID_TOKEN` trigger one `GET /api/auth/me`, shared by requests that
+  fail together (one confirmation, one sign-out). Only a 401 with a known code from that check signs out. A 200, a 5xx, 408, 429, 403 or a
+  network error keeps the student signed in. `TOKEN_EXPIRED` and `USER_NOT_FOUND` still sign out at once. If the failing request was `/auth/me` itself,
+  it counts as the confirmation.
+- **The reason is kept** in `localStorage` (`ff_signout_reason`, `services/sessionReason.js`), because `clearAllUserData` wipes `sessionStorage`.
+  The sign-in page shows one calm line, a different one for each reason, none after a deliberate sign-out, and the reason is forgotten when the
+  student signs in again.
+- **Session recovery:** on the sign-in page, one `/auth/me` runs (`restoreSession` in `UserContext`); if the cookie is good the marker and name
+  come back and the student goes to `/dashboard`. Skipped right after a deliberate sign-out. `GuestOnly` and `ProtectedRoute` are unchanged.
+- **Rejected:** ignoring `NO_TOKEN` (a real sign-out would loop); a longer cookie (20 days is enough); `SameSite=None` (weaker, and not needed because
+  the API shares the app's address); changing which codes clear the cookie (no evidence yet, and a wrong guess could keep a dead cookie around);
+  logging the raw user-agent or any part of the token (privacy).
+- **Known limits:** INVALID_TOKEN still clears the cookie on the server before the client confirms, so a confirmation after it gets `NO_TOKEN` and
+  signs out: the confirmation protects against `NO_TOKEN` glitches and failed requests, not against a wrong secret. The restore costs one request per
+  sign-in page visit. Owner action: after the next surprise sign-out, copy the `auth 401` line from the Render log.
+
+---
+
 ## 2026-10-08 — Email that works on Render, and honest answers about it (Package 1)
 
 Plan: `docs/superpowers/specs/2026-10-08-reminders-email-and-session.md`, Part A.
