@@ -142,7 +142,7 @@ flowchart LR
     SCHED --> WA
 ```
 
-1. The React app calls the API through `frontend/src/services/api.js`. That file adds the saved login token to every request. If the server says the token is expired or the account no longer exists, it signs the user out.
+1. The React app calls the API through `frontend/src/services/api.js`. It calls `/api` on the app's own address, and the browser attaches the sign-in (an HttpOnly cookie, `ff_session`) by itself; the file adds the `X-Requested-With: FocusFlow` header the server asks for on every change. If the server says the sign-in is expired or the account no longer exists, it signs the user out.
 2. Each request goes through the rate limiter, then `middleware/auth.js` (which checks the token and that the user still exists), then a controller, which runs SQL against Postgres.
 3. Once a minute, `services/notificationScheduler.js` works out which reminders are due in each user's own timezone and sends them by push, email or WhatsApp.
 
