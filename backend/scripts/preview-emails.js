@@ -1,7 +1,8 @@
 // Renders every email and answer page FocusFlow sends, from sample data, into
 // backend/email-previews/ so you can open them in a browser — nothing is sent.
 // Emails are written three times (email-previews/default, bold and dark) so you can judge a theme;
-// answer pages and WhatsApp stay in the normal look.
+// answer pages are written in the same three themes (page-<theme>-attendance.html and so on);
+// WhatsApp stays plain text.
 // Usage: node scripts/preview-emails.js   →  open email-previews/index.html
 const fs = require('fs');
 const path = require('path');
@@ -14,7 +15,6 @@ const { whatsappText } = require('../services/notifyChannels');
 const { withAnswerLink } = require('../services/notificationScheduler');
 const sampleThemes = require('./sampleThemes');
 const { localParts, computeDue, DEFAULT_SETTINGS, attendanceReport, attendanceView } = require('../utils/reminders');
-const notify = require('../controllers/notifyController');
 
 const OUT = path.join(__dirname, '..', 'email-previews');
 const APP = process.env.APP_URL;
@@ -58,7 +58,23 @@ samples.push(['test', {
   view: { headline: 'Your reminders are working!', sub: 'This is how FocusFlow will nudge you before classes, exams and deadlines.', facts: [{ icon: 'calendar-days', label: 'Today', value: 'Tuesday 6 October' }, { icon: 'globe', label: 'Time zone', value: 'Asia/Karachi' }] },
 }]);
 
-// Answer pages are served by the API; render them through the real handlers.
+// Answer pages are served by the API; render them through the real handlers. The student's theme
+// is read from a stand-in for the database (no real database is used), so each theme can be previewed.
+let previewTheme = null;
+const dbPath = path.join(__dirname, '..', 'config', 'database.js');
+require.cache[dbPath] = {
+  id: dbPath, filename: dbPath, loaded: true,
+  exports: {
+    getConnection: async () => ({
+      execute: async (sql) => {
+        if (/USER_PREFERENCES/.test(sql)) return { rows: previewTheme ? [{ DATA: { theme: previewTheme } }] : [] };
+        if (/RETURNING/.test(sql)) return { rows: [] }; // "report already sent": no email is attempted
+        return { rows: [{ SUBJECT_ID: 'S-PREVIEW', NAME: 'Compiler Construction', STATUS: 'Present' }] };
+      },
+      close: async () => {},
+    }),
+  },
+};
 function renderPage(handler, req) {
   return new Promise((resolve) => {
     const res = { statusCode: 200, status(c) { this.statusCode = c; return this; }, send: resolve, json: (o) => resolve(`<pre>${JSON.stringify(o, null, 2)}</pre>`) };
@@ -67,6 +83,7 @@ function renderPage(handler, req) {
 }
 
 (async () => {
+  const notify = require('../controllers/notifyController'); // after the stand-in database above
   fs.mkdirSync(OUT, { recursive: true });
   const links = [];
   const dataUri = (buf) => `data:image/png;base64,${buf.toString('base64')}`;
@@ -98,16 +115,25 @@ function renderPage(handler, req) {
   const sub = withAnswerLink(samples.find(([k]) => k === 'submit')[1], 'preview-user');
   const quiz = withAnswerLink(samples.find(([k]) => k === 'quiz')[1], 'preview-user');
   const tok = (n) => new URL(n.actions[0].url).searchParams.get('t');
-  write('page-attendance', await renderPage(notify.answerPage, { query: { t: tok(att), a: 'present' } }), 'Answer page · Did you attend? (Attended pre-picked)');
-  write('page-submit', await renderPage(notify.answerPage, { query: { t: tok(sub) } }), 'Answer page · Did you submit?');
-  write('page-quiz', await renderPage(notify.answerPage, { query: { t: tok(quiz) } }), 'Answer page · Quiz marks');
-  write('page-expired', await renderPage(notify.answerPage, { query: { t: 'nope' } }), 'Answer page · Expired link');
+  const pageGroups = [];
+  for (const [themeName, theme] of Object.entries(sampleThemes)) {
+    previewTheme = theme;
+    const group = [];
+    const putPage = async (name, handler, req, label) => write(`page-${themeName}-${name}`, await renderPage(handler, req), label, [], group);
+    await putPage('attendance', notify.answerPage, { query: { t: tok(att), a: 'present' } }, 'Answer page · Did you attend? (Attended pre-picked)');
+    await putPage('submit', notify.answerPage, { query: { t: tok(sub) } }, 'Answer page · Did you submit?');
+    await putPage('quiz', notify.answerPage, { query: { t: tok(quiz) } }, 'Answer page · Quiz marks');
+    await putPage('saved', notify.answer, { body: { t: tok(att), a: 'present' }, is: () => false }, 'Answer page · Saved (attendance)');
+    await putPage('expired', notify.answerPage, { query: { t: 'nope' } }, 'Answer page · Expired link (always the default look)');
+    pageGroups.push(`<h3>${themeName} theme</h3><ul style="line-height:2">${group.join('')}</ul>`);
+  }
+  previewTheme = null;
 
   const wa = samples.map(([k, n]) => `<h3>${k}</h3><pre>${whatsappText(withAnswerLink(n, 'preview-user')).replace(/</g, '&lt;')}</pre>`).join('');
   write('whatsapp', `<!doctype html><meta charset="utf-8"><body style="font-family:sans-serif;background:#e5ddd5;padding:20px">${wa}</body>`, 'WhatsApp messages');
 
   fs.writeFileSync(path.join(OUT, 'index.html'), `<!doctype html><meta charset="utf-8"><title>FocusFlow email previews</title>
-<body style="font-family:Poppins,Segoe UI,sans-serif;background:#F5EFE6;color:#342E3E;padding:24px"><h1 style="color:#EC706D">FocusFlow messages</h1>${themeSections.join('')}<h2>Answer pages and WhatsApp (normal look)</h2><ul style="line-height:2">${links.join('')}</ul></body>`);
+<body style="font-family:Poppins,Segoe UI,sans-serif;background:#F5EFE6;color:#342E3E;padding:24px"><h1 style="color:#EC706D">FocusFlow messages</h1>${themeSections.join('')}<h2>Answer pages</h2>${pageGroups.join('')}<h2>WhatsApp</h2><ul style="line-height:2">${links.join('')}</ul></body>`);
   console.log(`Wrote ${themeSections.length} themes of emails and ${links.length} other previews → ${path.join(OUT, 'index.html')}`);
   process.exit(0);
 })().catch((e) => { console.error(e); process.exit(1); });

@@ -55,7 +55,7 @@ The colours a student picks now show on the pages before sign-in, the error and 
 - **Icons:** the email icons are one flat colour with soft edges in the alpha channel, so a recolour is "keep the white file's alpha, set the RGB" (`services/emailIcons.js`, using `pngjs`, pure JavaScript, MIT, no dependencies; installs on Render's free plan). Tinted icons are cached (200 entries) and attached as in-memory buffers with the usual `cid`; a manifest colour still uses the file, so default attachments are unchanged. **Measured:** tinting coral reproduces the shipped `-coral.png` files with an alpha difference of 0 on all 22 icons (RGB within 1 where alpha is at least 200). **Rejected:** an SVG renderer (resvg and sharp have native or large WASM builds); keeping only the five ready-made tints (cannot match a colour).
 - **Theming never stops an email.** `loadUserTheme` returns null for no row, a missing table (migration not run), bad JSON, oversize data, an invalid theme or a database error, and never logs the data or the user. `paletteOf` falls back to the default palette if the palette code throws; `buildReminderEmail` falls back to the default email if the template throws; a failing tint falls back to the nearest ready-made icon. Each is tested, including a Proxy that throws when read.
 - **OQ2:** sign-up and password-reset code emails stay in the default look (security emails should always look the same; their call sites only have an address; sign-up has no theme yet). `codeEmail` accepts a theme only so the preview can show it.
-- **OQ3 (known gap):** the reminder answer pages opened from email buttons stay in the default look. They are not in the owner's list, and theming them would add a database read to a page with no login.
+- **OQ3 (closed by the answer-pages entry below):** the reminder answer pages used to stay in the default look; they now wear the theme.
 - `scripts/preview-emails.js` writes every email in three themes (`email-previews/default`, `bold`, `dark`); `scripts/test-email.js [to] --theme dark` sends the normal test plus a sample reminder in that theme. Emoji removed from both scripts' email subjects and sample text.
 
 ### Charts (`components/charts/categoryColors.js`)
@@ -68,6 +68,25 @@ The colours a student picks now show on the pages before sign-in, the error and 
 
 ### Guards
 - `design/colorGuard.test.js` scans the app's code for hex and numeric `rgb()/hsl()` colours; a new one fails with how to fix it. Data colours (subjects, routines, categories, status, third-party logos, neutral black/white effects, fallbacks) are listed with a reason in `design/colorAllowlist.js`; an entry whose colour is gone fails too. The engine (`design/theme/`) and `tokens.css` are the token source and are not scanned. The backend email guard is described above. The allowlist is per file and colour code, not per line, so a new interface use of an already-allowed code in the same file passes unnoticed; Tailwind default-palette classes (text-gray-500) are not scanned.
+
+---
+
+## 2026-10-08 — Answer pages wear the student's theme
+
+The pages that open from reminder emails, notifications and WhatsApp links (`backend/controllers/notifyController.js`) were always coral, so a student with a dark or bold theme got a themed email and then a coral page. They now use the same palette as the emails.
+
+- **Decision:** the page stylesheet and the tile/chip colours are built from the email palette (`emailPalette`, `DEFAULT_PALETTE` in `services/emailTheme.js`), the same fields `tones()` uses in the emails. The palette already passes the readability pass, so no new colours were added.
+- **Default is byte-identical:** `controllers/notifyPages.snapshot.test.js` compares every page type (question pages with and without a picked answer, expired, saved, "still open", skipped, error pages) to a fixture captured from the code before this change (committed first). It caught one slip while writing (the input focus shadow).
+- **Where the theme is read:**
+  - The GET page opens a connection only to read the theme (`loadUserTheme`, bound query, user id from the signed link's `u` claim), in `try/finally`.
+  - The POST path saves the answer exactly as before and only then reads the theme on the connection it already has.
+  - Expired or invalid links have no user, so they use the default look and never touch the database.
+  - Any failure (no database, query error, bad or huge data, missing claim, a palette that cannot be built) gives the default look. After a database error the 500 page does not try the database again.
+- **Icons:** the answer pages already use inline SVG line icons (`iconSet('web')`), whose colour is a plain `stroke`. So the themed palette's icon colours are used directly; no PNG tinting, data URIs or new route are needed (and `emailIcons.js` is untouched). The nearest-tint fallback only matters for email PNGs.
+- **Dark themes:** `:root{color-scheme:dark}` is added only for dark palettes, so form controls and scrollbars match. The picked outline and the focus ring use the contrast-fixed `coralText`. The default keeps its soft translucent coral focus halo (unchanged); a themed page gets a solid ring so it shows on a dark card.
+- **Checked on all 24 ready-made palettes** (`notifyPages.themed.test.js`): input text, button labels, chips, hint, labels, footer and links at 4.5 or more; picked outline, focus ring, wordmark (large bold text) and the "Missed" icon at 3 or more.
+- **Rejected:** a per-theme stylesheet route (extra request, cache and cookie-less access to the theme); CSS variables set from the query string (a link would carry the theme, and it could go stale); making the GET page require a login (email scanners and WhatsApp must still open it).
+- `scripts/preview-emails.js` now also writes `page-<theme>-attendance|submit|quiz|saved|expired.html` for default, bold and dark.
 
 ---
 

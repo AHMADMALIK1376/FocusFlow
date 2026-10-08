@@ -153,7 +153,10 @@ Before React starts, the inline script in `public/index.html` paints the cached 
    - email through `emailService.js` → `emailQueueService.js`, using the templates in `emailTemplates.js`
 
 #### Reminder emails
-`deliver` → `loadUserTheme(connection, user.userId)` (`emailTheme.js`: reads `USER_PREFERENCES`, null on any problem) → `buildReminderEmail(n, appUrl, theme)` (`notifyChannels.js`; falls back to the default look if the template throws) → `reminderEmail` → `emailPalette(theme)` (`emailTheme.js`, using the generated engine copy in `services/theme/`; the default or an invalid theme gives `DEFAULT_PALETTE`; others are derived and made readable) → templates in `emailTemplates.js` (colours only from the palette) → `iconAttachment` (`emailIcons.js`: the existing file for a ready-made colour, a tinted buffer for another, the nearest ready-made file if tinting fails). Sign-up and reset code emails and the answer pages stay in the default look.
+`deliver` → `loadUserTheme(connection, user.userId)` (`emailTheme.js`: reads `USER_PREFERENCES`, null on any problem) → `buildReminderEmail(n, appUrl, theme)` (`notifyChannels.js`; falls back to the default look if the template throws) → `reminderEmail` → `emailPalette(theme)` (`emailTheme.js`, using the generated engine copy in `services/theme/`; the default or an invalid theme gives `DEFAULT_PALETTE`; others are derived and made readable) → templates in `emailTemplates.js` (colours only from the palette) → `iconAttachment` (`emailIcons.js`: the existing file for a ready-made colour, a tinted buffer for another, the nearest ready-made file if tinting fails). Sign-up and reset code emails stay in the default look.
+
+#### Answer pages (opened from a reminder)
+`GET /api/notify/answer` → `readToken` (bad or expired: default look, no database) → `lookOf(p.u)` (opens a connection only to read the theme via `loadUserTheme`, closes it in `finally`, default look on any problem) → `page()` with CSS from `pageCss(palette)` and icons from `iconSet('web', palette)`. `POST` saves the answer first, then `lookOn(connection, p.u)` reads the theme for the confirmation or error page (not after a database error). Both use the default look when anything fails.
 
 ---
 
