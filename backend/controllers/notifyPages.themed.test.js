@@ -195,3 +195,36 @@ test('page text and outlines are readable on all 24 ready-made palettes', () => 
     for (const [a, b] of OUTLINE_PAIRS) assert.ok(ratio(P, a, b) >= 3, `${p.id}: ${a} on ${b} = ${ratio(P, a, b).toFixed(2)}`);
   }
 });
+
+// An unreachable or slow database must not hold the question page back (it needs no database).
+test('GET: a failing connection gives the default-look page straight away, after a single try', async () => {
+  db.connectFails = true;
+  const res = await get(notify, { t: TOKENS.att });
+  assert.equal(res.statusCode, 200);
+  assert.ok(res.sent.includes('Did you attend'));
+  assert.ok(res.sent.includes('#EC706D'));
+  assert.deepEqual(db.connectArgs, [[1, 0]], 'one try, no pause between tries');
+});
+
+test('GET: a connection that is too slow gives the default look after the wait, and is closed when it does arrive', async () => {
+  const { mock } = require('node:test');
+  mock.timers.enable({ apis: ['setTimeout'] });
+  try {
+    let open;
+    db.connectGate = new Promise((resolve) => { open = resolve; });
+    store('midnight');
+    const pending = get(notify, { t: TOKENS.att });
+    await new Promise((resolve) => setImmediate(resolve));
+    mock.timers.tick(1500);
+    const res = await pending;
+    assert.equal(res.statusCode, 200);
+    assert.ok(res.sent.includes('#EC706D'), 'default look, not the stored theme');
+    open();
+    await new Promise((resolve) => setImmediate(resolve));
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(db.calls.filter((c) => c.opened).length, 1);
+    assert.equal(db.calls.filter((c) => c.closed).length, 1, 'the late connection is closed');
+  } finally {
+    mock.timers.reset();
+  }
+});

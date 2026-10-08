@@ -327,16 +327,28 @@ async function lookOn(connection, userId) {
 }
 
 // Same, for a page that has no database connection yet: open one only to read the theme.
+// The question page needs no database, so it must not wait for one: a single try, and after
+// LOOK_WAIT_MS the default look is shown (a connection that arrives later is still closed).
+const LOOK_WAIT_MS = 1500;
 async function lookOf(userId) {
-  let connection;
+  if (typeof userId !== 'string' || !userId) return DEFAULT_LOOK;
+  const read = (async () => {
+    let connection;
+    try {
+      connection = await getConnection(1, 0);
+      return await lookOn(connection, userId);
+    } catch {
+      return DEFAULT_LOOK;
+    } finally {
+      try { if (connection) await connection.close(); } catch { /* the page matters more than the close */ }
+    }
+  })();
+  let timer;
+  const tooSlow = new Promise((resolve) => { timer = setTimeout(() => resolve(DEFAULT_LOOK), LOOK_WAIT_MS); });
   try {
-    if (typeof userId !== 'string' || !userId) return DEFAULT_LOOK;
-    connection = await getConnection();
-    return await lookOn(connection, userId);
-  } catch {
-    return DEFAULT_LOOK;
+    return await Promise.race([read, tooSlow]);
   } finally {
-    try { if (connection) await connection.close(); } catch { /* the page matters more than the close */ }
+    clearTimeout(timer);
   }
 }
 

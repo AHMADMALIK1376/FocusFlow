@@ -15,7 +15,7 @@ export function MascotPicker({ open, onClose, value, onPick }) {
             aria-pressed={value === m.id}
             className={cx(
               'rounded-token-md bg-surface-2 p-2 flex flex-col items-center gap-1 transition-transform hover:-translate-y-0.5',
-              value === m.id && 'ring-2 ring-[rgb(var(--brand))]'
+              value === m.id && 'ring-2 ring-focus-ring'
             )}
           >
             <img src={mascotSrc(m.id)} alt="" className="w-16 h-16 object-contain" />

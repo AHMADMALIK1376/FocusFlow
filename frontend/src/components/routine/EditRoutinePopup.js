@@ -149,7 +149,7 @@ export default function EditRoutinePopup({ routine, onClose, onSave }) {
                 {selectedDays.map(day => (
                   <button key={day} onClick={() => setActiveDayForColor(day)}
                     className={`text-[8px] px-2 py-1 rounded-token-sm font-bold transition-all flex items-center gap-1
-                      ${activeDayForColor === day ? 'ring-2 ring-brand bg-surface scale-105 shadow-neu-sm' : 'bg-surface-2 text-muted hover:bg-[rgb(var(--ink)/0.06)]'}`}>
+                      ${activeDayForColor === day ? 'ring-2 ring-focus-ring bg-surface scale-105 shadow-neu-sm' : 'bg-surface-2 text-muted hover:bg-[rgb(var(--ink)/0.06)]'}`}>
                     <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: getDayColor(day) }}></span>
                     {day}
                   </button>

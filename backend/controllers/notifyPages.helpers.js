@@ -7,15 +7,17 @@ process.env.JWT_SECRET = 'test-secret';
 process.env.APP_URL = 'https://focusflow.example';
 
 // What the fake database does. Tests change these fields; reset() puts them back.
-const db = { calls: [], connectFails: false, themeData: undefined, themeThrows: false, subjects: [], attendanceRows: [] };
-const reset = () => Object.assign(db, { calls: [], connectFails: false, themeData: undefined, themeThrows: false, subjects: [{ SUBJECT_ID: 'S1', NAME: 'Compiler <b>' }], attendanceRows: [{ SUBJECT_ID: 'S1', NAME: 'Compiler', STATUS: 'Present' }] });
+const db = { calls: [], connectArgs: [], connectGate: null, connectFails: false, themeData: undefined, themeThrows: false, subjects: [], attendanceRows: [] };
+const reset = () => Object.assign(db, { calls: [], connectArgs: [], connectGate: null, connectFails: false, themeData: undefined, themeThrows: false, subjects: [{ SUBJECT_ID: 'S1', NAME: 'Compiler <b>' }], attendanceRows: [{ SUBJECT_ID: 'S1', NAME: 'Compiler', STATUS: 'Present' }] });
 reset();
 
 const dbPath = path.join(__dirname, '..', 'config', 'database.js');
 require.cache[dbPath] = {
   id: dbPath, filename: dbPath, loaded: true,
   exports: {
-    getConnection: async () => {
+    getConnection: async (...args) => {
+      db.connectArgs.push(args);
+      if (db.connectGate) await db.connectGate; // a test holds the connection back to mimic a slow database
       if (db.connectFails) throw new Error('no database');
       let open = true;
       db.calls.push({ opened: true });

@@ -34,6 +34,14 @@ describe('focus rings', () => {
     expect(bad).toEqual([]);
   });
 
+  it('selected-state rings (mascot picker, routine day colour) use the guarded ring, not brand', () => {
+    ['components/ui/MascotPicker.js', 'components/routine/EditRoutinePopup.js'].forEach((rel) => {
+      const src = fs.readFileSync(path.join(ROOT, rel), 'utf8');
+      expect(src).toContain('ring-2 ring-focus-ring');
+      expect(src).not.toMatch(/ring-2 ring-(?:brand\b|\[rgb\(var\(--brand)/);
+    });
+  });
+
   it('the token is wired up for Tailwind', () => {
     const cfg = fs.readFileSync(path.join(ROOT, '..', 'tailwind.config.js'), 'utf8');
     expect(cfg).toContain("'focus-ring': rgb('--ring')");
