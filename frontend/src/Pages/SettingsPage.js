@@ -183,7 +183,7 @@ export default function SettingsPage() {
         <div className="text-sm text-muted leading-relaxed space-y-2">
           <p>FocusFlow keeps you signed in with a secure cookie and remembers your settings in this browser. There are no ads or tracking.</p>
           <p>
-            <Link to="/privacy" className="inline-flex items-center gap-1.5 font-bold text-brand hover:underline">
+            <Link to="/privacy" className="inline-flex items-center gap-1.5 py-1.5 font-bold text-brand hover:underline">
               Read the privacy details <ArrowRight size={14} />
             </Link>
           </p>

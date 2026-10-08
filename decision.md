@@ -40,6 +40,10 @@ Source: `.pipeline/audit-a11y.md`. Each item below was fixed in its own commit.
 - **Decided:** the simpler option: a plain list of buttons (no `listbox`/`option` roles, which promised arrow-key behaviour it never had). Each button is named by the language's own name ("Deutsch"), the chosen one has `aria-current`, the search box is labelled "Search language", Escape closes the open list only (the pop-up behind stays), and choosing a language or pressing Escape puts focus back on the control.
 - **Rejected:** the full listbox pattern (arrow keys, `aria-activedescendant`): much more code to keep right for a list this small.
 
+### 8. Small ones, and what was left
+- **Done:** `Modal` is named with `aria-labelledby` pointing at its visible heading (the heading's text and the dialog name can no longer drift apart); the Close button is 32px; the focus trap counts a `<summary>` as a stop; the Studio's Advanced summary and the privacy link have a taller click area; the cookie buttons say which one is current (`aria-pressed`) and use the focus ring token.
+- **Known, left as is:** no "Skip to content" link (outside the audited files; 13 Tab presses to the first Settings card); the "Turn on" button in Reminders is named just "Turn on"; the Studio's Save button leaves the Tab order when a mix is unreadable (the guard repairs every mix tried, so it could not be reached in the browser). Also left: a check icon on the chosen mascot, a themed focus ring on the mascot buttons, the long Tab walk through the Studio swatches, and touch targets between 24px and 44px (they pass WCAG 2.2 AA).
+
 ## 2026-10-08 — Theme audit (final quality gate)
 
 A no-new-features pass over the whole colour-theme feature. Plan: `docs/superpowers/specs/2026-10-08-theme-audit.md`. Two rounds of audit, fix and re-audit, with a tester, an accessibility auditor, a coder and the reviewer.

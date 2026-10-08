@@ -52,3 +52,26 @@ test("fullHeightOnMobile: a full-height sheet on phones, above the tab bar", () 
   expect(dialog).toHaveClass("h-[100dvh]", "rounded-none", "sm:max-h-[85vh]", "sm:rounded-token-lg");
   expect(dialog.parentElement).toHaveClass("z-[1500]", "p-0", "sm:p-4");
 });
+
+test("the dialog is named by its visible heading, and the Close button is at least 32px", () => {
+  render(<Harness />);
+  fireEvent.click(screen.getByRole("button", { name: "Open" }));
+  const dialog = screen.getByRole("dialog", { name: "Test" });
+  const heading = screen.getByRole("heading", { name: "Test" });
+  expect(dialog).toHaveAttribute("aria-labelledby", heading.id);
+  expect(dialog).not.toHaveAttribute("aria-label");
+  expect(screen.getByRole("button", { name: "Close" })).toHaveClass("w-8", "h-8");
+});
+
+test("trapFocus: a closing <details> summary counts as a stop, so Tab wraps from it", () => {
+  render(
+    <Modal open onClose={() => {}} title="Test" trapFocus>
+      <button>First</button>
+      <details><summary>More</summary><p>text</p></details>
+    </Modal>
+  );
+  const summary = screen.getByText("More");
+  summary.focus();
+  fireEvent.keyDown(document, { key: "Tab" });
+  expect(document.activeElement).toBe(screen.getByRole("dialog").querySelector("button"));
+});
