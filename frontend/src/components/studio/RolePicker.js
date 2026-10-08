@@ -68,7 +68,7 @@ function Swatch({ swatch, selected, onPick }) {
       style={{ backgroundColor: swatch.hex }}
       className={[
         'relative w-8 h-8 rounded-full border border-[rgb(var(--border))] transition-transform motion-reduce:transition-none',
-        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand',
+        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus-ring',
         selected ? 'ring-2 ring-ink ring-offset-2 ring-offset-surface' : 'hover:scale-110 motion-reduce:hover:scale-100',
       ].join(' ')}
     >

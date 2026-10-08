@@ -40,7 +40,7 @@ export function Button({
       className={cx(
         'inline-flex items-center justify-center font-bold rounded-token-md',
         'transition-all duration-300 ease-spring select-none',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
         'active:scale-[0.96] active:shadow-neu-inset disabled:opacity-50 disabled:pointer-events-none',
         SIZES[size],
         VARIANTS[variant],
@@ -63,7 +63,7 @@ export function IconButton({ label, className = '', children, ...props }) {
         'inline-flex items-center justify-center w-11 h-11 rounded-token-md',
         'bg-surface text-ink shadow-neu-sm transition-all duration-300 ease-spring',
         'hover:-translate-y-0.5 active:scale-95 active:shadow-neu-inset',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring',
         className
       )}
       {...props}

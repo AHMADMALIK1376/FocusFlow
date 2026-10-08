@@ -65,16 +65,22 @@ describe('default theme', () => {
     expect(Object.keys(result.tokens)).not.toContain('extras');
   });
 
+  it('uses exactly the brand colour for the focus ring, so the default looks the same as before', () => {
+    expect(result.tokens['--ring']).toBe(result.tokens['--brand']);
+  });
+
   it('has no flags, is light, and keeps the status bar colour', () => {
     expect(result.flags).toEqual([]);
     expect(result.scheme).toBe('light');
     expect(result.metaColor).toBe('#E86562');
   });
 
-  it('documents the two pairs the default fails today', () => {
+  it('documents the pairs the default fails today (the focus ring is the brand colour here, so it shares its limits)', () => {
     expect(contrastFailures(result.tokens)).toEqual([
       '--muted on --surface: 4.46 < 4.5',
       '--on-brand on --brand: 2.96 < 4.5',
+      '--ring on --surface: 2.91 < 3',
+      '--ring on --canvas: 2.59 < 3',
     ]);
   });
 });

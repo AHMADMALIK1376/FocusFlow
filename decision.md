@@ -26,6 +26,12 @@ Source: `.pipeline/audit-a11y.md`. Each item below was fixed in its own commit.
 - **Decided:** the Studio panel gets `scroll-pb-40` (10rem), the value the audit measured: with it 0 focused controls end up under the Save bar on a 360px phone and a short desktop (6rem left 17). Undo uses `aria-disabled` and ignores the click when there is nothing to undo, so focus stays on it instead of dropping to the page. The typed-colour error is `role="alert"`. "Pick a icon colour" now reads "Pick the icon colour".
 - **Rejected:** moving focus to Save when Undo runs out (the user did not ask to go there); a smaller or fixed-height Save bar (changes the look).
 
+### 5. Focus ring colour: one new token, `--ring`
+- **Decided:** a new colour token `--ring` (Tailwind: `ring-focus-ring`, `outline-focus-ring`). In `tokens.css` it equals today's brand triplet, and the default theme is exempt from the guard like everything else, so the default looks exactly as before (the existing tokens.css parity test and the default-colour snapshots stay green). For every other theme the engine starts from the brand colour and walks its lightness (same direction as the text) until it is at least 3:1 on both `--surface` and `--canvas`. `--brand` is never changed. All focus rings and outlines now use it at full strength (no `/60`, `/40` or `/70`: see-through rings fell under 3:1 on every theme the audit tried). The text boxes and the sign-in boxes, which used `sage-deep` (only guarded to 2.4:1), use it too.
+- **Also:** the guard does not add `--ring` to the readability notes (nobody needs to read "we tweaked your focus ring"). The theme cache version is now 3 (a new token), so a student's old cached colours are ignored once, as in the last bump. The backend copy was regenerated.
+- **Rejected:** reusing `--focus` (that is the danger red, used for delete and error text, so a ring in it would read as an error); alpha rings; giving each component its own ring colour.
+- **Left on purpose:** the Time Track input ring (on-brand colour on a brand-coloured card), the border-only focus on the sign-in text boxes and `.neu-input`, and the selected-mascot ring (a selected state, not focus).
+
 ## 2026-10-08 — Theme audit (final quality gate)
 
 A no-new-features pass over the whole colour-theme feature. Plan: `docs/superpowers/specs/2026-10-08-theme-audit.md`. Two rounds of audit, fix and re-audit, with a tester, an accessibility auditor, a coder and the reviewer.

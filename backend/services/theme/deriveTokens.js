@@ -129,6 +129,7 @@ const GUARD = [
   { fg: '--success', against: [['--surface', 3]] },
   { fg: '--info', against: [['--surface', 3]] },
   { fg: '--focus', against: [['--surface', 3]] },
+  { fg: '--ring', against: [['--surface', 3], ['--canvas', 3]] }, // the keyboard focus ring: starts as the brand colour, then walks until it shows on both
   { fg: '--warn', against: [['--surface', 2]] },
   { fg: '--warn-ink', against: [['--surface', 4.5], ['warnWash', 4.5]], free: true }, // warnWash: the warn badge's own tint (warn at 20% over the card)
 ];
@@ -157,6 +158,7 @@ const same = (a, b) => a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
 function runGuard(map) {
   const flags = [];
   const flag = (name) => {
+    if (name === '--ring') return; // an invisible tweak: no readability note for it
     const token = STOP_OWNER[name] || name;
     if (!flags.includes(token)) flags.push(token);
   };
@@ -288,6 +290,7 @@ function deriveTokens(theme) {
     '--brand': brand,
     '--sage': accent,
     '--ink': ink,
+    '--ring': brand, // the guard moves it when brand alone would not show on cards; --brand itself is never touched
     ...FIXED,
   };
   Object.keys(RECIPES).forEach((name) => {
@@ -333,6 +336,7 @@ function deriveTokens(theme) {
     '--warn': trip('--warn'),
     '--warn-ink': trip('--warn-ink'),
     '--focus': trip('--focus'),
+    '--ring': trip('--ring'),
     '--canvas': trip('--canvas'),
     '--surface': trip('--surface'),
     '--surface-2': trip('--surface-2'),

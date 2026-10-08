@@ -47,15 +47,15 @@ describe('a version 1 cache (what browsers hold before this release) is ignored 
   };
   Object.entries(readers).forEach(([name, run]) => {
     it(name, () => {
-      expect(THEME_CACHE_VERSION).toBe(2);
+      expect(THEME_CACHE_VERSION).toBe(3);
       v1();
       expect(run()).toBe(false);
       expect(root.classList.contains('ff-themed')).toBe(false);
       expect(meta.getAttribute('content')).toBe('#E86562');
     });
   });
-  it('the version must be the number 2, not text or a float', () => {
-    ['2', 2.5, [2], null, true ].forEach((v) => {
+  it('the version must be the number 3, not text or a float', () => {
+    ['3', 3.5, [3], null, true].forEach((v) => {
       const c = good();
       c.v = v;
       localStorage.setItem(RAW, JSON.stringify(c));

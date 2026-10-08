@@ -237,7 +237,7 @@ export default function SettingsPage() {
             key={id}
             type="button"
             onClick={() => openCard(id)}
-            className="group text-left rounded-token-lg bg-surface shadow-neu p-5 flex items-start gap-4 transition-transform hover:-translate-y-0.5 motion-reduce:transition-none motion-reduce:hover:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgb(var(--brand))]"
+            className="group text-left rounded-token-lg bg-surface shadow-neu p-5 flex items-start gap-4 transition-transform hover:-translate-y-0.5 motion-reduce:transition-none motion-reduce:hover:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
           >
             <span className="shrink-0 w-11 h-11 rounded-2xl bg-grad-sage text-on-sage shadow-neu-sm grid place-items-center">
               <Icon size={20} strokeWidth={1.75} />

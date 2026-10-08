@@ -46,7 +46,7 @@ function SortableWidgetRow({ widget, enabled, onToggle }) {
       {/* Drag handle */}
       <button
         type="button"
-        className="text-muted/60 hover:text-muted cursor-grab active:cursor-grabbing p-2 rounded-token-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+        className="text-muted/60 hover:text-muted cursor-grab active:cursor-grabbing p-2 rounded-token-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
         aria-label={`Reorder ${title}`}
         {...attributes}
         {...listeners}

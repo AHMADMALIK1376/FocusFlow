@@ -88,4 +88,12 @@ describe('palette library contrast matrix', () => {
       .forEach(([f, b]) => expect(contrastRatio(rgb(tokens, f), rgb(tokens, b))).toBeGreaterThanOrEqual(4.5));
     expect(contrastRatio(rgb(tokens, '--warn-ink'), wash)).toBeGreaterThanOrEqual(4.5);
   });
+
+  it.each(PALETTES.map((p) => [p.name, p]))('%s: the focus ring shows (3:1) on the card and on the page, and brand is untouched', (_n, p) => {
+    const theme = paletteTheme(p);
+    const { tokens } = deriveTokens(theme);
+    expect(contrastRatio(rgb(tokens, '--ring'), rgb(tokens, '--surface'))).toBeGreaterThanOrEqual(3);
+    expect(contrastRatio(rgb(tokens, '--ring'), rgb(tokens, '--canvas'))).toBeGreaterThanOrEqual(3);
+    expect(tokens['--brand']).toBe(rgbToTriplet(hexToRgb(theme.brand)));
+  });
 });

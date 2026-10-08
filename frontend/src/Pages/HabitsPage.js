@@ -89,7 +89,7 @@ export default function HabitsPage() {
           <select
             value={newColor}
             onChange={(e) => setNewColor(e.target.value)}
-            className="rounded-token-md bg-surface text-ink shadow-neu-inset outline-none font-medium py-3 px-4 text-sm appearance-none cursor-pointer focus:ring-2 focus:ring-brand/60"
+            className="rounded-token-md bg-surface text-ink shadow-neu-inset outline-none font-medium py-3 px-4 text-sm appearance-none cursor-pointer focus:ring-2 focus:ring-focus-ring"
           >
             {Object.keys(COLOR_CLASSES).map((c) => <option key={c} value={c}>{c}</option>)}
           </select>

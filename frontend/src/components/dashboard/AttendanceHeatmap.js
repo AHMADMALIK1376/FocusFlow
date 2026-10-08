@@ -190,7 +190,7 @@ export default function AttendanceHeatmap() {
         aria-label="Open the 3D attendance skyline"
         onClick={() => navigate("/attendance")}
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); navigate("/attendance"); } }}
-        className="attendance-scroll overflow-x-auto pb-1 cursor-pointer rounded-token-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
+        className="attendance-scroll overflow-x-auto pb-1 cursor-pointer rounded-token-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
         onMouseEnter={() => setRevealed(true)}
         onMouseLeave={() => { setRevealed(false); setHover(null); }}
       >

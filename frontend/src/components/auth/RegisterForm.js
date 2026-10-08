@@ -99,7 +99,7 @@ export default function RegisterForm() {
   };
 
   const inputCls =
-    "w-full py-4 px-5 rounded-token-md bg-surface text-ink placeholder:text-muted/70 shadow-[inset_0_4px_8px_rgb(var(--sage)/0.55),inset_0_-2px_4px_rgb(var(--highlight)/0.9)] outline-none text-sm font-medium focus:ring-2 focus:ring-sage-deep/70 transition-all";
+    "w-full py-4 px-5 rounded-token-md bg-surface text-ink placeholder:text-muted/70 shadow-[inset_0_4px_8px_rgb(var(--sage)/0.55),inset_0_-2px_4px_rgb(var(--highlight)/0.9)] outline-none text-sm font-medium focus:ring-2 focus:ring-focus-ring transition-all";
 
   return (
     <div className="w-full flex flex-col items-center">

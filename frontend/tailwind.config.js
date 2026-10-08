@@ -28,6 +28,7 @@ module.exports = {
         warn: rgb('--warn'),
         'warn-ink': rgb('--warn-ink'),
         focus: rgb('--focus'),
+        'focus-ring': rgb('--ring'),
         canvas: rgb('--canvas'),
         surface: {
           DEFAULT: rgb('--surface'),

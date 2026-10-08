@@ -31,7 +31,7 @@ export function Pill({ active = false, className = '', children, ...props }) {
       type="button"
       className={cx(
         'px-4 py-2 rounded-full text-sm font-bold transition-all duration-200',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring',
         active
           ? 'bg-grad-hero text-on-brand shadow-[0_6px_16px_rgb(var(--brand)/0.35)]'
           : 'bg-surface text-ink shadow-neu-sm hover:-translate-y-0.5',

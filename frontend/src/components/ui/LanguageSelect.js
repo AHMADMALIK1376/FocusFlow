@@ -38,7 +38,7 @@ export function LanguageSelect({ className = '' }) {
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className="flex items-center gap-2.5 h-11 px-4 rounded-token-md bg-surface text-ink font-bold text-sm shadow-neu-sm hover:-translate-y-0.5 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+        className="flex items-center gap-2.5 h-11 px-4 rounded-token-md bg-surface text-ink font-bold text-sm shadow-neu-sm hover:-translate-y-0.5 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
       >
         <Languages size={16} className="text-brand shrink-0" />
         <span className="truncate">{currentLang.native}</span>

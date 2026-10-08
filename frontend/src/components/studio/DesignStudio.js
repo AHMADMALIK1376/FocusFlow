@@ -66,7 +66,7 @@ function PaletteTile({ palette, selected, onPick }) {
       className={[
         'relative text-left rounded-token-md bg-surface-2 p-2 transition-transform motion-reduce:transition-none',
         'hover:-translate-y-0.5 motion-reduce:hover:translate-y-0',
-        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand',
+        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring',
         selected ? 'ring-2 ring-ink' : '',
       ].join(' ')}
     >

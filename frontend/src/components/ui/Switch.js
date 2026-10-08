@@ -12,7 +12,7 @@ export function Switch({ checked, onChange, label, className = '' }) {
       onClick={() => onChange && onChange(!checked)}
       className={cx(
         'relative inline-flex items-center h-[30px] w-[78px] rounded-full transition-colors duration-300 select-none shrink-0',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
         checked ? 'bg-grad-sage shadow-neu-inset' : 'bg-surface-2 shadow-neu-inset',  // sage = on
         className
       )}
@@ -41,7 +41,7 @@ export function Checkbox({ checked, onChange, size = 24, className = '', label }
       style={{ width: size, height: size }}
       className={cx(
         'relative shrink-0 rounded-full flex items-center justify-center transition-all duration-200 active:scale-90',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
         checked
           ? 'bg-grad-sage shadow-neu-sm'
           : 'bg-surface-2 border-2 border-[rgb(var(--ink)/0.22)] hover:border-[rgb(var(--brand)/0.6)]',
@@ -76,7 +76,7 @@ export function SegmentedControl({ options, value, onChange, className = '' }) {
             onClick={() => onChange && onChange(opt.value)}
             className={cx(
               'px-4 py-2 rounded-[14px] text-sm font-bold transition-all duration-200',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring',
               active ? 'bg-grad-hero text-on-brand shadow' : 'text-muted hover:text-ink'
             )}
           >

@@ -242,7 +242,7 @@ describe("damaged memory", () => {
     localStorage.setItem(DEVICE, JSON.stringify(A));
     mount();
     expect(canvas()).toBe(A_CANVAS);
-    expect(JSON.parse(cache()).v).toBe(2);
+    expect(JSON.parse(cache()).v).toBe(3);
   });
 
   it("an old cache with the normal look is removed rather than kept", () => {

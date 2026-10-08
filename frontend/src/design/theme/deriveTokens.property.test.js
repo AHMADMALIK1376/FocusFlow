@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { deriveTokens, contrastFailures, NON_THEME_VARS } from './deriveTokens';
 import { DEFAULT_THEME } from './theme';
-import { tripletToRgb } from './color';
+import { tripletToRgb, hexToRgb, rgbToTriplet, contrastRatio } from './color';
 
 // Small deterministic random numbers (same palettes on every run and machine).
 function lcg(seed) {
@@ -58,6 +58,17 @@ describe('random palettes (property test)', () => {
       });
       if (!['light', 'dark'].includes(r.scheme) || !/^#[0-9A-F]{6}$/.test(r.metaColor)) bad.push({ theme, scheme: r.scheme, meta: r.metaColor });
       if (Object.keys(r.tokens).some((k) => NON_THEME_VARS.includes(k))) bad.push({ theme, motion: true });
+    });
+    expect(bad).toEqual([]);
+  });
+
+  it('the focus ring shows (3:1) on the card and the page for every palette, and brand is never moved', () => {
+    const bad = [];
+    palettes.forEach((theme) => {
+      const { tokens } = deriveTokens(theme);
+      const ring = tripletToRgb(tokens['--ring']);
+      const lows = ['--surface', '--canvas'].map((b) => contrastRatio(ring, tripletToRgb(tokens[b])));
+      if (Math.min(...lows) < 3 || tokens['--brand'] !== rgbToTriplet(hexToRgb(theme.brand))) bad.push({ theme, lows });
     });
     expect(bad).toEqual([]);
   });

@@ -132,7 +132,7 @@ export default function DashboardSwitcher({ triggerClassName } = {}) {
                 >
                   <button
                     type="button"
-                    className="flex-1 min-w-0 flex items-center gap-2 px-2 py-2.5 text-left rounded-token-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                    className="flex-1 min-w-0 flex items-center gap-2 px-2 py-2.5 text-left rounded-token-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                     onClick={() => {
                       switchDashboard(db.id);
                       setOpen(false);
@@ -148,7 +148,7 @@ export default function DashboardSwitcher({ triggerClassName } = {}) {
                   <div className="flex gap-1 pr-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
                     <button
                       type="button"
-                      className="text-muted hover:text-ink text-xs p-2 rounded-token-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                      className="text-muted hover:text-ink text-xs p-2 rounded-token-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                       onClick={() => {
                         setEditingId(db.id);
                         setEditName(db.name);
@@ -159,7 +159,7 @@ export default function DashboardSwitcher({ triggerClassName } = {}) {
                     </button>
                     <button
                       type="button"
-                      className="text-muted hover:text-focus text-xs p-2 rounded-token-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                      className="text-muted hover:text-focus text-xs p-2 rounded-token-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                       onClick={() => handleDelete(db.id)}
                       aria-label="Delete"
                     >

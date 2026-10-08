@@ -37,6 +37,7 @@
   --warn: 236 170 20;
   --warn-ink: 133 79 11;      /* warn as text (warn itself is too light to read) */
   --focus: 232 84 96;         /* danger */
+  --ring: 236 112 109;        /* keyboard focus ring: same as --brand here; other themes get a shade that shows on cards and page */
 
   /* Neutrals — light mocha-crème canvas, warm-white clay cards. Ink is the
      only dark colour and only for text, so it stays readable. */
