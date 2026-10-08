@@ -2,7 +2,8 @@ const jwt = require('jsonwebtoken');
 const { getConnection } = require('../config/database');
 const { generateId } = require('../utils/helpers');
 const { DEFAULT_SETTINGS, localParts, toMinutes, attendanceReport, attendanceView } = require('../utils/reminders');
-const { deliver, escapeHtml, pushReady } = require('../services/notifyChannels');
+const { deliver, sendEmail, escapeHtml, pushReady } = require('../services/notifyChannels');
+const { describeEmailProvider } = require('../services/emailService');
 const { reportBody, iconSet, LOGO_ATTACHMENT } = require('../services/emailTemplates');
 const { DEFAULT_PALETTE, emailPalette, loadUserTheme } = require('../services/emailTheme');
 const { hexToRgb } = require('../services/theme/color');
@@ -208,7 +209,7 @@ exports.sendTest = async (req, res) => {
       };
     } else {
       n = {
-        kind: 'test', title: 'FocusFlow reminders are working', body: `This is how your class reminders will look.\nIt is ${now.weekday}, ${now.date} in ${settings.timezone}.`, url: '/settings',
+        kind: 'test', title: kind === 'email' ? 'FocusFlow test email' : 'FocusFlow reminders are working', body: `This is how your class reminders will look.\nIt is ${now.weekday}, ${now.date} in ${settings.timezone}.`, url: '/settings',
         view: {
           headline: 'Your reminders are working!',
           sub: "This is how FocusFlow will nudge you before classes, exams and deadlines.",
@@ -220,6 +221,18 @@ exports.sendTest = async (req, res) => {
       };
     }
     n = withAnswerLink({ key: `test:${kind}:${Date.now()}`, ...n }, userId);
+    if (kind === 'email') {
+      // Email only, and whatever the "email reminders" switch says: this button checks the email path itself.
+      const to = user.rows[0] && user.rows[0].EMAIL;
+      if (!to) return res.status(400).json({ error: 'Your account has no email address.' });
+      const sent = await sendEmail(to, n, await loadUserTheme(connection, userId));
+      if (sent.ok) return res.json({ success: true, result: { email: sent } });
+      // The owner presses this button, so the provider's plain reason is shown (it holds no secret).
+      return res.status(500).json({
+        error: describeEmailProvider().configured ? `The test email could not be sent: ${sent.error}` : 'This server cannot send email yet.',
+        code: 'EMAIL_SEND_FAILED',
+      });
+    }
     const result = await deliver(connection, { userId, email: user.rows[0] && user.rows[0].EMAIL }, settings, n);
     res.json({ success: true, result });
   } catch (err) {

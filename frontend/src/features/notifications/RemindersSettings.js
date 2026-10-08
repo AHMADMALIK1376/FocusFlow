@@ -121,9 +121,15 @@ export default function RemindersSettings() {
     const { result } = await notifyAPI.sendTest(kind);
     const parts = [];
     if (result.push) parts.push(result.push.devices ? `pop-up to ${result.push.sent}/${result.push.devices} device(s)` : "no device has pop-ups on");
-    if (result.email) parts.push(result.email.queued ? "email sent" : "email failed");
+    if (result.email) parts.push(result.email.ok ? (result.email.pending ? "email on its way" : "email sent") : `email failed: ${result.email.error || "unknown reason"}`);
     if (result.whatsapp) parts.push(result.whatsapp.ok ? "WhatsApp sent" : "WhatsApp failed");
     toast(`Test: ${parts.join(" · ")}`, { tone: "success" });
+  });
+
+  // Email only, whatever the Email switch says. A failure shows the server's plain reason (see run()).
+  const testEmail = () => run("email", async () => {
+    await notifyAPI.sendTest("email");
+    toast("Test email sent. Check your inbox (and spam).", { tone: "success" });
   });
 
   return (
@@ -208,6 +214,7 @@ export default function RemindersSettings() {
       <div className="flex flex-wrap items-center gap-2 pt-1">
         <Button variant="primary" onClick={save} disabled={busy === "save"}>{busy === "save" ? "Saving…" : "Save reminders"}</Button>
         <Button variant="soft" onClick={() => test("basic")} disabled={!!busy} className="gap-1.5"><Send size={15} /> {busy === "basic" ? "Sending…" : "Send a test"}</Button>
+        <Button variant="soft" onClick={testEmail} disabled={!!busy} className="gap-1.5"><Mail size={15} /> {busy === "email" ? "Sending…" : "Send test email"}</Button>
         <Button variant="soft" onClick={() => test("attendance")} disabled={!!busy}>{busy === "attendance" ? "Sending…" : "Test attendance question"}</Button>
         <Button variant="soft" onClick={() => test("submit")} disabled={!!busy}>{busy === "submit" ? "Sending…" : "Test “Did you submit?”"}</Button>
         <Button variant="soft" onClick={() => test("quiz")} disabled={!!busy}>{busy === "quiz" ? "Sending…" : "Test quiz marks"}</Button>

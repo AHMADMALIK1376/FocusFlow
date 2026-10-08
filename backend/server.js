@@ -5,7 +5,7 @@ const helmet = require('helmet');
 const compression = require('compression');
 const { initialize, healthCheck: dbHealthCheck, getPoolStats, closePool } = require('./config/database');
 const { startNotificationScheduler } = require('./services/notificationScheduler');
-const { getEmailQueueStats, clearEmailQueue } = require('./services/emailService');
+const { getEmailQueueStats, clearEmailQueue, describeEmailProvider } = require('./services/emailService');
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
@@ -38,7 +38,7 @@ app.use(corsMiddleware());
 // ==============================================
 // ENVIRONMENT VARIABLE VALIDATION
 // ==============================================
-const requiredEnv = ['JWT_SECRET', 'PGHOST', 'PGUSER', 'PGPASSWORD', 'EMAIL_USER', 'EMAIL_PASS'];
+const requiredEnv = ['JWT_SECRET', 'PGHOST', 'PGUSER', 'PGPASSWORD'];
 const missing = requiredEnv.filter(varName => !process.env[varName]);
 
 if (missing.length > 0) {
@@ -50,6 +50,12 @@ if (missing.length > 0) {
 
 if (process.env.JWT_SECRET && process.env.JWT_SECRET.length < 32) {
     console.warn('⚠️ WARNING: JWT_SECRET should be at least 32 characters long for production!');
+}
+
+// Each email provider names its own variables; missing ones are a loud warning, not a crash.
+const emailSetup = describeEmailProvider();
+if (!emailSetup.configured) {
+    console.warn(`WARNING: email is not configured (${emailSetup.name}). Missing: ${emailSetup.missing.join(', ')}. Sign-up codes, password resets and email reminders will fail until it is set.`);
 }
 
 console.log('✅ Environment variables validated');
