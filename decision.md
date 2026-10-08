@@ -6,6 +6,37 @@ Update this file with every change.
 
 ---
 
+## 2026-10-08 — Email that works on Render, and honest answers about it (Package 1)
+
+Plan: `docs/superpowers/specs/2026-10-08-reminders-email-and-session.md`, Part A.
+
+### Providers
+- **Decided:** `backend/services/emailProviders/` with `smtp` (the old Gmail transport, created lazily) and `gmail_api`, chosen by `EMAIL_PROVIDER` (default `smtp`, so local development is unchanged). `gmail_api` builds the raw message with nodemailer's stream transport (so the inline CID icons pass through untouched), base64url-encodes it, and makes two HTTPS calls: a token request (cached until 60 s before expiry, shared by sends that start together) and `messages/send`. Every call has a 7 s timeout.
+- **Why:** Render's free plan blocks outbound SMTP, so no email of any kind could leave production. The Gmail API uses port 443 and sends from the owner's own Gmail (SPF, DKIM and DMARC pass), with no domain and no new package.
+- **Errors:** each failure becomes one short plain reason (invalid_grant, invalid_client, 401, 403, 429, 5xx, network or timeout). SMTP reasons come from `err.code` only, because nodemailer messages can echo server text. At most one log line per failure, with no secret, token, address or body.
+- **An unknown `EMAIL_PROVIDER` value** is a provider that always fails with "not set up", not a silent fallback to smtp: a typo should be loud.
+- **Rejected:** Resend, Brevo, Mailjet, Mailgun, SendGrid (need a domain or a pre-approved recipient list); Gmail over SMTP/XOAUTH2 (still SMTP, blocked); a Google client library (two fetch calls are enough).
+- **Server start:** `EMAIL_USER` / `EMAIL_PASS` are no longer required. A provider that is not configured is a loud warning at boot (names only) and a "not configured" status, not a crash.
+
+### Queue outcomes
+- **Decided:** `addEmail` now returns `{ queued, id, outcome }`, where `outcome` is a promise that only resolves (`sent` or `failed` with the reason). Each item has its own `maxRetries`. Codes use one quick retry (1 s) and the request waits up to 20 s; reminders use no queue retries (the next reminder check is the retry). A wait that runs out marks the item abandoned so it is not retried, but a send already in flight cannot be recalled.
+- **Why:** "queued" was reported as "sent", so sign-up said "code sent" before anything had been tried.
+- **Bug fixed on the way:** when the rate limit tripped in the middle of a batch the whole batch was put back, so emails already sent went out again. Only the unsent rest is put back now.
+- **Promises never reject:** `server.js` turns any unhandled rejection into a shutdown, so one failed email must not become a restart.
+- **Health:** `getHealth()` gives `not_configured`, `failing`, `working` or `unknown`, with the last reason. It is kept in memory only; saving it to the database belongs to a later package.
+- **Reminder email wait:** `notifyChannels.sendEmail` waits at most 15 s for the outcome. If the wait runs out it reports `{ ok: true, pending: true }`, because the email is still queued and treating it as failed could send it twice.
+
+### Honest answers
+- **Decided:** the 3x retry loops in `authController.js` are gone (each attempt now waits for a real outcome, so three would pass the 30 s request timeout). A failed code email answers 500 with `code: 'EMAIL_SEND_FAILED'` and a plain message; sign-up still rolls the new account back. When the server has no email set up the message says so.
+- **Why 500 and not 502/503/504:** `frontend/src/services/api.js` treats those as "server asleep" and starts reconnecting.
+- **The provider's reason is not shown to students** (it could confuse them or reveal setup details). It is logged on the server without the code.
+- **Rejected:** a "queue it and tell them to wait" answer (the student cannot tell if a code is coming).
+
+### Test email
+- `POST /api/notify/test` accepts `kind: 'email'`: email only, even if the Email switch is off. Settings, Reminders has a "Send test email" button. The owner presses it, so on failure it shows the provider's plain reason (it holds no secret).
+
+---
+
 ## 2026-10-08 — Accessibility fixes (from the keyboard and screen-reader audit)
 
 Source: `.pipeline/audit-a11y.md`. Each item below was fixed in its own commit.

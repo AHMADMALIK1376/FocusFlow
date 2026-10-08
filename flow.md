@@ -5,6 +5,21 @@ Update this file with every change.
 
 ---
 
+## Sending email (Package 1)
+
+How an email leaves the server, for sign-up codes, password resets, reminders and the test button:
+1. The caller (`authController`, `notifyChannels.sendEmail`, `notifyController.sendTest`) builds the message and asks `services/emailQueueService.js` to send it.
+2. `EmailQueue.addEmail` first asks the provider if it is configured. If not, nothing is queued and the answer is `failed` at once ("Email is not set up on the server yet.").
+3. Otherwise the item joins the queue (high priority first) and `processQueue` sends it within the rate limits. `provider.send` comes from `services/emailProviders/index.js`: `EMAIL_PROVIDER=gmail_api` (token, then `messages/send` over HTTPS) or `smtp` (default).
+4. Each attempt sets the health state. A failure retries while the item's own `maxRetries` allows; the final result resolves the item's `outcome` promise (`sent` or `failed` with a plain reason).
+5. The caller waits for that outcome:
+   - Sign-up, resend, forgot-password: up to 20 s, one quick retry. Failure answers 500 `EMAIL_SEND_FAILED` (sign-up also deletes the new account).
+   - Reminder email: up to 15 s, no queue retries. A wait that runs out counts as delivered (`pending`).
+   - Test email button: the same wait as a reminder; failure answers 500 with the provider's reason.
+6. At boot `server.js` prints a warning (variable names only) when the chosen provider is not configured.
+
+---
+
 ## 1. Frontend (React, Create React App) — `frontend/`
 
 ### Entry point
