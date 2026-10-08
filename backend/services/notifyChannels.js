@@ -128,4 +128,18 @@ async function deliver(connection, user, settings, n) {
   return result;
 }
 
-module.exports = { deliver, sendPush, sendEmail, buildReminderEmail, REMINDER_EMAIL_WAIT_MS, sendWhatsApp, whatsappUrl, whatsappText, escapeHtml, pushReady };
+// Did the student get it somewhere? A pop-up sent to one device, an email sent (or still in the queue:
+// `pending`), or a WhatsApp message counts. Only an undelivered reminder gets its claim back.
+function isDelivered(result) {
+  const r = result || {};
+  return Boolean((r.push && r.push.sent >= 1) || (r.email && r.email.ok === true) || (r.whatsapp && r.whatsapp.ok === true));
+}
+
+// Was any channel really tried? With no device, email off and WhatsApp off nothing was, and the
+// claim is kept so the same reminder is not claimed and given back every minute.
+function wasAttempted(result) {
+  const r = result || {};
+  return Boolean((r.push && r.push.devices > 0) || r.email || r.whatsapp);
+}
+
+module.exports = { deliver, isDelivered, wasAttempted, sendPush, sendEmail, buildReminderEmail, REMINDER_EMAIL_WAIT_MS, sendWhatsApp, whatsappUrl, whatsappText, escapeHtml, pushReady };

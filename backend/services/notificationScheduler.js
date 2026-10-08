@@ -1,11 +1,14 @@
 // Runs once a minute: for every verified user, works out which reminders are
 // due in *their* timezone (utils/reminders.computeDue) and delivers them.
-// NOTIFICATION_LOG guarantees each reminder is sent at most once.
+// NOTIFICATION_LOG guarantees each reminder is claimed by one tick at a time; a claim is given back
+// when every channel that was tried failed, so a later tick (while the reminder is still valid) retries.
 const cron = require('node-cron');
 const jwt = require('jsonwebtoken');
 const { getConnection } = require('../config/database');
 const { DEFAULT_SETTINGS, localParts, computeDue } = require('../utils/reminders');
-const { deliver } = require('./notifyChannels');
+const { deliver, isDelivered, wasAttempted } = require('./notifyChannels');
+const { getEmailHealth } = require('./emailService');
+const { writeHeartbeat } = require('./heartbeat');
 
 const API_URL = () => (process.env.PUBLIC_API_URL || 'http://localhost:5555').replace(/\/$/, '');
 
@@ -147,9 +150,18 @@ async function claim(connection, userId, key) {
   return r.rows.length > 0;
 }
 
+// Give a claim back so a later tick can try again (only after nothing was delivered).
+async function release(connection, userId, key) {
+  await connection.execute(
+    `DELETE FROM NOTIFICATION_LOG WHERE user_id = :userId AND notif_key = :key`,
+    { userId, key }
+  );
+}
+
+// -> { users, due, delivered, released, kept, skipped }  (skipped = already claimed)
 async function runTick(nowDate = new Date()) {
   let connection;
-  const sent = [];
+  const counts = { users: 0, due: 0, delivered: 0, released: 0, kept: 0, skipped: 0 };
   try {
     connection = await getConnection();
     const users = await connection.execute(
@@ -159,43 +171,71 @@ async function runTick(nowDate = new Date()) {
     );
     for (const row of users.rows) {
       const userId = row.UID; // ns.user_id is NULL for users without a settings row
+      counts.users++;
       try {
         const settings = rowToSettings(row);
         const now = localParts(nowDate, settings.timezone);
         const data = await loadUserData(connection, userId, now);
         const due = computeDue({ now, settings, ...data });
         for (let n of due) {
-          if (!(await claim(connection, userId, n.key))) continue;
+          counts.due++;
+          if (!(await claim(connection, userId, n.key))) { counts.skipped++; continue; }
           n = withAnswerLink(n, userId);
           const result = await deliver(connection, { userId, email: row.USER_EMAIL }, settings, n);
-          sent.push({ userId, key: n.key, result });
-          console.log(`🔔 ${n.key} → ${JSON.stringify(result)}`);
+          let verdict = 'kept'; // nothing could even be tried (no device, email and WhatsApp off): do not churn the claim
+          if (isDelivered(result)) verdict = 'delivered';
+          else if (wasAttempted(result)) verdict = 'released';
+          if (verdict === 'released') await release(connection, userId, n.key);
+          counts[verdict]++;
+          console.log(`Reminder ${n.key}: ${verdict} ${JSON.stringify(result)}`);
         }
       } catch (err) {
         console.error(`Reminder tick failed for user ${userId}:`, err.message);
       }
+    }
+    await writeHeartbeat(connection, 'tick', { ok: true, detail: 'ok', counts });
+    const email = getEmailHealth();
+    if (email && email.state !== 'unknown') {
+      await writeHeartbeat(connection, 'email', {
+        ok: email.state === 'working',
+        detail: email.reason || email.state,
+        counts: { sent: email.sent, failed: email.failed },
+      });
     }
   } catch (err) {
     console.error('Reminder tick failed:', err.message);
   } finally {
     if (connection) await connection.close();
   }
-  return sent;
+  return counts;
 }
 
+// One tick at a time, whoever asks (the minute cron, the boot tick, the /api/cron/tick endpoint).
 let running = false;
+async function runExclusive(source, nowDate) {
+  if (running) return { busy: true };
+  running = true;
+  try {
+    return { busy: false, counts: await runTick(nowDate) };
+  } finally {
+    running = false;
+  }
+}
+
 function startNotificationScheduler() {
-  cron.schedule('* * * * *', async () => {
-    if (running) return; // never overlap ticks
-    running = true;
-    try { await runTick(); } finally { running = false; }
+  cron.schedule('* * * * *', () => {
+    runExclusive('cron').catch((e) => console.error('Reminder check failed:', e.message));
   });
-  console.log('⏰ Reminder scheduler started (checks every minute)');
+  // A sleeping server wakes up behind: catch up straight away instead of waiting for the next minute.
+  runExclusive('boot').catch((e) => console.error('Boot reminder check failed:', e.message));
+  console.log('Reminder scheduler started (checks every minute, and once now)');
 }
 
 module.exports = {
   startNotificationScheduler,
   runTick,
+  runExclusive,
+  release,
   loadSettings,
   rowToSettings,
   answerToken,
