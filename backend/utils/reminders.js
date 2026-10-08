@@ -22,9 +22,17 @@ const DEFAULT_SETTINGS = {
   whatsappApikey: '',
 };
 
-// If the server was busy/asleep for a few minutes, still send reminders that
-// became due within this window (the notification log prevents duplicates).
+// Every reminder has a window [from, until) in local minutes of the day. A server that was
+// asleep (Render free) and wakes inside the window still sends it, with the wording worked out
+// from the time actually left. The notification log prevents duplicates.
+//  - Before-events (class, exam, routine, "did you submit?"): from the lead time until the thing starts.
+//  - A lead of 0 has no room before the start, so it gets CATCH_UP_MINUTES after it ("now").
+//  - Follow-ups (attendance, quiz marks): FOLLOWUP_WINDOW_MINUTES. Morning digest: DIGEST_WINDOW_MINUTES.
+// Day-keyed kinds end at local midnight at the latest (the next day's lists differ). "Did you
+// submit?" keeps working across midnight through dayOffset and its date-based key.
 const CATCH_UP_MINUTES = 5;
+const FOLLOWUP_WINDOW_MINUTES = 360;
+const DIGEST_WINDOW_MINUTES = 240;
 
 // Items you hand in (get "Did you submit?") vs. ones you sit (get "How did it go?").
 const SUBMIT_TYPES = ['assignment', 'project', 'submission', 'deadline'];
@@ -76,10 +84,13 @@ function sameDay(a, b) {
   return String(a || '').slice(0, 3).toLowerCase() === String(b || '').slice(0, 3).toLowerCase();
 }
 
-function isDue(nowMinutes, targetMinutes) {
-  if (targetMinutes == null) return false;
-  const diff = nowMinutes - targetMinutes;
-  return diff >= 0 && diff < CATCH_UP_MINUTES;
+function inWindow(nowMinutes, from, until) {
+  return from != null && nowMinutes >= from && nowMinutes < until;
+}
+
+// Window for something that starts at `target`, reminded `lead` minutes before.
+function beforeWindow(target, lead) {
+  return { from: target - lead, until: lead > 0 ? target : target + CATCH_UP_MINUTES };
 }
 
 const typeIs = (t, list) => list.includes(String(t || '').toLowerCase());
@@ -128,7 +139,8 @@ function computeDue({ now, settings, classes = [], routines = [], exams = [], as
   const dueTomorrow = assignments.filter((a) => a.dueDate === now.tomorrow);
 
   // 1) Morning digest — today's timetable at the time the user picked.
-  if (s.digestEnabled && isDue(now.minutes, toMinutes(s.digestTime))) {
+  const digestAt = toMinutes(s.digestTime);
+  if (s.digestEnabled && digestAt != null && inWindow(now.minutes, digestAt, digestAt + DIGEST_WINDOW_MINUTES)) {
     const lines = [];
     lines.push(todaysClasses.length ? `Classes today (${todaysClasses.length}):` : 'No classes today.');
     for (const c of todaysClasses) {
@@ -170,16 +182,18 @@ function computeDue({ now, settings, classes = [], routines = [], exams = [], as
     for (const c of todaysClasses) {
       const start = toMinutes(c.start);
       const before = Math.max(0, pick(c.remindBefore, lead));
-      if (start != null && isDue(now.minutes, start - before)) {
+      const w = start != null ? beforeWindow(start, before) : null;
+      if (w && inWindow(now.minutes, w.from, w.until)) {
+        const left = start - now.minutes; // minutes actually left, not the original lead
         out.push({
           key: `class:${c.scheduleId}:${now.date}`,
           kind: 'class',
-          title: `${c.name} ${leadText(before)}`,
+          title: `${c.name} ${leadText(left)}`,
           body: `${fmt12(c.start)}–${fmt12(c.end)}${c.room ? ` · Room ${c.room}` : ''}`,
           url: '/subjects',
           view: {
             headline: c.name,
-            sub: before > 0 ? `Starts ${leadText(before)} — time to pack up and head over.` : 'Starting now!',
+            sub: left > 0 ? `Starts ${leadText(left)} — time to pack up and head over.` : 'Starting now!',
             facts: [fact('clock', 'Time', span(c.start, c.end)), fact('map-pin', 'Room', c.room)].filter(Boolean),
           },
         });
@@ -194,7 +208,7 @@ function computeDue({ now, settings, classes = [], routines = [], exams = [], as
       if (markedSubjectIds.has(c.subjectId)) continue;
       const end = toMinutes(c.end);
       const after = Math.max(0, pick(c.attendanceAfter, Number(s.attendanceDelay) || 0));
-      if (end != null && isDue(now.minutes, end + after)) {
+      if (end != null && inWindow(now.minutes, end + after, end + after + FOLLOWUP_WINDOW_MINUTES)) {
         out.push({
           key: `att:${c.scheduleId}:${now.date}`,
           kind: 'attendance',
@@ -216,16 +230,18 @@ function computeDue({ now, settings, classes = [], routines = [], exams = [], as
   if (s.deadlineReminders) {
     for (const e of examsToday) {
       const t = toMinutes(e.time);
-      if (t != null && isDue(now.minutes, t - lead)) {
+      const w = t != null ? beforeWindow(t, lead) : null;
+      if (w && inWindow(now.minutes, w.from, w.until)) {
+        const left = t - now.minutes;
         out.push({
           key: `exam:${e.id}:${now.date}`,
           kind: 'exam',
-          title: `${e.type || 'Exam'} ${leadText(lead)}: ${e.title}`,
+          title: `${e.type || 'Exam'} ${leadText(left)}: ${e.title}`,
           body: [fmt12(e.time), e.subjectName, e.location].filter(Boolean).join(' · '),
           url: '/exams',
           view: {
             headline: e.title,
-            sub: `${e.type || 'Exam'} ${leadText(lead)}. Deep breath — you've got this.`,
+            sub: `${e.type || 'Exam'} ${leadText(left)}. Deep breath — you've got this.`,
             facts: [fact('clock', 'Starts', fmt12(e.time)), fact('book-open', 'Subject', e.subjectName), fact('map-pin', 'Where', e.location)].filter(Boolean),
           },
         });
@@ -247,7 +263,8 @@ function computeDue({ now, settings, classes = [], routines = [], exams = [], as
       const dueMin = toMinutes(h.time || END_OF_DAY);
       const dayOffset = h.date === now.date ? 0 : h.date === now.tomorrow ? 1440 : null;
       if (dueMin == null || dayOffset == null) continue;
-      if (isDue(now.minutes, dayOffset + dueMin - submitLead)) {
+      const w = beforeWindow(dayOffset + dueMin, submitLead);
+      if (inWindow(now.minutes, w.from, w.until)) {
         const dueText = `${h.date === now.date ? 'today' : 'tomorrow'} at ${fmt12(h.time || END_OF_DAY)}`;
         out.push({
           key: `submit:${h.id}:${h.date}`,
@@ -278,7 +295,7 @@ function computeDue({ now, settings, classes = [], routines = [], exams = [], as
       const start = toMinutes(e.time);
       if (start == null) continue;
       const end = start + (Number(e.duration) > 0 ? Number(e.duration) : DEFAULT_DURATION);
-      if (isDue(now.minutes, end + delay)) {
+      if (inWindow(now.minutes, end + delay, end + delay + FOLLOWUP_WINDOW_MINUTES)) {
         out.push({
           key: `quiz:${e.id}:${now.date}`,
           kind: 'quiz',
@@ -300,16 +317,18 @@ function computeDue({ now, settings, classes = [], routines = [], exams = [], as
   if (s.routineReminders) {
     for (const r of todaysRoutines) {
       const t = toMinutes(r.time);
-      if (t != null && isDue(now.minutes, t - lead)) {
+      const w = t != null ? beforeWindow(t, lead) : null;
+      if (w && inWindow(now.minutes, w.from, w.until)) {
+        const left = t - now.minutes;
         out.push({
           key: `routine:${r.routineId}:${now.date}`,
           kind: 'routine',
-          title: `${r.name} ${leadText(lead)}`,
+          title: `${r.name} ${leadText(left)}`,
           body: `Daily routine · ${fmt12(r.time)}`,
           url: '/routine',
           view: {
             headline: r.name,
-            sub: `Starts ${leadText(lead)}. Small steps, every day.`,
+            sub: `Starts ${leadText(left)}. Small steps, every day.`,
             facts: [fact('clock', 'Time', fmt12(r.time))].filter(Boolean),
           },
         });
@@ -365,12 +384,16 @@ function attendanceView(rows, justMarked) {
 module.exports = {
   DEFAULT_SETTINGS,
   CATCH_UP_MINUTES,
+  FOLLOWUP_WINDOW_MINUTES,
+  DIGEST_WINDOW_MINUTES,
   SUBMIT_TYPES,
   ASSESS_TYPES,
   WEEKDAYS,
   localParts,
   toMinutes,
   fmt12,
+  inWindow,
+  beforeWindow,
   computeDue,
   attendanceReport,
   attendanceView,

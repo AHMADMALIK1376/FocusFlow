@@ -70,7 +70,7 @@ test('digest fires at the chosen time with today\'s classes in order, deadlines 
 test('digest respects a custom time (6 AM) and is off otherwise', () => {
   const s = { ...DEFAULT_SETTINGS, digestTime: '06:00' };
   assert.ok(computeDue({ now: at('06:00'), settings: s, classes: CLASSES }).some((n) => n.kind === 'digest'));
-  assert.ok(!computeDue({ now: at('07:00'), settings: s, classes: CLASSES }).some((n) => n.kind === 'digest'));
+  assert.ok(!computeDue({ now: at('05:59'), settings: s, classes: CLASSES }).some((n) => n.kind === 'digest'));
   const off = { ...s, digestEnabled: false };
   assert.ok(!computeDue({ now: at('06:00'), settings: off, classes: CLASSES }).some((n) => n.kind === 'digest'));
 });
@@ -82,17 +82,20 @@ test('digest on a day with no classes says so', () => {
 });
 
 test('class reminder exactly 1 hour before start', () => {
-  const list = due(at('12:15'));
+  const list = due(at('12:15')).filter((n) => n.kind === 'class');
   assert.deepEqual(kinds(list), ['class']);
   assert.equal(list[0].key, 'class:cc:2026-10-06');
   assert.equal(list[0].title, 'Compiler Construction in 1 hour');
   assert.equal(list[0].body, '1:15 PM–3:20 PM · Room LR26');
-  assert.equal(due(at('12:14')).length, 0, 'not early');
+  assert.equal(due(at('12:14')).filter((n) => n.kind === 'class').length, 0, 'not early');
 });
 
-test('catch-up window: still sent if the server was a few minutes late, never after 5 min', () => {
-  assert.equal(due(at('12:19')).filter((n) => n.kind === 'class').length, 1);
-  assert.equal(due(at('12:20')).filter((n) => n.kind === 'class').length, 0);
+test('catch-up window: still sent late, with the minutes actually left, never once the class started', () => {
+  const cls = (hhmm) => due(at(hhmm)).filter((n) => n.kind === 'class');
+  assert.equal(cls('12:19')[0].title, 'Compiler Construction in 56 minutes');
+  assert.match(cls('13:14')[0].title, /^Compiler Construction in 1 minute/);
+  assert.equal(cls('13:15').length, 0, 'it has started');
+  assert.equal(cls('13:30').length, 0);
 });
 
 test('custom lead time (30 min) and wording', () => {
@@ -105,12 +108,12 @@ test('custom lead time (30 min) and wording', () => {
 
 test('attendance prompt at class end, carries subject + date, skipped if already marked', () => {
   const list = due(at('15:20'));
-  const att = list.find((n) => n.kind === 'attendance');
+  const att = list.find((n) => n.kind === 'attendance' && n.data.subjectId === 'S-CC');
   assert.ok(att);
   assert.equal(att.key, 'att:cc:2026-10-06');
   assert.equal(att.title, 'Did you attend Compiler Construction?');
   assert.deepEqual(att.data, { subjectId: 'S-CC', subjectName: 'Compiler Construction', date: '2026-10-06' });
-  assert.ok(!due(at('15:20'), { markedSubjectIds: new Set(['S-CC']) }).some((n) => n.kind === 'attendance'));
+  assert.ok(!due(at('15:20'), { markedSubjectIds: new Set(['S-CC', 'S-DBL']) }).some((n) => n.kind === 'attendance'));
 });
 
 test('lab ending at 11:05 gets its own prompt', () => {
@@ -124,7 +127,7 @@ test('exam reminder 1 hour before a timed exam; untimed ones only in the digest'
   const exam = list.find((n) => n.kind === 'exam');
   assert.equal(exam.title, 'Quiz in 1 hour: Quiz 1');
   assert.equal(exam.body, '10:00 AM · AI · LR33');
-  const untimed = computeDue({ now: at('09:00'), settings: DEFAULT_SETTINGS, exams: [{ ...EXAMS[0], time: null }] });
+  const untimed = computeDue({ now: at('09:00'), settings: { ...DEFAULT_SETTINGS, digestEnabled: false }, exams: [{ ...EXAMS[0], time: null }] });
   assert.equal(untimed.length, 0);
 });
 
@@ -135,11 +138,11 @@ test('routine reminder before the activity, only on its days', () => {
 });
 
 test('each reminder type can be switched off', () => {
-  const off = { ...DEFAULT_SETTINGS, classReminders: false, attendancePrompts: false, deadlineReminders: false, routineReminders: false };
+  const off = { ...DEFAULT_SETTINGS, digestEnabled: false, submitPrompts: false, quizFollowups: false, classReminders: false, attendancePrompts: false, deadlineReminders: false, routineReminders: false };
   for (const t of ['12:15', '15:20', '09:00', '17:00']) {
     assert.equal(computeDue({ now: at(t), settings: off, classes: CLASSES, routines: ROUTINES, exams: EXAMS }).length, 0, t);
   }
-  const d = computeDue({ now: at('07:00'), settings: off, classes: CLASSES, routines: ROUTINES, exams: EXAMS, assignments: ASSIGNMENTS })[0];
+  const d = computeDue({ now: at('07:00'), settings: { ...off, digestEnabled: true }, classes: CLASSES, routines: ROUTINES, exams: EXAMS, assignments: ASSIGNMENTS })[0];
   assert.doesNotMatch(d.body, /Quiz|Due|Routine/);
 });
 
@@ -187,23 +190,27 @@ test('per-subject "remind before" overrides the global lead (0 = at start time)'
     { ...CLASSES[0], remindBefore: 15 },                 // CC 13:15 → 13:00
     { ...CLASSES[1], remindBefore: 0 },                  // lab 08:00 → 08:00
   ];
-  const at1300 = computeDue({ now: at('13:00'), settings: DEFAULT_SETTINGS, classes });
+  const cls = (list) => list.filter((n) => n.kind === 'class');
+  const at1300 = cls(computeDue({ now: at('13:00'), settings: DEFAULT_SETTINGS, classes }));
   assert.deepEqual(at1300.map((n) => n.title), ['Compiler Construction in 15 minutes']);
-  assert.ok(!computeDue({ now: at('12:15'), settings: DEFAULT_SETTINGS, classes }).some((n) => n.kind === 'class'), 'global 1h no longer used');
-  assert.equal(computeDue({ now: at('08:00'), settings: DEFAULT_SETTINGS, classes })[0].title, 'ADBMS Lab now');
+  assert.ok(!computeDue({ now: at('12:14'), settings: DEFAULT_SETTINGS, classes }).some((n) => n.kind === 'class'), 'global 1h no longer used');
+  assert.equal(cls(computeDue({ now: at('08:00'), settings: DEFAULT_SETTINGS, classes }))[0].title, 'ADBMS Lab now');
   // Blank/null override falls back to the setting.
-  const fallback = computeDue({ now: at('12:15'), settings: DEFAULT_SETTINGS, classes: [{ ...CLASSES[0], remindBefore: null }] });
+  const fallback = cls(computeDue({ now: at('12:15'), settings: DEFAULT_SETTINGS, classes: [{ ...CLASSES[0], remindBefore: null }] }));
   assert.equal(fallback[0].title, 'Compiler Construction in 1 hour');
 });
 
 test('attendance question delay: global setting, then per-subject override', () => {
   const s = { ...DEFAULT_SETTINGS, attendanceDelay: 10 };
-  assert.ok(!computeDue({ now: at('15:20'), settings: s, classes: CLASSES }).some((n) => n.kind === 'attendance'));
-  assert.equal(computeDue({ now: at('15:30'), settings: s, classes: CLASSES }).filter((n) => n.kind === 'attendance').length, 1);
+  const cc = [CLASSES[0]];
+  const att = (now, settings, classes) => computeDue({ now: at(now), settings, classes }).filter((n) => n.kind === 'attendance').length;
+  assert.equal(att('15:29', s, cc), 0, 'not before end + delay');
+  assert.equal(att('15:30', s, cc), 1);
   const own = [{ ...CLASSES[0], attendanceAfter: 0 }];
-  assert.equal(computeDue({ now: at('15:20'), settings: s, classes: own }).filter((n) => n.kind === 'attendance').length, 1, 'subject says right away');
+  assert.equal(att('15:20', s, own), 1, 'subject says right away');
   const later = [{ ...CLASSES[0], attendanceAfter: 30 }];
-  assert.equal(computeDue({ now: at('15:50'), settings: DEFAULT_SETTINGS, classes: later }).filter((n) => n.kind === 'attendance').length, 1);
+  assert.equal(att('15:49', DEFAULT_SETTINGS, later), 0);
+  assert.equal(att('15:50', DEFAULT_SETTINGS, later), 1);
 });
 
 test('"did you submit?" 3 hours before a timed hand-in from the Exams page', () => {
@@ -259,4 +266,117 @@ test('quiz length and follow-up delay are respected; tests and exams too', () =>
   const s = { ...DEFAULT_SETTINGS, quizFollowupDelay: 5 };
   assert.deepEqual(computeDue({ now: at('10:35'), settings: s, exams }).filter((n) => n.kind === 'quiz').map((n) => n.data.examId).sort(), ['m', 'q', 't']);
   assert.equal(computeDue({ now: at('10:35'), settings: { ...s, quizFollowups: false }, exams }).filter((n) => n.kind === 'quiz').length, 0);
+});
+
+// ── Catch-up windows (a server that was asleep and wakes late) ───────────
+
+const KIND = (list, kind) => list.filter((n) => n.kind === kind);
+const only = (settings) => ({ ...DEFAULT_SETTINGS, digestEnabled: false, attendancePrompts: false, submitPrompts: false, quizFollowups: false, ...settings });
+
+test('fake clock: a server asleep 0, 10, 40 or 70 minutes before a 10:00 class with lead 60', () => {
+  const cls = [{ scheduleId: 'k', subjectId: 'S', name: 'Algo', day: 'Tuesday', start: '10:00', end: '11:00' }];
+  // The server wakes at 09:00 (asleep 0 min past the reminder), 09:10, 09:40 or 10:10.
+  const wakes = [['09:00', 'Algo in 1 hour'], ['09:10', 'Algo in 50 minutes'], ['09:40', 'Algo in 20 minutes'], ['10:10', null]];
+  for (const [t, title] of wakes) {
+    const got = KIND(computeDue({ now: at(t), settings: only({}), classes: cls }), 'class');
+    if (title) {
+      assert.equal(got.length, 1, t);
+      assert.equal(got[0].title, title, t);
+      assert.match(got[0].view.sub, new RegExp(`^Starts ${title.replace('Algo ', '')}`), 'sub follows the minutes left too');
+    } else {
+      assert.equal(got.length, 0, `${t}: the class has started`);
+    }
+  }
+  assert.equal(KIND(computeDue({ now: at('10:00'), settings: only({}), classes: cls }), 'class').length, 0, 'at the start: nothing');
+  assert.equal(KIND(computeDue({ now: at('08:59'), settings: only({}), classes: cls }), 'class').length, 0, 'not early');
+});
+
+test('exam and routine windows run until the start, with the minutes left in the wording', () => {
+  const exams = [{ id: 'x', title: 'Mid', type: 'Exam', date: '2026-10-06', time: '10:00' }];
+  const routines = [{ routineId: 'r', name: 'Gym', time: '10:00', days: ['Tue'] }];
+  const run = (t) => computeDue({ now: at(t), settings: only({ quizFollowups: false }), exams, routines });
+  assert.equal(KIND(run('09:00'), 'exam')[0].title, 'Exam in 1 hour: Mid');
+  assert.equal(KIND(run('09:10'), 'exam')[0].title, 'Exam in 50 minutes: Mid');
+  assert.equal(KIND(run('09:40'), 'exam')[0].view.sub.startsWith('Exam in 20 minutes.'), true);
+  assert.equal(KIND(run('10:00'), 'exam').length, 0);
+  assert.equal(KIND(run('10:10'), 'exam').length, 0);
+  assert.equal(KIND(run('09:00'), 'routine')[0].title, 'Gym in 1 hour');
+  assert.equal(KIND(run('09:10'), 'routine')[0].title, 'Gym in 50 minutes');
+  assert.equal(KIND(run('09:40'), 'routine')[0].view.sub, 'Starts in 20 minutes. Small steps, every day.');
+  assert.equal(KIND(run('10:00'), 'routine').length, 0);
+  assert.equal(KIND(run('10:10'), 'routine').length, 0);
+});
+
+test('lead 0 keeps the old short window and says now', () => {
+  const cls = [{ scheduleId: 'k', subjectId: 'S', name: 'Algo', day: 'Tuesday', start: '10:00', end: '11:00' }];
+  const s = only({ leadMinutes: 0 });
+  assert.equal(KIND(computeDue({ now: at('09:59'), settings: s, classes: cls }), 'class').length, 0);
+  for (const t of ['10:00', '10:04']) {
+    const c = KIND(computeDue({ now: at(t), settings: s, classes: cls }), 'class');
+    assert.equal(c.length, 1, t);
+    assert.equal(c[0].title, 'Algo now');
+    assert.equal(c[0].view.sub, 'Starting now!');
+  }
+  assert.equal(KIND(computeDue({ now: at('10:05'), settings: s, classes: cls }), 'class').length, 0);
+  const exams = [{ id: 'x', title: 'Mid', type: 'Exam', date: '2026-10-06', time: '10:00' }];
+  assert.equal(KIND(computeDue({ now: at('10:04'), settings: only({ leadMinutes: 0 }), exams }), 'exam').length, 1);
+  assert.equal(KIND(computeDue({ now: at('10:05'), settings: only({ leadMinutes: 0 }), exams }), 'exam').length, 0);
+});
+
+test('attendance and quiz follow-ups last 6 hours; digest 4 hours', () => {
+  const cc = [{ scheduleId: 'a', subjectId: 'S', name: 'Algo', day: 'Tuesday', start: '07:00', end: '08:00' }];
+  const att = (t, extra = {}) => KIND(computeDue({ now: at(t), settings: only({ attendancePrompts: true }), classes: cc, ...extra }), 'attendance');
+  assert.equal(att('07:59').length, 0);
+  assert.equal(att('08:00').length, 1);
+  assert.equal(att('13:59').length, 1, 'end + 359');
+  assert.equal(att('14:00').length, 0, 'end + 360');
+  assert.equal(att('09:00', { markedSubjectIds: new Set(['S']) }).length, 0, 'still skipped when marked');
+
+  const exams = [{ id: 'q', title: 'Q', type: 'Quiz', date: '2026-10-06', time: '07:00', duration: 40 }]; // ends 07:40, +20
+  const quiz = (t) => KIND(computeDue({ now: at(t), settings: only({ quizFollowups: true }), exams }), 'quiz');
+  assert.equal(quiz('07:59').length, 0);
+  assert.equal(quiz('08:00').length, 1);
+  assert.equal(quiz('13:59').length, 1);
+  assert.equal(quiz('14:00').length, 0);
+
+  const digest = (t) => KIND(computeDue({ now: at(t), settings: { ...DEFAULT_SETTINGS }, classes: cc }), 'digest');
+  assert.equal(digest('06:59').length, 0);
+  assert.equal(digest('07:00').length, 1);
+  assert.equal(digest('10:59').length, 1);
+  assert.equal(digest('11:00').length, 0);
+});
+
+test('windows never run past local midnight, and a late class reminder crosses it only when due', () => {
+  const late = [{ scheduleId: 'n', subjectId: 'S', name: 'Night', day: 'Tuesday', start: '23:00', end: '23:50' }];
+  const att = (t) => KIND(computeDue({ now: at(t), settings: only({ attendancePrompts: true }), classes: late }), 'attendance');
+  assert.equal(att('23:59').length, 1);
+  // 00:10 on Wednesday: Tuesday's list is gone, so the prompt is not repeated.
+  assert.equal(computeDue({ now: at('00:10', '2026-10-07'), settings: only({ attendancePrompts: true }), classes: late }).length, 0);
+  // A class at 00:30 with lead 60: the window starts at 23:30 the evening before, which is not "today",
+  // so it begins at 00:00 on the class day with the real 30 minutes left.
+  const early = [{ scheduleId: 'e', subjectId: 'S', name: 'Dawn', day: 'Wednesday', start: '00:30', end: '01:30' }];
+  const wed = KIND(computeDue({ now: at('00:00', '2026-10-07'), settings: only({}), classes: early }), 'class');
+  assert.equal(wed[0].title, 'Dawn in 30 minutes');
+});
+
+test('submit prompt keeps its key across midnight and stops at the due time', () => {
+  const exams = [{ id: 's1', title: 'Lab report', type: 'Submission', date: '2026-10-07', time: '01:00' }];
+  const s = only({ submitPrompts: true, submitLead: 180 });
+  const sub = (t, date) => KIND(computeDue({ now: at(t, date), settings: s, exams }), 'submit');
+  assert.equal(sub('21:59', '2026-10-06').length, 0);
+  assert.equal(sub('22:00', '2026-10-06')[0].key, 'submit:e:s1:2026-10-07');
+  assert.equal(sub('23:30', '2026-10-06')[0].key, 'submit:e:s1:2026-10-07');
+  assert.equal(sub('00:30', '2026-10-07')[0].key, 'submit:e:s1:2026-10-07', 'same key after midnight, so no repeat');
+  assert.equal(sub('01:00', '2026-10-07').length, 0, 'due time reached');
+});
+
+test('windows are half-open: inWindow includes the start and excludes the end', () => {
+  const { inWindow, beforeWindow } = require('./reminders');
+  assert.equal(inWindow(10, 10, 20), true);
+  assert.equal(inWindow(19, 10, 20), true);
+  assert.equal(inWindow(20, 10, 20), false);
+  assert.equal(inWindow(9, 10, 20), false);
+  assert.equal(inWindow(10, null, 20), false);
+  assert.deepEqual(beforeWindow(600, 60), { from: 540, until: 600 });
+  assert.deepEqual(beforeWindow(600, 0), { from: 600, until: 605 });
 });

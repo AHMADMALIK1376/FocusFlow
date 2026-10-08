@@ -32,7 +32,7 @@ const plain = (e) => ({
 function buildAll(make) {
   mock.timers.enable({ apis: ['Date'], now: Date.parse('2026-10-06T00:00:00Z') });
   try {
-    const att = withAnswerLink(due('15:20').find((x) => x.kind === 'attendance'), 'user-1');
+    const att = withAnswerLink(due('15:20').find((x) => x.kind === 'attendance' && x.data.subjectId === 'S-CC'), 'user-1');
     const digest = due('07:00', {
       routines: [{ routineId: 'g', name: 'Gym', time: '18:00', days: ['Tue'] }],
       exams: [{ id: 'q', title: 'AI Quiz 1', type: 'Quiz', date: '2026-10-06', time: '10:00' }, { id: 'p', title: 'Parser project', type: 'Project', date: '2026-10-07' }],

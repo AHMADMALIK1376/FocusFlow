@@ -105,7 +105,7 @@ test('code emails: each digit in its own tile, the code never in the subject', (
 });
 
 test('questions get one button per answer, each opening the page with that answer picked', () => {
-  const att = withAnswerLink(due('15:20').find((x) => x.kind === 'attendance'), 'user-1');
+  const att = withAnswerLink(due('15:20').find((x) => x.kind === 'attendance' && x.data.subjectId === 'S-CC'), 'user-1');
   assert.deepEqual(att.actions.map((a) => [a.label, a.tone, new URL(a.url).searchParams.get('a')]), [['Attended', 'sage', 'present'], ['Missed', 'plain', 'absent']]);
   assert.deepEqual(att.pushData.answer.buttons, [{ action: 'present', title: 'Attended' }, { action: 'absent', title: 'Missed' }]);
   const html = reminderEmail(att, APP).html;
@@ -118,7 +118,7 @@ test('questions get one button per answer, each opening the page with that answe
 });
 
 test('WhatsApp: bold headline, a line per fact, answer links, signature — plain text, no emoji', () => {
-  const att = withAnswerLink(due('15:20').find((x) => x.kind === 'attendance'), 'user-1');
+  const att = withAnswerLink(due('15:20').find((x) => x.kind === 'attendance' && x.data.subjectId === 'S-CC'), 'user-1');
   const text = whatsappText(att);
   const lines = text.split('\n');
   assert.equal(lines[0], '*Did you attend Compiler Construction?*');
@@ -135,7 +135,7 @@ function renderAnswerPage(query) {
 }
 
 test('answer page highlights the answer the email button picked, and ignores junk', async () => {
-  const att = withAnswerLink(due('15:20').find((x) => x.kind === 'attendance'), 'user-1');
+  const att = withAnswerLink(due('15:20').find((x) => x.kind === 'attendance' && x.data.subjectId === 'S-CC'), 'user-1');
   const t = new URL(att.actions[0].url).searchParams.get('t');
   const picked = await renderAnswerPage({ t, a: 'present' });
   assert.match(picked, /class="sage picked" name="a" value="present"><svg/); // line icon inside the button
