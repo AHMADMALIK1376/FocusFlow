@@ -109,3 +109,109 @@ test("an older login the server rejects is signed out, not kept", async () => {
   expect(localStorage.getItem("focus_token")).toBeNull();
   expect(assign).toHaveBeenCalledWith("/login");
 });
+
+// ---- confirm before signing out (a one-off "no cookie" must not end the session) ----
+const NO_TOKEN = { error: "Access denied.", code: "NO_TOKEN" };
+const meCalls = () => global.fetch.mock.calls.filter(([url]) => url === "/api/auth/me");
+const routed = (me, other = () => reply(401, NO_TOKEN)) =>
+  jest.fn((url) => (url === "/api/auth/me" ? me() : other(url)));
+const { readSignOutReason } = require("./sessionReason");
+
+test("NO_TOKEN, then /auth/me says the cookie is fine: still signed in, no redirect", async () => {
+  global.fetch = routed(() => reply(200, { userId: 1 }));
+  await expect(subjectAPI.getAll()).rejects.toThrow();
+  expect(meCalls()).toHaveLength(1);
+  expect(getToken()).toBe("session");
+  expect(assign).not.toHaveBeenCalled();
+  expect(readSignOutReason()).toBeNull();
+});
+
+test("NO_TOKEN confirmed by /auth/me: signed out and the reason is saved", async () => {
+  global.fetch = routed(() => reply(401, NO_TOKEN));
+  await expect(subjectAPI.getAll()).rejects.toThrow();
+  expect(getToken()).toBeNull();
+  expect(assign).toHaveBeenCalledWith("/login");
+  expect(readSignOutReason().code).toBe("NO_TOKEN");
+});
+
+test("INVALID_TOKEN confirmed: reason INVALID_TOKEN, and it survives clearAllUserData's sessionStorage wipe", async () => {
+  global.fetch = routed(() => reply(401, { error: "x", code: "INVALID_TOKEN" }), () => reply(401, { error: "x", code: "INVALID_TOKEN" }));
+  await expect(subjectAPI.getAll()).rejects.toThrow();
+  expect(readSignOutReason().code).toBe("INVALID_TOKEN");
+});
+
+test.each([
+  ["a network error", () => Promise.reject(new TypeError("Failed to fetch"))],
+  ["a 500", () => reply(500, { error: "boom" })],
+  ["a 503", () => reply(503, { error: "waking up" })],
+  ["a 408", () => reply(408, { error: "timeout" })],
+  ["a 429", () => reply(429, { error: "slow down" })],
+  ["a 403", () => reply(403, { error: "blocked" })],
+])("when the confirmation gets %s the student stays signed in", async (_name, me) => {
+  global.fetch = routed(me);
+  await expect(subjectAPI.getAll()).rejects.toThrow();
+  expect(getToken()).toBe("session");
+  expect(localStorage.getItem("focus_username")).toBe("Ahmad");
+  expect(assign).not.toHaveBeenCalled();
+  expect(readSignOutReason()).toBeNull();
+});
+
+test("a failed confirmation does not stick: the next problem is confirmed again", async () => {
+  global.fetch = routed(() => reply(503, {}));
+  await expect(subjectAPI.getAll()).rejects.toThrow();
+  global.fetch = routed(() => reply(401, NO_TOKEN));
+  await expect(subjectAPI.getAll()).rejects.toThrow();
+  expect(getToken()).toBeNull();
+});
+
+test.each(["TOKEN_EXPIRED", "USER_NOT_FOUND"])("%s signs out at once, without asking /auth/me", async (code) => {
+  global.fetch = jest.fn(() => reply(401, { error: "x", code }));
+  await expect(subjectAPI.getAll()).rejects.toThrow();
+  expect(meCalls()).toHaveLength(0);
+  expect(getToken()).toBeNull();
+  expect(readSignOutReason().code).toBe(code);
+  expect(assign).toHaveBeenCalledTimes(1);
+});
+
+test("three parallel NO_TOKEN requests share one confirmation and one sign-out", async () => {
+  global.fetch = routed(() => reply(401, NO_TOKEN));
+  const results = await Promise.allSettled([subjectAPI.getAll(), subjectAPI.getAll(), subjectAPI.getAll()]);
+  expect(results.every((r) => r.status === "rejected")).toBe(true);
+  expect(meCalls()).toHaveLength(1);
+  expect(assign).toHaveBeenCalledTimes(1);
+  expect(readSignOutReason().code).toBe("NO_TOKEN");
+});
+
+test("asking /auth/me itself and getting NO_TOKEN signs out without a second /auth/me", async () => {
+  global.fetch = routed(() => reply(401, NO_TOKEN));
+  await expect(authAPI.getMe()).rejects.toThrow();
+  expect(meCalls()).toHaveLength(1);
+  expect(getToken()).toBeNull();
+});
+
+test("a signed-out visitor's /auth/me (session recovery) never signs anything out or saves a reason", async () => {
+  localStorage.clear();
+  global.fetch = routed(() => reply(401, NO_TOKEN));
+  await expect(authAPI.getMe()).rejects.toThrow();
+  expect(assign).not.toHaveBeenCalled();
+  expect(readSignOutReason()).toBeNull();
+});
+
+test("the confirmation is sent with the cookie, the CSRF header and no cache", async () => {
+  global.fetch = routed(() => reply(200, {}));
+  await expect(subjectAPI.getAll()).rejects.toThrow();
+  const init = meCalls()[0][1];
+  expect(init.credentials).toBe("include");
+  expect(init.cache).toBe("no-store");
+  expect(init.headers["X-Requested-With"]).toBe("FocusFlow");
+});
+
+test("signing in again clears the saved reason; signing out on purpose saves 'manual'", () => {
+  localStorage.setItem("ff_signout_reason", JSON.stringify({ code: "NO_TOKEN", at: "x" }));
+  setToken("session");
+  expect(readSignOutReason()).toBeNull();
+  global.fetch = jest.fn(() => reply(200, {}));
+  authAPI.logout();
+  expect(readSignOutReason().code).toBe("manual");
+  expect(getToken()).toBeNull();
+});

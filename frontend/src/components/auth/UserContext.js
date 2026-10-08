@@ -244,6 +244,22 @@ export const UserProvider = ({ children }) => {
         setRequiresVerification(false);
     };
 
+    // The sign-in cookie may still be good even though this browser lost its
+    // "signed in" marker (storage cleared, a different tab signed out first).
+    // One /auth/me finds out; if the cookie works the marker and name come back.
+    const restoreSession = async () => {
+        try {
+            const me = await authAPI.getMe();
+            if (me && me.userId) {
+                setTokenAPI('session');
+                setUserName(me.fullName || String(me.email || '').split('@')[0]);
+                setUserEmail(me.email);
+                return true;
+            }
+        } catch { /* not signed in: stay on the sign-in page */ }
+        return false;
+    };
+
     // Check if user is authenticated
     const isAuthenticated = () => {
         return !!getTokenAPI() && !!userName;
@@ -270,6 +286,7 @@ export const UserProvider = ({ children }) => {
                 verifyResetCode,
                 resetPassword,
                 logout,
+                restoreSession,
                 setUserName,
                 isAuthenticated,
                 clearError

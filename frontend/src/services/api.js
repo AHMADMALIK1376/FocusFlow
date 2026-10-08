@@ -1,4 +1,5 @@
 // src/services/api.js
+import { saveSignOutReason, clearSignOutReason } from './sessionReason';
 
 // ==============================================
 // API CONFIGURATION
@@ -21,7 +22,42 @@ const handleResponse = async (response) => {
     return data;
 };
 
-const SESSION_OVER = ['USER_NOT_FOUND', 'TOKEN_EXPIRED', 'INVALID_TOKEN', 'NO_TOKEN'];
+// The server says for sure the login is over (account gone, token past its date).
+const SIGN_OUT_NOW = ['USER_NOT_FOUND', 'TOKEN_EXPIRED'];
+// "No cookie" / "bad cookie" can be a one-off (a cold server, a half-loaded page), so
+// they are checked once more with /auth/me before signing out.
+const CONFIRM_FIRST = ['NO_TOKEN', 'INVALID_TOKEN'];
+
+// Parallel requests that all fail the same way share one confirmation.
+let confirming = null;
+const confirmSessionOver = () => {
+    if (!confirming) {
+        confirming = fetch(`${API_URL}/auth/me`, {
+            credentials: 'include',
+            cache: 'no-store',
+            headers: { 'X-Requested-With': 'FocusFlow' },
+        })
+            .then(async (res) => {
+                if (res.status !== 401) return null; // 200, 5xx, 408, 429, 403: not a definite "no"
+                const body = await res.json().catch(() => ({}));
+                return SIGN_OUT_NOW.includes(body.code) || CONFIRM_FIRST.includes(body.code) ? body.code : null;
+            })
+            .catch(() => null) // no answer: the network is the problem, not the login
+            .then((code) => { confirming = null; return code; });
+    }
+    return confirming;
+};
+
+// Forget the login and go to the sign-in page, remembering why. Only the first
+// caller does it (the marker is gone for the rest).
+const signOutForReason = (code) => {
+    if (!getToken()) return;
+    clearAllUserData();
+    saveSignOutReason(code);
+    if (!/^\/(login|signup|verify|forgot-password|reset-password)/.test(window.location.pathname)) {
+        window.location.assign('/login');
+    }
+};
 
 // A request got no answer, or a 502/503/504 from the host. The connection
 // gate (components/errors/ConnectionGate) hears this, asks /api/health itself,
@@ -91,11 +127,12 @@ const authFetch = async (endpoint, options = {}) => {
     // forget it and go to the sign-in page instead of failing every save.
     if (response.status === 401 && signedIn) {
         const body = await response.clone().json().catch(() => ({}));
-        if (SESSION_OVER.includes(body.code)) {
-            clearAllUserData();
-            if (!/^\/(login|signup|verify|forgot-password|reset-password)/.test(window.location.pathname)) {
-                window.location.assign('/login');
-            }
+        if (SIGN_OUT_NOW.includes(body.code)) {
+            signOutForReason(body.code);
+        } else if (CONFIRM_FIRST.includes(body.code)) {
+            const isMe = endpoint === '/auth/me' && (!options.method || options.method === 'GET');
+            const confirmed = isMe ? body.code : await confirmSessionOver();
+            if (confirmed) signOutForReason(confirmed);
         }
     }
 
@@ -116,6 +153,7 @@ export const setToken = (token) => {
     localStorage.removeItem(LEGACY_TOKEN_KEY);
     if (token) {
         localStorage.setItem(SIGNED_IN_KEY, '1');
+        clearSignOutReason();
     } else {
         localStorage.removeItem(SIGNED_IN_KEY);
     }
@@ -201,6 +239,7 @@ export const authAPI = {
             keepalive: true,
         }).catch(() => {});
         setToken(null);
+        saveSignOutReason('manual');
         localStorage.removeItem('focus_username');
         localStorage.removeItem('focus_email');
     },

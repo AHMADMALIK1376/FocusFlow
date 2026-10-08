@@ -1,15 +1,34 @@
 // src/components/auth/LoginForm.js
-import React, { useState } from "react";
-import { TriangleAlert } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { Info, TriangleAlert } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useUser } from "./UserContext";
+import { readSignOutReason, signOutMessage } from "../../services/sessionReason";
 
 export default function LoginForm() {
-  const { login, isLoading, error, clearError } = useUser();
+  const { login, isLoading, error, clearError, restoreSession } = useUser();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [requiresVerification, setRequiresVerification] = useState(false);
+  // Why the student landed here, read once when the page opens.
+  const [reason] = useState(() => readSignOutReason());
+  const reasonText = signOutMessage(reason && reason.code);
+  const mounted = useRef(false);
+  const restoreStarted = useRef(false);
+
+  // If the sign-in cookie is still good (only this browser's marker was lost), go
+  // straight in. Skipped right after a deliberate sign-out.
+  useEffect(() => {
+    mounted.current = true;
+    if (!restoreStarted.current && !(reason && reason.code === "manual")) {
+      restoreStarted.current = true;
+      restoreSession().then((ok) => {
+        if (ok && mounted.current) navigate("/dashboard", { replace: true });
+      });
+    }
+    return () => { mounted.current = false; };
+  }, [reason, restoreSession, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -37,6 +56,12 @@ export default function LoginForm() {
       <form onSubmit={handleSubmit} className="w-full flex flex-col items-center animate-in fade-in slide-in-from-left-4">
         <h2 className="text-2xl font-black text-ink mb-1">Welcome Back</h2>
         <p className="text-muted text-xs font-bold mb-6 uppercase tracking-widest">Reconnect with goals</p>
+
+        {reasonText && (
+          <p className="w-[85%] mb-4 text-sm text-muted text-center">
+            <Info size={15} className="inline -mt-0.5 mr-1.5" />{reasonText}
+          </p>
+        )}
 
         {error && (
           <div className="w-[85%] mb-4 p-3 bg-focus/10 border border-focus/30 text-focus rounded-token-sm text-sm font-bold text-center">
