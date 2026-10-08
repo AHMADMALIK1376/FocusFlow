@@ -23,8 +23,8 @@ export default function CookieChoice() {
         Now: <b className="text-ink" data-testid="current-choice">{choice === "all" ? "Accept all (Google sign-in allowed)" : choice === "essential" ? "Essential only" : "not chosen yet"}</b>
       </p>
       <div className="flex flex-wrap gap-2.5 pt-1">
-        <button onClick={() => pick("all")} className="px-5 py-2.5 rounded-token-md bg-grad-hero text-on-brand shadow-clay-brand font-black text-xs tracking-wider uppercase hover:-translate-y-0.5 transition-transform">Accept all</button>
-        <button onClick={() => pick("essential")} className="px-5 py-2.5 rounded-token-md bg-surface text-ink shadow-neu-sm font-black text-xs tracking-wider uppercase hover:-translate-y-0.5 transition-transform">Essential only</button>
+        <button onClick={() => pick("all")} aria-pressed={choice === "all"} className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring px-5 py-2.5 rounded-token-md bg-grad-hero text-on-brand shadow-clay-brand font-black text-xs tracking-wider uppercase hover:-translate-y-0.5 transition-transform">Accept all</button>
+        <button onClick={() => pick("essential")} aria-pressed={choice === "essential"} className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring px-5 py-2.5 rounded-token-md bg-surface text-ink shadow-neu-sm font-black text-xs tracking-wider uppercase hover:-translate-y-0.5 transition-transform">Essential only</button>
       </div>
       <p className="text-xs pt-1">With Essential only you can still use FocusFlow fully. Signing in with Google simply asks again first.</p>
     </>

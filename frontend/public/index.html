@@ -11,7 +11,7 @@
       (function () {
         try {
           var c = JSON.parse(localStorage.getItem('focusflow:theme.colors') || 'null');
-          if (!c || c.v !== 2 || !c.tokens || typeof c.tokens !== 'object') return;
+          if (!c || c.v !== 5 || !c.tokens || typeof c.tokens !== 'object') return;
           var name = /^--[a-z0-9-]+$/, safe = /^[0-9a-z .,%()\/#-]+$/i, fn = /([a-z-]+)\(/gi;
           var ok = /^(rgb|linear-gradient|var)$/, keys = [], k, v, f;
           for (k in c.tokens) {

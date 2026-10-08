@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useId, useRef } from 'react';
 import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import { cx } from './cx';
@@ -15,7 +15,7 @@ function useEscape(open, onClose) {
   }, [open, onClose]);
 }
 
-const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])';
 
 // Opt-in: focus moves into the dialog, Tab and Shift+Tab stay inside it, and focus
 // goes back to whatever opened it when it closes.
@@ -58,6 +58,7 @@ export function Modal({
   trapFocus = false, fullHeightOnMobile = false,
 }) {
   const panelRef = useRef(null);
+  const titleId = useId();
   useEscape(open, onClose);
   useFocusTrap(open, panelRef, trapFocus);
   return (
@@ -80,7 +81,7 @@ export function Modal({
             tabIndex={trapFocus ? -1 : undefined}
             role="dialog"
             aria-modal="true"
-            aria-label={title}
+            aria-labelledby={title ? titleId : undefined}
             initial={{ scale: 0.95, y: 20, opacity: 0 }}
             animate={{ scale: 1, y: 0, opacity: 1 }}
             exit={{ scale: 0.95, y: 10, opacity: 0 }}
@@ -100,12 +101,12 @@ export function Modal({
                 type="button"
                 onClick={onClose}
                 aria-label="Close"
-                className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-focus hover:bg-focus/10 transition-colors z-10"
+                className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center text-focus hover:bg-focus/10 transition-colors z-10"
               >
                 <X size={18} />
               </button>
             )}
-            {title && <h2 className="text-xl font-black text-ink mb-4">{title}</h2>}
+            {title && <h2 id={titleId} className="text-xl font-black text-ink mb-4">{title}</h2>}
             {children}
           </motion.div>
         </motion.div>

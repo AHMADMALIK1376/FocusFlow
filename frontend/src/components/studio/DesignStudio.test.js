@@ -93,7 +93,7 @@ describe("palettes", () => {
     fireEvent.click(palette(MIDNIGHT));
     fireEvent.click(footer(/Undo/));
     await waitFor(() => expect(v("--canvas")).toBe(DEFAULT_CANVAS));
-    expect(footer(/Undo/)).toBeDisabled();
+    expect(footer(/Undo/)).toHaveAttribute("aria-disabled", "true");
   });
 
   it("choosing a palette clears the logo and icon colours", async () => {
@@ -138,14 +138,14 @@ describe("hex box and colour input", () => {
     expect(screen.getByText("That isn't a colour code. Try something like #EC706D.")).toBeInTheDocument();
     expect(input).toHaveAttribute("aria-invalid", "true");
     expect(v("--canvas")).toBe(DEFAULT_CANVAS);
-    expect(footer(/Undo/)).toBeDisabled();
+    expect(footer(/Undo/)).toHaveAttribute("aria-disabled", "true");
     fireEvent.change(input, { target: { value: "zz1" } });
     expect(screen.queryByText("That isn't a colour code. Try something like #EC706D.")).toBeNull();
   });
 
   it("the colour input previews, and two changes before blur are one undo step", async () => {
     mount();
-    const color = screen.getByLabelText("Pick a background colour");
+    const color = screen.getByLabelText("Pick the background colour");
     fireEvent.change(color, { target: { value: "#123456" } });
     await waitFor(() => expect(v("--canvas")).toBe(trip("#123456")));
     fireEvent.change(color, { target: { value: "#234567" } });
@@ -153,12 +153,12 @@ describe("hex box and colour input", () => {
     fireEvent.blur(color);
     fireEvent.click(footer(/Undo/));
     await waitFor(() => expect(v("--canvas")).toBe(DEFAULT_CANVAS));
-    expect(footer(/Undo/)).toBeDisabled();
+    expect(footer(/Undo/)).toHaveAttribute("aria-disabled", "true");
   });
 
   it("after blur a new drag is a new undo step", async () => {
     mount();
-    const color = screen.getByLabelText("Pick a background colour");
+    const color = screen.getByLabelText("Pick the background colour");
     fireEvent.change(color, { target: { value: "#123456" } });
     await waitFor(() => expect(v("--canvas")).toBe(trip("#123456")));
     fireEvent.blur(color);
@@ -170,7 +170,7 @@ describe("hex box and colour input", () => {
 
   it("only the last colour of a burst is applied (one per frame)", async () => {
     mount();
-    const color = screen.getByLabelText("Pick a background colour");
+    const color = screen.getByLabelText("Pick the background colour");
     fireEvent.change(color, { target: { value: "#111111" } });
     fireEvent.change(color, { target: { value: "#222222" } });
     fireEvent.change(color, { target: { value: "#333333" } });
@@ -260,7 +260,7 @@ describe("Cancel, Save, Reset, Undo", () => {
 
   it("Undo is disabled at first, then steps back one change at a time", async () => {
     mount();
-    expect(footer(/Undo/)).toBeDisabled();
+    expect(footer(/Undo/)).toHaveAttribute("aria-disabled", "true");
     fireEvent.click(palette(MIDNIGHT));
     fireEvent.click(palette(MATCHA));
     await waitFor(() => expect(v("--canvas")).toBe(trip(MATCHA.background)));
@@ -268,7 +268,7 @@ describe("Cancel, Save, Reset, Undo", () => {
     await waitFor(() => expect(v("--canvas")).toBe(trip(MIDNIGHT.background)));
     fireEvent.click(footer(/Undo/));
     await waitFor(() => expect(v("--canvas")).toBe(DEFAULT_CANVAS));
-    expect(footer(/Undo/)).toBeDisabled();
+    expect(footer(/Undo/)).toHaveAttribute("aria-disabled", "true");
   });
 
   it("announces changes in a polite live region", async () => {
@@ -392,7 +392,7 @@ describe("unsaved changes guard", () => {
     fireEvent.click(screen.getByText("outside-open"));
     await waitFor(() => expect(dialog()).toBeInTheDocument());
     expect(palette(MIDNIGHT)).toHaveAttribute("aria-pressed", "false");
-    expect(footer(/Undo/)).toBeDisabled();
+    expect(footer(/Undo/)).toHaveAttribute("aria-disabled", "true");
     expect(v("--canvas")).toBe(DEFAULT_CANVAS);
   });
 
@@ -422,7 +422,7 @@ describe("leaving the page", () => {
   it("an animation frame still pending at unmount dispatches nothing", async () => {
     const cancel = jest.spyOn(window, "cancelAnimationFrame");
     const { unmount } = mount();
-    fireEvent.change(screen.getByLabelText("Pick a background colour"), { target: { value: "#123456" } });
+    fireEvent.change(screen.getByLabelText("Pick the background colour"), { target: { value: "#123456" } });
     unmount();
     expect(cancel).toHaveBeenCalled();
     cancel.mockRestore();
@@ -435,7 +435,7 @@ describe("readability", () => {
     expect(screen.getByText("These are the original FocusFlow colours.")).toBeInTheDocument();
     fireEvent.click(palette(MATCHA));
     await waitFor(() => expect(screen.queryByText("These are the original FocusFlow colours.")).toBeNull());
-    expect(screen.getByRole("status")).toHaveTextContent("Readability check");
+    expect(screen.getAllByRole("status").some((el) => el.textContent.includes("Readability check"))).toBe(true);
     fireEvent.click(screen.getByRole("button", { name: "Text" }));
     fireEvent.click(screen.getByRole("button", { name: "Cream #FFF6E8" }));
     await waitFor(() => expect(screen.getByText("We made your text a little darker so it stays readable.")).toBeInTheDocument());
@@ -505,13 +505,13 @@ describe("keyboard and labels", () => {
     expect(within(roles).getByRole("button", { name: "Background" })).toHaveAttribute("aria-pressed", "false");
     expect(screen.getByText("Buttons, the navbar, the sidebar and highlights.")).toBeInTheDocument();
     expect(screen.getByLabelText("Hex code for brand")).toBeInTheDocument();
-    expect(screen.getByLabelText("Pick a brand colour")).toBeInTheDocument();
+    expect(screen.getByLabelText("Pick the brand colour")).toBeInTheDocument();
   });
 
   it("the hex box and colour input have names, and Advanced starts closed", () => {
     mount();
     expect(screen.getByLabelText("Hex code for background")).toBeInTheDocument();
-    expect(screen.getByLabelText("Pick a background colour")).toBeInTheDocument();
+    expect(screen.getByLabelText("Pick the background colour")).toBeInTheDocument();
     const details = dialog().querySelector("details");
     expect(details).not.toHaveAttribute("open");
     expect(within(details).getByText("Advanced: logo and icon colours")).toBeInTheDocument();

@@ -12,6 +12,8 @@ import { streakFor, weekGrid } from "../features/habits/habitsLogic";
 const TODAY = new Date().toISOString().slice(0, 10);
 const WEEK_DAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 const COLOR_CLASSES = { brand: "bg-brand", success: "bg-success", info: "bg-info", warn: "bg-warn", focus: "bg-focus" };
+// The letter and tick on a done cell use the text colour made for that fill (each is guarded to 4.5:1 on it).
+const COLOR_TEXT = { brand: "text-on-brand", success: "text-on-success", info: "text-on-info", warn: "text-on-warn", focus: "text-on-focus" };
 
 function getWeekStart() {
   const d = new Date();
@@ -89,7 +91,7 @@ export default function HabitsPage() {
           <select
             value={newColor}
             onChange={(e) => setNewColor(e.target.value)}
-            className="rounded-token-md bg-surface text-ink shadow-neu-inset outline-none font-medium py-3 px-4 text-sm appearance-none cursor-pointer focus:ring-2 focus:ring-brand/60"
+            className="rounded-token-md bg-surface text-ink shadow-neu-inset outline-none font-medium py-3 px-4 text-sm appearance-none cursor-pointer focus:ring-2 focus:ring-focus-ring"
           >
             {Object.keys(COLOR_CLASSES).map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
@@ -105,6 +107,7 @@ export default function HabitsPage() {
             const grid = grids[idx];
             const streak = streakFor(habit, TODAY);
             const colorClass = COLOR_CLASSES[habit.color] || "bg-brand";
+            const onClass = COLOR_TEXT[habit.color] || "text-on-brand";
             return (
               <div key={habit.id} className="bg-surface rounded-token-lg shadow-neu p-5">
                 <div className="flex items-center justify-between mb-3 gap-2">
@@ -137,8 +140,8 @@ export default function HabitsPage() {
                         title={dayKey}
                         className={`flex flex-col items-center gap-0.5 rounded-token-md p-1.5 w-10 transition-all ${grid[i] ? `${colorClass} shadow-neu-sm` : "bg-surface-2 hover:bg-[rgb(var(--ink)/0.08)]"}`}
                       >
-                        <span className={`text-[10px] font-black ${grid[i] ? "text-on-brand" : "text-muted"}`}>{day}</span>
-                        <span className={`text-xs ${grid[i] ? "text-on-brand" : "text-ink/40"}`}>{grid[i] ? <Check size={13} strokeWidth={3} /> : "·"}</span>
+                        <span className={`text-[10px] font-black ${grid[i] ? onClass : "text-muted"}`}>{day}</span>
+                        <span className={`text-xs ${grid[i] ? onClass : "text-ink/40"}`}>{grid[i] ? <Check size={13} strokeWidth={3} /> : "·"}</span>
                       </button>
                     );
                   })}

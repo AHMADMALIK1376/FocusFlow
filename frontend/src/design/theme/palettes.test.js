@@ -1,7 +1,7 @@
 import { PALETTE_GROUPS, PALETTES, SWATCHES, TEXT_SWATCHES, paletteTheme } from './palettes';
 import { deriveTokens, contrastFailures } from './deriveTokens';
 import { DEFAULT_THEME, HEX_RE, PRESET_RE, isDefaultPalette, sanitizeTheme } from './theme';
-import { hexToRgb, rgbToTriplet } from './color';
+import { hexToRgb, rgbToTriplet, tripletToRgb, contrastRatio } from './color';
 
 const UPPER_HEX = /^#[0-9A-F]{6}$/;
 const trip = (hex) => rgbToTriplet(hexToRgb(hex));
@@ -74,5 +74,50 @@ describe('swatches', () => {
     expect(SWATCHES.soft.find((s) => s.name === 'Sage').hex).toBe(DEFAULT_THEME.accent);
     expect(SWATCHES.bold.find((s) => s.name === 'Coral').hex).toBe(DEFAULT_THEME.brand);
     expect(SWATCHES.soft.find((s) => s.name === 'Cream').hex).toBe(DEFAULT_THEME.background);
+  });
+});
+
+// The matrix in decision.md: every library palette reaches AA on the five required pairs and on the
+// warn badge (warn at 20% over the card), including the dark ones (the guard once ignored the tint).
+describe('palette library contrast matrix', () => {
+  const rgb = (tokens, name) => tripletToRgb(tokens[name]);
+  it.each(PALETTES.map((p) => [p.name, p]))('%s: required pairs and the warn badge are at least 4.5:1', (_n, p) => {
+    const { tokens } = deriveTokens(paletteTheme(p));
+    const wash = rgb(tokens, '--surface').map((v, i) => Math.round(v + (rgb(tokens, '--warn')[i] - v) * 0.2));
+    [['--ink', '--canvas'], ['--ink', '--surface'], ['--muted', '--surface'], ['--on-brand', '--brand'], ['--on-sage', '--sage']]
+      .forEach(([f, b]) => expect(contrastRatio(rgb(tokens, f), rgb(tokens, b))).toBeGreaterThanOrEqual(4.5));
+    expect(contrastRatio(rgb(tokens, '--warn-ink'), wash)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  // Badge / StatCard text on each tone's own tint (the tone's colour at the badge alpha over the card).
+  const TINTS = [['--warn-ink', '--warn', 0.2], ['--success-ink', '--success', 0.15], ['--info-ink', '--info', 0.15],
+    ['--focus-ink', '--focus', 0.15], ['--brand-ink', '--brand', 0.1], ['--muted-ink', '--ink', 0.08]];
+  it.each(PALETTES.map((p) => [p.name, p]))('%s: every badge tone is at least 4.5:1 on the card and on its own tint, and brand is untouched', (_n, p) => {
+    const theme = paletteTheme(p);
+    const { tokens } = deriveTokens(theme);
+    const card = rgb(tokens, '--surface');
+    TINTS.forEach(([text, colour, alpha]) => {
+      const wash = card.map((v, i) => Math.round(v + (rgb(tokens, colour)[i] - v) * alpha));
+      expect([text, 'card', contrastRatio(rgb(tokens, text), card) >= 4.5]).toEqual([text, 'card', true]);
+      expect([text, 'tint', contrastRatio(rgb(tokens, text), wash) >= 4.5]).toEqual([text, 'tint', true]);
+    });
+    expect(tokens['--brand']).toBe(rgbToTriplet(hexToRgb(theme.brand)));
+  });
+
+  it.each(PALETTES.map((p) => [p.name, p]))('%s: text on the solid status fills is readable (4.5:1)', (_n, p) => {
+    const { tokens } = deriveTokens(paletteTheme(p));
+    const c = (a, b) => contrastRatio(rgb(tokens, a), rgb(tokens, b));
+    expect(c('--on-focus', '--focus')).toBeGreaterThanOrEqual(4.5);
+    expect(c('--on-warn', '--warn')).toBeGreaterThanOrEqual(4.5);
+    expect(c('--on-success', '--success')).toBeGreaterThanOrEqual(4.5);
+    expect(c('--on-info', '--info')).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it.each(PALETTES.map((p) => [p.name, p]))('%s: the focus ring shows (3:1) on the card and on the page, and brand is untouched', (_n, p) => {
+    const theme = paletteTheme(p);
+    const { tokens } = deriveTokens(theme);
+    expect(contrastRatio(rgb(tokens, '--ring'), rgb(tokens, '--surface'))).toBeGreaterThanOrEqual(3);
+    expect(contrastRatio(rgb(tokens, '--ring'), rgb(tokens, '--canvas'))).toBeGreaterThanOrEqual(3);
+    expect(tokens['--brand']).toBe(rgbToTriplet(hexToRgb(theme.brand)));
   });
 });

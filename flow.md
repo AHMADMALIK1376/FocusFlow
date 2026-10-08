@@ -35,7 +35,7 @@ Before React starts, the inline script in `public/index.html` paints the cached 
   - If the check fails, it shows the 503 page and retries every 15 s.
   - When the server answers again, it reloads.
 - **Device offline:** the browser's `offline` event → the gate's offline page. The `online` event → check → reload.
-- **App can't load at all:** `public/sw.js` handles failed page loads (`navigate` requests) by serving the cached `public/offline.html` (cache `ff-offline-v2`, with the app icon and the FocusFlow mark). The page carries its own copy of the `ff-theme-boot` script, so it opens in the colours in `focusflow:theme.colors`; with a non-default brand a second small script adds `ff-themed`, which swaps the icon for a brand tile.
+- **App can't load at all:** `public/sw.js` handles failed page loads (`navigate` requests) by serving the cached `public/offline.html` (cache `ff-offline-v4`, named after `THEME_CACHE_VERSION`, with the app icon and the FocusFlow mark). The page carries its own copy of the `ff-theme-boot` script, so it opens in the colours in `focusflow:theme.colors`; with a non-default brand a second small script adds `ff-themed`, which swaps the icon for a brand tile.
 - `ErrorScreen` (404, 500, 503, offline) reads `useActiveTheme()`; outside the provider that is the colours this browser remembers (see Colour theme).
 
 ### Colour theme
@@ -45,7 +45,7 @@ Before React starts, the inline script in `public/index.html` paints the cached 
    - `previewTheme(next)` shows colours without saving; `previewTheme(null)` ends the preview. **The editor must call `previewTheme(null)` when it closes without saving.**
 3. `ThemeApplier` runs `useApplyColorTheme()`. In a layout effect it calls `deriveTokens(themePreview || shownTheme)` (`design/theme/deriveTokens.js`), then `applyTheme` (every token inline on `<html>`, `color-scheme`, the `theme-color` meta).
 4. The theme on screen (not a preview) is also written to `focusflow:theme.colors` by `writeThemeCache(shownTheme, ...)`. The default palette removes that key. `shownTheme` comes from `pickShownTheme` (`design/theme/deviceTheme.js`): the account theme once `own` (signed in and `useServerSync` has loaded), otherwise the device theme, otherwise the saved one. While `own`, an effect writes the account theme to `focusflow:theme.device` (removed when it is the default).
-5. Next page load: the inline script in `public/index.html` (and the same one in `public/offline.html`) reads the cache and sets the same tokens before the first paint (the splash included). Version 2 caches only.
+5. Next page load: the inline script in `public/index.html` (and the same one in `public/offline.html`) reads the cache and sets the same tokens before the first paint (the splash included). Only caches of the current version (5) are used; older ones are ignored.
 6. Sync: the theme is a field of the preferences document, so `useServerSync` sends it to `USER_PREFERENCES` with everything else. `backend/utils/preferences.js` checks its shape (only `#RRGGBB` colours). `savePreferences` refuses (409) a save with a lower `schemaVersion` than the stored one, so an out-of-date tab cannot overwrite a newer document.
 7. Sign-out (or a 401): `useServerSync` resets preferences to default (`loaded` goes false), and `PreferencesProvider` drops any preview and sets `signedIn` false on the same event. `own` is false, so `shownTheme` is the device theme: the sign-in page keeps the last student's colours, and `theme.device` and the cache are kept. Another account loading replaces the device theme; saving Reset removes it.
 8. Charts and the dashboard clock call `useChartColors()` (`components/charts/chartColors.js`). It reads the active theme from context through `useActiveTheme()` (`preferences/useActiveTheme.js`: the preview if one is open, else `shownTheme`, cleaned), so they re-render on every preview and save. Outside a provider `useActiveTheme()` returns `initialShownTheme()` (device theme, else the saved preferences' theme, else none), and `chartColors()` reads `<html>` (`tokenHex`). The budget pucks and home cubes call `useCategoryColors()` (`components/charts/categoryColors.js`: the normal six colours, or brand, accent and a spread-out list on a custom theme).
@@ -60,6 +60,17 @@ Before React starts, the inline script in `public/index.html` paints the cached 
    - The modal uses `trapFocus` and `fullHeightOnMobile`.
    - The controls are `RemindersSettings`, `FontSelector`, `WidgetManager` with `DashboardSwitcher`, `LanguageSelect`, `components/consent/CookieChoice.js`, or the profile form.
 5. Escape, the close button or the back button removes `?open=`, and the pop-up closes.
+
+### Keyboard in pop-ups
+- `Modal` with `trapFocus` moves focus in, wraps Tab, and gives focus back to the opener on close (Settings cards, Design Studio, `MascotPicker`).
+- A menu or list inside a pop-up (`DashboardSwitcher`, `LanguageSelect`) handles Escape itself and calls `stopPropagation()`, so Escape closes the menu first and only a second Escape closes the pop-up.
+
+### Focus ring colour
+`deriveTokens()` puts `--ring` in the token set (the brand colour on the default; for other themes the brand colour walked lighter or darker until it is 3:1 on the card and the page). Components use `focus-visible:ring-focus-ring` (or `outline-focus-ring`). `design/focusRing.test.js` fails if a file goes back to a brand-coloured focus ring.
+
+### Text on tinted badges
+`Badge` and `StatCard` put `text-<tone>-ink` on `bg-<tone>/NN`. `deriveTokens()` outputs `--success-ink`, `--info-ink`, `--focus-ink`, `--brand-ink`, `--muted-ink` (and `--warn-ink`): equal to today's colours on the default; on other themes the guard walks each until it is 4.5:1 on the card and on its own tint (`WASHES`). `design/statusText.test.js` fails if a badge goes back to plain tone text.
+Solid status fills (delete pop-up, danger `Button`, the done tick) take `text-on-focus` / `text-on-warn` / `text-on-success`: today's white or dark ink on the default, white or near-black (whichever reaches 4.5:1; 3:1 for the tick) on other themes.
 
 ### Design Studio — `components/studio/DesignStudio.js`
 1. Appearance has a "Design your dashboard" button. It sets `?open=studio` with `replace`, so the Appearance entry becomes the Studio entry. A link to `?open=studio` opens it too. `SettingsPage` always renders `<DesignStudio open={...} />`, so it can see the Back button.
@@ -81,7 +92,7 @@ Before React starts, the inline script in `public/index.html` paints the cached 
 ### Talking to the backend — `services/api.js`
 1. Every page calls a helper such as `subjectAPI.getAll()` or `examAPI.create()`.
 2. The helper calls `authFetch()`.
-3. `authFetch()` adds `Authorization: Bearer <token from localStorage>` and calls `fetch(REACT_APP_API_URL + /api/...)`.
+3. `authFetch()` adds the `X-Requested-With: FocusFlow` header and calls `fetch('/api/...')` on the app's own address (Vercel passes `/api` on to the server; the dev server does the same). The sign-in is the HttpOnly cookie `ff_session`, which the browser attaches by itself, so no script reads it and nothing is kept in `localStorage` but a "signed in" marker. `REACT_APP_API_URL` must stay unset.
 4. `handleResponse()` checks the reply:
    - Not OK: it throws the server's `error` message.
    - **401 with `USER_NOT_FOUND`, `TOKEN_EXPIRED` or `INVALID_TOKEN`:** it clears the saved login (`clearAllUserData`) and goes to `/login`.
@@ -153,7 +164,10 @@ Before React starts, the inline script in `public/index.html` paints the cached 
    - email through `emailService.js` → `emailQueueService.js`, using the templates in `emailTemplates.js`
 
 #### Reminder emails
-`deliver` → `loadUserTheme(connection, user.userId)` (`emailTheme.js`: reads `USER_PREFERENCES`, null on any problem) → `buildReminderEmail(n, appUrl, theme)` (`notifyChannels.js`; falls back to the default look if the template throws) → `reminderEmail` → `emailPalette(theme)` (`emailTheme.js`, using the generated engine copy in `services/theme/`; the default or an invalid theme gives `DEFAULT_PALETTE`; others are derived and made readable) → templates in `emailTemplates.js` (colours only from the palette) → `iconAttachment` (`emailIcons.js`: the existing file for a ready-made colour, a tinted buffer for another, the nearest ready-made file if tinting fails). Sign-up and reset code emails and the answer pages stay in the default look.
+`deliver` → `loadUserTheme(connection, user.userId)` (`emailTheme.js`: reads `USER_PREFERENCES`, null on any problem) → `buildReminderEmail(n, appUrl, theme)` (`notifyChannels.js`; falls back to the default look if the template throws) → `reminderEmail` → `emailPalette(theme)` (`emailTheme.js`, using the generated engine copy in `services/theme/`; the default or an invalid theme gives `DEFAULT_PALETTE`; others are derived and made readable) → templates in `emailTemplates.js` (colours only from the palette) → `iconAttachment` (`emailIcons.js`: the existing file for a ready-made colour, a tinted buffer for another, the nearest ready-made file if tinting fails). Sign-up and reset code emails stay in the default look.
+
+#### Answer pages (opened from a reminder)
+`GET /api/notify/answer` → `readToken` (bad or expired: default look, no database) → `lookOf(p.u)` (opens a connection with one try (`getConnection(1, 0)`) only to read the theme via `loadUserTheme`, waits at most 1.5 s for it, closes it in `finally` even if it arrives late, default look on any problem or delay) → `page()` with CSS from `pageCss(palette)` and icons from `iconSet('web', palette)`. `POST` saves the answer first, then `lookOn(connection, p.u)` reads the theme for the confirmation or error page (not after a database error). Both use the default look when anything fails.
 
 ---
 

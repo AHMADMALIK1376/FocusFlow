@@ -7,6 +7,8 @@ import { COLOR_ALLOWLIST } from './colorAllowlist';
 const ROOT = path.join(__dirname, '..', '..'); // frontend/
 const HEX = /(?<![&A-Za-z0-9])#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3,4})(?![\w-])/g;
 const FUNC = /(?<![A-Za-z0-9])(?:rgba?|hsla?)\(\s*\d[^)]*\)/gi;
+// Tailwind's own palette (bg-white, text-gray-500, border-red-500/10): fixed colours the theme cannot reach.
+const TW = /(?<![A-Za-z0-9-])(?:bg|text|border|ring|fill|stroke|from|via|to|shadow|divide|outline|decoration|accent|caret|placeholder)-(?:white|black|gray|slate|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)(?:-[0-9]{2,3})?(?:\/[0-9]+)?(?![A-Za-z0-9-])/g;
 
 function listFiles(dir, out = []) {
   fs.readdirSync(dir, { withFileTypes: true }).forEach((e) => {
@@ -27,7 +29,7 @@ function scan() {
   const found = {};
   files.forEach((f) => {
     fs.readFileSync(f, 'utf8').split('\n').forEach((line, i) => {
-      [HEX, FUNC].forEach((re) => {
+      [HEX, FUNC, TW].forEach((re) => {
         for (const m of line.matchAll(re)) {
           const file = (found[rel(f)] = found[rel(f)] || {});
           (file[m[0]] = file[m[0]] || []).push(i + 1);
@@ -65,6 +67,18 @@ describe('hard-coded colours', () => {
     const problems = [];
     COLOR_ALLOWLIST.forEach((e) => e.literals.forEach((lit) => {
       if (!(found[e.file] && found[e.file][lit])) problems.push(`${lit} is no longer in ${e.file}: remove it from src/design/colorAllowlist.js.`);
+    }));
+    expect(problems).toEqual([]);
+  });
+
+  // Allowing a colour in a file is not a licence for more of it: the number of uses is pinned too,
+  // so one more use of an allowed code in the same file fails until the count is raised on purpose.
+  it('every allowed colour is used exactly as many times as the allowlist says', () => {
+    const problems = [];
+    COLOR_ALLOWLIST.forEach((e) => e.literals.forEach((lit) => {
+      const used = found[e.file] && found[e.file][lit] ? found[e.file][lit].length : 0;
+      const said = e.counts && e.counts[lit];
+      if (used !== said) problems.push(`${lit} appears ${used} time(s) in ${e.file} but the allowlist says ${said}. If a new use is a data colour, raise the count with a reason; otherwise use a token.`);
     }));
     expect(problems).toEqual([]);
   });

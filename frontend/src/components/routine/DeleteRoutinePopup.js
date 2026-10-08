@@ -52,7 +52,7 @@ export default function DeleteRoutinePopup({ routine, allRoutines, onClose, onDe
           ${isVisible ? 'scale-100 opacity-100 translate-y-0' : 'scale-90 opacity-0 translate-y-8'}`}
       >
         <button onClick={handleClose}
-          className="absolute top-3 right-3 w-5 h-5 rounded-full bg-focus text-on-brand text-[10px] flex items-center justify-center shadow-neu-sm hover:scale-110 transition-all z-20"><X size={11} strokeWidth={3} />
+          className="absolute top-3 right-3 w-5 h-5 rounded-full bg-focus text-on-focus text-[10px] flex items-center justify-center shadow-neu-sm hover:scale-110 transition-all z-20"><X size={11} strokeWidth={3} />
         </button>
 
         <div className="text-center mb-4">
@@ -69,12 +69,12 @@ export default function DeleteRoutinePopup({ routine, allRoutines, onClose, onDe
             <div className="flex gap-2">
               <button
                 onClick={() => { setRoutineSelectionMode('single'); setSelectedRoutineId(null); }}
-                className={`flex-1 py-2 rounded-token-sm font-bold text-[10px] transition-all border ${routineSelectionMode === 'single' ? 'bg-focus text-on-brand border-focus shadow-neu-sm' : 'bg-surface-2 text-muted border-[rgb(var(--ink)/0.08)]'}`}>
+                className={`flex-1 py-2 rounded-token-sm font-bold text-[10px] transition-all border ${routineSelectionMode === 'single' ? 'bg-focus text-on-focus border-focus shadow-neu-sm' : 'bg-surface-2 text-muted border-[rgb(var(--ink)/0.08)]'}`}>
                 <ClipboardList size={12} className="inline -mt-0.5 mr-1" />Single Routine
               </button>
               <button
                 onClick={() => setRoutineSelectionMode('allRoutines')}
-                className={`flex-1 py-2 rounded-token-sm font-bold text-[10px] transition-all border ${isAllRoutinesMode ? 'bg-focus text-on-brand border-focus shadow-neu-sm' : 'bg-surface-2 text-muted border-[rgb(var(--ink)/0.08)]'}`}>
+                className={`flex-1 py-2 rounded-token-sm font-bold text-[10px] transition-all border ${isAllRoutinesMode ? 'bg-focus text-on-focus border-focus shadow-neu-sm' : 'bg-surface-2 text-muted border-[rgb(var(--ink)/0.08)]'}`}>
                 <Trash2 size={12} className="inline -mt-0.5 mr-1" />All Routines
               </button>
             </div>
@@ -86,7 +86,7 @@ export default function DeleteRoutinePopup({ routine, allRoutines, onClose, onDe
               <div className="flex flex-wrap gap-1.5">
                 {allRoutines.map((r) => (
                   <button key={r.id} type="button" onClick={() => setSelectedRoutineId(r.id)}
-                    className={`px-3 py-2 rounded-token-sm font-bold text-[9px] transition-all border ${selectedRoutineId === r.id ? 'bg-focus text-on-brand border-focus shadow-neu-sm' : 'bg-surface-2 text-muted border-[rgb(var(--ink)/0.08)]'}`}>
+                    className={`px-3 py-2 rounded-token-sm font-bold text-[9px] transition-all border ${selectedRoutineId === r.id ? 'bg-focus text-on-focus border-focus shadow-neu-sm' : 'bg-surface-2 text-muted border-[rgb(var(--ink)/0.08)]'}`}>
                     {r.activity.trim()}
                   </button>
                 ))}
@@ -100,12 +100,12 @@ export default function DeleteRoutinePopup({ routine, allRoutines, onClose, onDe
               <div className="flex gap-2">
                 <button
                   onClick={() => { setDeleteMode('all'); setSelectedDays([]); }}
-                  className={`flex-1 py-2 rounded-token-sm font-bold text-[10px] transition-all border ${deleteMode === 'all' ? 'bg-focus text-on-brand border-focus shadow-neu-sm' : 'bg-surface-2 text-muted border-[rgb(var(--ink)/0.08)]'}`}>
+                  className={`flex-1 py-2 rounded-token-sm font-bold text-[10px] transition-all border ${deleteMode === 'all' ? 'bg-focus text-on-focus border-focus shadow-neu-sm' : 'bg-surface-2 text-muted border-[rgb(var(--ink)/0.08)]'}`}>
                   <Trash2 size={12} className="inline -mt-0.5 mr-1" />Entire Week
                 </button>
                 <button
                   onClick={() => setDeleteMode('specific')}
-                  className={`flex-1 py-2 rounded-token-sm font-bold text-[10px] transition-all border ${deleteMode === 'specific' ? 'bg-warn text-on-brand border-warn shadow-neu-sm' : 'bg-surface-2 text-muted border-[rgb(var(--ink)/0.08)]'}`}>
+                  className={`flex-1 py-2 rounded-token-sm font-bold text-[10px] transition-all border ${deleteMode === 'specific' ? 'bg-warn text-on-warn border-warn shadow-neu-sm' : 'bg-surface-2 text-muted border-[rgb(var(--ink)/0.08)]'}`}>
                   <CalendarDays size={12} className="inline -mt-0.5 mr-1" />Specific Days
                 </button>
               </div>
@@ -118,7 +118,7 @@ export default function DeleteRoutinePopup({ routine, allRoutines, onClose, onDe
               <div className="flex flex-wrap gap-1.5">
                 {currentRoutine?.repeatOn?.map((day) => (
                   <button key={day} type="button" onClick={() => toggleDay(day)}
-                    className={`px-3 py-1.5 rounded-token-sm font-bold text-[9px] transition-all border ${selectedDays.includes(day) ? 'bg-focus text-on-brand border-focus shadow-neu-sm' : 'bg-surface-2 text-muted border-[rgb(var(--ink)/0.08)]'}`}>
+                    className={`px-3 py-1.5 rounded-token-sm font-bold text-[9px] transition-all border ${selectedDays.includes(day) ? 'bg-focus text-on-focus border-focus shadow-neu-sm' : 'bg-surface-2 text-muted border-[rgb(var(--ink)/0.08)]'}`}>
                     {day.substring(0, 3)}
                   </button>
                 ))}
@@ -156,7 +156,7 @@ export default function DeleteRoutinePopup({ routine, allRoutines, onClose, onDe
               className={`flex-1 py-2.5 rounded-token-sm font-black text-xs transition-all shadow-neu-sm
                 ${(!isAllRoutinesMode && (!selectedRoutineId || (deleteMode === 'specific' && selectedDays.length === 0)))
                   ? 'bg-[rgb(var(--ink)/0.1)] text-muted cursor-not-allowed'
-                  : 'bg-focus text-on-brand hover:shadow-neu'}`}>
+                  : 'bg-focus text-on-focus hover:shadow-neu'}`}>
               <Trash2 size={13} className="inline -mt-0.5 mr-1.5" />{isAllRoutinesMode ? 'Delete Everything' : deleteMode === 'all' ? 'Delete All' : 'Delete Selected'}
             </button>
           </div>

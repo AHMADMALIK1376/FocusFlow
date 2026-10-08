@@ -1,8 +1,9 @@
 import fs from 'fs';
 import path from 'path';
-import { deriveTokens, contrastFailures, NON_THEME_VARS } from './deriveTokens';
-import { DEFAULT_THEME } from './theme';
-import { tripletToRgb } from './color';
+import { deriveTokens, contrastFailures, NON_THEME_VARS, WASH_FLOOR, TINT_FLOOR } from './deriveTokens';
+import { DEFAULT_THEME, isDefaultPalette } from './theme';
+import { SWATCHES } from './palettes';
+import { tripletToRgb, hexToRgb, rgbToTriplet, contrastRatio } from './color';
 
 // Small deterministic random numbers (same palettes on every run and machine).
 function lcg(seed) {
@@ -58,6 +59,60 @@ describe('random palettes (property test)', () => {
       });
       if (!['light', 'dark'].includes(r.scheme) || !/^#[0-9A-F]{6}$/.test(r.metaColor)) bad.push({ theme, scheme: r.scheme, meta: r.metaColor });
       if (Object.keys(r.tokens).some((k) => NON_THEME_VARS.includes(k))) bad.push({ theme, motion: true });
+    });
+    expect(bad).toEqual([]);
+  });
+
+  it('badge text reaches 4.5:1 on the card and at least the tint floor on its tint, for every palette', () => {
+    const mix = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
+    const tints = [['--warn-ink', '--warn', 0.2, WASH_FLOOR], ['--success-ink', '--success', 0.15, TINT_FLOOR], ['--info-ink', '--info', 0.15, TINT_FLOOR],
+      ['--focus-ink', '--focus', 0.15, TINT_FLOOR], ['--brand-ink', '--brand', 0.1, TINT_FLOOR], ['--muted-ink', '--ink', 0.08, TINT_FLOOR]];
+    const bad = [];
+    palettes.forEach((theme) => {
+      const { tokens } = deriveTokens(theme);
+      const card = tripletToRgb(tokens['--surface']);
+      tints.forEach(([text, colour, alpha, floor]) => {
+        const f = tripletToRgb(tokens[text]);
+        const onCard = contrastRatio(f, card);
+        const onTint = contrastRatio(f, mix(card, tripletToRgb(tokens[colour]), alpha));
+        if (onTint < floor || onCard < 4.5) bad.push({ theme, text, onCard, onTint });
+      });
+      if (tokens['--brand'] !== rgbToTriplet(hexToRgb(theme.brand))) bad.push({ theme, brandMoved: true });
+    });
+    expect(bad).toEqual([]);
+  });
+
+  it('text on the solid status fills reaches 4.5:1 for every palette', () => {
+    const bad = [];
+    palettes.forEach((theme) => {
+      const { tokens } = deriveTokens(theme);
+      const c = (a, b) => contrastRatio(tripletToRgb(tokens[a]), tripletToRgb(tokens[b]));
+      const r = [c('--on-focus', '--focus'), c('--on-warn', '--warn'), c('--on-success', '--success'), c('--on-info', '--info')];
+      if (r[0] < 4.5 || r[1] < 4.5 || r[2] < 4.5 || r[3] < 4.5) bad.push({ theme, r });
+    });
+    expect(bad).toEqual([]);
+  });
+
+  it('text on the status fills is readable for every Studio background and brand swatch (the review found 1,152 failing combinations)', () => {
+    const all = [...SWATCHES.soft, ...SWATCHES.bold, ...SWATCHES.dark].map((s) => s.hex);
+    const bad = [];
+    all.forEach((background) => all.forEach((brand) => {
+      const theme = { ...DEFAULT_THEME, presetId: 'x', background, brand };
+      if (isDefaultPalette(theme)) return; // the default keeps today's colours (exempt)
+      const { tokens } = deriveTokens(theme);
+      const c = (a, b) => contrastRatio(tripletToRgb(tokens[a]), tripletToRgb(tokens[b]));
+      if (c('--on-focus', '--focus') < 4.5 || c('--on-warn', '--warn') < 4.5 || c('--on-success', '--success') < 4.5 || c('--on-info', '--info') < 4.5) bad.push({ background, brand });
+    }));
+    expect(bad).toEqual([]);
+  });
+
+  it('the focus ring shows (3:1) on the card and the page for every palette, and brand is never moved', () => {
+    const bad = [];
+    palettes.forEach((theme) => {
+      const { tokens } = deriveTokens(theme);
+      const ring = tripletToRgb(tokens['--ring']);
+      const lows = ['--surface', '--canvas'].map((b) => contrastRatio(ring, tripletToRgb(tokens[b])));
+      if (Math.min(...lows) < 3 || tokens['--brand'] !== rgbToTriplet(hexToRgb(theme.brand))) bad.push({ theme, lows });
     });
     expect(bad).toEqual([]);
   });

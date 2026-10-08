@@ -185,7 +185,7 @@ export default function FocusModePage() {
           <Card ref={timerCardRef} className="flex flex-col items-center w-full h-[560px]">
             <input
               type="text"
-              className="w-[70%] bg-surface-2 shadow-neu-inset rounded-full px-5 py-3 text-left text-sm font-bold text-ink placeholder:text-muted placeholder:font-semibold outline-none focus:ring-2 focus:ring-brand/40 mb-6 shrink-0 disabled:opacity-60"
+              className="w-[70%] bg-surface-2 shadow-neu-inset rounded-full px-5 py-3 text-left text-sm font-bold text-ink placeholder:text-muted placeholder:font-semibold outline-none focus:ring-2 focus:ring-focus-ring mb-6 shrink-0 disabled:opacity-60"
               placeholder="e.g. Morning Gym"
               value={activity}
               onChange={(e) => setActivity(e.target.value)}
@@ -218,7 +218,7 @@ export default function FocusModePage() {
                     const done = isCompleted(item.status);
                     return (
                       <div key={item.id} className="relative pl-10 group transition-all hover:translate-x-2">
-                        <span className={`absolute -left-[14px] top-1 w-6 h-6 rounded-full border-4 bg-surface z-10 ${done ? 'border-green-500' : 'border-red-500'}`}></span>
+                        <span className={`absolute -left-[14px] top-1 w-6 h-6 rounded-full border-4 bg-surface z-10 ${done ? 'border-success' : 'border-focus'}`}></span>
                         <div className="mb-2">
                           <span className="text-xs font-black text-brand uppercase tracking-widest bg-brand/10 px-2 py-1 rounded-token-sm">
                             <Clock size={12} className="inline -mt-0.5 mr-1" />{item.start} — {item.end}
@@ -228,7 +228,7 @@ export default function FocusModePage() {
                           <CardDeleteButton onClick={() => handleDeleteSession(item.id)} className="absolute top-2 right-2" />
                           <RepeatButton onClick={() => handleRepeat(item)} className="absolute bottom-2 right-2" />
                           <div className="pr-10">
-                            <span className={`inline-block px-2 py-1 text-[10px] font-black rounded uppercase mb-2 tracking-tighter ${done ? 'bg-green-500/10 text-green-600' : 'bg-red-500/10 text-red-600'}`}>
+                            <span className={`inline-block px-2 py-1 text-[10px] font-black rounded uppercase mb-2 tracking-tighter ${done ? 'bg-success/10 text-ink' : 'bg-focus/10 text-ink'}`}>
                               {item.status}
                             </span>
                             <p className="font-bold text-ink text-lg">{item.activity}</p>

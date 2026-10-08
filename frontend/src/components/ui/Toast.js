@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import { cx } from './cx';
 
 const ToastContext = createContext(null);
@@ -32,7 +32,9 @@ export function ToastProvider({ children }) {
   return (
     <ToastContext.Provider value={{ toast }}>
       {children}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[2000] flex flex-col gap-2 items-center pointer-events-none">
+      {/* Always mounted, so a screen reader announces each message that appears in it. Animation follows the reduce-motion setting. */}
+      <div role="status" aria-live="polite" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[2000] flex flex-col gap-2 items-center pointer-events-none">
+        <MotionConfig reducedMotion="user">
         <AnimatePresence>
           {toasts.map((t) => (
             <motion.div
@@ -49,6 +51,7 @@ export function ToastProvider({ children }) {
             </motion.div>
           ))}
         </AnimatePresence>
+        </MotionConfig>
       </div>
     </ToastContext.Provider>
   );

@@ -494,7 +494,7 @@ export default function AttendanceSkylinePage() {
             <ChevronDown size={13} className={`transition-transform duration-200 ${yearOpen ? "rotate-180" : ""}`} />
           </button>
           <div
-            className={`absolute right-0 top-full mt-1.5 w-24 bg-white rounded-xl shadow-lg border border-black/10 py-1 z-20 origin-top transition-all duration-200 ease-out ${
+            className={`absolute right-0 top-full mt-1.5 w-24 bg-surface rounded-xl shadow-lg border border-ink/10 py-1 z-20 origin-top transition-all duration-200 ease-out ${
               yearOpen ? "opacity-100 scale-100 translate-y-0 pointer-events-auto" : "opacity-0 scale-95 -translate-y-1 pointer-events-none"
             }`}
           >
@@ -503,7 +503,7 @@ export default function AttendanceSkylinePage() {
                 key={y}
                 type="button"
                 onClick={() => { setYear(y); setYearOpen(false); }}
-                className={`w-full text-left px-3 py-1.5 text-xs font-semibold text-black hover:bg-black/5 transition-colors ${y === year ? "bg-black/5" : ""}`}
+                className={`w-full text-left px-3 py-1.5 text-xs font-semibold text-ink hover:bg-ink/5 transition-colors ${y === year ? "bg-ink/5" : ""}`}
               >
                 {y}
               </button>
@@ -620,11 +620,11 @@ export default function AttendanceSkylinePage() {
 
       {hover && (
         <div
-          className="fixed z-[9999] pointer-events-none bg-white text-black rounded-md shadow-lg border border-black/10 px-2.5 py-1.5 whitespace-nowrap"
+          className="fixed z-[9999] pointer-events-none bg-surface text-ink rounded-md shadow-lg border border-ink/10 px-2.5 py-1.5 whitespace-nowrap"
           style={{ left: hover.x, top: hover.y, transform: "translate(-50%, -100%) translateY(-8px)" }}
         >
           <p className="text-xs font-bold">{hover.label}</p>
-          <p className="text-[11px] text-black/70">{hover.sub}</p>
+          <p className="text-[11px] text-ink/70">{hover.sub}</p>
         </div>
       )}
     </PageShell>

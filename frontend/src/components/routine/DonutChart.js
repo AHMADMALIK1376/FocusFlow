@@ -196,14 +196,16 @@ export default function DonutChart({ tasks, activeDay, onToggle, sliceAngle, isL
         return (
           <div className={`absolute z-30 pointer-events-none transition-all duration-300 ease-out ${isFading ? 'opacity-0 scale-90' : 'opacity-100 scale-100'}`}
             style={{ left: `${tx}px`, top: `${ty}px`, transform: `translate(-50%, -50%)` }}>
-            <div className="bg-ink text-canvas rounded-token-md px-4 py-3 shadow-glass min-w-[160px] text-center">
+            <div className="bg-surface text-ink rounded-token-md px-4 py-3 shadow-glass min-w-[160px] text-center">
               <p className="text-xs font-black truncate">{task.activity}</p>
-              <p className="text-lg font-black mt-1" style={{ color }}>
+              <p className="text-lg font-black mt-1">
                 {formatTime12h(task.time)}
               </p>
-              <p className="text-[10px] mt-1 font-bold" style={{ color }}>{getStatusText(task)}</p>
+              <p className="text-[10px] mt-1 font-bold inline-flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />{getStatusText(task)}
+              </p>
             </div>
-            <div className="absolute w-3 h-3 bg-ink"
+            <div className="absolute w-3 h-3 bg-surface"
               style={{ left: `${50 - dirX * 45}%`, top: `${50 - dirY * 45}%`, transform: 'translate(-50%, -50%) rotate(45deg)' }} />
           </div>
         );

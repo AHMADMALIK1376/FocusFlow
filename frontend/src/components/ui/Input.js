@@ -4,7 +4,7 @@ import { cx } from './cx';
 const base =
   'w-full rounded-token-md bg-surface text-ink placeholder:text-muted/70 ' +
   'shadow-neu-inset outline-none font-medium transition-all duration-200 ' +
-  'focus:ring-2 focus:ring-brand/60';
+  'focus:ring-2 focus:ring-focus-ring';
 
 export function Field({ label, hint, error, htmlFor, children }) {
   return (

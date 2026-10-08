@@ -23,7 +23,8 @@ const mixBlack = (rgb, t) => rgb.map((c) => Math.round(c * (1 - t)));
 const css = (rgb) => `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
 export function subjectPalette(hex) {
   const rgb = hexToRgb(hex);
-  return { cardBg: css(mixWhite(rgb, 0.86)), badgeBg: css(mixWhite(rgb, 0.7)), deep: css(mixBlack(rgb, 0.25)), mid: css(rgb) };
+  // ink and tile are for text and the number tile on the light card: they stay dark and light whatever the theme, so the card reads on dark themes too.
+  return { cardBg: css(mixWhite(rgb, 0.86)), badgeBg: css(mixWhite(rgb, 0.7)), deep: css(mixBlack(rgb, 0.25)), mid: css(rgb), ink: css(mixBlack(rgb, 0.78)), tile: css(mixWhite(rgb, 0.94)) };
 }
 
 export const isLab = (s) => /\blab\b/i.test(s.name || "") || /L$/i.test(s.code || "");
@@ -100,7 +101,7 @@ export default function SubjectTable({ subjects, onOpen, onEdit, onDelete }) {
       <div key={s.id} className="flex gap-4 items-start animate-in fade-in duration-300">
         <div
           className="relative shrink-0 w-24 h-24 sm:w-28 sm:h-28 rounded-3xl flex items-center justify-center shadow-neu-sm"
-          style={{ background: "rgb(var(--surface) / 0.7)", color: pal.deep }}
+          style={{ background: pal.tile, color: pal.deep }}
         >
           <span className="absolute top-2 left-3 text-[11px] font-bold opacity-70">{active + 1}</span>
           <svg className="absolute inset-0 w-full h-full opacity-40" viewBox="-50 -50 100 100" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.2">
@@ -114,13 +115,13 @@ export default function SubjectTable({ subjects, onOpen, onEdit, onDelete }) {
           <p className="text-[11px] font-bold uppercase tracking-widest" style={{ color: pal.deep }}>
             {isLab(s) ? "Lab" : "Theory"}{s.term ? ` · ${s.term}` : ""}
           </p>
-          <h3 className="font-black text-ink text-lg leading-tight mt-0.5">{s.name}</h3>
-          <p className="text-xs text-ink/60">{s.instructor || "TBA"}</p>
-          <div className="text-xs text-ink/75 mt-2 space-y-0.5">
+          <h3 className="font-black text-lg leading-tight mt-0.5" style={{ color: pal.ink }}>{s.name}</h3>
+          <p className="text-xs opacity-70" style={{ color: pal.ink }}>{s.instructor || "TBA"}</p>
+          <div className="text-xs mt-2 space-y-0.5" style={{ color: pal.ink }}>
             {slots.map((l, i) => (
               <p key={i} className="flex items-baseline gap-2 min-w-0">
                 <span>{l.when}</span>
-                {l.room && <span className="font-bold text-ink/85">{l.room}</span>}
+                {l.room && <span className="font-bold">{l.room}</span>}
               </p>
             ))}
             {!slots.length && <p>No class times set</p>}
@@ -128,7 +129,7 @@ export default function SubjectTable({ subjects, onOpen, onEdit, onDelete }) {
         </div>
       </div>
       <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-bold text-ink/70">
+        <p className="text-xs font-bold" style={{ color: pal.ink }}>
           {s.creditHours || 0} credit hour{Number(s.creditHours) === 1 ? "" : "s"}
           {s.targetGrade ? <span style={{ color: pal.deep }}> · Target {s.targetGrade}</span> : null}
         </p>
@@ -136,8 +137,8 @@ export default function SubjectTable({ subjects, onOpen, onEdit, onDelete }) {
           <button type="button" onClick={() => onOpen(s)} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold bg-surface/80 text-ink shadow-neu-sm hover:-translate-y-0.5 transition-transform">
             Open <ArrowUpRight size={13} />
           </button>
-          <button type="button" onClick={() => onEdit(s)} className="p-2 rounded-full text-ink/55 hover:text-ink hover:bg-black/10 transition-colors" title="Edit subject"><Pencil size={15} /></button>
-          <button type="button" onClick={() => onDelete(s)} className="p-2 rounded-full text-ink/55 hover:text-focus hover:bg-focus/10 transition-colors" title="Delete subject"><Trash2 size={15} /></button>
+          <button type="button" onClick={() => onEdit(s)} className="p-2 rounded-full opacity-65 hover:opacity-100 hover:bg-ink/10 transition" style={{ color: pal.ink }} title="Edit subject"><Pencil size={15} /></button>
+          <button type="button" onClick={() => onDelete(s)} className="p-2 rounded-full opacity-65 hover:opacity-100 hover:bg-focus/10 transition" style={{ color: pal.ink }} title="Delete subject"><Trash2 size={15} /></button>
         </div>
       </div>
     </div>
@@ -171,7 +172,7 @@ export default function SubjectTable({ subjects, onOpen, onEdit, onDelete }) {
           </span>
         </span>
         <span className="text-center font-black tracking-tight text-sm sm:text-base leading-none" style={{ color: p.deep }}>{symbolOf(sub)}</span>
-        <span className="text-[9px] sm:text-[10px] leading-tight text-ink/70 text-center line-clamp-2 min-h-[1.5em]">{sub.name}</span>
+        <span className="text-[9px] sm:text-[10px] leading-tight opacity-80 text-center line-clamp-2 min-h-[1.5em]" style={{ color: p.ink }}>{sub.name}</span>
       </button>
     );
   });

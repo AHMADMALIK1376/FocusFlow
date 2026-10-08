@@ -39,7 +39,7 @@ function TodayClassesTile() {
       className="text-left bg-grad-sage-card rounded-token-lg shadow-neu p-4 hover:-translate-y-0.5 transition-transform flex flex-col min-h-[157px]"
     >
       <div className="flex items-start justify-between gap-2">
-        <span className="w-10 h-10 rounded-2xl shadow-neu-sm flex items-center justify-center bg-surface text-on-sage shrink-0">
+        <span className="w-10 h-10 rounded-2xl shadow-neu-sm flex items-center justify-center bg-surface text-ink shrink-0">
           <School size={18} />
         </span>
         {p.total > 0 && !p.allDone && <span className="text-[11px] font-bold text-muted mt-1">{p.done}/{p.total} done</span>}

@@ -408,13 +408,13 @@ export default function DailyRoutine() {
                           transition={{ duration: 0.15, ease: "easeOut" }}
                           className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-30 w-max max-w-[220px] pointer-events-none"
                         >
-                          <div className="bg-white text-black rounded-token-md shadow-glass px-4 py-3">
-                            <p className="text-[10px] font-black uppercase tracking-wider text-gray-500 mb-1.5">{getFullDayName(day)}</p>
+                          <div className="bg-surface text-ink rounded-token-md shadow-glass px-4 py-3">
+                            <p className="text-[10px] font-black uppercase tracking-wider text-muted mb-1.5">{getFullDayName(day)}</p>
                             <ul className="space-y-1">
                               {tasks.map((task) => (
-                                <li key={task.id} className="text-xs font-bold flex items-center gap-2 text-black">
+                                <li key={task.id} className="text-xs font-bold flex items-center gap-2 text-ink">
                                   <span>{task.activity}</span>
-                                  <span className="text-gray-500 font-semibold">· {formatTime12h(task.time)}</span>
+                                  <span className="text-muted font-semibold">· {formatTime12h(task.time)}</span>
                                 </li>
                               ))}
                             </ul>

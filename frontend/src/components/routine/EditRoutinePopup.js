@@ -93,7 +93,7 @@ export default function EditRoutinePopup({ routine, onClose, onSave }) {
           ${isVisible ? 'scale-100 opacity-100 translate-y-0' : 'scale-90 opacity-0 translate-y-8'}`}
       >
         <button onClick={handleClose}
-          className="absolute top-3 right-3 w-5 h-5 rounded-full bg-focus text-on-brand text-[10px] flex items-center justify-center shadow-neu-sm hover:scale-110 transition-all z-20"><X size={11} strokeWidth={3} /></button>
+          className="absolute top-3 right-3 w-5 h-5 rounded-full bg-focus text-on-focus text-[10px] flex items-center justify-center shadow-neu-sm hover:scale-110 transition-all z-20"><X size={11} strokeWidth={3} /></button>
 
         <div className="text-center mb-4">
           <Clock size={22} strokeWidth={1.75} className="mx-auto mb-0.5 text-brand" />
@@ -149,7 +149,7 @@ export default function EditRoutinePopup({ routine, onClose, onSave }) {
                 {selectedDays.map(day => (
                   <button key={day} onClick={() => setActiveDayForColor(day)}
                     className={`text-[8px] px-2 py-1 rounded-token-sm font-bold transition-all flex items-center gap-1
-                      ${activeDayForColor === day ? 'ring-2 ring-brand bg-surface scale-105 shadow-neu-sm' : 'bg-surface-2 text-muted hover:bg-[rgb(var(--ink)/0.06)]'}`}>
+                      ${activeDayForColor === day ? 'ring-2 ring-focus-ring bg-surface scale-105 shadow-neu-sm' : 'bg-surface-2 text-muted hover:bg-[rgb(var(--ink)/0.06)]'}`}>
                     <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: getDayColor(day) }}></span>
                     {day}
                   </button>

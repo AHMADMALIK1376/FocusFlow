@@ -119,3 +119,23 @@ test("reopening after Discard changes starts focus in the dialog, not on Save", 
   await waitFor(() => expect(dlg.contains(document.activeElement)).toBe(true));
   expect(document.activeElement).not.toBe(screen.getByRole("button", { name: /^Save$/ }));
 });
+
+test("Undo keeps the keyboard focus when it runs out of steps, and does nothing then", async () => {
+  mount();
+  fireEvent.click(palette(MIDNIGHT));
+  const undo = screen.getByRole("button", { name: /^Undo/ });
+  expect(undo).toHaveAttribute("aria-disabled", "false");
+  undo.focus();
+  fireEvent.click(undo);
+  await waitFor(() => expect(undo).toHaveAttribute("aria-disabled", "true"));
+  expect(undo).not.toBeDisabled();
+  expect(document.activeElement).toBe(undo);
+  const before = v("--canvas");
+  fireEvent.click(undo);
+  expect(v("--canvas")).toBe(before);
+});
+
+test("the dialog scrolls focused controls clear of the sticky Save bar", () => {
+  mount();
+  expect(screen.getByRole("dialog")).toHaveClass("scroll-pb-40");
+});

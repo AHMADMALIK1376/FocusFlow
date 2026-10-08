@@ -34,6 +34,9 @@ function SortableWidgetRow({ widget, enabled, onToggle }) {
     opacity: isDragging ? 0.5 : 1,
   };
 
+  // The name people see on screen, also used to name the handle and the switch for screen readers
+  const title = t(widget.titleKey, { defaultValue: widget.titleKey.split('.').pop() });
+
   return (
     <div
       ref={setNodeRef}
@@ -43,8 +46,8 @@ function SortableWidgetRow({ widget, enabled, onToggle }) {
       {/* Drag handle */}
       <button
         type="button"
-        className="text-muted/60 hover:text-muted cursor-grab active:cursor-grabbing p-1 focus-visible:outline-none"
-        aria-label="Drag to reorder"
+        className="text-muted/60 hover:text-muted cursor-grab active:cursor-grabbing p-2 rounded-token-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+        aria-label={`Reorder ${title}`}
         {...attributes}
         {...listeners}
       >
@@ -53,14 +56,12 @@ function SortableWidgetRow({ widget, enabled, onToggle }) {
 
       <span className="text-brand">{renderIcon(widget.icon, { size: 18 })}</span>
 
-      <span className="flex-1 text-sm font-bold text-ink">
-        {t(widget.titleKey, { defaultValue: widget.titleKey.split('.').pop() })}
-      </span>
+      <span className="flex-1 text-sm font-bold text-ink">{title}</span>
 
       <Switch
         checked={Boolean(enabled)}
         onChange={() => onToggle(widget.id)}
-        label={`Toggle ${widget.id}`}
+        label={title}
       />
     </div>
   );

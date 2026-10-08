@@ -8,9 +8,9 @@ const HorizontalBarChart = ({ subjects }) => {
   // Returns hex-compatible colors derived from semantic values
   // SVG requires hex/rgb strings not Tailwind classes
   const getColor = (pct) => {
-    if (pct >= 80) return { main: 'rgb(var(--success))', light: 'rgb(var(--success)/0.15)' };
-    if (pct >= 60) return { main: 'rgb(var(--warn))', light: 'rgb(var(--warn)/0.15)' };
-    return { main: 'rgb(var(--focus))', light: 'rgb(var(--focus)/0.15)' };
+    if (pct >= 80) return { main: 'rgb(var(--success))', light: 'rgb(var(--success)/0.15)', text: 'text-success-ink' };
+    if (pct >= 60) return { main: 'rgb(var(--warn))', light: 'rgb(var(--warn)/0.15)', text: 'text-warn-ink' };
+    return { main: 'rgb(var(--focus))', light: 'rgb(var(--focus)/0.15)', text: 'text-focus-ink' };
   };
 
   const sortedSubjects = [...subjects].sort((a, b) => (b.percentage || 0) - (a.percentage || 0));
@@ -108,16 +108,16 @@ const HorizontalBarChart = ({ subjects }) => {
           <div
             className="absolute z-50 pointer-events-none"
             style={{ left: `${paddingLeft + barW + 20}px`, top: `${y - 45}px` }}>
-            <div className="bg-ink text-canvas rounded-token-md px-4 py-3 shadow-glass min-w-[180px]">
+            <div className="bg-surface text-ink rounded-token-md px-4 py-3 shadow-glass min-w-[180px]">
               <p className="text-xs font-black truncate mb-1">{subject.subjectName}</p>
-              <p className="text-lg font-black" style={{ color: colors.main }}>{pct.toFixed(1)}%</p>
+              <p className={`text-lg font-black ${colors.text}`}>{pct.toFixed(1)}%</p>
               <div className="flex gap-3 mt-1.5 text-[10px]">
-                <span className="text-success inline-flex items-center gap-1"><CircleCheck size={11} /> {subject.attendedSessions || 0} Present</span>
-                <span className="text-focus inline-flex items-center gap-1"><CircleX size={11} /> {subject.absentSessions || 0} Absent</span>
+                <span className="text-success-ink inline-flex items-center gap-1"><CircleCheck size={11} /> {subject.attendedSessions || 0} Present</span>
+                <span className="text-focus-ink inline-flex items-center gap-1"><CircleX size={11} /> {subject.absentSessions || 0} Absent</span>
               </div>
               <p className="text-[9px] text-muted mt-1 flex items-center gap-1"><CalendarDays size={10} /> {taken} taken / {subject.totalSessions || 0} total</p>
             </div>
-            <div className="absolute -left-2 top-1/2 -translate-y-1/2 w-3 h-3 bg-ink rotate-45"></div>
+            <div className="absolute -left-2 top-1/2 -translate-y-1/2 w-3 h-3 bg-surface rotate-45"></div>
           </div>
         );
       })()}
@@ -223,7 +223,7 @@ export default function AttendanceGraphPopup({ attendanceData, attendanceStats, 
               }}
               title="Close"
             >
-              <X size={11} strokeWidth={3} className="text-on-brand" />
+              <X size={11} strokeWidth={3} className="text-on-focus" />
             </button>
           </div>
 

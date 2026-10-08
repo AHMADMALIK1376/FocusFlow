@@ -243,14 +243,14 @@ export default function KanbanPage() {
               <select
                 value={createCol}
                 onChange={(e) => setCreateCol(e.target.value)}
-                className="w-full rounded-token-md bg-surface text-ink shadow-neu-inset outline-none font-medium py-3 px-4 appearance-none cursor-pointer focus:ring-2 focus:ring-brand/60"
+                className="w-full rounded-token-md bg-surface text-ink shadow-neu-inset outline-none font-medium py-3 px-4 appearance-none cursor-pointer focus:ring-2 focus:ring-focus-ring"
               >
                 {state.columns.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
               </select>
               <select
                 value={createSubject}
                 onChange={(e) => setCreateSubject(e.target.value)}
-                className="w-full rounded-token-md bg-surface text-ink shadow-neu-inset outline-none font-medium py-3 px-4 appearance-none cursor-pointer focus:ring-2 focus:ring-brand/60"
+                className="w-full rounded-token-md bg-surface text-ink shadow-neu-inset outline-none font-medium py-3 px-4 appearance-none cursor-pointer focus:ring-2 focus:ring-focus-ring"
               >
                 <option value="">No subject</option>
                 {subjects.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
