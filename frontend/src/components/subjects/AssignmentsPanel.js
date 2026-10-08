@@ -45,7 +45,7 @@ export default function AssignmentsPanel({ subjectId }) {
               <button
                 onClick={() => moveCard(c.id, c.columnId === "col-done" ? "col-todo" : "col-done", 0)}
                 title="Toggle done"
-                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${c.columnId === "col-done" ? "bg-success border-success text-white" : "border-[rgb(var(--brand)/0.4)]"}`}
+                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${c.columnId === "col-done" ? "bg-success border-success text-on-success" : "border-[rgb(var(--brand)/0.4)]"}`}
               >
                 {c.columnId === "col-done" && <Check size={12} />}
               </button>

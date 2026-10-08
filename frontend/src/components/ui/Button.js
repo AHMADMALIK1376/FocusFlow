@@ -23,7 +23,7 @@ const VARIANTS = {
   sun:
     'bg-grad-sun text-on-sun font-black uppercase tracking-wider shadow-[0_12px_22px_-10px_rgb(230_180_0/0.5),inset_0_5px_8px_rgb(255_255_255/0.5)] hover:-translate-y-0.5',
   danger:
-    'bg-focus text-white font-black uppercase tracking-wider shadow-[0_12px_22px_-10px_rgb(var(--focus)/0.5),inset_0_5px_8px_rgb(255_255_255/0.35)] hover:-translate-y-0.5',
+    'bg-focus text-on-focus font-black uppercase tracking-wider shadow-[0_12px_22px_-10px_rgb(var(--focus)/0.5),inset_0_5px_8px_rgb(255_255_255/0.35)] hover:-translate-y-0.5',
 };
 
 export function Button({

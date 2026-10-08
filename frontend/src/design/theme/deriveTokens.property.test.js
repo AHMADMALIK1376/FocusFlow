@@ -1,7 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 import { deriveTokens, contrastFailures, NON_THEME_VARS, WASH_FLOOR, TINT_FLOOR } from './deriveTokens';
-import { DEFAULT_THEME } from './theme';
+import { DEFAULT_THEME, isDefaultPalette } from './theme';
+import { SWATCHES } from './palettes';
 import { tripletToRgb, hexToRgb, rgbToTriplet, contrastRatio } from './color';
 
 // Small deterministic random numbers (same palettes on every run and machine).
@@ -78,6 +79,30 @@ describe('random palettes (property test)', () => {
       });
       if (tokens['--brand'] !== rgbToTriplet(hexToRgb(theme.brand))) bad.push({ theme, brandMoved: true });
     });
+    expect(bad).toEqual([]);
+  });
+
+  it('text on the solid status fills reaches 4.5:1 (3:1 for the tick) for every palette', () => {
+    const bad = [];
+    palettes.forEach((theme) => {
+      const { tokens } = deriveTokens(theme);
+      const c = (a, b) => contrastRatio(tripletToRgb(tokens[a]), tripletToRgb(tokens[b]));
+      const r = [c('--on-focus', '--focus'), c('--on-warn', '--warn'), c('--on-success', '--success')];
+      if (r[0] < 4.5 || r[1] < 4.5 || r[2] < 3) bad.push({ theme, r });
+    });
+    expect(bad).toEqual([]);
+  });
+
+  it('text on the status fills is readable for every Studio background and brand swatch (the review found 1,152 failing combinations)', () => {
+    const all = [...SWATCHES.soft, ...SWATCHES.bold, ...SWATCHES.dark].map((s) => s.hex);
+    const bad = [];
+    all.forEach((background) => all.forEach((brand) => {
+      const theme = { ...DEFAULT_THEME, presetId: 'x', background, brand };
+      if (isDefaultPalette(theme)) return; // the default keeps today's colours (exempt)
+      const { tokens } = deriveTokens(theme);
+      const c = (a, b) => contrastRatio(tripletToRgb(tokens[a]), tripletToRgb(tokens[b]));
+      if (c('--on-focus', '--focus') < 4.5 || c('--on-warn', '--warn') < 4.5 || c('--on-success', '--success') < 3) bad.push({ background, brand });
+    }));
     expect(bad).toEqual([]);
   });
 

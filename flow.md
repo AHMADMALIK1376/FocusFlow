@@ -70,6 +70,7 @@ Before React starts, the inline script in `public/index.html` paints the cached 
 
 ### Text on tinted badges
 `Badge` and `StatCard` put `text-<tone>-ink` on `bg-<tone>/NN`. `deriveTokens()` outputs `--success-ink`, `--info-ink`, `--focus-ink`, `--brand-ink`, `--muted-ink` (and `--warn-ink`): equal to today's colours on the default; on other themes the guard walks each until it is 4.5:1 on the card and on its own tint (`WASHES`). `design/statusText.test.js` fails if a badge goes back to plain tone text.
+Solid status fills (delete pop-up, danger `Button`, the done tick) take `text-on-focus` / `text-on-warn` / `text-on-success`: today's white or dark ink on the default, white or near-black (whichever reaches 4.5:1; 3:1 for the tick) on other themes.
 
 ### Design Studio — `components/studio/DesignStudio.js`
 1. Appearance has a "Design your dashboard" button. It sets `?open=studio` with `replace`, so the Appearance entry becomes the Studio entry. A link to `?open=studio` opens it too. `SettingsPage` always renders `<DesignStudio open={...} />`, so it can see the Back button.

@@ -32,4 +32,25 @@ describe('status text', () => {
       expect(cfg).toContain(`'${t}-ink': rgb('--${t}-ink')`);
     });
   });
+
+  // Text on a solid status fill uses the guarded tokens (white / on-sun were unreadable on some Studio themes).
+  it.each([
+    ['components/routine/DeleteRoutinePopup.js'],
+    ['components/routine/EditRoutinePopup.js'],
+    ['components/subjects/AssignmentsPanel.js'],
+    ['components/ui/Button.js'],
+  ])('%s has no fixed white text on a status fill', (file) => {
+    const src = read(file);
+    expect(src).not.toMatch(/text-white/);
+    if (file.includes('DeleteRoutinePopup')) expect(src).not.toMatch(/text-on-sun|text-on-brand/);
+  });
+
+  it('the status fills use their own text tokens', () => {
+    const del = read('components/routine/DeleteRoutinePopup.js');
+    expect(del.match(/bg-focus text-on-focus/g)).toHaveLength(7);
+    expect(del).toContain('bg-warn text-on-warn');
+    expect(read('components/routine/EditRoutinePopup.js')).toContain('bg-focus text-on-focus');
+    expect(read('components/subjects/AssignmentsPanel.js')).toContain('bg-success border-success text-on-success');
+    expect(read('components/ui/Button.js')).toContain('bg-focus text-on-focus');
+  });
 });
