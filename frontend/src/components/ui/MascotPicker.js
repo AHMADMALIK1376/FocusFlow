@@ -5,8 +5,7 @@ import { MASCOTS, mascotSrc } from './mascots';
 
 export function MascotPicker({ open, onClose, value, onPick }) {
   return (
-    <Modal open={open} onClose={onClose} title="Choose your mascot" showClose maxWidthClassName="max-w-md">
-      <h2 className="text-lg font-black text-ink mb-4">Choose your mascot</h2>
+    <Modal open={open} onClose={onClose} title="Choose your mascot" showClose trapFocus maxWidthClassName="max-w-md">
       <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
         {MASCOTS.map((m) => (
           <button
