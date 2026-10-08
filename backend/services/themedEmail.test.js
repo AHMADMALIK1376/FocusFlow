@@ -105,7 +105,7 @@ const queued = [];
 const queuePath = require.resolve('./emailQueueService');
 require.cache[queuePath] = {
   id: queuePath, filename: queuePath, loaded: true,
-  exports: { sendBulkEmailQueued: async (to, subject, html, text, attachments) => { queued.push({ to, subject, html, text, attachments }); return true; }, codeEmail: () => null },
+  exports: { sendBulkEmailQueued: async (to, subject, html, text, attachments) => { queued.push({ to, subject, html, text, attachments }); return { queued: true, outcome: Promise.resolve({ status: 'sent' }) }; }, waitForOutcome: (r) => r.outcome, codeEmail: () => null },
 };
 const { deliver } = require('./notifyChannels');
 const user = { userId: 'user-9', email: 'a@example.com' };
@@ -116,7 +116,7 @@ test('deliver sends the email in the saved theme, looked up with the student id'
   const calls = [];
   const connection = { execute: async (sql, binds) => { calls.push(binds); return { rows: [{ DATA: JSON.stringify({ theme: BOLD }) }] }; } };
   const result = await deliver(connection, user, settings, classReminder());
-  assert.deepEqual(result.email, { queued: true });
+  assert.deepEqual(result.email, { ok: true });
   assert.deepEqual(calls, [{ userId: 'user-9' }]);
   assert.ok(queued[0].html.includes(emailPalette(BOLD).coral));
 });
@@ -130,7 +130,7 @@ test('deliver still sends the normal email when the lookup fails, the table is m
   ]) {
     queued.length = 0;
     const result = await quiet(() => deliver(connection, user, settings, classReminder()));
-    assert.deepEqual(result.email, { queued: true });
+    assert.deepEqual(result.email, { ok: true });
     assert.ok(queued[0].html.includes('#EC706D'));
   }
 });

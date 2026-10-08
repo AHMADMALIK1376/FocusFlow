@@ -3,7 +3,7 @@
 //   • email     — through the existing Gmail queue
 //   • WhatsApp  — CallMeBot's free personal API (user gets their own API key)
 const webpush = require('web-push');
-const { sendBulkEmailQueued } = require('./emailQueueService');
+const { sendBulkEmailQueued, waitForOutcome } = require('./emailQueueService');
 const { reminderEmail, escapeHtml } = require('./emailTemplates');
 const { loadUserTheme } = require('./emailTheme');
 
@@ -66,10 +66,19 @@ function buildReminderEmail(n, appUrl, theme) {
   }
 }
 
-async function sendEmail(to, n, theme = null) {
+// How long a reminder waits to learn if its email went out (the queue keeps trying meanwhile).
+const REMINDER_EMAIL_WAIT_MS = 15000;
+
+// No queue retries here: the next reminder check is the retry. A wait that runs out counts as
+// delivered (`pending`), because the email is still queued and a retry would send it twice.
+async function sendEmail(to, n, theme = null, { waitMs = REMINDER_EMAIL_WAIT_MS } = {}) {
   const { subject, html, text, attachments } = buildReminderEmail(n, APP_URL(), theme);
-  const queued = await sendBulkEmailQueued(to, subject, html, text, attachments);
-  return { queued: Boolean(queued) };
+  const result = await sendBulkEmailQueued(to, subject, html, text, attachments, { maxRetries: 0 });
+  if (!result.queued) return { ok: false, error: result.error };
+  const o = await waitForOutcome(result, waitMs);
+  if (o.status === 'sent') return { ok: true };
+  if (o.status === 'timeout') return { ok: true, pending: true };
+  return { ok: false, error: o.error };
 }
 
 // WhatsApp (plain text — no icons): *bold* headline, one fact per line, then
@@ -119,4 +128,4 @@ async function deliver(connection, user, settings, n) {
   return result;
 }
 
-module.exports = { deliver, sendPush, sendEmail, buildReminderEmail, sendWhatsApp, whatsappUrl, whatsappText, escapeHtml, pushReady };
+module.exports = { deliver, sendPush, sendEmail, buildReminderEmail, REMINDER_EMAIL_WAIT_MS, sendWhatsApp, whatsappUrl, whatsappText, escapeHtml, pushReady };

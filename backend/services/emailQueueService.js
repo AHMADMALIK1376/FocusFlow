@@ -1,6 +1,6 @@
 // services/emailQueueService.js
-const nodemailer = require('nodemailer');
 const { codeEmail } = require('./emailTemplates');
+const { getProvider } = require('./emailProviders');
 
 // Shows as "FocusFlow" in the inbox instead of the bare Gmail address.
 const FROM = () => ({ name: 'FocusFlow', address: process.env.EMAIL_USER });
@@ -25,11 +25,15 @@ const EMAIL_CONFIG = {
     maxQueueSize: 10000         // Max pending emails
 };
 
+const NOT_CONFIGURED_TEXT = 'Email is not set up on the server yet.';
+const CODE_WAIT_MS = 20000;
+
 // ==============================================
 // EMAIL QUEUE CLASS
 // ==============================================
 class EmailQueue {
-    constructor() {
+    constructor({ provider = getProvider() } = {}) {
+        this.provider = provider;
         this.queue = [];           // Pending emails
         this.sentCount = {         // Counters for rate limiting
             minute: 0,
@@ -40,30 +44,14 @@ class EmailQueue {
             lastDayReset: Date.now()
         };
         this.isProcessing = false;
-        this.transporter = null;
+        // Last good / last bad send, for the status line. Never holds a message body.
+        this.health = { lastOk: null, lastError: null };
         this.stats = {
             totalSent: 0,
             totalFailed: 0,
             totalRetried: 0,
             startTime: Date.now()
         };
-        
-        this.initTransporter();
-    }
-    
-    // Initialize email transporter
-    initTransporter() {
-        this.transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS
-            },
-            // Connection timeout
-            connectionTimeout: 10000,
-            // Socket timeout
-            socketTimeout: 15000
-        });
     }
     
     // Reset rate limit counters
@@ -126,11 +114,16 @@ class EmailQueue {
         return 0;
     }
     
-    // Add email to queue
-    async addEmail(mailOptions, priority = 'normal') {
+    // Add email to queue. `outcome` only ever resolves (never rejects): { status: 'sent', id }
+    // or { status: 'failed', error }.
+    async addEmail(mailOptions, priority = 'normal', { maxRetries = EMAIL_CONFIG.maxRetries, retryDelayMs = EMAIL_CONFIG.retryDelayMs } = {}) {
+        if (!this.provider.describe().configured) {
+            this.health.lastError = { at: Date.now(), reason: NOT_CONFIGURED_TEXT };
+            return { queued: false, error: NOT_CONFIGURED_TEXT, outcome: Promise.resolve({ status: 'failed', error: NOT_CONFIGURED_TEXT }) };
+        }
         if (this.queue.length >= EMAIL_CONFIG.maxQueueSize) {
-            console.error('❌ Email queue is full!');
-            return { queued: false, error: 'Queue full' };
+            console.error('Email queue is full.');
+            return { queued: false, error: 'Queue full', outcome: Promise.resolve({ status: 'failed', error: 'The email queue is full.' }) };
         }
         
         const emailItem = {
@@ -138,9 +131,13 @@ class EmailQueue {
             mailOptions,
             priority: priority === 'high' ? 0 : 1,
             retries: 0,
+            maxRetries,
+            retryDelayMs,
+            abandoned: false,
             createdAt: new Date(),
             status: 'queued'
         };
+        const outcome = new Promise((resolve) => { emailItem.resolve = resolve; });
         
         // Insert at correct position based on priority
         if (emailItem.priority === 0) {
@@ -149,56 +146,65 @@ class EmailQueue {
             this.queue.push(emailItem);    // Normal priority at back
         }
         
-        console.log(`📧 Email queued: ${emailItem.id} (Queue size: ${this.queue.length})`);
+        console.log(`Email queued: ${emailItem.id} (Queue size: ${this.queue.length})`);
         
         // Start processing if not already
         if (!this.isProcessing) {
             this.processQueue();
         }
         
-        return { queued: true, id: emailItem.id };
+        const result = { queued: true, id: emailItem.id, outcome };
+        // Lets waitForOutcome() stop a late retry without widening the result's shape.
+        Object.defineProperty(result, 'abandon', { value: () => { emailItem.abandoned = true; } });
+        return result;
     }
     
-    // Send a single email with retry
+    // Send a single email; retries (per item) go back to the front of the queue after a delay
     async sendEmail(emailItem) {
+        let r;
         try {
-            const info = await this.transporter.sendMail(emailItem.mailOptions);
-            
+            r = await this.provider.send(emailItem.mailOptions);
+        } catch {
+            r = { ok: false, error: 'Email could not be sent.' };
+        }
+        
+        if (r && r.ok) {
             // Update counters
             this.sentCount.minute++;
             this.sentCount.hour++;
             this.sentCount.day++;
             this.stats.totalSent++;
-            
-            console.log(`✅ Email sent: ${emailItem.id} to ${emailItem.mailOptions.to}`);
-            return { success: true, info };
-            
-        } catch (error) {
-            console.error(`❌ Email failed: ${emailItem.id}`, error.message);
-            
-            // Check if we should retry
-            if (emailItem.retries < EMAIL_CONFIG.maxRetries) {
-                emailItem.retries++;
-                emailItem.retryDelay = EMAIL_CONFIG.retryDelayMs * Math.pow(EMAIL_CONFIG.retryBackoffMultiplier, emailItem.retries - 1);
-                emailItem.status = 'retrying';
-                this.stats.totalRetried++;
-                
-                // Re-add to queue after delay
-                setTimeout(() => {
-                    console.log(`🔄 Retrying email ${emailItem.id} (attempt ${emailItem.retries}/${EMAIL_CONFIG.maxRetries})`);
-                    this.queue.unshift(emailItem);
-                    this.processQueue();
-                }, emailItem.retryDelay);
-                
-                return { success: false, retrying: true, error };
-            }
-            
-            // Max retries exceeded
-            emailItem.status = 'failed';
-            this.stats.totalFailed++;
-            console.error(`❌ Email permanently failed: ${emailItem.id} after ${EMAIL_CONFIG.maxRetries} attempts`);
-            return { success: false, error: 'Max retries exceeded' };
+            this.health.lastOk = { at: Date.now() };
+            emailItem.status = 'sent';
+            console.log(`Email sent: ${emailItem.id} to ${emailItem.mailOptions.to}`);
+            emailItem.resolve({ status: 'sent', id: r.id });
+            return { success: true };
         }
+        
+        const reason = (r && r.error) || 'Email could not be sent.';
+        this.health.lastError = { at: Date.now(), reason };
+        console.error(`Email failed: ${emailItem.id}: ${reason}`);
+        
+        if (emailItem.retries < emailItem.maxRetries && !emailItem.abandoned) {
+            emailItem.retries++;
+            emailItem.retryDelay = emailItem.retryDelayMs * Math.pow(EMAIL_CONFIG.retryBackoffMultiplier, emailItem.retries - 1);
+            emailItem.status = 'retrying';
+            this.stats.totalRetried++;
+            
+            // Re-add to queue after delay
+            setTimeout(() => {
+                console.log(`Retrying email ${emailItem.id} (attempt ${emailItem.retries}/${emailItem.maxRetries})`);
+                this.queue.unshift(emailItem);
+                this.processQueue();
+            }, emailItem.retryDelay);
+            
+            return { success: false, retrying: true };
+        }
+        
+        emailItem.status = 'failed';
+        this.stats.totalFailed++;
+        emailItem.resolve({ status: 'failed', error: reason });
+        return { success: false, error: reason };
     }
     
     // Process the email queue
@@ -212,7 +218,7 @@ class EmailQueue {
             if (!this.canSend()) {
                 const waitTime = this.getWaitTime();
                 if (waitTime > 0) {
-                    console.log(`⏸️ Rate limit reached. Waiting ${Math.ceil(waitTime / 1000)} seconds...`);
+                    console.log(`Rate limit reached. Waiting ${Math.ceil(waitTime / 1000)} seconds...`);
                     await new Promise(resolve => setTimeout(resolve, waitTime));
                 }
                 continue;
@@ -221,12 +227,12 @@ class EmailQueue {
             // Process a batch
             const batch = this.queue.splice(0, EMAIL_CONFIG.batchSize);
             
-            for (const emailItem of batch) {
+            for (let i = 0; i < batch.length; i++) {
                 if (this.canSend()) {
-                    await this.sendEmail(emailItem);
+                    await this.sendEmail(batch[i]);
                 } else {
-                    // Put back remaining emails
-                    this.queue.unshift(...batch);
+                    // Put back only the ones not sent yet (the earlier ones already went out)
+                    this.queue.unshift(...batch.slice(i));
                     break;
                 }
             }
@@ -238,7 +244,7 @@ class EmailQueue {
         }
         
         this.isProcessing = false;
-        console.log('📬 Email queue empty. Processing stopped.');
+        console.log('Email queue empty. Processing stopped.');
     }
     
     // Get queue statistics
@@ -260,11 +266,37 @@ class EmailQueue {
         };
     }
     
+    // Plain status for Settings and the heartbeat: never a body, never a secret
+    getHealth() {
+        const provider = this.provider.describe();
+        const { lastOk, lastError } = this.health;
+        let state = 'unknown';
+        let reason = null;
+        if (!provider.configured) {
+            state = 'not_configured';
+            reason = NOT_CONFIGURED_TEXT;
+        } else if (lastError && (!lastOk || lastError.at > lastOk.at)) {
+            state = 'failing';
+            reason = lastError.reason;
+        } else if (lastOk) {
+            state = 'working';
+        }
+        return {
+            provider,
+            state,
+            reason,
+            lastOkAt: lastOk ? lastOk.at : null,
+            lastErrorAt: lastError ? lastError.at : null,
+            sent: this.stats.totalSent,
+            failed: this.stats.totalFailed
+        };
+    }
+    
     // Clear queue (for emergency)
     clearQueue() {
         const clearedCount = this.queue.length;
         this.queue = [];
-        console.log(`🗑️ Cleared ${clearedCount} emails from queue`);
+        console.log(`Cleared ${clearedCount} emails from queue`);
         return clearedCount;
     }
 }
@@ -277,7 +309,7 @@ let emailQueueInstance = null;
 function getEmailQueue() {
     if (!emailQueueInstance) {
         emailQueueInstance = new EmailQueue();
-        console.log('📧 Email queue service initialized');
+        console.log('Email queue service initialized');
     }
     return emailQueueInstance;
 }
@@ -286,28 +318,49 @@ function getEmailQueue() {
 // WRAPPER FUNCTIONS FOR EXISTING EMAIL SERVICES
 // ==============================================
 
-// Send verification email via queue
-async function sendVerificationEmailQueued(toEmail, verificationCode) {
-    const { subject, html, text, attachments } = codeEmail({ purpose: 'verify', code: verificationCode });
-    const result = await getEmailQueue().addEmail(
-        { from: FROM(), to: toEmail, subject, html, text, attachments },
-        'high'
-    );
-    return result.queued;
+// Wait for an email's final outcome, but never longer than `ms`. On timeout the item is marked
+// abandoned (no more retries); a send already in flight cannot be recalled.
+function waitForOutcome(result, ms) {
+    let timer;
+    const timeout = new Promise((resolve) => {
+        timer = setTimeout(() => {
+            if (result.abandon) result.abandon();
+            resolve({ status: 'timeout' });
+        }, ms);
+        if (timer.unref) timer.unref();
+    });
+    return Promise.race([result.outcome, timeout]).then((o) => { clearTimeout(timer); return o; });
 }
 
-// Send password reset email via queue
-async function sendPasswordResetCodeQueued(toEmail, resetCode) {
-    const { subject, html, text, attachments } = codeEmail({ purpose: 'reset', code: resetCode });
+// Sign-up / reset codes: one quick retry, then wait for the real answer.
+async function sendCodeEmailQueued(toEmail, template) {
+    const { subject, html, text, attachments } = codeEmail(template);
     const result = await getEmailQueue().addEmail(
         { from: FROM(), to: toEmail, subject, html, text, attachments },
-        'high'
+        'high',
+        { maxRetries: 1, retryDelayMs: 1000 }
     );
-    return result.queued;
+    if (!result.queued) {
+        return { ok: false, error: result.error, notConfigured: result.error === NOT_CONFIGURED_TEXT };
+    }
+    const o = await waitForOutcome(result, CODE_WAIT_MS);
+    if (o.status === 'sent') return { ok: true };
+    if (o.status === 'timeout') return { ok: false, error: 'Sending the email took too long.', notConfigured: false };
+    return { ok: false, error: o.error, notConfigured: o.error === NOT_CONFIGURED_TEXT };
 }
 
-// Send bulk email via queue (reminders, reports, etc.)
-async function sendBulkEmailQueued(toEmail, subject, htmlContent, textContent, attachments) {
+// Send verification email via queue -> { ok: true } | { ok: false, error, notConfigured }
+function sendVerificationEmailQueued(toEmail, verificationCode) {
+    return sendCodeEmailQueued(toEmail, { purpose: 'verify', code: verificationCode });
+}
+
+// Send password reset email via queue -> same shape
+function sendPasswordResetCodeQueued(toEmail, resetCode) {
+    return sendCodeEmailQueued(toEmail, { purpose: 'reset', code: resetCode });
+}
+
+// Send bulk email via queue (reminders, reports, etc.) -> { queued, id?, error?, outcome }
+async function sendBulkEmailQueued(toEmail, subject, htmlContent, textContent, attachments, { maxRetries } = {}) {
     const mailOptions = {
         from: FROM(),
         to: toEmail,
@@ -316,14 +369,18 @@ async function sendBulkEmailQueued(toEmail, subject, htmlContent, textContent, a
         text: textContent,
         ...(attachments && attachments.length ? { attachments } : {})
     };
-    const result = await getEmailQueue().addEmail(mailOptions, 'normal');
-    return result.queued;
+    return getEmailQueue().addEmail(mailOptions, 'normal', maxRetries === undefined ? {} : { maxRetries });
 }
 
 // Get queue statistics
 function getEmailQueueStats() {
     const queue = getEmailQueue();
     return queue.getStats();
+}
+
+// Plain email status (working / failing / not configured / unknown)
+function getEmailHealth() {
+    return getEmailQueue().getHealth();
 }
 
 // Clear queue (emergency)
@@ -333,7 +390,11 @@ function clearEmailQueue() {
 }
 
 module.exports = {
+    EmailQueue,
     getEmailQueue,
+    waitForOutcome,
+    getEmailHealth,
+    NOT_CONFIGURED_TEXT,
     sendVerificationEmailQueued,
     sendPasswordResetCodeQueued,
     sendBulkEmailQueued,

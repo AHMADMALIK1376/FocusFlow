@@ -13,7 +13,7 @@ let senderError = null;
 const queuePath = require.resolve('./emailQueueService');
 require.cache[queuePath] = {
   id: queuePath, filename: queuePath, loaded: true,
-  exports: { sendBulkEmailQueued: async (to, subject, html, text, attachments) => { if (senderError) { sent.push({ failed: true }); throw senderError; } sent.push({ to, subject, html, text, attachments }); return true; }, codeEmail: () => null },
+  exports: { sendBulkEmailQueued: async (to, subject, html, text, attachments) => { if (senderError) { sent.push({ failed: true }); throw senderError; } sent.push({ to, subject, html, text, attachments }); return { queued: true, outcome: Promise.resolve({ status: 'sent' }) }; }, waitForOutcome: (r) => r.outcome, codeEmail: () => null },
 };
 const { deliver, buildReminderEmail } = require('./notifyChannels');
 const { reminderEmail } = require('./emailTemplates');
@@ -65,7 +65,7 @@ test('the icon file is missing: the email still goes out once, with the nearest 
   try {
     sent.length = 0;
     const [res] = await logged(() => deliver(rowsConn([{ DATA: JSON.stringify({ theme: BOLD }) }]), user, settings, N));
-    assert.deepEqual(res.email, { queued: true });
+    assert.deepEqual(res.email, { ok: true });
     assert.equal(sent.length, 1);
     everyAttachmentUsable(sent[0].attachments.filter((a) => a.cid !== 'ff-logo'));
   } finally { fs.readFileSync = realRead; }
@@ -77,7 +77,7 @@ test('the PNG reader throws: one email, usable attachments', async () => {
   try {
     sent.length = 0;
     const res = await deliver(rowsConn([{ DATA: JSON.stringify({ theme: BOLD }) }]), user, settings, N);
-    assert.deepEqual(res.email, { queued: true });
+    assert.deepEqual(res.email, { ok: true });
     assert.equal(sent.length, 1);
     everyAttachmentUsable(sent[0].attachments.filter((a) => a.cid !== 'ff-logo'));
   } finally { PNG.sync.read = real; }
@@ -89,7 +89,7 @@ test('the PNG writer throws (a tint function failing): one email, usable attachm
   try {
     sent.length = 0;
     const res = await deliver(rowsConn([{ DATA: JSON.stringify({ theme: BOLD }) }]), user, settings, N);
-    assert.deepEqual(res.email, { queued: true });
+    assert.deepEqual(res.email, { ok: true });
     assert.equal(sent.length, 1);
     assert.ok(sent[0].html.includes(emailPalette(BOLD).coral), 'still in the theme colours');
     everyAttachmentUsable(sent[0].attachments.filter((a) => a.cid !== 'ff-logo'));
@@ -158,7 +158,7 @@ test('every kind of bad stored data still sends exactly one default-look email, 
     sent.length = 0;
     const conn = { execute: async () => (rows && rows.rows !== undefined ? rows : rows === null ? null : { rows }) };
     const [res, out] = await logged(() => deliver(conn, user, settings, N));
-    assert.deepEqual(res.email, { queued: true }, name);
+    assert.deepEqual(res.email, { ok: true }, name);
     assert.equal(sent.length, 1, name);
     assert.equal(sent[0].html, DEFAULT_HTML, `${name}: not the default look`);
     assert.equal(sent[0].to, 'a@example.com', name);
@@ -182,13 +182,13 @@ test('the database failing in different ways never stops the email', async () =>
   for (const err of errors) {
     sent.length = 0;
     const [res] = await logged(() => deliver({ execute: async () => { throw err; } }, user, settings, N));
-    assert.deepEqual(res.email, { queued: true });
+    assert.deepEqual(res.email, { ok: true });
     assert.equal(sent.length, 1);
     assert.equal(sent[0].html, DEFAULT_HTML);
   }
   sent.length = 0;
   const res = await deliver({ execute: () => { throw new Error('sync throw'); } }, user, settings, N);
-  assert.deepEqual(res.email, { queued: true });
+  assert.deepEqual(res.email, { ok: true });
   assert.equal(sent.length, 1);
 });
 
@@ -198,7 +198,7 @@ for (const [label, reason] of [['undefined', undefined], ['null', null], ['a str
   test(`a database promise rejected with ${label} still sends the default-look email`, {}, async () => {
     sent.length = 0;
     const [res] = await logged(() => deliver({ execute: () => Promise.reject(reason) }, user, settings, N));
-    assert.deepEqual(res.email, { queued: true });
+    assert.deepEqual(res.email, { ok: true });
     assert.equal(sent.length, 1);
   });
 }
@@ -207,7 +207,7 @@ test('a missing connection object gives the default look', async () => {
   sent.length = 0;
   const res = await deliver(null, user, settings, N).catch((e) => ({ threw: e }));
   // the push channel needs the connection, but only when push keys exist; the email must still go
-  assert.deepEqual(res.email, { queued: true });
+  assert.deepEqual(res.email, { ok: true });
   assert.equal(sent.length, 1);
 });
 
@@ -232,7 +232,7 @@ test('a theme that is hostile text never reaches the email html', () => {
 test('the user id may be missing: the email still goes out in the default look', async () => {
   sent.length = 0;
   const res = await deliver(rowsConn([]), { email: 'a@example.com' }, settings, N);
-  assert.deepEqual(res.email, { queued: true });
+  assert.deepEqual(res.email, { ok: true });
   assert.equal(sent[0].html, DEFAULT_HTML);
 });
 
@@ -254,7 +254,7 @@ test('the PNG reader returns garbage: the email still goes out once', async () =
   try {
     sent.length = 0;
     const [res] = await logged(() => deliver(rowsConn([{ DATA: JSON.stringify({ theme: asTheme('midnight') }) }]), user, settings, N));
-    assert.deepEqual(res.email, { queued: true });
+    assert.deepEqual(res.email, { ok: true });
     assert.equal(sent.length, 1);
   } finally { PNG.sync.read = real; }
 });
