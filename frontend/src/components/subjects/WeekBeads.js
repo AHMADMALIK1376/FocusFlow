@@ -66,7 +66,7 @@ export default function WeekBeads({ subjects }) {
                   );
                 })}
               </div>
-              <span className={`text-[10px] font-black ${isToday ? "text-on-sage" : d.day === week.busiest ? "text-brand" : "text-muted"}`}>{SHORT[d.day]}</span>
+              <span className={`text-[10px] font-black ${isToday ? "text-ink" : d.day === week.busiest ? "text-brand" : "text-muted"}`}>{SHORT[d.day]}</span>
             </div>
           );
         })}

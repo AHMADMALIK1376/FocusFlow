@@ -60,4 +60,35 @@ describe('status text', () => {
     expect(src).not.toMatch(/grid\[i\] \? "text-on-brand"/);
     expect(src.match(/grid\[i\] \? onClass/g)).toHaveLength(2);
   });
+
+  it("today's day letter on the Subjects week sits on the card, so it uses the theme ink", () => {
+    const src = read('components/subjects/WeekBeads.js');
+    expect(src).toContain('isToday ? "text-ink"');
+    expect(src).not.toContain('text-on-sage');
+  });
+
+  it('the attendance graph close X uses the text colour of its own (focus) fill', () => {
+    const src = read('components/calendar/AttendanceGraphPopup.js');
+    expect(src).toContain("rgb(var(--focus))");
+    expect(src).toContain('<X size={11} strokeWidth={3} className="text-on-focus" />');
+    expect(src).not.toContain('text-on-brand');
+  });
+
+  it('the two chart tooltips are card-coloured with theme ink; status and routine colours are not text on them', () => {
+    const att = read('components/calendar/AttendanceGraphPopup.js');
+    const donut = read('components/routine/DonutChart.js');
+    [att, donut].forEach((src) => {
+      expect(src).toContain('bg-surface text-ink rounded-token-md');
+      expect(src).not.toMatch(/bg-ink text-canvas/);
+      expect(src).not.toMatch(/w-3 h-3 bg-ink/);
+    });
+    expect(att).toContain("text: 'text-success-ink'");
+    expect(att).toContain("text: 'text-warn-ink'");
+    expect(att).toContain("text: 'text-focus-ink'");
+    expect(att).not.toMatch(/style=\{\{ color: colors\.main/);
+    expect(att).not.toMatch(/"text-(success|focus) inline-flex/);
+    // the routine colour is a dot, never the text colour
+    expect(donut).not.toMatch(/style=\{\{ color \}\}/);
+    expect(donut).toContain("style={{ background: color }}");
+  });
 });
