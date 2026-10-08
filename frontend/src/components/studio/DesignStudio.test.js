@@ -435,7 +435,7 @@ describe("readability", () => {
     expect(screen.getByText("These are the original FocusFlow colours.")).toBeInTheDocument();
     fireEvent.click(palette(MATCHA));
     await waitFor(() => expect(screen.queryByText("These are the original FocusFlow colours.")).toBeNull());
-    expect(screen.getByRole("status")).toHaveTextContent("Readability check");
+    expect(screen.getAllByRole("status").some((el) => el.textContent.includes("Readability check"))).toBe(true);
     fireEvent.click(screen.getByRole("button", { name: "Text" }));
     fireEvent.click(screen.getByRole("button", { name: "Cream #FFF6E8" }));
     await waitFor(() => expect(screen.getByText("We made your text a little darker so it stays readable.")).toBeInTheDocument());

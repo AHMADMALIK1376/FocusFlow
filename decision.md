@@ -32,6 +32,10 @@ Source: `.pipeline/audit-a11y.md`. Each item below was fixed in its own commit.
 - **Rejected:** reusing `--focus` (that is the danger red, used for delete and error text, so a ring in it would read as an error); alpha rings; giving each component its own ring colour.
 - **Left on purpose:** the Time Track input ring (on-brand colour on a brand-coloured card), the border-only focus on the sign-in text boxes and `.neu-input`, and the selected-mascot ring (a selected state, not focus).
 
+### 6. Toasts are announced
+- **Decided:** the toast container (always on the page) is `role="status" aria-live="polite"`, so "Colours saved" and "Profile saved" are read out; it also follows the reduce-motion setting like `Modal` (`MotionConfig reducedMotion="user"`).
+- **Rejected:** `role="alert"` for error toasts (assertive interruptions; no error toast was reported as missed).
+
 ## 2026-10-08 — Theme audit (final quality gate)
 
 A no-new-features pass over the whole colour-theme feature. Plan: `docs/superpowers/specs/2026-10-08-theme-audit.md`. Two rounds of audit, fix and re-audit, with a tester, an accessibility auditor, a coder and the reviewer.
