@@ -450,3 +450,12 @@ CREATE TABLE IF NOT EXISTS USER_PREFERENCES (
   data       TEXT NOT NULL,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Reminder server heartbeat ('tick' = last reminder check, 'email' = last email result)
+CREATE TABLE IF NOT EXISTS SYSTEM_HEARTBEAT (
+  name    VARCHAR(30) PRIMARY KEY,
+  last_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  ok      SMALLINT NOT NULL DEFAULT 1,
+  detail  VARCHAR(300),
+  counts  TEXT
+);
