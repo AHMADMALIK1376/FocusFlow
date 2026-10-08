@@ -8,6 +8,7 @@ router.put('/settings', authMiddleware, controller.updateSettings);
 router.post('/subscribe', authMiddleware, controller.subscribe);
 router.post('/unsubscribe', authMiddleware, controller.unsubscribe);
 router.post('/test', authMiddleware, controller.sendTest);
+router.get('/status', authMiddleware, controller.getStatus);
 
 // Questions answered from email/WhatsApp links or the phone notification
 // ("Did you attend?", "Did you submit?", quiz marks). The signed token in the

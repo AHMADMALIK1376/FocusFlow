@@ -3,7 +3,8 @@ const { getConnection } = require('../config/database');
 const { generateId } = require('../utils/helpers');
 const { DEFAULT_SETTINGS, localParts, toMinutes, attendanceReport, attendanceView } = require('../utils/reminders');
 const { deliver, sendEmail, escapeHtml, pushReady } = require('../services/notifyChannels');
-const { describeEmailProvider } = require('../services/emailService');
+const { describeEmailProvider, getEmailHealth } = require('../services/emailService');
+const { readHeartbeats } = require('../services/heartbeat');
 const { reportBody, iconSet, LOGO_ATTACHMENT } = require('../services/emailTemplates');
 const { DEFAULT_PALETTE, emailPalette, loadUserTheme } = require('../services/emailTheme');
 const { hexToRgb } = require('../services/theme/color');
@@ -114,6 +115,44 @@ exports.updateSettings = async (req, res) => {
   } catch (err) {
     console.error('Update notification settings error:', err);
     res.status(500).json({ error: 'Failed to save reminder settings.' });
+  } finally {
+    if (connection) await connection.close();
+  }
+};
+
+// GET /api/notify/status: is the reminder server alive, is this student's phone set up, does email work.
+// Plain facts only: nothing secret and nothing about other students.
+const STALE_AFTER_MINUTES = 15;
+exports.getStatus = async (req, res) => {
+  let connection;
+  try {
+    connection = await getConnection(1, 0);
+    const devices = await connection.execute(
+      `SELECT COUNT(*) AS c FROM PUSH_SUBSCRIPTIONS WHERE user_id = :userId`,
+      { userId: req.user.userId }
+    );
+    const beats = await readHeartbeats(connection); // null when the table is missing: everything unknown
+
+    const tick = beats && beats.tick;
+    const minutesAgo = tick && tick.minutesAgo != null ? Math.floor(tick.minutesAgo) : null;
+
+    let email = { state: 'unknown', reason: null };
+    if (!describeEmailProvider().configured) {
+      email = { state: 'not_configured', reason: 'Email is not set up on the server yet.' };
+    } else {
+      const live = getEmailHealth();
+      if (live && live.state !== 'unknown') email = { state: live.state, reason: live.state === 'failing' ? live.reason || null : null };
+      else if (beats && beats.email) email = beats.email.ok ? { state: 'working', reason: null } : { state: 'failing', reason: beats.email.detail || null };
+    }
+
+    res.json({
+      lastCheck: { minutesAgo, stale: minutesAgo != null && minutesAgo > STALE_AFTER_MINUTES },
+      pushDevices: Number(devices.rows[0].C) || 0,
+      email,
+    });
+  } catch (err) {
+    console.error('Reminder status error:', err.message);
+    res.status(500).json({ error: 'Could not load reminder status.' });
   } finally {
     if (connection) await connection.close();
   }
