@@ -4,9 +4,8 @@ const { generateId } = require('../utils/helpers');
 const { DEFAULT_SETTINGS, localParts, toMinutes, attendanceReport, attendanceView } = require('../utils/reminders');
 const { deliver, escapeHtml, pushReady } = require('../services/notifyChannels');
 const { reportBody, iconSet, LOGO_ATTACHMENT } = require('../services/emailTemplates');
-
-// Line icons (the app's nav-bar style) as inline SVG for the answer pages.
-const webIcons = iconSet('web');
+const { DEFAULT_PALETTE, emailPalette, loadUserTheme } = require('../services/emailTheme');
+const { hexToRgb } = require('../services/theme/color');
 
 // GET /api/notify/logo.png — the clay app icon for the answer pages.
 exports.logo = (req, res) => res.sendFile(LOGO_ATTACHMENT.path, { maxAge: '7d' });
@@ -248,39 +247,106 @@ const APP_URL = () => (process.env.APP_URL || 'http://localhost:3000').replace(/
 
 // Answer pages opened from reminders — the app's clay look: crème page,
 // warm-white card, puffy coral / sage / sunshine buttons, pressed-in inputs.
-function page(title, inner) {
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#EC706D"><title>${escapeHtml(title)} · FocusFlow</title>
-<link rel="icon" href="logo.png">
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-<style>
-*{box-sizing:border-box}
-body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px 16px;background:#F5EFE6;color:#342E3E;font-family:Poppins,'Segoe UI',Roboto,sans-serif}
+// The colours come from the same palette the reminder emails use (the student's theme, or the
+// default coral look), so a themed email opens a page in the same theme.
+const css = (hex) => (hex.toUpperCase() === '#FFFFFF' ? '#fff' : hex); // the default stylesheet has always said #fff
+const rgba = (hex, a) => `rgba(${hexToRgb(hex).join(',')},${a})`;
+
+const smallShadow = (P) => `0 8px 16px -8px ${rgba(P.shadowColor, '.4')},inset 0 -3px 6px ${rgba(P.shadowTint, '.3')},inset 0 3px 5px ${rgba(P.highlight, '.9')}`;
+
+function pageCss(P) {
+  const small = smallShadow(P);
+  const coralGlow = `0 14px 26px -12px ${rgba(P.coral, '.5')},inset 0 6px 10px ${rgba(P.brandHighlight, '.38')},inset 0 -6px 12px ${rgba(P.brandTint, '.35')}`;
+  const well = `inset 0 4px 8px ${rgba(P.shade, '.35')},inset 0 -2px 4px ${rgba(P.highlight, '.9')}`;
+  // The default focus ring is a soft coral halo; a themed page gets a solid ring so it also shows on dark cards.
+  const ring = P === DEFAULT_PALETTE ? rgba(P.coral, '.45') : P.coralText;
+  return `${P.dark ? ':root{color-scheme:dark}\n' : ''}*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px 16px;background:${P.canvas};color:${P.ink};font-family:Poppins,'Segoe UI',Roboto,sans-serif}
 .wrap{width:100%;max-width:440px}
-.brand{display:flex;align-items:center;justify-content:center;gap:10px;margin:0 0 18px;color:#EC706D;font:700 22px Fredoka,'Arial Rounded MT Bold',Poppins,sans-serif;text-decoration:none}
-.brand img{width:40px;height:40px;border-radius:14px;box-shadow:0 14px 26px -12px rgba(236,112,109,.5),inset 0 6px 10px rgba(255,255,255,.38)}
-.card{background:#FFFDF9;border-radius:28px;padding:28px 24px;box-shadow:0 16px 30px -14px rgba(190,160,122,.42),0 6px 12px -8px rgba(190,160,122,.24),inset 0 -6px 12px rgba(232,214,190,.3),inset 0 6px 10px rgba(255,255,255,.95)}
+.brand{display:flex;align-items:center;justify-content:center;gap:10px;margin:0 0 18px;color:${P.coralText};font:700 22px Fredoka,'Arial Rounded MT Bold',Poppins,sans-serif;text-decoration:none}
+.brand img{width:40px;height:40px;border-radius:14px;box-shadow:0 14px 26px -12px ${rgba(P.coral, '.5')},inset 0 6px 10px ${rgba(P.brandHighlight, '.38')}}
+.card{background:${P.surface};border-radius:28px;padding:28px 24px;box-shadow:0 16px 30px -14px ${rgba(P.shadowColor, '.42')},0 6px 12px -8px ${rgba(P.shadowColor, '.24')},inset 0 -6px 12px ${rgba(P.shadowTint, '.3')},inset 0 6px 10px ${rgba(P.highlight, '.95')}}
 .tile{width:64px;height:64px;border-radius:22px;display:grid;place-items:center;font-size:32px;margin:0 0 14px}
 .chip{display:inline-block;padding:5px 12px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
 h1{font:700 24px/1.25 Fredoka,'Arial Rounded MT Bold',Poppins,sans-serif;margin:10px 0 6px}
-p{margin:0 0 20px;color:#80746C;font-size:15px;line-height:1.55}
+p{margin:0 0 20px;color:${P.muted};font-size:15px;line-height:1.55}
 .row{display:flex;flex-wrap:wrap;gap:12px}
 button{flex:1;min-width:130px;display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:999px;padding:16px 18px;font:700 16px Poppins,'Segoe UI',sans-serif;cursor:pointer;transition:transform .15s}
 button:active{transform:scale(.97)}
-.coral{background:linear-gradient(160deg,#F58C89,#EC706D);color:#fff;box-shadow:0 14px 26px -12px rgba(236,112,109,.5),inset 0 6px 10px rgba(255,255,255,.38),inset 0 -6px 12px rgba(255,190,185,.35)}
-.sage{background:linear-gradient(160deg,#CEEAD6,#B8DCC4);color:#284634}
-.sun{background:linear-gradient(160deg,#FFE250,#FFD700);color:#28344E}
-.blush{background:linear-gradient(160deg,#FFECE9,#FFE2DE);color:#B8403D}
-.plain{background:#FAF4EB;color:#342E3E}
-.sage,.sun,.blush,.plain{box-shadow:0 8px 16px -8px rgba(190,160,122,.4),inset 0 -3px 6px rgba(232,214,190,.3),inset 0 3px 5px rgba(255,255,255,.9)}
-.picked{outline:3px solid #EC706D;outline-offset:3px}
+.coral{background:linear-gradient(160deg,${P.coralTop},${P.coral});color:${css(P.onCoral)};box-shadow:${coralGlow}}
+.sage{background:linear-gradient(160deg,${P.sageTop},${P.sage});color:${P.onSage}}
+.sun{background:linear-gradient(160deg,${P.sunTop},${P.sun});color:${P.onSun}}
+.blush{background:linear-gradient(160deg,${P.blushTop},${P.blush});color:${P.coralChipInk}}
+.plain{background:${P.well};color:${P.ink}}
+.sage,.sun,.blush,.plain{box-shadow:${small}}
+.picked{outline:3px solid ${P.coralText};outline-offset:3px}
 .hint{text-align:center;font-size:13px;margin:14px 0 0}
-label{display:block;margin:0 0 6px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#80746C}
-input,select{width:100%;border:0;outline:0;border-radius:18px;padding:14px 16px;margin:0 0 14px;background:#FAF4EB;color:#342E3E;font:600 16px Poppins,'Segoe UI',sans-serif;box-shadow:inset 0 4px 8px rgba(214,192,162,.35),inset 0 -2px 4px rgba(255,255,255,.9)}
-input:focus,select:focus{box-shadow:inset 0 4px 8px rgba(214,192,162,.35),0 0 0 3px rgba(236,112,109,.45)}
+label{display:block;margin:0 0 6px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:${P.muted}}
+input,select{width:100%;border:0;outline:0;border-radius:18px;padding:14px 16px;margin:0 0 14px;background:${P.well};color:${P.ink};font:600 16px Poppins,'Segoe UI',sans-serif;box-shadow:${well}}
+input:focus,select:focus{box-shadow:inset 0 4px 8px ${rgba(P.shade, '.35')},0 0 0 3px ${ring}}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.open{display:block;text-align:center;margin-top:18px;color:#EC706D;font-weight:700;text-decoration:none}
-.foot{text-align:center;margin-top:16px;font-size:12px;color:#80746C}
+.open{display:block;text-align:center;margin-top:18px;color:${P.coralText};font-weight:700;text-decoration:none}
+.foot{text-align:center;margin-top:16px;font-size:12px;color:${P.muted}}`;
+}
+
+// Icon tile + eyebrow chip colours per tone: [tile top, tile base, chip background, chip text, icon tone].
+// Same colourways as the emails' tones() in services/emailTemplates.js.
+function toneTable(P) {
+  return {
+    coral: [P.coralTop, P.coral, P.blush, P.coralChipInk, 'white'],
+    sage: [P.sageTop, P.sage, P.sageWash, P.sageChipInk, 'sage'],
+    sun: [P.sunTop, P.sun, P.sunChip, P.sunChipInk, 'sun'],
+    blush: [P.blushTop, P.blush, P.blush, P.coralChipInk, 'blush'],
+  };
+}
+
+// Everything a page needs to look right: the palette, its stylesheet, its tone table and its icons.
+// Built once per palette. Any problem (a palette that cannot be built) gives the default look.
+function makeLook(P) {
+  return { P, css: pageCss(P), tones: toneTable(P), icons: iconSet('web', P), smallShadow: smallShadow(P) };
+}
+const DEFAULT_LOOK = makeLook(DEFAULT_PALETTE);
+function lookFor(theme) {
+  try {
+    return theme ? makeLook(emailPalette(theme)) : DEFAULT_LOOK;
+  } catch (err) {
+    console.warn('Answer page theme: default look used (' + (err && err.message) + ')');
+    return DEFAULT_LOOK;
+  }
+}
+
+// The student's look for the confirmation pages, read on a connection the caller already has.
+// Never throws and never waits on anything but one bound query: theming must not stop a page.
+async function lookOn(connection, userId) {
+  try {
+    if (!connection || typeof userId !== 'string' || !userId) return DEFAULT_LOOK;
+    return lookFor(await loadUserTheme(connection, userId));
+  } catch {
+    return DEFAULT_LOOK;
+  }
+}
+
+// Same, for a page that has no database connection yet: open one only to read the theme.
+async function lookOf(userId) {
+  let connection;
+  try {
+    if (typeof userId !== 'string' || !userId) return DEFAULT_LOOK;
+    connection = await getConnection();
+    return await lookOn(connection, userId);
+  } catch {
+    return DEFAULT_LOOK;
+  } finally {
+    try { if (connection) await connection.close(); } catch { /* the page matters more than the close */ }
+  }
+}
+
+function page(title, inner, look = DEFAULT_LOOK) {
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="${look.P.coral}"><title>${escapeHtml(title)} · FocusFlow</title>
+<link rel="icon" href="logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+${look.css}
 </style></head><body><div class="wrap">
 <a class="brand" href="${APP_URL()}"><img src="logo.png" alt="">FocusFlow</a>
 <div class="card">${inner}</div>
@@ -289,20 +355,13 @@ input:focus,select:focus{box-shadow:inset 0 4px 8px rgba(214,192,162,.35),0 0 0 
 }
 
 // Icon tile + eyebrow chip at the top of a card, in one of the clay tones.
-// [tile background, chip background, chip text, icon colour on the tile]
-const TOP_TONES = {
-  coral: ['linear-gradient(160deg,#F58C89,#EC706D)', '#FFE2DE', '#B8403D', 'white'],
-  sage: ['linear-gradient(160deg,#CEEAD6,#B8DCC4)', '#E2F2E7', '#2F6B47', 'sage'],
-  sun: ['linear-gradient(160deg,#FFE250,#FFD700)', '#FFF4BF', '#6B5200', 'sun'],
-  blush: ['linear-gradient(160deg,#FFECE9,#FFE2DE)', '#FFE2DE', '#B8403D', 'blush'],
-};
-function top(icon, tone, eyebrow) {
-  const [tile, chipBg, chipInk, iconTone] = TOP_TONES[tone] || TOP_TONES.coral;
-  return `<div class="tile" style="background:${tile};box-shadow:0 8px 16px -8px rgba(190,160,122,.4),inset 0 -3px 6px rgba(232,214,190,.3),inset 0 3px 5px rgba(255,255,255,.9)">${webIcons.img(icon, iconTone, 30)}</div>
+function top(look, icon, tone, eyebrow) {
+  const [tileTop, tileBase, chipBg, chipInk, iconTone] = look.tones[tone] || look.tones.coral;
+  return `<div class="tile" style="background:linear-gradient(160deg,${tileTop},${tileBase});box-shadow:${look.smallShadow}">${look.icons.img(icon, iconTone, 30)}</div>
     <span class="chip" style="background:${chipBg};color:${chipInk}">${escapeHtml(eyebrow)}</span>`;
 }
 // Icon + label inside a clay button; tone is the icon colour.
-const btnIcon = (icon, tone) => webIcons.img(icon, tone, 20);
+const btnIcon = (look, icon, tone) => look.icons.img(icon, tone, 20);
 
 const hidden = (t) => `<input type="hidden" name="t" value="${escapeHtml(t)}">`;
 // The answer a reminder button pre-picked (?a=…), if it's a valid one.
@@ -315,30 +374,31 @@ const confirmHint = (choice) => (choice ? '<p class="hint">Tap your answer to sa
 // open links can't answer for the student.
 exports.answerPage = async (req, res) => {
   const p = readToken(req.query.t);
-  if (!p) return res.status(400).send(page('Link expired', `${top('hourglass', 'sun', 'Link expired')}<h1>This link has expired</h1><p>Answer links last 3 days. You can still mark it in the app.</p><a class="open" href="${APP_URL()}">Open FocusFlow →</a>`));
+  if (!p) return res.status(400).send(page('Link expired', `${top(DEFAULT_LOOK, 'hourglass', 'sun', 'Link expired')}<h1>This link has expired</h1><p>Answer links last 3 days. You can still mark it in the app.</p><a class="open" href="${APP_URL()}">Open FocusFlow →</a>`));
   const t = req.query.t;
+  const look = await lookOf(p.u);
 
   if (p.p === 'att') {
     const choice = picked(req.query.a, ['present', 'absent']);
     return res.send(page(`Attendance · ${p.n}`, `
-      ${top('user-check', 'sage', 'Attendance check')}
+      ${top(look, 'user-check', 'sage', 'Attendance check')}
       <h1>Did you attend ${escapeHtml(p.n)}?</h1>
       <p>Class on ${escapeHtml(niceDate(p.d))}</p>
       <form method="post" action="answer" class="row">${hidden(t)}
-        <button class="sage${pickCls(choice, 'present')}" name="a" value="present">${btnIcon('check', 'sage')}Attended</button>
-        <button class="plain${pickCls(choice, 'absent')}" name="a" value="absent">${btnIcon('x', 'blush')}Missed</button>
-      </form>${confirmHint(choice)}`));
+        <button class="sage${pickCls(choice, 'present')}" name="a" value="present">${btnIcon(look, 'check', 'sage')}Attended</button>
+        <button class="plain${pickCls(choice, 'absent')}" name="a" value="absent">${btnIcon(look, 'x', 'blush')}Missed</button>
+      </form>${confirmHint(choice)}`, look));
   }
   if (p.p === 'sub') {
     const choice = picked(req.query.a, ['yes', 'no']);
     return res.send(page(`Submitted? · ${p.n}`, `
-      ${top('send', 'blush', 'Hand-in check')}
+      ${top(look, 'send', 'blush', 'Hand-in check')}
       <h1>Did you submit ${escapeHtml(p.n)}?</h1>
       <p>"Submitted" marks it done in FocusFlow.</p>
       <form method="post" action="answer" class="row">${hidden(t)}
-        <button class="sage${pickCls(choice, 'yes')}" name="a" value="yes">${btnIcon('check', 'sage')}Submitted</button>
-        <button class="sun${pickCls(choice, 'no')}" name="a" value="no">${btnIcon('hourglass', 'sun')}Not yet</button>
-      </form>${confirmHint(choice)}`));
+        <button class="sage${pickCls(choice, 'yes')}" name="a" value="yes">${btnIcon(look, 'check', 'sage')}Submitted</button>
+        <button class="sun${pickCls(choice, 'no')}" name="a" value="no">${btnIcon(look, 'hourglass', 'sun')}Not yet</button>
+      </form>${confirmHint(choice)}`, look));
   }
   // quiz → marks form. Pick the subject here if the quiz didn't have one.
   let subjectPicker = '';
@@ -353,7 +413,7 @@ exports.answerPage = async (req, res) => {
     }
   }
   res.send(page(`Marks · ${p.n}`, `
-    ${top('award', 'sage', 'Marks time')}
+    ${top(look, 'award', 'sage', 'Marks time')}
     <h1>How did ${escapeHtml(p.n)} go?</h1>
     <p>Your marks go straight into Grades.</p>
     <form method="post" action="answer">${hidden(t)}
@@ -362,9 +422,9 @@ exports.answerPage = async (req, res) => {
         <div><label for="score">Marks you got</label><input id="score" name="score" type="number" step="any" min="0" inputmode="decimal" required></div>
         <div><label for="max">Out of</label><input id="max" name="max" type="number" step="any" min="0.01" inputmode="decimal" value="10" required></div>
       </div>
-      <div class="row"><button class="coral" name="a" value="save">${btnIcon('check', 'white')}Save marks</button></div>
+      <div class="row"><button class="coral" name="a" value="save">${btnIcon(look, 'check', 'white')}Save marks</button></div>
     </form>
-    <form method="post" action="answer" style="margin-top:12px">${hidden(t)}<div class="row"><button class="plain" name="a" value="skip" formnovalidate>Skip for now</button></div></form>`));
+    <form method="post" action="answer" style="margin-top:12px">${hidden(t)}<div class="row"><button class="plain" name="a" value="skip" formnovalidate>Skip for now</button></div></form>`, look));
 };
 
 // Per-subject totals → attendance report text.
@@ -393,29 +453,36 @@ const QUIZ_CATEGORY = (type, title) => {
 // POST /api/notify/answer  { t, a, score?, max?, s? }  (form or JSON)
 exports.answer = async (req, res) => {
   const wantsJson = req.is('application/json');
-  // look: [icon, tone, eyebrow] for the clay card on the result page
-  const done = (heading, sub, look, extra = '') => (wantsJson
-    ? res.json({ success: true, heading, detail: sub })
-    : res.send(page(heading, `${top(...look)}<h1>${escapeHtml(heading)}</h1><p>${escapeHtml(sub)}</p>${extra}<a class="open" href="${APP_URL()}">Open FocusFlow →</a>`)));
-  const fail = (code, msg) => (wantsJson
-    ? res.status(code).json({ error: msg })
-    : res.status(code).send(page('Sorry', `${top('triangle-alert', 'blush', 'Not saved')}<h1>Sorry, that didn't work</h1><p>${escapeHtml(msg)}</p><a class="open" href="${APP_URL()}">Open FocusFlow →</a>`)));
-
   const b = req.body || {};
   const p = readToken(b.t);
-  if (!p) return fail(400, 'This link has expired. Use the app instead.');
+  let connection;
+  // The answer is already saved by the time a page is drawn; the student's theme is read last,
+  // best effort, and any problem gives the default look. (After a database error it is not tried.)
+  const lookNow = (dbOk = true) => (dbOk && p ? lookOn(connection, p.u) : DEFAULT_LOOK);
+  // face: [icon, tone, eyebrow] for the clay card on the result page
+  const done = async (heading, sub, face, extra = () => '') => {
+    if (wantsJson) return res.json({ success: true, heading, detail: sub });
+    const look = await lookNow();
+    return res.send(page(heading, `${top(look, ...face)}<h1>${escapeHtml(heading)}</h1><p>${escapeHtml(sub)}</p>${extra(look)}<a class="open" href="${APP_URL()}">Open FocusFlow →</a>`, look));
+  };
+  const fail = async (code, msg, dbOk = true) => {
+    if (wantsJson) return res.status(code).json({ error: msg });
+    const look = await lookNow(dbOk);
+    return res.status(code).send(page('Sorry', `${top(look, 'triangle-alert', 'blush', 'Not saved')}<h1>Sorry, that didn't work</h1><p>${escapeHtml(msg)}</p><a class="open" href="${APP_URL()}">Open FocusFlow →</a>`, look));
+  };
+
+  if (!p) return await fail(400, 'This link has expired. Use the app instead.');
   const a = String(b.a || '').toLowerCase();
 
-  let connection;
   try {
     connection = await getConnection();
 
     // ── Did you attend? ──
     if (p.p === 'att') {
-      if (!['present', 'absent'].includes(a)) return fail(400, 'Choose Attended or Missed.');
+      if (!['present', 'absent'].includes(a)) return await fail(400, 'Choose Attended or Missed.');
       const status = a === 'present' ? 'Present' : 'Absent';
       const owned = await connection.execute(`SELECT subject_id FROM SUBJECTS WHERE subject_id = :s AND user_id = :u`, { s: p.s, u: p.u });
-      if (!owned.rows.length) return fail(404, 'That subject no longer exists.');
+      if (!owned.rows.length) return await fail(404, 'That subject no longer exists.');
       await connection.execute(
         `INSERT INTO SUBJECT_ATTENDANCE (record_id, user_id, subject_id, class_date, status)
          VALUES (:id, :u, :s, CAST(:d AS DATE), :status)
@@ -437,37 +504,37 @@ exports.answer = async (req, res) => {
       }
       if (wantsJson) return res.json({ success: true, status, report });
       const present = status === 'Present';
-      return done(present ? 'Marked attended' : 'Marked missed', `${p.n} · ${niceDate(p.d)}`,
+      return await done(present ? 'Marked attended' : 'Marked missed', `${p.n} · ${niceDate(p.d)}`,
         present ? ['circle-check', 'sage', 'Saved'] : ['circle-x', 'blush', 'Saved'],
-        `<div style="margin:0 0 6px">${reportBody({ ...view, justMarked: null })}</div>`);
+        (look) => `<div style="margin:0 0 6px">${reportBody({ ...view, justMarked: null }, look.icons, look.P)}</div>`);
     }
 
     // ── Did you submit? ──
     if (p.p === 'sub') {
-      if (!['yes', 'no'].includes(a)) return fail(400, 'Choose Submitted or Not yet.');
-      if (a === 'no') return done('Okay — not yet', `${p.n} is still open. You've got this — don't forget to submit it!`, ['hourglass', 'sun', 'Still open']);
+      if (!['yes', 'no'].includes(a)) return await fail(400, 'Choose Submitted or Not yet.');
+      if (a === 'no') return await done('Okay — not yet', `${p.n} is still open. You've got this — don't forget to submit it!`, ['hourglass', 'sun', 'Still open']);
       const sql = p.src === 'assignment'
         ? `UPDATE ASSIGNMENTS SET column_id = 'col-done' WHERE assignment_id = :id AND user_id = :u RETURNING assignment_id`
         : `UPDATE EXAMS_DEADLINES SET is_done = 1 WHERE item_id = :id AND user_id = :u RETURNING item_id`;
       const r = await connection.execute(sql, { id: p.id, u: p.u });
-      if (!r.rows.length) return fail(404, 'That item no longer exists.');
-      return done('Marked submitted', `${p.n} is marked done. One less thing on your plate!`, ['circle-check', 'sage', 'Saved']);
+      if (!r.rows.length) return await fail(404, 'That item no longer exists.');
+      return await done('Marked submitted', `${p.n} is marked done. One less thing on your plate!`, ['circle-check', 'sage', 'Saved']);
     }
 
     // ── Quiz / test / exam marks ──
-    if (a === 'skip') return done('Skipped for now', `No marks saved for ${p.n}. You can add them later on the Grades page.`, ['clock', 'sun', 'Skipped']);
-    if (a !== 'save') return fail(400, 'Enter your marks or skip.');
+    if (a === 'skip') return await done('Skipped for now', `No marks saved for ${p.n}. You can add them later on the Grades page.`, ['clock', 'sun', 'Skipped']);
+    if (a !== 'save') return await fail(400, 'Enter your marks or skip.');
     // Number('') is 0, so a blank box must be caught before converting.
     const blank = (v) => v === undefined || v === null || String(v).trim() === '';
-    if (blank(b.score) || blank(b.max)) return fail(400, 'Enter your marks and the total (e.g. 8 out of 10).');
+    if (blank(b.score) || blank(b.max)) return await fail(400, 'Enter your marks and the total (e.g. 8 out of 10).');
     const score = Number(b.score);
     const max = Number(b.max);
-    if (!Number.isFinite(score) || !Number.isFinite(max) || score < 0 || max <= 0) return fail(400, 'Enter valid marks (e.g. 8 out of 10).');
-    if (score > max) return fail(400, `Marks can't be more than the total (${max}).`);
+    if (!Number.isFinite(score) || !Number.isFinite(max) || score < 0 || max <= 0) return await fail(400, 'Enter valid marks (e.g. 8 out of 10).');
+    if (score > max) return await fail(400, `Marks can't be more than the total (${max}).`);
     const subjectId = p.s || b.s;
-    if (!subjectId) return fail(400, 'Choose the subject.');
+    if (!subjectId) return await fail(400, 'Choose the subject.');
     const owned = await connection.execute(`SELECT subject_id FROM SUBJECTS WHERE subject_id = :s AND user_id = :u`, { s: subjectId, u: p.u });
-    if (!owned.rows.length) return fail(404, 'That subject no longer exists.');
+    if (!owned.rows.length) return await fail(404, 'That subject no longer exists.');
     // One grade per quiz: answering again updates it.
     const gradeId = `quiz-${p.e}`;
     await connection.execute(
@@ -479,10 +546,10 @@ exports.answer = async (req, res) => {
     await connection.execute(`UPDATE EXAMS_DEADLINES SET is_done = 1 WHERE item_id = :e AND user_id = :u`, { e: p.e, u: p.u });
     const pct = Math.round((score / max) * 100);
     if (wantsJson) return res.json({ success: true, score, max, percentage: pct });
-    return done('Marks saved', `${p.n}: ${score}/${max} (${pct}%) — added to Grades.`, ['award', pct >= 75 ? 'sun' : 'sage', 'Saved']);
+    return await done('Marks saved', `${p.n}: ${score}/${max} (${pct}%) — added to Grades.`, ['award', pct >= 75 ? 'sun' : 'sage', 'Saved']);
   } catch (err) {
     console.error('Answer error:', err);
-    return fail(500, 'Could not save your answer. Please try again.');
+    return await fail(500, 'Could not save your answer. Please try again.', false);
   } finally {
     if (connection) await connection.close();
   }
