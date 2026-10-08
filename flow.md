@@ -61,6 +61,10 @@ Before React starts, the inline script in `public/index.html` paints the cached 
    - The controls are `RemindersSettings`, `FontSelector`, `WidgetManager` with `DashboardSwitcher`, `LanguageSelect`, `components/consent/CookieChoice.js`, or the profile form.
 5. Escape, the close button or the back button removes `?open=`, and the pop-up closes.
 
+### Keyboard in pop-ups
+- `Modal` with `trapFocus` moves focus in, wraps Tab, and gives focus back to the opener on close (Settings cards, Design Studio, `MascotPicker`).
+- A menu or list inside a pop-up (`DashboardSwitcher`, `LanguageSelect`) handles Escape itself and calls `stopPropagation()`, so Escape closes the menu first and only a second Escape closes the pop-up.
+
 ### Design Studio — `components/studio/DesignStudio.js`
 1. Appearance has a "Design your dashboard" button. It sets `?open=studio` with `replace`, so the Appearance entry becomes the Studio entry. A link to `?open=studio` opens it too. `SettingsPage` always renders `<DesignStudio open={...} />`, so it can see the Back button.
 2. On open the Studio copies the saved theme into a draft (`studioReducer`: `draft` and an undo list of up to 20).

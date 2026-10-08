@@ -6,6 +6,22 @@ Update this file with every change.
 
 ---
 
+## 2026-10-08 — Accessibility fixes (from the keyboard and screen-reader audit)
+
+Source: `.pipeline/audit-a11y.md`. Each item below was fixed in its own commit.
+
+### 1. Mascot picker
+- **Decided:** `trapFocus` on its Modal (focus moves in, Tab wraps, focus returns to the opener after picking or Escape) and the second, duplicate heading removed (Modal already draws the title).
+- **Rejected:** a check icon on the chosen mascot (the audit called it minor; the ring plus `aria-pressed` stays).
+
+### 2. Workspace menu
+- **Decided:** the row that switches workspace is a real `<button>`; Rename and Delete are siblings of it (not inside it) and show on hover or when focus is anywhere in the row. The trigger has `aria-expanded` and `aria-haspopup`. Escape closes the menu only (stopPropagation, so the pop-up behind stays) and focus goes back to the trigger; choosing a workspace also returns focus there.
+- **Rejected:** `role="menu"` with arrow keys. It needs a lot more code for little gain with a handful of rows.
+
+### 3. Dashboard feature list
+- **Decided:** switches are named with the on-screen title ("Goals"), not the id. The drag handle keeps its place in the Tab order because dnd-kit's keyboard sensor already reorders with Space and the arrow keys; it gets a visible ring, a bigger target and a per-feature name ("Reorder Goals").
+- **Rejected:** building our own keyboard reordering, or removing the handle from the Tab order.
+
 ## 2026-10-08 — Theme audit (final quality gate)
 
 A no-new-features pass over the whole colour-theme feature. Plan: `docs/superpowers/specs/2026-10-08-theme-audit.md`. Two rounds of audit, fix and re-audit, with a tester, an accessibility auditor, a coder and the reviewer.
