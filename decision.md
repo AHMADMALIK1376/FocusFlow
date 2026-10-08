@@ -6,6 +6,64 @@ Update this file with every change.
 
 ---
 
+## 2026-10-08 — Theme audit (final quality gate)
+
+A no-new-features pass over the whole colour-theme feature. Plan: `docs/superpowers/specs/2026-10-08-theme-audit.md`. Two rounds of audit, fix and re-audit, with a tester, an accessibility auditor, a coder and the reviewer.
+
+### Contrast matrix (library palettes and the default)
+Ratios are WCAG contrast, measured on the colours the engine produces. The first five columns are the required pairs; "warn badge" is the badge text on its own tint. Every library palette is at least 4.5:1 on all six. The default keeps its two known exceptions (white on coral 2.96:1, muted text on cards 4.46:1): it is exempt so it looks exactly as it always has (decision OQ1, option A, from the theme-engine task; changing it changes how the default looks, so it needs the owner's word). A test (`palettes.test.js`, "palette library contrast matrix") now fails if a library palette drops under 4.5:1 on any of these.
+
+| Palette | ink/canvas | ink/surface | muted/surface | on-brand/brand | on-sage/sage | warn badge | tightest extra pair | fixed by guard |
+|---|---|---|---|---|---|---|---|---|
+| Default | 11.44 | 12.87 | 4.46 | 2.96 | 6.98 | 5.76 | --on-brand on --brand 2.96/4.5 | 0 |
+| Matcha Latte | 12.69 | 14.23 | 4.83 | 4.61 | 7.11 | 5.80 | --sage-deep on --surface 2.41/2.4 | 4 |
+| Peach Fuzz | 12.28 | 13.67 | 4.60 | 4.51 | 7.28 | 5.85 | --on-brand on --brand 4.51/4.5 | 2 |
+| Lavender Haze | 12.90 | 14.40 | 4.78 | 4.66 | 7.28 | 5.85 | --warn on --surface 2.03/2 | 2 |
+| Sky Notes | 13.14 | 14.56 | 4.81 | 4.60 | 7.20 | 5.85 | --warn on --surface 2.03/2 | 4 |
+| Butter Toast | 13.19 | 14.26 | 4.72 | 4.56 | 7.11 | 5.85 | --sage-deep on --surface 2.42/2.4 | 4 |
+| Rose Water | 12.88 | 14.35 | 4.75 | 4.53 | 7.27 | 5.85 | --on-brand on --brand 4.53/4.5 | 2 |
+| Mint Chip | 12.71 | 13.85 | 4.61 | 4.60 | 6.80 | 5.85 | --sage-deep on --surface 2.41/2.4 | 3 |
+| Cloud Grey | 13.30 | 14.87 | 4.95 | 4.51 | 7.22 | 5.85 | --on-brand on --brand 4.51/4.5 | 2 |
+| Electric Blue | 15.74 | 17.14 | 5.49 | 4.54 | 6.82 | 5.85 | --on-sage on habitDoneB 4.41/4.4 | 3 |
+| Hot Pink | 15.88 | 17.16 | 5.47 | 4.56 | 7.26 | 5.85 | --warn on --surface 2.03/2 | 2 |
+| Tangerine | 15.42 | 16.59 | 5.30 | 4.50 | 7.13 | 5.85 | --on-brand on --brand 4.50/4.5 | 4 |
+| Lime Pop | 14.92 | 15.71 | 5.03 | 4.60 | 6.94 | 5.85 | --warn on --surface 2.03/2 | 4 |
+| Grape Soda | 15.24 | 17.00 | 5.46 | 4.60 | 7.37 | 5.85 | --warn on --surface 2.03/2 | 2 |
+| Cherry Cola | 16.17 | 17.80 | 5.75 | 4.63 | 7.20 | 5.85 | --warn on --surface 2.03/2 | 2 |
+| Teal Wave | 13.94 | 15.19 | 4.98 | 4.53 | 6.85 | 5.85 | --on-brand on --brand 4.53/4.5 | 3 |
+| Sunset Drive | 15.19 | 16.48 | 5.29 | 4.58 | 7.14 | 5.85 | --warn on --surface 2.03/2 | 2 |
+| Midnight | 15.57 | 12.95 | 4.70 | 4.71 | 7.24 | 4.63 | --chart-axis on --surface 3.00/3 | 2 |
+| Charcoal Coral | 15.49 | 12.74 | 4.67 | 4.51 | 7.20 | 4.60 | --on-brand on --brand 4.51/4.5 | 2 |
+| Deep Forest | 15.49 | 12.84 | 4.71 | 4.56 | 6.89 | 4.64 | --on-brand on --brand 4.56/4.5 | 3 |
+| Night Lavender | 15.75 | 13.08 | 4.74 | 4.51 | 7.48 | 4.59 | --on-brand on --brand 4.51/4.5 | 3 |
+| Ocean Night | 15.27 | 12.48 | 4.66 | 4.62 | 6.97 | 4.55 | --muted on --highlight 4.55/4.5 | 3 |
+| Espresso | 15.57 | 12.82 | 4.66 | 4.53 | 7.40 | 4.65 | --muted on --highlight 4.51/4.5 | 3 |
+| Neon Arcade | 17.24 | 14.73 | 5.06 | 4.65 | 7.14 | 4.64 | --warn-ink on warnWash 4.64/4.5 | 2 |
+| Slate Gold | 15.26 | 12.21 | 4.65 | 4.56 | 7.43 | 4.53 | --muted on --highlight 4.50/4.5 | 3 |
+
+"Tightest extra pair" is the closest-to-its-limit of the other guarded pairs (extras use "never worse than today" or a lower target such as 3:1 for chart axes; they are listed in `GUARD` in `deriveTokens.js`).
+
+### Problems found and fixed
+- **Tooltips, year drop-downs and the routine day tooltip were fixed white with black text** (BudgetGauge, AttendanceHeatmap, AttendanceSkylinePage, SpendingPuckStack, DailyRoutine). Now surface and ink, so they follow the theme. In the default the card colour is the warm white, not pure white (a barely visible change).
+- **Focus mode used green-500 and red-500** for done / not done. Now the `success` and `focus` tokens (readable on every theme; the default is a slightly different green and red).
+- **`text-on-brand` sat on the fixed status red and gold in the routine pop-ups** (1.1:1 to 2:1 on some palettes). Now white on the red (same 3.6:1 as the default) and the dark `on-sun` ink on the gold.
+- **The warn badge on dark palettes was under 4.5:1**, and in dark mode (the `t` key, or a phone set to dark) its text swapped to a colour that was under 4.5:1 on most themes. The guard now checks the badge text against the badge's own tint (warn at 20% over the card), moving the text first and the warn colour second; and the `dark:` variant is gone (it was the only one in the code). On a mid-tone, saturated card colour the two goals (badge text and warn staying visible on the card) cannot both hold; there the badge text keeps at least 3.9:1 (`WASH_FLOOR`). No library palette is affected.
+- **Answer pages opened from reminder links were still the default coral** (the earlier task themed the emails but missed them). They now use the student's email palette; see the section below.
+- **The hard-coded colour guard** now also sees Tailwind palette classes (`bg-white`, `text-gray-500`, `border-red-500/10`), and every allowlist entry pins how many times the colour is used, so one more use of an allowed code in the same file fails until the count is raised on purpose. Allowed Tailwind uses left: white text on the fixed status red and green, white on a student-picked routine colour, and a scrim and icon over the avatar photo.
+- **Not scanned, by design:** `fill="white"` and `stroke="black"` in SVG geometry and CSS masks (CardDeleteButton, the sprite masks): they define a shape and are never painted.
+
+### Light/dark mode with custom palettes (decided)
+- **The colour theme is the only source of colour.** The mode toggle (the `t` key, or a phone set to dark) only adds or removes the `.dark` class on `<html>` and stores `theme.mode`. Nothing in the code changes a colour for `.dark` any more, and `applyTheme` sets `color-scheme` from the palette inline, which beats the class. So toggling the mode never changes a palette, and a dark palette in mode "light" is still fully dark.
+- **Rejected:** deriving a second "dark version" of each palette (a new feature, and it would fight a student who picked a light palette on purpose), or removing the toggle (it is harmless now; removing it is a separate cleanup).
+- **How a student gets a dark app:** pick a dark palette in the Design Studio.
+
+### Known risks kept on purpose
+- **Signing out and in again while the server is asleep:** the colours show the default and the remembered colours are removed until the account loads (about 20 s on a cold Render). The screen cannot tell the same student from a different one, so it does not keep the previous student's colours. The account copy is never lost.
+- **A theme from a newer app version** (theme `v` above 1) is read as the default and replaced on the next unrelated save. This only matters if an old copy of the app runs after a newer release; the server already refuses saves from older app versions (409).
+- **The default palette's two contrast exceptions** (above).
+
+---
+
 ## 2026-10-08 — Theme everywhere
 
 The colours a student picks now show on the pages before sign-in, the error and offline pages, the charts, the sign-in illustrations and reminder emails. With the normal FocusFlow colours nothing changes: web pages look the same, and every email is byte-for-byte the same (`services/emailDefaultSnapshot.test.js`, with a fixture captured before the refactor).
