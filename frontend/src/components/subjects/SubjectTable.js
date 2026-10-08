@@ -136,7 +136,7 @@ export default function SubjectTable({ subjects, onOpen, onEdit, onDelete }) {
           <button type="button" onClick={() => onOpen(s)} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold bg-surface/80 text-ink shadow-neu-sm hover:-translate-y-0.5 transition-transform">
             Open <ArrowUpRight size={13} />
           </button>
-          <button type="button" onClick={() => onEdit(s)} className="p-2 rounded-full text-ink/55 hover:text-ink hover:bg-black/10 transition-colors" title="Edit subject"><Pencil size={15} /></button>
+          <button type="button" onClick={() => onEdit(s)} className="p-2 rounded-full text-ink/55 hover:text-ink hover:bg-ink/10 transition-colors" title="Edit subject"><Pencil size={15} /></button>
           <button type="button" onClick={() => onDelete(s)} className="p-2 rounded-full text-ink/55 hover:text-focus hover:bg-focus/10 transition-colors" title="Delete subject"><Trash2 size={15} /></button>
         </div>
       </div>

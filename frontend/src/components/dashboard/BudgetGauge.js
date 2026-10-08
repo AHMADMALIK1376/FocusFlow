@@ -65,11 +65,11 @@ export default function BudgetGauge({ allowance = 0, remaining = 0, spent = 0, s
 
       {hover && createPortal(
         <div
-          className="fixed z-[9999] pointer-events-none bg-white text-black rounded-md shadow-lg border border-black/10 px-2.5 py-1.5 whitespace-nowrap"
+          className="fixed z-[9999] pointer-events-none bg-surface text-ink rounded-md shadow-lg border border-ink/10 px-2.5 py-1.5 whitespace-nowrap"
           style={{ left: hover.x, top: hover.y, transform: "translate(-50%, -100%) translateY(-8px)" }}
         >
           <p className="text-xs font-bold">{hover.label}</p>
-          <p className="text-[11px] text-black/70">{hover.value}</p>
+          <p className="text-[11px] text-ink/70">{hover.value}</p>
         </div>,
         document.body
       )}

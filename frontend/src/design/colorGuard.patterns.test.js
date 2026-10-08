@@ -7,7 +7,8 @@ const guardSource = fs.readFileSync(path.join(__dirname, 'colorGuard.test.js'), 
 const literal = (name) => new Function(`return ${guardSource.match(new RegExp(`const ${name} = (/.+/[a-z]*);`))[1]};`)(); // eslint-disable-line no-new-func
 const HEX = literal('HEX');
 const FUNC = literal('FUNC');
-const hits = (text) => [...text.matchAll(HEX), ...text.matchAll(FUNC)].map((m) => m[0]);
+const TW = literal('TW');
+const hits = (text) => [...text.matchAll(HEX), ...text.matchAll(FUNC), ...text.matchAll(TW)].map((m) => m[0]);
 
 describe('what the colour guard flags', () => {
   it.each([

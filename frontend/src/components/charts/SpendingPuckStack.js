@@ -183,11 +183,11 @@ export default function SpendingPuckStack({ data, formatValue }) {
 
       {tooltip && (
         <div
-          className="fixed z-[9999] pointer-events-none bg-white text-black rounded-md shadow-lg border border-black/10 px-2.5 py-1.5 whitespace-nowrap"
+          className="fixed z-[9999] pointer-events-none bg-surface text-ink rounded-md shadow-lg border border-ink/10 px-2.5 py-1.5 whitespace-nowrap"
           style={{ left: tooltip.x, top: tooltip.y, transform: "translate(-50%, -100%) translateY(-10px)" }}
         >
           <p className="text-xs font-bold" style={{ color: tooltip.color }}>{tooltip.label}</p>
-          <p className="text-[11px] text-black/70">{tooltip.sub}</p>
+          <p className="text-[11px] text-ink/70">{tooltip.sub}</p>
         </div>
       )}
     </div>
