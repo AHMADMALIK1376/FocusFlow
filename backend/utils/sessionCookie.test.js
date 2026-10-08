@@ -45,3 +45,18 @@ test('the login comes from the cookie first, else the older Authorization header
   assert.deepEqual(readSessionToken({ headers: {}, header: () => undefined }), { token: null, from: null });
   assert.deepEqual(readSessionToken({ headers: { cookie: 'other=1' }, header: () => undefined }), { token: null, from: null });
 });
+
+test('the production cookie is exactly the expected string', () => {
+  const r = fakeRes(); setSessionCookie(r, 'abc.def', { NODE_ENV: 'production' });
+  assert.equal(r.sent.length, 1);
+  assert.equal(r.sent[0][1], 'ff_session=abc.def; Path=/; HttpOnly; SameSite=Lax; Max-Age=1728000; Secure');
+});
+
+test('the clearing cookie matches the set one (same Path, SameSite, Secure, no Domain) so it replaces it', () => {
+  const set = fakeRes(); setSessionCookie(set, 'tok', { NODE_ENV: 'production' });
+  const clear = fakeRes(); clearSessionCookie(clear, { NODE_ENV: 'production' });
+  assert.equal(clear.sent[0][1], 'ff_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0; Secure');
+  assert.doesNotMatch(clear.sent[0][1], /Domain/i);
+  const attrs = (c) => c.split('; ').slice(1).filter((a) => !a.startsWith('Max-Age'));
+  assert.deepEqual(attrs(clear.sent[0][1]), attrs(set.sent[0][1]));
+});

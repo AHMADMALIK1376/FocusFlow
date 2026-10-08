@@ -1,7 +1,7 @@
 ﻿const jwt = require('jsonwebtoken');
 const { getConnection } = require('../config/database');
 const { signSession, shouldRefresh } = require('../utils/session');
-const { readSessionToken, setSessionCookie, clearSessionCookie } = require('../utils/sessionCookie');
+const { COOKIE_NAME, parseCookies, readSessionToken, setSessionCookie, clearSessionCookie } = require('../utils/sessionCookie');
 
 // A request that changes data and is signed in by cookie must carry this header.
 // Another website can't add a custom header without the browser asking this API
@@ -59,6 +59,38 @@ const getJWTSecret = () => {
 };
 
 // ==============================================
+// 401 LOG LINE
+// ==============================================
+// One line for every refused sign-in, so an unexpected sign-out can be traced in the
+// server log. It never contains the token itself, the query string or the raw
+// user-agent: only the age of the token, a yes/no for each cookie, and a family name.
+const browserFamily = (ua) => {
+    const s = String(ua || '');
+    if (!s) return 'none';
+    const android = /Android/i.test(s) ? 'Android-' : '';
+    if (/SamsungBrowser/i.test(s)) return 'Samsung';
+    if (/Edg/i.test(s)) return `${android}Edge`;
+    if (/Firefox|FxiOS/i.test(s)) return `${android}Firefox`;
+    if (/Chrome|CriOS/i.test(s)) return `${android}Chrome`;
+    if (/Safari/i.test(s)) return 'Safari';
+    return 'other';
+};
+
+function describe401(req, { code, reason, token, from }, now = Date.now()) {
+    const headers = req.headers || {};
+    const cookies = parseCookies(headers.cookie);
+    const ffSession = !(COOKIE_NAME in cookies) ? 'no' : cookies[COOKIE_NAME] ? 'yes' : 'empty';
+    let decoded = null;
+    try { decoded = token ? jwt.decode(token) : null; } catch { decoded = null; }
+    const age = decoded && typeof decoded.iat === 'number' ? Math.max(0, Math.floor(now / 1000) - decoded.iat) : 'none';
+    const user = decoded && decoded.userId != null ? decoded.userId : 'none';
+    const path = String(req.originalUrl || req.url || req.path || '').split('?')[0];
+    return `auth 401 code=${code} reason="${reason}" ${req.method} ${path} tokenAgeSec=${age} user=${user}`
+        + ` cookieHeader=${headers.cookie ? 'yes' : 'no'} ffSession=${ffSession} via=${from || 'none'}`
+        + ` ua=${browserFamily(headers['user-agent'])}`;
+}
+
+// ==============================================
 // JWT VERIFICATION MIDDLEWARE
 // ==============================================
 module.exports = async (req, res, next) => {
@@ -67,7 +99,7 @@ module.exports = async (req, res, next) => {
     const { token, from } = readSessionToken(req);
 
     if (!token) {
-        console.warn(`⚠️ Unauthorized access attempt: No token provided for ${req.method} ${req.path}`);
+        console.warn(describe401(req, { code: 'NO_TOKEN', reason: 'no cookie and no header', token, from }));
         return res.status(401).json({ 
             error: 'Access denied. No token provided.',
             code: 'NO_TOKEN'
@@ -99,7 +131,7 @@ module.exports = async (req, res, next) => {
         }
         
         if (!(await userExists(decoded.userId))) {
-            console.warn(`⚠️ Token for a deleted account (user ${decoded.userId}) on ${req.method} ${req.path}`);
+            console.warn(describe401(req, { code: 'USER_NOT_FOUND', reason: 'account row missing', token, from }));
             if (from === 'cookie') clearSessionCookie(res);
             return res.status(401).json({
                 error: 'This account no longer exists. Please sign in again.',
@@ -119,7 +151,7 @@ module.exports = async (req, res, next) => {
     } catch (err) {
         // Handle specific JWT errors with appropriate messages
         if (err.name === 'TokenExpiredError') {
-            console.warn(`⚠️ Token expired for request: ${req.method} ${req.path}`);
+            console.warn(describe401(req, { code: 'TOKEN_EXPIRED', reason: `expired at ${err.expiredAt instanceof Date ? err.expiredAt.toISOString() : 'unknown'}`, token, from }));
             if (from === 'cookie') clearSessionCookie(res);
             return res.status(401).json({ 
                 error: 'Token expired. Please login again.',
@@ -129,7 +161,7 @@ module.exports = async (req, res, next) => {
         }
         
         if (err.name === 'JsonWebTokenError') {
-            console.warn(`⚠️ Invalid token: ${err.message} for ${req.method} ${req.path}`);
+            console.warn(describe401(req, { code: 'INVALID_TOKEN', reason: err.message, token, from }));
             if (from === 'cookie') clearSessionCookie(res);
             return res.status(401).json({ 
                 error: 'Invalid token.',
@@ -139,7 +171,7 @@ module.exports = async (req, res, next) => {
         }
         
         if (err.name === 'NotBeforeError') {
-            console.warn(`⚠️ Token not yet active: ${err.message}`);
+            console.warn(describe401(req, { code: 'TOKEN_NOT_ACTIVE', reason: err.message, token, from }));
             return res.status(401).json({ 
                 error: 'Token not yet active.',
                 code: 'TOKEN_NOT_ACTIVE'
@@ -164,3 +196,4 @@ module.exports = async (req, res, next) => {
     }
 };
 module.exports.clearUserCache = () => knownUsers.clear();
+module.exports.describe401 = describe401;
