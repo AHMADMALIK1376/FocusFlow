@@ -35,7 +35,7 @@ Before React starts, the inline script in `public/index.html` paints the cached 
   - If the check fails, it shows the 503 page and retries every 15 s.
   - When the server answers again, it reloads.
 - **Device offline:** the browser's `offline` event → the gate's offline page. The `online` event → check → reload.
-- **App can't load at all:** `public/sw.js` handles failed page loads (`navigate` requests) by serving the cached `public/offline.html` (cache `ff-offline-v2`, with the app icon and the FocusFlow mark). The page carries its own copy of the `ff-theme-boot` script, so it opens in the colours in `focusflow:theme.colors`; with a non-default brand a second small script adds `ff-themed`, which swaps the icon for a brand tile.
+- **App can't load at all:** `public/sw.js` handles failed page loads (`navigate` requests) by serving the cached `public/offline.html` (cache `ff-offline-v4`, named after `THEME_CACHE_VERSION`, with the app icon and the FocusFlow mark). The page carries its own copy of the `ff-theme-boot` script, so it opens in the colours in `focusflow:theme.colors`; with a non-default brand a second small script adds `ff-themed`, which swaps the icon for a brand tile.
 - `ErrorScreen` (404, 500, 503, offline) reads `useActiveTheme()`; outside the provider that is the colours this browser remembers (see Colour theme).
 
 ### Colour theme

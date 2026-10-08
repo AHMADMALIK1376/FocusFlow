@@ -135,6 +135,7 @@ The colours a student picks now show on the pages before sign-in, the error and 
 ### Static files
 - `offline.html` carries a copy of the `ff-theme-boot` script (a test keeps it identical to `index.html`), plus a second tiny script that adds `ff-themed` when the brand is not the default coral. Its colours are now token triplets named as in `tokens.css`; with the defaults it renders the same. The icon swaps for a brand tile when themed. Its only hex is the theme-color meta (the boot script updates it).
 - `sw.js`: `ff-offline-v2` (the page changed, so the old cached copy is replaced); the mark image is cached and served offline too.
+- **Cache versions move together (audit round 3):** the theme cache is now version 4 (new tokens: the five badge `-ink` tokens and the three `on-` tokens) in `applyTheme.js`, `index.html` and `offline.html`, and `sw.js` is `ff-offline-v4`. Browsers only re-fetch a changed `offline.html` when `sw.js` itself changes; the version 3 bump forgot this, so installed apps kept an old offline page that rejects the new cache. `offlinePage.test.js` now ties the cache name and both pages' `c.v !== N` check to `THEME_CACHE_VERSION`, so they cannot drift again. Rejected: a cache name built at run time (the service worker has no access to the app's code).
 - Notification pictures (`public/notify`) stay in FocusFlow's colours on purpose: the phone draws them outside the app, the worker cannot read the theme, and per-student pictures would need image generation on the server for every push.
 
 ### Theme cache version 2

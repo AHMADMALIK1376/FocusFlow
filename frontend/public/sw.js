@@ -4,8 +4,8 @@
    offline" page for when the app can't load at all. Kept dependency-free on
    purpose. */
 
-// The offline page and the logos it shows. Bump the name when they change.
-const OFFLINE_CACHE = 'ff-offline-v2';
+// The offline page and the logos it shows. Bump the name when they change (and with THEME_CACHE_VERSION: offline.html checks it).
+const OFFLINE_CACHE = 'ff-offline-v4';
 const OFFLINE_FILES = ['/offline.html', '/logo192.png', '/logo/focusflow-mark.png'];
 
 self.addEventListener('install', (event) => {

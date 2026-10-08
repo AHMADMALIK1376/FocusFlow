@@ -47,7 +47,7 @@ describe('a version 1 cache (what browsers hold before this release) is ignored 
   };
   Object.entries(readers).forEach(([name, run]) => {
     it(name, () => {
-      expect(THEME_CACHE_VERSION).toBe(3);
+      expect(THEME_CACHE_VERSION).toBe(4);
       v1();
       expect(run()).toBe(false);
       expect(root.classList.contains('ff-themed')).toBe(false);

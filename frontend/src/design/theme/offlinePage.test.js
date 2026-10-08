@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { writeThemeCache } from './applyTheme';
+import { writeThemeCache, THEME_CACHE_VERSION } from './applyTheme';
 import { deriveTokens } from './deriveTokens';
 import { DEFAULT_THEME } from './theme';
 
@@ -104,8 +104,15 @@ describe('offline.html colours', () => {
 describe('sw.js', () => {
   const sw = read('sw.js');
 
-  it('caches the offline page with the mark it now shows, under a new cache name', () => {
-    expect(sw).toContain("const OFFLINE_CACHE = 'ff-offline-v2'");
+  // Browsers only fetch a changed offline.html when sw.js itself changes, so the cache name and the version
+  // that offline.html checks must move together with THEME_CACHE_VERSION (they once drifted apart).
+  it('the cache name, the offline page check and the index.html check all follow THEME_CACHE_VERSION', () => {
+    expect(sw).toContain(`const OFFLINE_CACHE = 'ff-offline-v${THEME_CACHE_VERSION}'`);
+    expect(offline).toContain(`c.v !== ${THEME_CACHE_VERSION} `);
+    expect(read('index.html')).toContain(`c.v !== ${THEME_CACHE_VERSION} `);
+  });
+
+  it('caches the offline page with the mark it now shows', () => {
     expect(sw).toContain("'/offline.html', '/logo192.png', '/logo/focusflow-mark.png'");
     expect(offline).toContain('src="/logo/focusflow-mark.png"');
   });
