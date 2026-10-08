@@ -23,6 +23,7 @@ export default function DashboardSwitcher({ triggerClassName } = {}) {
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState('');
   const ref = useRef(null);
+  const triggerRef = useRef(null);
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -58,10 +59,25 @@ export default function DashboardSwitcher({ triggerClassName } = {}) {
   }
 
   return (
-    <div className="relative" ref={ref}>
+    <div
+      className="relative"
+      ref={ref}
+      onKeyDown={(e) => {
+        // stopPropagation: Escape closes this menu only, not a pop-up around it
+        if (e.key === 'Escape' && open) {
+          e.stopPropagation();
+          setOpen(false);
+          setCreatingNew(false);
+          triggerRef.current?.focus();
+        }
+      }}
+    >
       {/* Trigger */}
       <button
         type="button"
+        ref={triggerRef}
+        aria-expanded={open}
+        aria-haspopup="true"
         onClick={() => setOpen((o) => !o)}
         className={cx(
           'flex items-center gap-1.5 text-xs font-bold transition-all duration-200',
@@ -108,26 +124,32 @@ export default function DashboardSwitcher({ triggerClassName } = {}) {
               ) : (
                 <div
                   className={cx(
-                    'flex items-center gap-2 px-2 py-2.5 rounded-token-sm cursor-pointer group',
+                    'flex items-center gap-1 rounded-token-sm group',
                     db.id === activeDashboardId
                       ? 'bg-brand/10 text-brand'
                       : 'hover:bg-[rgb(var(--ink)/0.05)] text-ink'
                   )}
-                  onClick={() => {
-                    switchDashboard(db.id);
-                    setOpen(false);
-                  }}
                 >
-                  <span className="text-base">
-                    {db.id === activeDashboardId ? '●' : '○'}
-                  </span>
-                  <span className="flex-1 text-sm font-bold truncate">{db.name}</span>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    type="button"
+                    className="flex-1 min-w-0 flex items-center gap-2 px-2 py-2.5 text-left rounded-token-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                    onClick={() => {
+                      switchDashboard(db.id);
+                      setOpen(false);
+                      triggerRef.current?.focus();
+                    }}
+                  >
+                    <span className="text-base">
+                      {db.id === activeDashboardId ? '●' : '○'}
+                    </span>
+                    <span className="flex-1 text-sm font-bold truncate">{db.name}</span>
+                  </button>
+                  {/* Shown on hover and whenever focus is inside the row, so a keyboard user can see them */}
+                  <div className="flex gap-1 pr-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
                     <button
                       type="button"
-                      className="text-muted hover:text-ink text-xs p-1"
-                      onClick={(e) => {
-                        e.stopPropagation();
+                      className="text-muted hover:text-ink text-xs p-2 rounded-token-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                      onClick={() => {
                         setEditingId(db.id);
                         setEditName(db.name);
                       }}
@@ -137,11 +159,8 @@ export default function DashboardSwitcher({ triggerClassName } = {}) {
                     </button>
                     <button
                       type="button"
-                      className="text-muted hover:text-focus text-xs p-1"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(db.id);
-                      }}
+                      className="text-muted hover:text-focus text-xs p-2 rounded-token-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                      onClick={() => handleDelete(db.id)}
                       aria-label="Delete"
                     >
                       <Trash2 size={14} />
