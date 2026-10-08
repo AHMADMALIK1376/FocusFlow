@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert');
 const express = require('express');
-const { globalLimiter, loginLimiter, loginEmailLimiter, emailLimiter, codeLimiter } = require('./rateLimiters');
+const { globalLimiter, loginLimiter, loginEmailLimiter, emailLimiter, codeLimiter, cronLimiter } = require('./rateLimiters');
 
 // The same mounts server.js uses, with fake handlers behind them.
 function start() {
@@ -98,4 +98,22 @@ test('wrong passwords against ONE account are blocked even when they come from m
     } finally {
         server.close();
     }
+});
+
+test('the cron limiter blocks after 30 requests from one address, not another', async () => {
+    const app = express();
+    app.set('trust proxy', 1);
+    app.use('/api/cron', cronLimiter);
+    app.get('/api/cron/tick', (req, res) => res.json({ ok: true }));
+    const { server, url } = await new Promise((resolve) => {
+        const s = app.listen(0, () => resolve({ server: s, url: `http://127.0.0.1:${s.address().port}` }));
+    });
+    try {
+        const me = newClient();
+        for (let i = 0; i < 30; i++) assert.strictEqual((await hit(url, '/api/cron/tick', 'GET', me)).status, 200);
+        const blocked = await hit(url, '/api/cron/tick', 'GET', me);
+        assert.strictEqual(blocked.status, 429);
+        assert.match((await blocked.json()).error, /Too many requests/);
+        assert.strictEqual((await hit(url, '/api/cron/tick', 'GET', newClient())).status, 200);
+    } finally { server.close(); }
 });

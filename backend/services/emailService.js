@@ -3,8 +3,7 @@ const {
     sendVerificationEmailQueued, 
     sendPasswordResetCodeQueued,
     getEmailQueueStats,
-    getEmailHealth,
-    clearEmailQueue
+    getEmailHealth
 } = require('./emailQueueService');
 const { getProvider } = require('./emailProviders');
 
@@ -29,6 +28,5 @@ module.exports = {
     sendPasswordResetCode,
     getEmailQueueStats,
     getEmailHealth,
-    describeEmailProvider: () => getProvider().describe(),
-    clearEmailQueue
+    describeEmailProvider: () => getProvider().describe()
 };

@@ -39,4 +39,8 @@ module.exports = {
 
     // Endpoints that check a 6-digit code: stops guessing it.
     codeLimiter: limiter(15 * MIN, 10, 'Too many wrong codes. Please wait 15 minutes and try again.'),
+
+    // The outside reminder trigger and the operator endpoints (all behind CRON_SECRET). A pinger
+    // every 5 minutes uses 3 of these; the rest is room for wrong-key guessing to be noticed.
+    cronLimiter: limiter(15 * MIN, 30, 'Too many requests, please slow down and try again in a few minutes.'),
 };

@@ -3,9 +3,9 @@ const express = require('express');
 const { corsMiddleware } = require('./middleware/cors');
 const helmet = require('helmet');
 const compression = require('compression');
-const { initialize, healthCheck: dbHealthCheck, getPoolStats, closePool } = require('./config/database');
+const { initialize, closePool } = require('./config/database');
 const { startNotificationScheduler } = require('./services/notificationScheduler');
-const { getEmailQueueStats, clearEmailQueue, describeEmailProvider } = require('./services/emailService');
+const { describeEmailProvider } = require('./services/emailService');
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
@@ -25,6 +25,8 @@ const habitRoutes = require('./routes/habitRoutes');
 const studyHoursRoutes = require('./routes/studyHoursRoutes');
 const notifyRoutes = require('./routes/notifyRoutes');
 const preferencesRoutes = require('./routes/preferencesRoutes');
+const cronRoutes = require('./routes/cronRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -90,7 +92,7 @@ app.use(compression({
 // limited per account below.)
 app.set('trust proxy', Number(process.env.TRUST_PROXY_HOPS) || 2);
 
-const { globalLimiter, loginLimiter, loginEmailLimiter, emailLimiter, codeLimiter } = require('./middleware/rateLimiters');
+const { globalLimiter, loginLimiter, loginEmailLimiter, emailLimiter, codeLimiter, cronLimiter } = require('./middleware/rateLimiters');
 
 app.use('/api/', globalLimiter);
 app.use('/api/auth/login', loginLimiter);
@@ -160,6 +162,8 @@ app.use('/api/habits', habitRoutes);
 app.use('/api/study-hours', studyHoursRoutes);
 app.use('/api/notify', notifyRoutes);
 app.use('/api/preferences', preferencesRoutes);
+// Outside reminder trigger (CRON_SECRET). The request logger above prints the path only, never the query string.
+app.use('/api/cron', cronLimiter, cronRoutes);
 
 // ==============================================
 // HEALTH CHECK
@@ -175,45 +179,14 @@ app.get('/api/health', (req, res) => {
     });
 });
 
-app.get('/api/health/detailed', async (req, res) => {
-    const dbHealth = await dbHealthCheck();
-    const poolStats = await getPoolStats();
-    const emailStats = getEmailQueueStats();
-    
-    res.json({
-        status: 'OK',
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        database: dbHealth,
-        pool: poolStats,
-        emailQueue: emailStats,
-        cors: 'enabled',
-        rateLimiting: 'enabled'
-    });
-});
-
-// Email queue endpoints
-app.get('/api/email/queue/stats', (req, res) => {
-    try {
-        const stats = getEmailQueueStats();
-        res.json({ success: true, data: stats });
-    } catch (err) {
-        res.status(500).json({ error: 'Failed to get queue statistics' });
-    }
-});
-
-app.delete('/api/email/queue/clear', (req, res) => {
-    try {
-        const cleared = clearEmailQueue();
-        res.json({ success: true, message: `Cleared ${cleared} emails from queue` });
-    } catch (err) {
-        res.status(500).json({ error: 'Failed to clear queue' });
-    }
-});
+// Operator endpoints (CRON_SECRET, fail closed): /api/health/detailed and /api/email/queue/stats.
+// There is no endpoint that clears the email queue.
+app.use(['/api/health/detailed', '/api/email/queue'], cronLimiter);
+app.use('/api', adminRoutes);
 
 // Error handling
 app.use((req, res) => {
-    res.status(404).json({ error: 'Route not found', path: req.originalUrl });
+    res.status(404).json({ error: 'Route not found', path: req.originalUrl.split('?')[0] }); // never echo a ?key= back
 });
 
 app.use((err, req, res, next) => {
