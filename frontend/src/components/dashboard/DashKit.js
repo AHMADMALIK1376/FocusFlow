@@ -7,8 +7,8 @@ export function PageShell({ children }) {
   return <div className="w-full px-3 sm:px-5 md:px-6 pb-10 pt-4">{children}</div>;
 }
 
-// Page header with title + optional subtitle and right-side actions.
-export function PageHeader({ title, subtitle, children }) {
+// Page header with title + optional subtitle and right-side actions. mascot={false} for a page that draws its own.
+export function PageHeader({ title, subtitle, children, mascot = true }) {
   return (
     <header className="flex flex-wrap items-end justify-between gap-4 mb-6">
       <div className="flex-1 min-w-[14rem]">
@@ -17,7 +17,7 @@ export function PageHeader({ title, subtitle, children }) {
       </div>
       <div className="flex items-end gap-3 ml-auto">
         {children && <div className="flex items-center gap-2">{children}</div>}
-        <PageMascot />
+        {mascot && <PageMascot />}
       </div>
     </header>
   );
