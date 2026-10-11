@@ -6,6 +6,38 @@ Update this file with every change.
 
 ---
 
+## 2026-10-10 — Reminders and email on Render's free plan, and the unexpected sign-out
+
+### Email goes out over HTTPS, behind `EMAIL_PROVIDER`
+- **Why:** Render's free plan blocks outbound SMTP (ports 25, 465, 587), so no email ever left: not sign-up codes, not reminders. The queue accepted the mail and the failure was only logged.
+- **Decided:** `services/emailProviders.js` has three senders chosen by `EMAIL_PROVIDER`: `smtp` (default, unchanged, for local use), `gmail-api` (Gmail API with an OAuth refresh token) and `apps-script` (a small Google Apps Script web app, `docs/email-relay/Code.gs`, sending with `MailApp`). Everything stays free.
+- **Recommended:** Apps Script. No Google Cloud project, and the token cannot expire. The Gmail API route is documented too, with the warning that a consent screen left in "Testing" cancels the token after 7 days.
+- **Rejected:** a paid mail service (rule: no paid services); a custom domain (not buying one); a third-party free relay (another account to trust and another limit to hit).
+
+### Email failures are now reported honestly
+- Sign-up, resend and forgot-password wait for the real result (up to 14 s) with no retry in the queue, and answer "We couldn't send your verification email right now" when it fails, instead of "check your inbox". HTTP status is still 500, code `EMAIL_SEND_FAILED`.
+- A "Send test email" button and an "Is it working?" panel in Settings → Reminders show whether email is set up, working or failing, with the reason in plain words.
+- **Rejected:** hiding the failure and letting the user wait for a code that never comes.
+
+### Reminders survive a sleeping server
+- **Claim is released when every channel fails**, so the next pass retries (up to `MAX_ATTEMPTS`). Before, the claim in `NOTIFICATION_LOG` was taken first and a failed send was lost for good.
+- **Catch-up lasts until the event starts** (not 5 minutes), and the wording tells the truth ("starts in 20 minutes"), never "in 60". A class reminder is never sent after the class began. Questions such as "Did you attend?" can come up to 4 hours late.
+- **A pass runs 20 s after boot**, so waking the server sends what was missed.
+- **`GET /api/cron/tick`**, protected by `CRON_SECRET` (`?key=` or the `x-cron-secret` header, compared in constant time; 404 when the secret is unset, so the route does not exist by default). A free monitor (UptimeRobot, optionally cron-job.org too) visits it every 5 minutes: it wakes the server and runs one guarded pass. The guard stops two passes overlapping, and `NOTIFICATION_LOG` still guarantees one send, so extra visits are harmless.
+- **Heartbeat:** table `SCHEDULER_STATUS` (one row) records the last pass and the last email result, with ages worked out by the database. Settings shows "Reminder server: awake / asleep", phone pop-up devices and email state from `GET /api/notify/status` (signed in, scoped to the user's own devices). If the table is missing the app works, only the panel is empty. Migration: `backend/scripts/migrate-reminder-status.js` (additive and idempotent).
+- **Rejected:** moving the reminder job into a paid worker; a second server; relying on the app being open on the phone.
+
+### The unexpected sign-out
+- **Root cause not proven from code.** Findings: the cookie header passes through the Vercel rewrite intact, the cookie lasts 20 days and slides. So this was made safe and observable instead of guessed at.
+- **Server:** every 401 now logs one line with the reason (`NO_TOKEN`, `TOKEN_EXPIRED`, `INVALID_TOKEN`, `USER_NOT_FOUND`) and how old the login was. Look for lines starting with the lock sign and `401` in the Render logs. API answers carry `Cache-Control: no-store`.
+- **Client:** only definitive answers sign out. A missing cookie (`NO_TOKEN`) is first confirmed with `/auth/me`; an uncertain or failed answer never signs out. The reason is remembered (`services/signOutReason.js`) and the login page shows one calm line, e.g. "You were signed out because your session expired."
+- **Rejected:** longer cookie lifetime (does not address the cause); silently re-logging in (hides the problem).
+
+### Open admin endpoints closed
+Two diagnostic endpoints in `server.js` answered without a login. They now need `CRON_SECRET` or a signed-in user; if neither is configured they are off. **Rejected:** leaving them open because they exposed no secrets (they exposed internals and cost database work).
+
+---
+
 ## 2026-10-08 — Accessibility fixes (from the keyboard and screen-reader audit)
 
 Source: `.pipeline/audit-a11y.md`. Each item below was fixed in its own commit.

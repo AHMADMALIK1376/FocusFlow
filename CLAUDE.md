@@ -64,5 +64,8 @@ visual checklist to follow on the Vercel preview link.
 - Emails are built in `backend/services/emailTemplates.js` with icon PNGs from `backend/assets/icons` in five tints.
 - Mascots: sprite sheets in `frontend/public/mascots`, shown by `components/common/Mascot.js`.
 - Light/dark: `ThemeProvider` exists, but dark currently mirrors light (see the comment in `tokens.css`).
+- Email: Render free blocks SMTP. `backend/services/emailProviders.js` picks the sender from `EMAIL_PROVIDER` (`smtp`, `gmail-api`, `apps-script`); setup in `docs/email-relay/README.md`. Send results are real (`{ ok, permanent, message }`); never report an email as sent unless `ok`.
+- Reminders must survive a sleeping server: `/api/cron/tick` (needs `CRON_SECRET`) is hit every 5 minutes by a free monitor; heartbeat in `SCHEDULER_STATUS` (`schedulerStatus.js`), shown in Settings > Reminders. In SQL use `CAST(... AS INTEGER)`, never `::int` (the DB shim reads `::x` as a bind).
+- Only definitive auth failures sign the user out (`authFetch` in `services/api.js`); the reason is kept by `signOutReason.js`.
 - Logout still uses `window.confirm` (known, on the roadmap).
 - Jest cannot load `react-router-dom` 7: mock it as `jest.mock("react-router-dom", () => ({...}), { virtual: true })` (see existing tests). CRA resets mocks between tests.

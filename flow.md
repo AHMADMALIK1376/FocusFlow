@@ -169,6 +169,17 @@ Solid status fills (delete pop-up, danger `Button`, the done tick) take `text-on
 #### Answer pages (opened from a reminder)
 `GET /api/notify/answer` → `readToken` (bad or expired: default look, no database) → `lookOf(p.u)` (opens a connection with one try (`getConnection(1, 0)`) only to read the theme via `loadUserTheme`, waits at most 1.5 s for it, closes it in `finally` even if it arrives late, default look on any problem or delay) → `page()` with CSS from `pageCss(palette)` and icons from `iconSet('web', palette)`. `POST` saves the answer first, then `lookOn(connection, p.u)` reads the theme for the confirmation or error page (not after a database error). Both use the default look when anything fails.
 
+### Reminders on a free, sleeping server (10 Oct 2026)
+1. **Trigger:** the in-process `node-cron` (every minute while awake), a pass 20 s after boot, or the monitor calling `GET /api/cron/tick?key=...` every 5 minutes (`routes/cronRoutes.js` → `middleware/cronSecret.js` → `cronLimiter` → `runGuardedTick`).
+2. `runGuardedTick` skips if a pass is already running, else `runTick`: for each verified user, `computeDue` (window runs from the target time to the event start) → claim in `NOTIFICATION_LOG` → send on push / email / WhatsApp → `judge()` decides: any channel worked = keep the claim; all failed = `release()` so the next pass retries, up to `MAX_ATTEMPTS`. `saveResult` stores the outcome.
+3. `schedulerStatus.recordTick` writes the heartbeat row (`SCHEDULER_STATUS`).
+4. **Email path:** `notifyChannels.sendEmail` → `emailQueueService.addEmail(..., { wait: true })` → provider from `getProvider()` (`smtp`, `gmail-api`, `apps-script`) → result goes back as `{ ok, permanent, message }` and `recordEmail` updates the status row.
+5. **Sign-up codes:** `authController` → `sendCodeEmail` (waits up to 14 s, no queue retry) → `emailSent.ok` false gives the honest "couldn't send" reply.
+6. **Settings → Reminders → "Is it working?":** `ReminderStatus.js` → `notifyAPI.getStatus` → `GET /api/notify/status` → `readStatus` + `describeProvider` + the user's push devices → `summarise`. The button `POST /api/notify/test { kind: "email" }` sends a real test email and reports the true result.
+
+### Staying signed in (10 Oct 2026)
+`authFetch` → `authFetchOnce`. On 401 with code `NO_TOKEN` it asks `/auth/me` (`sessionStillValid`) before doing anything; only a definitive failure clears the signed-in marker, calls `rememberReason(code)` (`signOutReason.js`) and goes to login, where `LoginForm` shows the remembered reason once. Server side, `middleware/auth.js` `logAuthFailure` writes the 401 line.
+
 ---
 
 ## 3. Scanner flow (screenshot → saved data)

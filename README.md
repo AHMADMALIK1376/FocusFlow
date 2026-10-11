@@ -317,7 +317,12 @@ The Google button uses the OAuth client ID set in `frontend/src/Pages/Authpage.j
 | `PGPORT` | No | Defaults to `5432` |
 | `PGDATABASE` | No | Defaults to `postgres` |
 | `EMAIL_USER` | Yes | Gmail address that sends emails |
-| `EMAIL_PASS` | Yes | Gmail App Password (not your normal password) |
+| `EMAIL_PROVIDER` | In production | How email leaves the server: `smtp` (default, fine on your own computer), `gmail-api` or `apps-script`. **Render's free plan blocks SMTP**, so production needs one of the other two. See [`docs/email-relay/README.md`](docs/email-relay/README.md). |
+| `EMAIL_PASS` | With `smtp` | Gmail App Password (not your normal password) |
+| `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN` | With `gmail-api` | The Gmail API permission you grant once |
+| `APPS_SCRIPT_URL`, `APPS_SCRIPT_SECRET` | With `apps-script` | The web address of your Apps Script relay and its shared secret |
+| `CRON_SECRET` | Recommended in production | Private key for `/api/cron/tick` (the free keep-alive and reminder trigger) and the server's diagnostics. Unset means both are switched off. |
+| `REMINDER_SCHEDULER` | No | Set to `off` on a copy running on your own computer, so it does not also send reminders while the real server is live. |
 | `PORT` | No | API port. Defaults to `5000`, but the frontend expects `5555` locally. |
 | `APP_URL` | No | Frontend address used in email links. Defaults to `http://localhost:3000`. |
 | `PUBLIC_API_URL` | No | Public API address used in "answer from the email" links. Defaults to `http://localhost:5555`. |
@@ -443,7 +448,7 @@ It also handles common OCR mistakes. For example, a misread course code is match
 
 ## How reminders work
 
-Once a minute, `services/notificationScheduler.js` loads each verified user's data and asks `utils/reminders.js` what is due in that user's own timezone. `NOTIFICATION_LOG` makes sure each reminder is sent only once, and reminders missed while the server was briefly busy are still sent within a 5-minute catch-up window.
+Once a minute, `services/notificationScheduler.js` loads each verified user's data and asks `utils/reminders.js` what is due in that user's own timezone. `NOTIFICATION_LOG` makes sure each reminder is sent only once, and reminders missed while the server was asleep or busy are still sent as soon as it is back, up to the moment the event starts, with the real time left in the wording. A failed send is retried on the next pass.
 
 | Reminder | When (default) |
 |---|---|
@@ -460,7 +465,7 @@ Every timing and channel can be changed in **Settings > Reminders**, and some ca
 **Channels:**
 
 - **Web push:** free, needs VAPID keys and notification permission.
-- **Email:** through Gmail, using a send queue.
+- **Email:** through Gmail, using a send queue. It leaves the server over HTTPS (Apps Script or the Gmail API) because Render's free plan blocks SMTP; see [`docs/email-relay/README.md`](docs/email-relay/README.md). **Settings > Reminders > Is it working?** shows the state and has a "Send test email" button.
 - **WhatsApp:** optional, through CallMeBot's free personal API. Each user adds their own phone number and API key in Settings.
 
 ---
@@ -496,7 +501,7 @@ The planned production setup uses free tiers only:
 | Backend | **Render** (web service) | Root directory `backend`, start `npm start`. Add every variable from `backend/.env`, with `APP_URL` and `PUBLIC_API_URL` set to the real addresses. |
 | Database | **Supabase** | Run `node scripts/run-init.js` once against the production database. |
 
-> **Keep the backend awake.** Render's free tier sleeps after about 15 minutes without traffic, which would pause the once-a-minute reminder job. Use a free uptime monitor to call `/api/health` every few minutes.
+> **Keep the backend awake, and make email work.** Render's free tier sleeps after about 15 minutes without traffic, which pauses the reminder job, and it blocks the ports Gmail uses, so no email can leave over SMTP. Both are fixed in the code and need a few minutes of setup: follow [`docs/email-relay/README.md`](docs/email-relay/README.md). In short: set `EMAIL_PROVIDER` (with its credentials) and `CRON_SECRET` on Render, then add a free UptimeRobot monitor for `https://YOUR-RENDER-ADDRESS/api/cron/tick?key=YOUR_CRON_SECRET` every 5 minutes. **Settings → Reminders → Is it working?** shows whether the server is awake and email works.
 
 Once deployed, open the Vercel address on your phone and use **Add to Home screen** to install FocusFlow as an app.
 
