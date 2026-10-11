@@ -3,6 +3,7 @@
 // gone) must not leave the app half-working: the marker is cleared and the student is
 // sent to /login.
 import { subjectAPI, authAPI, getToken, setToken } from "./api";
+import { peekSignOutReason, rememberSignOutReason as rememberReason } from "./signOutReason";
 
 const makeResponse = (status, body) => ({
   ok: status < 400, status,
@@ -108,4 +109,84 @@ test("an older login the server rejects is signed out, not kept", async () => {
   await expect(subjectAPI.getAll()).rejects.toThrow();
   expect(localStorage.getItem("focus_token")).toBeNull();
   expect(assign).toHaveBeenCalledWith("/login");
+});
+
+
+// ---- never sign anyone out on a guess ----------------------------------------------------
+
+const urlOf = (call) => String(call[0]);
+
+test("NO_TOKEN but the session is alive: the request is tried again and the student stays signed in", async () => {
+  global.fetch = jest.fn()
+    .mockImplementationOnce(() => reply(401, { error: "Access denied.", code: "NO_TOKEN" }))   // the original request
+    .mockImplementationOnce(() => reply(200, { user: { email: "a@b.c" } }))                    // /auth/me: alive
+    .mockImplementationOnce(() => reply(200, [{ id: 1 }]));                                    // the retry
+  const out = await subjectAPI.getAll();
+  expect(out).toEqual([{ id: 1 }]);
+  expect(urlOf(global.fetch.mock.calls[1])).toBe("/api/auth/me");
+  expect(urlOf(global.fetch.mock.calls[2])).toBe("/api/subjects");
+  expect(getToken()).toBe("session");
+  expect(assign).not.toHaveBeenCalled();
+  expect(peekSignOutReason()).toBeNull();
+});
+
+test("NO_TOKEN and the server confirms there is no session: signed out, with the reason remembered", async () => {
+  global.fetch = jest.fn(() => reply(401, { error: "Access denied.", code: "NO_TOKEN" }));
+  await expect(subjectAPI.getAll()).rejects.toThrow();
+  expect(global.fetch).toHaveBeenCalledTimes(2); // the request, then one confirmation
+  expect(getToken()).toBeNull();
+  expect(assign).toHaveBeenCalledWith("/login");
+  expect(peekSignOutReason().code).toBe("NO_TOKEN");
+});
+
+test("NO_TOKEN but the server can't be asked (offline, waking up, error): nobody is signed out on a guess", async () => {
+  for (const second of [() => Promise.reject(new TypeError("Failed to fetch")), () => reply(503, { error: "waking up" }), () => reply(500, { error: "boom" }), () => reply(429, { error: "slow down" })]) {
+    localStorage.setItem("focus_signedin", "1");
+    global.fetch = jest.fn()
+      .mockImplementationOnce(() => reply(401, { error: "Access denied.", code: "NO_TOKEN" }))
+      .mockImplementationOnce(second);
+    await expect(subjectAPI.getAll()).rejects.toThrow();
+    expect(getToken()).toBe("session");
+    expect(assign).not.toHaveBeenCalled();
+    expect(peekSignOutReason()).toBeNull();
+  }
+});
+
+test("definitive answers (expired, invalid, deleted account) sign out at once, with no extra check", async () => {
+  for (const code of ["TOKEN_EXPIRED", "INVALID_TOKEN", "USER_NOT_FOUND"]) {
+    localStorage.setItem("focus_signedin", "1");
+    assign.mockClear();
+    global.fetch = jest.fn(() => reply(401, { error: "x", code }));
+    await expect(subjectAPI.getAll()).rejects.toThrow();
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect(getToken()).toBeNull();
+    expect(peekSignOutReason().code).toBe(code);
+    expect(assign).toHaveBeenCalledWith("/login");
+  }
+});
+
+test("a server error or a timeout is never a reason to sign out", async () => {
+  for (const make of [() => reply(500, { error: "boom" }), () => reply(502, { error: "bad gateway" }), () => reply(503, { error: "waking up" }), () => reply(504, { error: "timeout" })]) {
+    global.fetch = jest.fn(make);
+    await expect(subjectAPI.getAll()).rejects.toThrow();
+    expect(getToken()).toBe("session");
+  }
+  global.fetch = jest.fn(() => Promise.reject(new TypeError("Failed to fetch")));
+  await expect(subjectAPI.getAll()).rejects.toThrow();
+  expect(getToken()).toBe("session");
+  expect(assign).not.toHaveBeenCalled();
+});
+
+test("pressing Log out is the student's own choice: no reason is recorded", () => {
+  global.fetch = jest.fn(() => Promise.resolve({ ok: true }));
+  authAPI.logout();
+  expect(getToken()).toBeNull();
+  expect(peekSignOutReason()).toBeNull();
+});
+
+test("signing in again forgets an old reason", () => {
+  rememberReason("TOKEN_EXPIRED");
+  expect(peekSignOutReason()).not.toBeNull();
+  setToken("session");
+  expect(peekSignOutReason()).toBeNull();
 });

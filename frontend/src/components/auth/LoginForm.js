@@ -1,8 +1,9 @@
 // src/components/auth/LoginForm.js
-import React, { useState } from "react";
-import { TriangleAlert } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Info, TriangleAlert } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useUser } from "./UserContext";
+import { peekSignOutReason, clearSignOutReason, describeSignOut } from "../../services/signOutReason";
 
 export default function LoginForm() {
   const { login, isLoading, error, clearError } = useUser();
@@ -10,6 +11,12 @@ export default function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [requiresVerification, setRequiresVerification] = useState(false);
+  // If the app had to sign this student out (not their own Log out), say why, once.
+  const [signedOutNote] = useState(() => {
+    const r = peekSignOutReason();
+    return r ? describeSignOut(r.code) : null;
+  });
+  useEffect(() => { clearSignOutReason(); }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -37,6 +44,12 @@ export default function LoginForm() {
       <form onSubmit={handleSubmit} className="w-full flex flex-col items-center animate-in fade-in slide-in-from-left-4">
         <h2 className="text-2xl font-black text-ink mb-1">Welcome Back</h2>
         <p className="text-muted text-xs font-bold mb-6 uppercase tracking-widest">Reconnect with goals</p>
+
+        {signedOutNote && !error && (
+          <div role="status" className="w-[85%] mb-4 p-3 bg-surface-2 shadow-neu-inset text-ink rounded-token-sm text-xs font-bold text-center leading-relaxed">
+            <Info size={14} className="inline -mt-0.5 mr-1.5 text-brand" />{signedOutNote}
+          </div>
+        )}
 
         {error && (
           <div className="w-[85%] mb-4 p-3 bg-focus/10 border border-focus/30 text-focus rounded-token-sm text-sm font-bold text-center">

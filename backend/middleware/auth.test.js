@@ -127,3 +127,51 @@ test('no login at all is refused', async () => {
     assert.equal(r.code, 401);
     assert.equal(r.body.code, 'NO_TOKEN');
 });
+
+// ---- why was someone told to sign in again? (one log line per 401, never the token) ----
+function captureWarnings(fn) {
+    const lines = [];
+    const original = console.warn;
+    console.warn = (...a) => lines.push(a.join(' '));
+    return fn().then((r) => ({ r, lines }), (e) => { throw e; }).finally(() => { console.warn = original; });
+}
+
+test('every 401 leaves one log line with the reason, how the login arrived and how old it was', async () => {
+    auth.clearUserCache();
+    // deleted account, login in a cookie, issued 3 days ago
+    const old = jwt.sign({ userId: 2, email: 'a@b.c', iat: Math.floor(Date.now() / 1000) - 3 * 86400 }, process.env.JWT_SECRET, { expiresIn: '19d' });
+    const { lines } = await captureWarnings(() => call({ cookie: old }));
+    const line = lines.find((l) => l.includes('401'));
+    assert.ok(line, 'a 401 line was written');
+    assert.match(line, /401 USER_NOT_FOUND GET \/x/);
+    assert.match(line, /login via cookie, issued 3\.0 days ago/);
+    assert.ok(!line.includes(old), 'the token itself is never logged');
+});
+
+test('no login at all, an expired login and a forged login are each named', async () => {
+    const none = await captureWarnings(() => call({}));
+    assert.match(none.lines.find((l) => l.includes('401')), /401 NO_TOKEN GET \/x \(login via nothing\)/);
+
+    const expired = jwt.sign({ userId: 1, email: 'a@b.c', iat: Math.floor(Date.now() / 1000) - 5 * 86400 }, process.env.JWT_SECRET, { expiresIn: '1d' });
+    const e = await captureWarnings(() => call({ token: expired }));
+    const eLine = e.lines.find((l) => l.includes('401'));
+    assert.match(eLine, /401 TOKEN_EXPIRED/);
+    assert.match(eLine, /login via header, issued 5\.0 days ago, expired at \d{4}-/);
+
+    const forged = jwt.sign({ userId: 1, email: 'a@b.c' }, 'some-other-secret-some-other-secret-1', { expiresIn: '1d' });
+    const f = await captureWarnings(() => call({ cookie: forged }));
+    const fLine = f.lines.find((l) => l.includes('401'));
+    assert.match(fLine, /401 INVALID_TOKEN/);
+    assert.match(fLine, /invalid signature/);
+    assert.ok(!fLine.includes(forged));
+});
+
+test('a temporary database problem signs nobody out: the request goes through and no 401 is logged', async () => {
+    auth.clearUserCache();
+    dbDown = true;
+    try {
+        const { r, lines } = await captureWarnings(() => call({ cookie: tokenFor(1) }));
+        assert.equal(r.code, 200);
+        assert.equal(lines.filter((l) => l.includes('401')).length, 0);
+    } finally { dbDown = false; }
+});

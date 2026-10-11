@@ -6,6 +6,17 @@ const { readSessionToken, setSessionCookie, clearSessionCookie } = require('../u
 // A request that changes data and is signed in by cookie must carry this header.
 // Another website can't add a custom header without the browser asking this API
 // first (and the CORS lock says no), so it can't ride on a student's cookie.
+// Why was a student told "sign in again"? Every 401 leaves ONE line saying the reason, how the
+// login arrived, and how old it was. Never the token itself. (Look for "401" in the Render logs.)
+function logAuthFailure(reason, req, from, token, note) {
+    let age = '';
+    try {
+        const p = token ? jwt.decode(token) : null;
+        if (p && p.iat) age = `, issued ${((Date.now() / 1000 - p.iat) / 86400).toFixed(1)} days ago`;
+    } catch (e) { /* undecodable: no age */ }
+    console.warn(`🔐 401 ${reason} ${req.method} ${req.path} (login via ${from || 'nothing'}${age}${note ? ', ' + note : ''})`);
+}
+
 const SAFE_METHODS = ['GET', 'HEAD', 'OPTIONS'];
 const CSRF_HEADER = 'X-Requested-With';
 const CSRF_VALUE = 'FocusFlow';
@@ -67,7 +78,7 @@ module.exports = async (req, res, next) => {
     const { token, from } = readSessionToken(req);
 
     if (!token) {
-        console.warn(`⚠️ Unauthorized access attempt: No token provided for ${req.method} ${req.path}`);
+        logAuthFailure('NO_TOKEN', req, from, token);
         return res.status(401).json({ 
             error: 'Access denied. No token provided.',
             code: 'NO_TOKEN'
@@ -99,7 +110,7 @@ module.exports = async (req, res, next) => {
         }
         
         if (!(await userExists(decoded.userId))) {
-            console.warn(`⚠️ Token for a deleted account (user ${decoded.userId}) on ${req.method} ${req.path}`);
+            logAuthFailure('USER_NOT_FOUND', req, from, token, `user ${decoded.userId}`);
             if (from === 'cookie') clearSessionCookie(res);
             return res.status(401).json({
                 error: 'This account no longer exists. Please sign in again.',
@@ -119,7 +130,7 @@ module.exports = async (req, res, next) => {
     } catch (err) {
         // Handle specific JWT errors with appropriate messages
         if (err.name === 'TokenExpiredError') {
-            console.warn(`⚠️ Token expired for request: ${req.method} ${req.path}`);
+            logAuthFailure('TOKEN_EXPIRED', req, from, token, `expired at ${err.expiredAt && err.expiredAt.toISOString()}`);
             if (from === 'cookie') clearSessionCookie(res);
             return res.status(401).json({ 
                 error: 'Token expired. Please login again.',
@@ -129,7 +140,7 @@ module.exports = async (req, res, next) => {
         }
         
         if (err.name === 'JsonWebTokenError') {
-            console.warn(`⚠️ Invalid token: ${err.message} for ${req.method} ${req.path}`);
+            logAuthFailure('INVALID_TOKEN', req, from, token, err.message);
             if (from === 'cookie') clearSessionCookie(res);
             return res.status(401).json({ 
                 error: 'Invalid token.',

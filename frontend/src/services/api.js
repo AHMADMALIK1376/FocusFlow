@@ -1,4 +1,5 @@
 // src/services/api.js
+import { rememberSignOutReason, clearSignOutReason } from './signOutReason';
 
 // ==============================================
 // API CONFIGURATION
@@ -50,7 +51,28 @@ export const pingServer = async (timeoutMs = 6000) => {
 // no script (ours or anyone else's) can read it. What the page keeps is only a
 // "signed in" marker (SIGNED_IN_KEY), to decide which screens to show.
 // X-Requested-With is the CSRF guard the server asks for on every change.
-const authFetch = async (endpoint, options = {}) => {
+const authFetch = (endpoint, options = {}) => authFetchOnce(endpoint, options, false);
+
+// "NO_TOKEN" with a signed-in marker can be a one-off (the cookie not attached yet, an installed
+// app waking up). Before ending the session, ask the server once whether the session is alive.
+//   true  -> the session is fine, so the failed request is simply tried again
+//   false -> the server confirms there is no session
+//   null  -> could not tell (offline, server waking up): never sign anyone out on a guess
+async function sessionStillValid() {
+    try {
+        const res = await fetch(`${API_URL}/auth/me`, {
+            credentials: 'include',
+            headers: { 'X-Requested-With': 'FocusFlow' },
+        });
+        if (res.ok) return true;
+        if (res.status === 401) return false;
+        return null;
+    } catch {
+        return null;
+    }
+}
+
+const authFetchOnce = async (endpoint, options, retried) => {
     const signedIn = !!getToken();
     const legacyToken = localStorage.getItem(LEGACY_TOKEN_KEY);
     const headers = {
@@ -92,6 +114,12 @@ const authFetch = async (endpoint, options = {}) => {
     if (response.status === 401 && signedIn) {
         const body = await response.clone().json().catch(() => ({}));
         if (SESSION_OVER.includes(body.code)) {
+            if (body.code === 'NO_TOKEN' && !retried) {
+                const alive = await sessionStillValid();
+                if (alive === true) return authFetchOnce(endpoint, options, true);
+                if (alive === null) return handleResponse(response); // could not tell: stay signed in
+            }
+            rememberSignOutReason(body.code);
             clearAllUserData();
             if (!/^\/(login|signup|verify|forgot-password|reset-password)/.test(window.location.pathname)) {
                 window.location.assign('/login');
@@ -116,6 +144,7 @@ export const setToken = (token) => {
     localStorage.removeItem(LEGACY_TOKEN_KEY);
     if (token) {
         localStorage.setItem(SIGNED_IN_KEY, '1');
+        clearSignOutReason();
     } else {
         localStorage.removeItem(SIGNED_IN_KEY);
     }
@@ -348,6 +377,8 @@ export const notifyAPI = {
     subscribe: async (subscription) => authFetch('/notify/subscribe', { method: 'POST', body: JSON.stringify({ subscription }) }),
     unsubscribe: async (endpoint) => authFetch('/notify/unsubscribe', { method: 'POST', body: JSON.stringify({ endpoint }) }),
     sendTest: async (kind = 'basic') => authFetch('/notify/test', { method: 'POST', body: JSON.stringify({ kind }) }),
+    // Is the reminder server awake, is a phone subscribed, is email working? (Settings > Reminders)
+    getStatus: async () => authFetch('/notify/status'),
 };
 
 export const routineAPI = {
