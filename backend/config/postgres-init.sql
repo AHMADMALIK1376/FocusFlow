@@ -450,3 +450,17 @@ CREATE TABLE IF NOT EXISTS USER_PREFERENCES (
   data       TEXT NOT NULL,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Reminder heartbeat: is the reminder job awake, is email working (shown in Settings > Reminders).
+CREATE TABLE IF NOT EXISTS SCHEDULER_STATUS (
+  id              VARCHAR(30) PRIMARY KEY,
+  last_tick_at    TIMESTAMP,
+  last_tick_ms    INTEGER,
+  last_tick_sent  INTEGER DEFAULT 0,
+  last_tick_error TEXT,
+  email_ok_at     TIMESTAMP,
+  email_error     TEXT,
+  email_error_at  TIMESTAMP,
+  updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+ALTER TABLE NOTIFICATION_LOG ADD COLUMN IF NOT EXISTS result TEXT;

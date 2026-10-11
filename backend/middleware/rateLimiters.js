@@ -24,6 +24,9 @@ module.exports = {
     // Wrong passwords only: a successful login does not count.
     loginLimiter: limiter(15 * MIN, 10, 'Too many login attempts. Please wait 15 minutes and try again.', { skipSuccessfulRequests: true }),
 
+    // The outside reminder trigger (a pinger every 5 minutes) is far below this; it only stops floods.
+    cronLimiter: limiter(5 * MIN, 30, 'Too many requests.'),
+
     // The same limit per ACCOUNT: password guessing against one email is stopped
     // however many addresses it comes from. Mounted after the body is parsed.
     loginEmailLimiter: limiter(15 * MIN, 10, 'Too many login attempts. Please wait 15 minutes and try again.', {

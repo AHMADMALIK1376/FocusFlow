@@ -5,6 +5,7 @@ import { useToast } from "../../components/ui/Toast";
 import { notifyAPI } from "../../services/api";
 import { PanelLoading } from "../../components/common/LoadingSpinner";
 import { pushStatus, enablePush, disablePush } from "./push";
+import ReminderStatus from "./ReminderStatus";
 
 const LEADS = [
   { value: 15, label: "15 minutes before" },
@@ -79,10 +80,15 @@ export default function RemindersSettings() {
   const [push, setPush] = useState("off");
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
+  const [status, setStatus] = useState(null);
+  const [statusError, setStatusError] = useState("");
+
+  const loadStatus = () => notifyAPI.getStatus().then((x) => { setStatus(x); setStatusError(""); }).catch((e) => setStatusError(e.message));
 
   useEffect(() => {
     notifyAPI.getSettings().then(setS).catch((e) => setError(e.message));
     pushStatus().then(setPush).catch(() => setPush("unsupported"));
+    loadStatus();
   }, []);
 
   if (error && !s) return <p className="text-sm text-focus">{error}</p>;
@@ -121,13 +127,31 @@ export default function RemindersSettings() {
     const { result } = await notifyAPI.sendTest(kind);
     const parts = [];
     if (result.push) parts.push(result.push.devices ? `pop-up to ${result.push.sent}/${result.push.devices} device(s)` : "no device has pop-ups on");
-    if (result.email) parts.push(result.email.queued ? "email sent" : "email failed");
+    if (result.email) parts.push(result.email.delivered === false || result.email.error || !result.email.queued ? "email failed" : "email sent");
     if (result.whatsapp) parts.push(result.whatsapp.ok ? "WhatsApp sent" : "WhatsApp failed");
     toast(`Test: ${parts.join(" · ")}`, { tone: "success" });
   });
 
+  // Email only, with the honest result (and the reason in plain words if it did not work).
+  const testEmail = () => run("email", async () => {
+    const r = await notifyAPI.sendTest("email");
+    const e = r.email || {};
+    if (r.success) {
+      toast(e.pending ? "The email is on its way. Give it a minute, and check spam too." : `Test email sent to ${e.to}. Check your inbox (and spam).`, { tone: "success" });
+    } else {
+      toast(`Email did not send: ${e.reason || "unknown reason"}`, { tone: "focus" });
+    }
+    await loadStatus();
+  });
+
   return (
     <div className="space-y-6">
+      {/* Is it working? */}
+      <div>
+        <h3 className="text-sm font-black text-ink uppercase tracking-wider mb-2">Is it working?</h3>
+        <ReminderStatus status={status} error={statusError} onTestEmail={testEmail} testing={busy === "email"} />
+      </div>
+
       {/* Where reminders go */}
       <div>
         <h3 className="text-sm font-black text-ink uppercase tracking-wider mb-2">Where to remind me</h3>

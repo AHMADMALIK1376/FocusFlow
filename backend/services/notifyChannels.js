@@ -66,10 +66,15 @@ function buildReminderEmail(n, appUrl, theme) {
   }
 }
 
+// Waits (up to 20 s) for the REAL outcome so a failed email can be retried on the next tick,
+// instead of being forgotten the moment it was queued.
 async function sendEmail(to, n, theme = null) {
   const { subject, html, text, attachments } = buildReminderEmail(n, APP_URL(), theme);
-  const queued = await sendBulkEmailQueued(to, subject, html, text, attachments);
-  return { queued: Boolean(queued) };
+  const r = await sendBulkEmailQueued(to, subject, html, text, attachments, { wait: true, waitMs: 20000, retry: false });
+  if (r && typeof r === 'object') {
+    return { queued: Boolean(r.queued), delivered: r.delivered, pending: r.pending, error: r.error };
+  }
+  return { queued: Boolean(r) };
 }
 
 // WhatsApp (plain text — no icons): *bold* headline, one fact per line, then

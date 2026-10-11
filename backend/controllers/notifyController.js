@@ -2,7 +2,9 @@ const jwt = require('jsonwebtoken');
 const { getConnection } = require('../config/database');
 const { generateId } = require('../utils/helpers');
 const { DEFAULT_SETTINGS, localParts, toMinutes, attendanceReport, attendanceView } = require('../utils/reminders');
-const { deliver, escapeHtml, pushReady } = require('../services/notifyChannels');
+const { deliver, sendEmail, escapeHtml, pushReady } = require('../services/notifyChannels');
+const { describeProvider } = require('../services/emailProviders');
+const { readStatus, summarise } = require('../services/schedulerStatus');
 const { reportBody, iconSet, LOGO_ATTACHMENT } = require('../services/emailTemplates');
 const { DEFAULT_PALETTE, emailPalette, loadUserTheme } = require('../services/emailTheme');
 const { hexToRgb } = require('../services/theme/color');
@@ -159,6 +161,29 @@ exports.unsubscribe = async (req, res) => {
   }
 };
 
+// GET /api/notify/status: is the reminder server awake, are phones subscribed, is email working?
+// (the Settings > Reminders status panel). Never exposes secrets.
+exports.getStatus = async (req, res) => {
+  let connection;
+  try {
+    connection = await getConnection();
+    const devices = await connection.execute(
+      `SELECT COUNT(*) AS c FROM PUSH_SUBSCRIPTIONS WHERE user_id = :userId`,
+      { userId: req.user.userId }
+    );
+    const status = await readStatus();
+    res.json({
+      ...summarise(status, describeProvider(process.env), devices.rows[0].C, { uptime: process.uptime() }),
+      keepAlive: { triggerConfigured: Boolean(process.env.CRON_SECRET) },
+    });
+  } catch (err) {
+    console.error('Get reminder status error:', err);
+    res.status(500).json({ error: 'Failed to load the reminder status.' });
+  } finally {
+    if (connection) await connection.close();
+  }
+};
+
 // POST /api/notify/test  { kind: 'basic' | 'attendance' | 'submit' | 'quiz' }
 // Sends a sample right now so the student can check every channel works.
 // The question tests use a real subject / item, so answering really saves.
@@ -174,6 +199,33 @@ exports.sendTest = async (req, res) => {
     const firstSubject = async () => (await connection.execute(
       `SELECT subject_id, name FROM SUBJECTS WHERE user_id = :userId AND is_archived = 0 ORDER BY name LIMIT 1`, { userId }
     )).rows[0];
+
+    const basicTest = () => ({
+      kind: 'test', title: 'FocusFlow reminders are working', body: `This is how your class reminders will look.\nIt is ${now.weekday}, ${now.date} in ${settings.timezone}.`, url: '/settings',
+      view: {
+        headline: 'Your reminders are working!',
+        sub: "This is how FocusFlow will nudge you before classes, exams and deadlines.",
+        facts: [
+          { icon: 'calendar-days', label: 'Today', value: niceDate(now.date) },
+          { icon: 'globe', label: 'Time zone', value: settings.timezone },
+        ],
+      },
+    });
+
+    // Email only, with the honest outcome in plain words (this is what the Settings button shows).
+    if (kind === 'email') {
+      const to = user.rows[0] && user.rows[0].EMAIL;
+      const setup = describeProvider(process.env);
+      if (!to) return res.json({ success: false, email: { ok: false, reason: 'Your account has no email address.' } });
+      if (!setup.configured) return res.json({ success: false, email: { ok: false, reason: setup.note || 'Email is not set up on the server.' } });
+      const note = withAnswerLink({ key: `test:email:${Date.now()}`, ...basicTest() }, userId);
+      const r = await sendEmail(to, note, await loadUserTheme(connection, userId));
+      const ok = r.delivered === true || Boolean(r.pending);
+      return res.json({
+        success: ok,
+        email: { ok, pending: Boolean(r.pending), provider: setup.provider, to, reason: ok ? null : (r.error || 'The email could not be sent.') },
+      });
+    }
 
     let n;
     if (kind === 'attendance') {
@@ -207,17 +259,7 @@ exports.sendTest = async (req, res) => {
         view: { headline: `How did ${e.TITLE} go?`, sub: 'This is a test — marks you enter really go into Grades.' },
       };
     } else {
-      n = {
-        kind: 'test', title: 'FocusFlow reminders are working', body: `This is how your class reminders will look.\nIt is ${now.weekday}, ${now.date} in ${settings.timezone}.`, url: '/settings',
-        view: {
-          headline: 'Your reminders are working!',
-          sub: "This is how FocusFlow will nudge you before classes, exams and deadlines.",
-          facts: [
-            { icon: 'calendar-days', label: 'Today', value: niceDate(now.date) },
-            { icon: 'globe', label: 'Time zone', value: settings.timezone },
-          ],
-        },
-      };
+      n = basicTest();
     }
     n = withAnswerLink({ key: `test:${kind}:${Date.now()}`, ...n }, userId);
     const result = await deliver(connection, { userId, email: user.rows[0] && user.rows[0].EMAIL }, settings, n);

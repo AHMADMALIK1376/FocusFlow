@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { localParts, toMinutes, fmt12, computeDue, attendanceReport, DEFAULT_SETTINGS } = require('./reminders');
+const { localParts, toMinutes, fmt12, computeDue, attendanceReport, DEFAULT_SETTINGS, isDue, saidLead } = require('./reminders');
 
 // Tuesday 2026-10-06 in Pakistan (UTC+5).
 const at = (hhmm, date = '2026-10-06') => localParts(new Date(`${date}T${hhmm}:00+05:00`), 'Asia/Karachi');
@@ -70,7 +70,8 @@ test('digest fires at the chosen time with today\'s classes in order, deadlines 
 test('digest respects a custom time (6 AM) and is off otherwise', () => {
   const s = { ...DEFAULT_SETTINGS, digestTime: '06:00' };
   assert.ok(computeDue({ now: at('06:00'), settings: s, classes: CLASSES }).some((n) => n.kind === 'digest'));
-  assert.ok(!computeDue({ now: at('07:00'), settings: s, classes: CLASSES }).some((n) => n.kind === 'digest'));
+  assert.ok(!computeDue({ now: at('05:59'), settings: s, classes: CLASSES }).some((n) => n.kind === 'digest'), 'not before the chosen time');
+  assert.ok(!computeDue({ now: at('10:01'), settings: s, classes: CLASSES }).some((n) => n.kind === 'digest'), 'not hours later');
   const off = { ...s, digestEnabled: false };
   assert.ok(!computeDue({ now: at('06:00'), settings: off, classes: CLASSES }).some((n) => n.kind === 'digest'));
 });
@@ -82,17 +83,55 @@ test('digest on a day with no classes says so', () => {
 });
 
 test('class reminder exactly 1 hour before start', () => {
-  const list = due(at('12:15'));
+  const list = due(at('12:15')).filter((n) => n.kind === 'class');
   assert.deepEqual(kinds(list), ['class']);
   assert.equal(list[0].key, 'class:cc:2026-10-06');
   assert.equal(list[0].title, 'Compiler Construction in 1 hour');
   assert.equal(list[0].body, '1:15 PM–3:20 PM · Room LR26');
-  assert.equal(due(at('12:14')).length, 0, 'not early');
+  assert.equal(due(at('12:14')).filter((n) => n.kind === 'class').length, 0, 'not early');
 });
 
-test('catch-up window: still sent if the server was a few minutes late, never after 5 min', () => {
-  assert.equal(due(at('12:19')).filter((n) => n.kind === 'class').length, 1);
-  assert.equal(due(at('12:20')).filter((n) => n.kind === 'class').length, 0);
+test('a class reminder is still sent late, until the class starts, and says the real minutes left', () => {
+  const cls = (hhmm) => due(at(hhmm)).filter((n) => n.kind === 'class');
+  assert.equal(cls('12:19')[0].title, 'Compiler Construction in 1 hour', 'a few minutes late still reads as planned');
+  assert.equal(cls('12:25')[0].title, 'Compiler Construction in 50 minutes');
+  assert.equal(cls('12:55')[0].title, 'Compiler Construction in 20 minutes');
+  assert.match(cls('12:55')[0].view.sub, /Starts in 20 minutes/);
+  assert.equal(cls('13:14')[0].title, 'Compiler Construction in 1 minute');
+  assert.equal(cls('13:15').length, 0, 'never once the class has started');
+  assert.equal(cls('13:30').length, 0);
+});
+
+test('server asleep for 0, 10, 40 and 70 minutes: reminders catch up while they still matter', () => {
+  const classTitles = (hhmm) => due(at(hhmm)).filter((n) => n.kind === 'class').map((n) => n.title);
+  // CC starts 13:15, reminder planned 12:15. The server wakes at:
+  assert.deepEqual(classTitles('12:15'), ['Compiler Construction in 1 hour']);        // 0 minutes late
+  assert.deepEqual(classTitles('12:25'), ['Compiler Construction in 50 minutes']);    // 10 late
+  assert.deepEqual(classTitles('12:55'), ['Compiler Construction in 20 minutes']);    // 40 late
+  assert.deepEqual(classTitles('13:25'), []);                                          // 70 late: the class began, nothing to say
+});
+
+test('questions and the morning summary stay due for a few hours, then stop', () => {
+  const att = (hhmm) => due(at(hhmm)).filter((n) => n.kind === 'attendance' && n.data.subjectId === 'S-CC').length;
+  assert.equal(att('15:20'), 1);
+  assert.equal(att('18:00'), 1, 'asleep through the afternoon: still worth asking');
+  assert.equal(att('19:21'), 0, 'not after 4 hours');
+  assert.equal(due(at('10:30')).filter((n) => n.kind === 'digest').length, 1);
+  assert.equal(due(at('11:01')).filter((n) => n.kind === 'digest').length, 0);
+});
+
+test('isDue and saidLead basics', () => {
+  assert.equal(isDue(100, 100), true);
+  assert.equal(isDue(99, 100), false);
+  assert.equal(isDue(104, 100), true);
+  assert.equal(isDue(105, 100), false, 'default window is 5 minutes');
+  assert.equal(isDue(159, 100, 60), true);
+  assert.equal(isDue(160, 100, 60), false, 'a longer window ends where the event starts');
+  assert.equal(isDue(101, null), false);
+  assert.equal(saidLead(735, 795, 60), 60);
+  assert.equal(saidLead(738, 795, 60), 60);
+  assert.equal(saidLead(745, 795, 60), 50);
+  assert.equal(saidLead(795, 795, 60), 0);
 });
 
 test('custom lead time (30 min) and wording', () => {
@@ -125,7 +164,7 @@ test('exam reminder 1 hour before a timed exam; untimed ones only in the digest'
   assert.equal(exam.title, 'Quiz in 1 hour: Quiz 1');
   assert.equal(exam.body, '10:00 AM · AI · LR33');
   const untimed = computeDue({ now: at('09:00'), settings: DEFAULT_SETTINGS, exams: [{ ...EXAMS[0], time: null }] });
-  assert.equal(untimed.length, 0);
+  assert.equal(untimed.filter((n) => n.kind !== 'digest').length, 0);
 });
 
 test('routine reminder before the activity, only on its days', () => {
@@ -135,11 +174,11 @@ test('routine reminder before the activity, only on its days', () => {
 });
 
 test('each reminder type can be switched off', () => {
-  const off = { ...DEFAULT_SETTINGS, classReminders: false, attendancePrompts: false, deadlineReminders: false, routineReminders: false };
+  const off = { ...DEFAULT_SETTINGS, classReminders: false, attendancePrompts: false, deadlineReminders: false, routineReminders: false, quizFollowups: false, submitPrompts: false, digestEnabled: false };
   for (const t of ['12:15', '15:20', '09:00', '17:00']) {
     assert.equal(computeDue({ now: at(t), settings: off, classes: CLASSES, routines: ROUTINES, exams: EXAMS }).length, 0, t);
   }
-  const d = computeDue({ now: at('07:00'), settings: off, classes: CLASSES, routines: ROUTINES, exams: EXAMS, assignments: ASSIGNMENTS })[0];
+  const d = computeDue({ now: at('07:00'), settings: { ...off, digestEnabled: true }, classes: CLASSES, routines: ROUTINES, exams: EXAMS, assignments: ASSIGNMENTS })[0];
   assert.doesNotMatch(d.body, /Quiz|Due|Routine/);
 });
 
@@ -187,12 +226,12 @@ test('per-subject "remind before" overrides the global lead (0 = at start time)'
     { ...CLASSES[0], remindBefore: 15 },                 // CC 13:15 → 13:00
     { ...CLASSES[1], remindBefore: 0 },                  // lab 08:00 → 08:00
   ];
-  const at1300 = computeDue({ now: at('13:00'), settings: DEFAULT_SETTINGS, classes });
+  const at1300 = computeDue({ now: at('13:00'), settings: DEFAULT_SETTINGS, classes }).filter((n) => n.kind === 'class');
   assert.deepEqual(at1300.map((n) => n.title), ['Compiler Construction in 15 minutes']);
   assert.ok(!computeDue({ now: at('12:15'), settings: DEFAULT_SETTINGS, classes }).some((n) => n.kind === 'class'), 'global 1h no longer used');
-  assert.equal(computeDue({ now: at('08:00'), settings: DEFAULT_SETTINGS, classes })[0].title, 'ADBMS Lab now');
+  assert.equal(computeDue({ now: at('08:00'), settings: DEFAULT_SETTINGS, classes }).find((n) => n.kind === 'class').title, 'ADBMS Lab now');
   // Blank/null override falls back to the setting.
-  const fallback = computeDue({ now: at('12:15'), settings: DEFAULT_SETTINGS, classes: [{ ...CLASSES[0], remindBefore: null }] });
+  const fallback = computeDue({ now: at('12:15'), settings: DEFAULT_SETTINGS, classes: [{ ...CLASSES[0], remindBefore: null }] }).filter((n) => n.kind === 'class');
   assert.equal(fallback[0].title, 'Compiler Construction in 1 hour');
 });
 

@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const { getConnection } = require('../config/database');
 const { DEFAULT_SETTINGS, localParts, computeDue } = require('../utils/reminders');
 const { deliver } = require('./notifyChannels');
+const { recordTick } = require('./schedulerStatus');
 
 const API_URL = () => (process.env.PUBLIC_API_URL || 'http://localhost:5555').replace(/\/$/, '');
 
@@ -147,9 +148,56 @@ async function claim(connection, userId, key) {
   return r.rows.length > 0;
 }
 
+// What happened to one reminder on its channels:
+//   delivered: at least one channel really delivered it (a push reached a device, an email was
+//              accepted, a WhatsApp went out). An email still on its way counts as delivered.
+//   failed:    a channel was tried and did not work (a device rejected the push, the email provider
+//              refused, ...). Nothing tried and nothing to try (no phone, email off) is NOT a failure.
+function judge(result) {
+  let delivered = false;
+  let failed = false;
+  const { push, email, whatsapp } = result || {};
+  if (push) {
+    if (push.sent > 0) delivered = true;
+    else if (push.error || push.devices > 0) failed = true;
+  }
+  if (email) {
+    if (email.delivered === true || email.pending) delivered = true;
+    else if (email.delivered === false || email.error) failed = true;
+    else if (email.queued) delivered = true; // older shape: queued, outcome unknown
+  }
+  if (whatsapp) {
+    if (whatsapp.ok) delivered = true;
+    else failed = true;
+  }
+  return { delivered, failed };
+}
+
+// A reminder is claimed before it is sent so two servers can never both send it. If every channel
+// that was tried failed, the claim is given back so the next tick tries again (the reminder stays
+// due until the event starts, see utils/reminders.js), but never more than MAX_ATTEMPTS times.
+const MAX_ATTEMPTS = 6;
+const attempts = new Map();
+
+async function release(connection, userId, key) {
+  await connection.execute(`DELETE FROM NOTIFICATION_LOG WHERE user_id = :userId AND notif_key = :key`, { userId, key });
+}
+
+// Best effort: older databases have no "result" column yet (scripts/migrate-reminder-status.js).
+async function saveResult(connection, userId, key, result) {
+  try {
+    await connection.execute(
+      `UPDATE NOTIFICATION_LOG SET result = :result WHERE user_id = :userId AND notif_key = :key`,
+      { result: JSON.stringify(result).slice(0, 500), userId, key }
+    );
+  } catch (err) { /* column not there yet */ }
+}
+
 async function runTick(nowDate = new Date()) {
   let connection;
   const sent = [];
+  let tickError = null;
+  const started = Date.now();
   try {
     connection = await getConnection();
     const users = await connection.execute(
@@ -168,34 +216,80 @@ async function runTick(nowDate = new Date()) {
           if (!(await claim(connection, userId, n.key))) continue;
           n = withAnswerLink(n, userId);
           const result = await deliver(connection, { userId, email: row.USER_EMAIL }, settings, n);
-          sent.push({ userId, key: n.key, result });
-          console.log(`🔔 ${n.key} → ${JSON.stringify(result)}`);
+          const verdict = judge(result);
+          const id = `${userId}|${n.key}`;
+          const tries = (attempts.get(id) || 0) + 1;
+          attempts.set(id, tries);
+          if (!verdict.delivered && verdict.failed && tries < MAX_ATTEMPTS) {
+            await release(connection, userId, n.key); // try again on the next tick
+            console.warn(`⚠️ ${n.key} not delivered (try ${tries}/${MAX_ATTEMPTS}), will retry: ${JSON.stringify(result)}`);
+          } else {
+            attempts.delete(id);
+            await saveResult(connection, userId, n.key, result);
+            console.log(`🔔 ${n.key} → ${JSON.stringify(result)}`);
+          }
+          sent.push({ userId, key: n.key, result, ...verdict, retry: !verdict.delivered && verdict.failed && tries < MAX_ATTEMPTS });
         }
       } catch (err) {
+        tickError = err.message;
         console.error(`Reminder tick failed for user ${userId}:`, err.message);
       }
     }
   } catch (err) {
+    tickError = err.message;
     console.error('Reminder tick failed:', err.message);
   } finally {
     if (connection) await connection.close();
   }
+  if (attempts.size > 2000) attempts.clear(); // never grows without bound
+  await recordTick({ ms: Date.now() - started, sent: sent.filter((x) => x.delivered).length, error: tickError });
   return sent;
 }
 
+// One tick at a time. Used by the every-minute timer AND by the outside trigger (/api/cron/tick),
+// so two overlapping callers never run it twice.
 let running = false;
+async function runGuardedTick(nowDate) {
+  if (running) return { skipped: true };
+  running = true;
+  const t0 = Date.now();
+  try {
+    const sent = await runTick(nowDate);
+    return {
+      skipped: false,
+      ms: Date.now() - t0,
+      due: sent.length,
+      delivered: sent.filter((x) => x.delivered).length,
+      retrying: sent.filter((x) => x.retry).length,
+    };
+  } finally {
+    running = false;
+  }
+}
+
 function startNotificationScheduler() {
-  cron.schedule('* * * * *', async () => {
-    if (running) return; // never overlap ticks
-    running = true;
-    try { await runTick(); } finally { running = false; }
+  // For running a copy on your own computer while the real server is live: REMINDER_SCHEDULER=off
+  // stops this copy from also sending reminders (the outside /api/cron/tick still works).
+  if (String(process.env.REMINDER_SCHEDULER || '').toLowerCase() === 'off') {
+    console.log('⏸️ Reminder scheduler is OFF on this server (REMINDER_SCHEDULER=off)');
+    return;
+  }
+  cron.schedule('* * * * *', () => {
+    runGuardedTick().catch((err) => console.error('Reminder tick crashed:', err.message));
   });
   console.log('⏰ Reminder scheduler started (checks every minute)');
+  // A free server that was asleep catches up at once instead of waiting for the next minute mark.
+  setTimeout(() => {
+    runGuardedTick().catch((err) => console.error('Boot reminder tick crashed:', err.message));
+  }, 20000);
 }
 
 module.exports = {
   startNotificationScheduler,
   runTick,
+  runGuardedTick,
+  judge,
+  MAX_ATTEMPTS,
   loadSettings,
   rowToSettings,
   answerToken,

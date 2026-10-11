@@ -25,6 +25,8 @@ const habitRoutes = require('./routes/habitRoutes');
 const studyHoursRoutes = require('./routes/studyHoursRoutes');
 const notifyRoutes = require('./routes/notifyRoutes');
 const preferencesRoutes = require('./routes/preferencesRoutes');
+const cronRoutes = require('./routes/cronRoutes');
+const { requireCronSecret } = require('./middleware/cronSecret');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -91,6 +93,13 @@ app.use('/api/auth/login', loginLimiter);
 app.use(['/api/auth/register', '/api/auth/resend-verification', '/api/auth/forgot-password'], emailLimiter);
 app.use(['/api/auth/verify-email', '/api/auth/verify-reset-code', '/api/auth/reset-password'], codeLimiter);
 
+// Nothing under /api may be stored by a cache (browser, Vercel, anything between): the replies are
+// private to the signed-in student. The logo picture is public and may be cached.
+app.use('/api', (req, res, next) => {
+    if (req.path !== '/notify/logo.png') res.set('Cache-Control', 'no-store');
+    next();
+});
+
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -154,6 +163,7 @@ app.use('/api/habits', habitRoutes);
 app.use('/api/study-hours', studyHoursRoutes);
 app.use('/api/notify', notifyRoutes);
 app.use('/api/preferences', preferencesRoutes);
+app.use('/api/cron', cronRoutes);
 
 // ==============================================
 // HEALTH CHECK
@@ -169,7 +179,8 @@ app.get('/api/health', (req, res) => {
     });
 });
 
-app.get('/api/health/detailed', async (req, res) => {
+// Diagnostics and email-queue controls are for the owner only (CRON_SECRET), never public.
+app.get('/api/health/detailed', requireCronSecret(), async (req, res) => {
     const dbHealth = await dbHealthCheck();
     const poolStats = await getPoolStats();
     const emailStats = getEmailQueueStats();
@@ -187,7 +198,7 @@ app.get('/api/health/detailed', async (req, res) => {
 });
 
 // Email queue endpoints
-app.get('/api/email/queue/stats', (req, res) => {
+app.get('/api/email/queue/stats', requireCronSecret(), (req, res) => {
     try {
         const stats = getEmailQueueStats();
         res.json({ success: true, data: stats });
@@ -196,7 +207,7 @@ app.get('/api/email/queue/stats', (req, res) => {
     }
 });
 
-app.delete('/api/email/queue/clear', (req, res) => {
+app.delete('/api/email/queue/clear', requireCronSecret(), (req, res) => {
     try {
         const cleared = clearEmailQueue();
         res.json({ success: true, message: `Cleared ${cleared} emails from queue` });
