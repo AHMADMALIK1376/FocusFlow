@@ -43,42 +43,36 @@ const generateToken = (userId, email) => {
 // ==============================================
 // HELPER: Send verification email with retry
 // ==============================================
-const sendVerificationEmailWithRetry = async (email, code, maxRetries = 3) => {
+// sendEmail returns { ok, pending, permanent, error }: the REAL outcome (the email queue waits for it).
+// Two quick tries; no second try when the problem is permanent (email not set up, wrong credentials).
+const sendWithRetry = async (label, email, send, maxRetries = 2) => {
+    let last = { ok: false, error: 'unknown' };
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        console.log(`📧 Sending verification email to ${email} (attempt ${attempt}/${maxRetries})`);
-        const sent = await sendVerificationEmail(email, code);
-        if (sent) {
-            console.log(`✅ Verification email sent to ${email}`);
-            return true;
+        console.log(`📧 Sending ${label} email to ${email} (attempt ${attempt}/${maxRetries})`);
+        last = await send();
+        if (last.ok) {
+            console.log(`✅ ${label} email ${last.pending ? 'handed over (still sending)' : 'sent'} to ${email}`);
+            return last;
         }
-        if (attempt < maxRetries) {
-            console.log(`⚠️ Attempt ${attempt} failed, retrying in 2 seconds...`);
-            await new Promise(resolve => setTimeout(resolve, 2000));
-        }
+        console.error(`❌ ${label} email to ${email} failed: ${last.error}`);
+        if (last.permanent) break;
+        if (attempt < maxRetries) await new Promise((resolve) => setTimeout(resolve, 1000));
     }
-    console.error(`❌ Failed to send verification email to ${email} after ${maxRetries} attempts`);
-    return false;
+    console.error(`❌ Could not send the ${label} email to ${email}`);
+    return last;
 };
+
+const sendVerificationEmailWithRetry = (email, code) =>
+    sendWithRetry('verification', email, () => sendVerificationEmail(email, code));
 
 // ==============================================
 // HELPER: Send reset email with retry
 // ==============================================
-const sendResetEmailWithRetry = async (email, code, maxRetries = 3) => {
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        console.log(`📧 Sending password reset email to ${email} (attempt ${attempt}/${maxRetries})`);
-        const sent = await sendPasswordResetCode(email, code);
-        if (sent) {
-            console.log(`✅ Password reset email sent to ${email}`);
-            return true;
-        }
-        if (attempt < maxRetries) {
-            console.log(`⚠️ Attempt ${attempt} failed, retrying in 2 seconds...`);
-            await new Promise(resolve => setTimeout(resolve, 2000));
-        }
-    }
-    console.error(`❌ Failed to send password reset email to ${email} after ${maxRetries} attempts`);
-    return false;
-};
+const sendResetEmailWithRetry = (email, code) =>
+    sendWithRetry('password reset', email, () => sendPasswordResetCode(email, code));
+
+// For tests: the retry rules for the emails that carry sign-up and reset codes.
+exports._sendWithRetry = sendWithRetry;
 
 // ==============================================
 // REGISTER FUNCTION
@@ -129,9 +123,9 @@ exports.register = async (req, res) => {
                 
                 const emailSent = await sendVerificationEmailWithRetry(email, verificationCode);
                 
-                if (!emailSent) {
+                if (!emailSent.ok) {
                     return res.status(500).json({ 
-                        error: 'Failed to send verification email. Please try again later.',
+                        error: "We couldn't send your verification email right now. Please wait a minute and try again.",
                         code: 'EMAIL_SEND_FAILED'
                     });
                 }
@@ -167,11 +161,11 @@ exports.register = async (req, res) => {
         
         const emailSent = await sendVerificationEmailWithRetry(email, verificationCode);
         
-        if (!emailSent) {
+        if (!emailSent.ok) {
             await connection.execute(`DELETE FROM USERS WHERE user_id = :userId`, [userId]);
             await connection.execute(`DELETE FROM USER_STATS WHERE user_id = :userId`, [userId]);
             return res.status(500).json({ 
-                error: 'Failed to send verification email. Registration rolled back. Please try again.',
+                error: "We couldn't send your verification email, so your account was not created. Please wait a minute and try again.",
                 code: 'EMAIL_SEND_FAILED'
             });
         }
@@ -319,9 +313,9 @@ exports.resendVerificationCode = async (req, res) => {
         
         const emailSent = await sendVerificationEmailWithRetry(email, verificationCode);
         
-        if (!emailSent) {
+        if (!emailSent.ok) {
             return res.status(500).json({ 
-                error: 'Failed to send verification email. Please try again later.',
+                error: "We couldn't send your verification email right now. Please wait a minute and try again.",
                 code: 'EMAIL_SEND_FAILED'
             });
         }
@@ -443,9 +437,9 @@ exports.forgotPassword = async (req, res) => {
         
         const emailSent = await sendResetEmailWithRetry(email, resetCode);
         
-        if (!emailSent) {
+        if (!emailSent.ok) {
             return res.status(500).json({ 
-                error: 'Failed to send reset code. Please try again later.',
+                error: "We couldn't send your reset code right now. Please wait a minute and try again.",
                 code: 'EMAIL_SEND_FAILED'
             });
         }
