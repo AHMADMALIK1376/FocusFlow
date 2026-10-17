@@ -164,8 +164,8 @@ export default function ScanImportModal({ open, onClose, kind, ctx, onDone }) {
       // The timetable is a table: read it by position first (wrapped rows stay whole),
       // and use the plain text when the layout can't be found or gives no courses.
       const table = kind === subjectsScan;
-      const { text: plain, words } = await ocrPage(file, setProgress, table);
-      const rebuilt = table ? rebuildRows(words) : null;
+      const { text: plain, words, plainWords } = await ocrPage(file, setProgress, table);
+      const rebuilt = table ? rebuildRows(words, plainWords) : null;
       toReview(rebuilt && kind.parse(rebuilt, ctx, opts).length ? rebuilt : plain);
     } catch (e) {
       setError(e.message || "Text recognition failed. Check your connection and try again.");

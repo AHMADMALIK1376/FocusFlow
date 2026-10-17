@@ -24,19 +24,30 @@ function loadForOcr(file) {
   });
 }
 
-// Text plus (optionally) every word's box, for scanners that read a table by position.
+// Text plus (optionally) word boxes from two readings, for scanners that read a
+// table by position: "words" from sparse-text mode (reads wrapped cells right but
+// drops lone digits) and "plainWords" from block mode (also the `text`).
 export async function ocrPage(file, onProgress, withWords = false) {
   const { createWorker } = await import("tesseract.js");
+  const passes = withWords ? 2 : 1;
+  let pass = 0;
   const worker = await createWorker("eng", 1, {
-    logger: (m) => { if (m.status === "recognizing text") onProgress(m.progress); },
+    logger: (m) => { if (m.status === "recognizing text") onProgress((pass + m.progress) / passes); },
   });
   try {
-    // PSM 6 = read as one uniform block, row by row — keeps table rows intact.
-    await worker.setParameters({ tessedit_pageseg_mode: "6", preserve_interword_spaces: "1" });
     const canvas = await loadForOcr(file);
     // tesseract.js 7 only returns word boxes (as `blocks`) when asked.
+    let words = [];
+    if (withWords) {
+      // PSM 11 = sparse text: every word on its own, so wrapped cells are not mixed with their neighbours.
+      await worker.setParameters({ tessedit_pageseg_mode: "11", preserve_interword_spaces: "1" });
+      words = wordsFromOcr((await worker.recognize(canvas, {}, { text: true, blocks: true })).data);
+      pass = 1;
+    }
+    // PSM 6 = read as one uniform block, row by row — keeps table rows intact.
+    await worker.setParameters({ tessedit_pageseg_mode: "6", preserve_interword_spaces: "1" });
     const { data } = withWords ? await worker.recognize(canvas, {}, { text: true, blocks: true }) : await worker.recognize(canvas);
-    return { text: data.text, words: withWords ? wordsFromOcr(data) : [] };
+    return { text: data.text, words, plainWords: withWords ? wordsFromOcr(data) : [] };
   } finally {
     await worker.terminate();
   }

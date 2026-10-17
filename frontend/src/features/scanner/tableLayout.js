@@ -55,11 +55,8 @@ function readingOrder(items, lineH) {
   return lines.map((l) => l.words.sort((a, b) => a.x0 - b.x0).map((w) => w.text).join(" ")).join(" ");
 }
 
-/**
- * @param {Array<{text:string,bbox:{x0,y0,x1,y1}}>} rawWords
- * @returns {string|null} one tab-separated line per table row
- */
-export function rebuildRows(rawWords) {
+// One array of cell texts per table row, or null when the table is not found.
+function rebuildCells(rawWords) {
   const words = (rawWords || [])
     .map((w) => ({
       text: String(w.text || "").trim(),
@@ -81,9 +78,12 @@ export function rebuildRows(rawWords) {
     if (names.size >= 4 && (!header || names.size > header.names)) header = { names: names.size, line, cy: seed.cy };
   }
   if (!header) return null;
+  // A header often wraps over two lines ("Course" / "Code", "Credit" / "Hr"), so the
+  // columns named on the line just above or below belong to the header too.
+  const band = tagged.filter((w) => Math.abs(w.cy - header.cy) <= lineH * 1.6);
+  header = { ...header, line: band, cy: Math.max(...band.map((w) => w.cy)) };
 
-  // 2. Column spans from the header words; a boundary sits midway in the gap
-  // (never past the next header's left edge, if two headers overlap).
+  // 2. Column spans from the header words.
   const spans = {};
   for (const w of header.line) {
     const s = spans[w.col] || (spans[w.col] = { col: w.col, x0: w.x0, x1: w.x1 });
@@ -91,7 +91,9 @@ export function rebuildRows(rawWords) {
     s.x1 = Math.max(s.x1, w.x1);
   }
   const cols = Object.values(spans).sort((a, b) => a.x0 - b.x0);
-  const bounds = cols.map((c, i) => (i === 0 ? -Infinity : Math.min((cols[i - 1].x1 + c.x0) / 2, c.x0 - 1)));
+  // Text is left-aligned under its header, so a column starts a little before its
+  // header's left edge (not midway in the gap: long titles would spill into Credit).
+  const bounds = cols.map((c, i) => (i === 0 ? -Infinity : c.x0 - lineH * 0.6));
   const colIndex = (x) => {
     let idx = 0;
     bounds.forEach((b, i) => { if (x >= b) idx = i; });
@@ -134,5 +136,24 @@ export function rebuildRows(rawWords) {
     const r = edges.filter((e) => w.cy >= e).length;
     rows[r][colIndex(w.x0)].push(w);
   }
-  return rows.map((cells) => cells.map((c) => readingOrder(c, lineH)).join("\t")).join("\n");
+  return rows.map((cells) => cells.map((c) => readingOrder(c, lineH)));
+}
+
+/**
+ * Two readings of the same page are combined: "sparse" OCR reads wrapped cells
+ * best but drops lone digits (the credit hours), the plain block reading keeps
+ * those. Any cell the first reading left empty is filled from the second one.
+ * @param {Array<{text:string,bbox:{x0,y0,x1,y1}}>} rawWords
+ * @param {Array<{text:string,bbox:{x0,y0,x1,y1}}>} [otherWords]
+ * @returns {string|null} one tab-separated line per table row
+ */
+export function rebuildRows(rawWords, otherWords) {
+  const a = rebuildCells(rawWords);
+  const b = otherWords ? rebuildCells(otherWords) : null;
+  const main = a || b;
+  if (!main) return null;
+  if (a && b && a.length === b.length && a[0].length === b[0].length) {
+    a.forEach((cells, i) => cells.forEach((c, j) => { if (!c.trim()) cells[j] = b[i][j]; }));
+  }
+  return main.map((cells) => cells.join("\t")).join("\n");
 }

@@ -18,6 +18,15 @@ A portal row whose title wraps over 2 or 3 lines came out garbled ("Systems Lab 
 - **Rejected:** more text rules on the line output (wrong input; each rule fixes one table and breaks another); any paid or cloud OCR or AI (rule: free only); inferring columns from anchors alone when the header is missing (guesswork).
 - **Not proven on real OCR yet:** tests use synthetic word boxes that copy the real table's layout. The owner must scan the real screenshot once.
 
+### Tested on the owner's real screenshot (17 Oct, second round)
+The real OCR (Tesseract.js 7 in Node, the app's own settings) was run on the saved screenshot. Findings and fixes:
+- **Block mode (PSM 6) misreads wrapped cells** ("Mr. Hafiz Sohail Ahmad" became "viet Staal", a two-slot schedule became noise, "Advance Database Management Systems" became "Zaidi CE"). **Sparse mode (PSM 11)** reads every one of them correctly, but drops lone digits (the credit hours). So the timetable scan runs both passes and `rebuildRows(sparseWords, blockWords)` fills any cell the sparse reading left empty from the block reading. Cost: the scan takes about twice as long. Rejected: sparse only (no credits); block only (the wrong cells above); cropping and reading every cell separately (slower, needs cell borders).
+- **Two-line headers** ("Course / Code", "Credit / Hr"): the header band now includes the line above and below, otherwise the Credit column was lost and the credit number was glued to the teacher.
+- **Column edges** start just before each header's left edge instead of midway in the gap, so a long title ("... GRAPHICS LAB") no longer spills into Credit.
+- **Result on the real screenshot:** all 11 courses, credits, teachers, rooms and times correct, including both slots of the two-slot courses (checked at the app's exact scale, grey and contrast). A real-rows fixture and tests keep this.
+- **Room misreads:** a room that differs from the saved one by a single letter OCR confuses with a digit ("COMP LABS" for "COMP LAB8") is treated as the same room, so a re-scan does not overwrite a good room. "LR26" to "LR29" is still a change.
+- **Not covered:** a phone photo (skewed or blurred) was not tested; only a screenshot.
+
 ### The dashboard graph missed a new subject
 The graph is the dashboard "Classes Today" card and attendance popup. Its numbers come from `attendanceSummary` and `todaysClasses` in `AppContext`, fetched once at app start. The scanner only refreshed the page's own subject list. Fix: `AppContext.refreshSubjectData()` (re-fetches both without the full-screen loader, keeps the old numbers if a fetch fails), called by `TimetableImportModal` after a save, before the page's own refresh.
 - **Rejected:** re-fetching on every page change (heavier, flashes the loader).

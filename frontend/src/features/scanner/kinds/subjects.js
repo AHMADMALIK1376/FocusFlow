@@ -12,12 +12,24 @@ const DAY_SHORT = { Monday: "Mon", Tuesday: "Tue", Wednesday: "Wed", Thursday: "
 
 const validSlots = (list) => (list || []).filter((s) => s.day && s.start);
 
+// Letters OCR mistakes for a digit ("COMP LAB8" read as "COMP LABS"). A room that differs
+// only by one such letter is a misread, not a move; "LR26" to "LR29" is a real change.
+const LOOKS_LIKE = { S: "58", B: "8", O: "0", I: "1", L: "1", Z: "2", G: "6" };
+export function sameRoom(scanned, saved) {
+  const a = normCode(scanned);
+  const b = normCode(saved);
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  const diff = [...a].map((ch, i) => [ch, b[i]]).filter(([x, y]) => x !== y);
+  return diff.length === 1 && (LOOKS_LIKE[diff[0][0]] || "").includes(diff[0][1]);
+}
+
 // A scanned slot equals a saved one when day and start agree, and its end and
 // room either agree or weren't read at all.
 const sameSlot = (scanned, saved) =>
   scanned.day === saved.day && scanned.start === saved.start &&
   (!scanned.end || scanned.end === saved.end) &&
-  (!scanned.room || normCode(scanned.room) === normCode(saved.room));
+  (!scanned.room || sameRoom(scanned.room, saved.room));
 
 export function sameSchedule(saved, scanned) {
   const A = validSlots(saved);
