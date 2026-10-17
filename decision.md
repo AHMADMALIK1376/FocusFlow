@@ -6,6 +6,29 @@ Update this file with every change.
 
 ---
 
+## 2026-10-17 — Timetable scanner reads the table by position
+
+### The problem
+A portal row whose title wraps over 2 or 3 lines came out garbled ("Systems Lab Minhas Ue 08 00 11 05 Comp Lab4 M ," as a name, teacher lost). OCR reads line by line, and in a wrapped row the cells are vertically centred, so one row became several lines that mixed cells of neighbouring rows.
+
+### Decided
+- **Read the table by geometry (`features/scanner/tableLayout.js`).** Tesseract can return word boxes. The header row (Section, Course Code, Title, Credit Hr, Instructor, Schedule) gives the columns; each row is anchored by its section number or course code; every other word goes to the nearest row by vertical centre and to a column by its left edge; the cell's words are joined top to bottom. The result is tab-separated rows, which `parseTimetable` already handles. Free, on the device, no data leaves the phone.
+- **Safe fallback.** If the header is not found (fewer than 4 columns), there are no anchors, or too few words, or the rebuilt table gives no course, the old line-based reading is used. It can only help, never make a scan worse.
+- **Only the timetable scan asks for word boxes.** Grades, exams and assignments keep plain text (`ocrImage` unchanged; new `ocrPage(file, onProgress, withWords)`).
+- **Rejected:** more text rules on the line output (wrong input; each rule fixes one table and breaks another); any paid or cloud OCR or AI (rule: free only); inferring columns from anchors alone when the header is missing (guesswork).
+- **Not proven on real OCR yet:** tests use synthetic word boxes that copy the real table's layout. The owner must scan the real screenshot once.
+
+### The dashboard graph missed a new subject
+The graph is the dashboard "Classes Today" card and attendance popup. Its numbers come from `attendanceSummary` and `todaysClasses` in `AppContext`, fetched once at app start. The scanner only refreshed the page's own subject list. Fix: `AppContext.refreshSubjectData()` (re-fetches both without the full-screen loader, keeps the old numbers if a fetch fails), called by `TimetableImportModal` after a save, before the page's own refresh.
+- **Rejected:** re-fetching on every page change (heavier, flashes the loader).
+- **Same fix for hand-made changes:** `SubjectsPage` calls `refreshSubjectData()` after adding, editing, deleting and restoring a subject, so the dashboard never waits for a reload. Rejected: doing it inside `useSubjects` (every page and test that uses the hook would then need the app context).
+
+### Class times
+All times in the owner's table parse correctly (tested row by row: for example 11:10-01:14 is 11:10-13:14, 01:15-03:20 is 13:15-15:20). The wrong times seen came from the garbled row reading above. Two real bugs fixed: the OCR digit repair (`fixOcrDigits`) also rewrote letters in names ("MS. SIDRA" became "5. 51DRA"), it now only touches text that already holds a digit; and the calendar's "Today's lineup" tooltip showed raw 24-hour text ("14:45") and "No time set" when only a start existed, it now uses `fmtRange` like the rest of the app and the reminders.
+- **Left alone:** if a class's start time moved in a re-scan and the scan did not read the end time, the end stays blank (an old end against a new start would be a guess).
+
+---
+
 ## 2026-10-10 — Reminders and email on Render's free plan, and the unexpected sign-out
 
 ### Email goes out over HTTPS, behind `EMAIL_PROVIDER`

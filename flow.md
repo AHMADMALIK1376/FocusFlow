@@ -180,6 +180,13 @@ Solid status fills (delete pop-up, danger `Button`, the done tick) take `text-on
 ### Staying signed in (10 Oct 2026)
 `authFetch` → `authFetchOnce`. On 401 with code `NO_TOKEN` it asks `/auth/me` (`sessionStillValid`) before doing anything; only a definitive failure clears the signed-in marker, calls `rememberReason(code)` (`signOutReason.js`) and goes to login, where `LoginForm` shows the remembered reason once. Server side, `middleware/auth.js` `logAuthFailure` writes the 401 line.
 
+### Timetable scan (17 Oct 2026)
+1. `ScanImportModal` → for the timetable kind only `ocrPage(file, onProgress, true)` → `{ text, words }` (`wordsFromOcr` flattens Tesseract's blocks > paragraphs > lines > words).
+2. `rebuildRows(words)` (`tableLayout.js`): header line → column boundaries → row anchors (section number / course code) → each word to its row and column → tab-separated rows. If it returns `null` or yields no course, the plain `text` is used.
+3. `parseTimetable` → `assignColors` → `reconcile` against the saved subjects (new / changed / same; a blank or "TBA" scan never overwrites a saved value).
+4. On save, `TimetableImportModal` calls `useApp().refreshSubjectData()` (dashboard card and attendance graph), then the page's own refresh.
+5. Adding, editing, deleting or restoring a subject by hand on `SubjectsPage` does the same: after the change it calls `refreshSubjectData()`.
+
 ---
 
 ## 3. Scanner flow (screenshot → saved data)
