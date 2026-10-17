@@ -5,6 +5,7 @@ import { Button, Input, Select, Field, Modal, EmptyState, DeleteButton, useToast
 import { PageShell, PageHeader, Panel } from "../components/dashboard/DashKit";
 import { PageLoading, useFirstLoad } from "../components/common/LoadingSpinner";
 import { useSubjects } from "../features/subjects/useSubjects";
+import { useApp } from "../components/context/AppContext";
 import TimetableImportModal from "../features/subjects/TimetableImportModal";
 import SubjectTable from "../components/subjects/SubjectTable";
 import WeekBeads from "../components/subjects/WeekBeads";
@@ -32,6 +33,8 @@ function mostCommon(arr) {
 export default function SubjectsPage() {
   const navigate = useNavigate();
   const { subjects, archived, loading, error, refresh, create, update, remove, setArchived } = useSubjects();
+  // The dashboard keeps its own copy of the subject numbers; update it after every change here.
+  const { refreshSubjectData } = useApp();
   const firstLoad = useFirstLoad(loading);
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
@@ -73,6 +76,7 @@ export default function SubjectsPage() {
         schedule: form.schedule.filter((s) => s.day),
       };
       if (editId) await update(editId, payload); else await create(payload);
+      await refreshSubjectData();
       setOpen(false);
     } finally {
       setSaving(false);
@@ -82,6 +86,7 @@ export default function SubjectsPage() {
   async function onDelete(s) {
     if (!window.confirm(`Delete "${s.name}" for good? Its class times, grades and attendance are deleted too.`)) return;
     await remove(s.id);
+    await refreshSubjectData();
   }
 
   return (
@@ -129,7 +134,7 @@ export default function SubjectsPage() {
                     <p className="text-sm font-bold text-ink truncate">{s.code ? `${s.code} · ` : ""}{s.name}</p>
                     <p className="text-xs text-muted truncate">{[s.term, s.instructor].filter(Boolean).join(" · ") || "No term set"}</p>
                   </button>
-                  <Button size="sm" variant="soft" onClick={() => setArchived(s, false)} title="Restore to this term" className="gap-1 shrink-0">
+                  <Button size="sm" variant="soft" onClick={async () => { await setArchived(s, false); await refreshSubjectData(); }} title="Restore to this term" className="gap-1 shrink-0">
                     <RotateCcw size={14} /> <span className="hidden sm:inline">Restore</span>
                   </Button>
                   <DeleteButton onClick={() => onDelete(s)} title="Delete for good" />

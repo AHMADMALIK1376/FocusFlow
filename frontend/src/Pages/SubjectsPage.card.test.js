@@ -25,6 +25,7 @@ jest.mock("../features/subjects/useSubjects", () => ({
 jest.mock("react-router-dom", () => ({ useNavigate: () => jest.fn() }), { virtual: true });
 jest.mock("../features/subjects/TimetableImportModal", () => () => null);
 jest.mock("../services/api", () => ({ subjectAPI: {} }));
+jest.mock("../components/context/AppContext", () => ({ useApp: () => ({ refreshSubjectData: jest.fn() }) }));
 
 const page = () => render(<ToastProvider><SubjectsPage /></ToastProvider>);
 

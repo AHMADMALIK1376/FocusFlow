@@ -121,6 +121,18 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  // The one-time load above is also a copy of the subject-based numbers (today's
+  // classes, the attendance-by-subject graph). Call this after the subject list
+  // changes (e.g. the timetable scanner) so they are not stale until a reload.
+  const refreshSubjectData = async () => {
+    const [dashboardComplete, attendance] = await Promise.all([
+      dashboardAPI.getComplete().catch(() => null),
+      subjectAttendanceAPI.getOverview().catch(() => null),
+    ]);
+    if (dashboardComplete?.data) setTodaysClassesState(dashboardComplete.data.todaysClasses || []);
+    if (attendance) setAttendanceSummary(attendance);
+  };
+
   // Load data only once on mount
   useEffect(() => {
     loadAllData();
@@ -216,6 +228,7 @@ export const AppProvider = ({ children }) => {
       totalFocusSessions,
       todaysClasses,
       attendanceSummary,
+      refreshSubjectData,
       
       // Derived
       pendingCount,
