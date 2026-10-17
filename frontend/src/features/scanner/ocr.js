@@ -1,6 +1,8 @@
 // Free, in-browser OCR (Tesseract.js) shared by every scanner. Loaded on
 // demand so it never weighs down the rest of the app; nothing leaves the device.
 
+import { wordsFromOcr } from "./tableLayout";
+
 // Upscale + greyscale before OCR — small portal text reads far better at ~2x.
 function loadForOcr(file) {
   return new Promise((resolve, reject) => {
@@ -22,7 +24,8 @@ function loadForOcr(file) {
   });
 }
 
-export async function ocrImage(file, onProgress) {
+// Text plus (optionally) every word's box, for scanners that read a table by position.
+export async function ocrPage(file, onProgress, withWords = false) {
   const { createWorker } = await import("tesseract.js");
   const worker = await createWorker("eng", 1, {
     logger: (m) => { if (m.status === "recognizing text") onProgress(m.progress); },
@@ -31,9 +34,14 @@ export async function ocrImage(file, onProgress) {
     // PSM 6 = read as one uniform block, row by row — keeps table rows intact.
     await worker.setParameters({ tessedit_pageseg_mode: "6", preserve_interword_spaces: "1" });
     const canvas = await loadForOcr(file);
-    const { data } = await worker.recognize(canvas);
-    return data.text;
+    // tesseract.js 7 only returns word boxes (as `blocks`) when asked.
+    const { data } = withWords ? await worker.recognize(canvas, {}, { text: true, blocks: true }) : await worker.recognize(canvas);
+    return { text: data.text, words: withWords ? wordsFromOcr(data) : [] };
   } finally {
     await worker.terminate();
   }
+}
+
+export async function ocrImage(file, onProgress) {
+  return (await ocrPage(file, onProgress)).text;
 }

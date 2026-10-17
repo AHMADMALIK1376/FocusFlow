@@ -1,7 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ImageUp, ClipboardPaste, ArrowLeft, ScanText, AlertTriangle } from "lucide-react";
 import { Button, Textarea, Field, Modal, SegmentedControl, Checkbox, Badge } from "../../components/ui";
-import { ocrImage } from "./ocr";
+import { ocrPage } from "./ocr";
+import { rebuildRows } from "./tableLayout";
+import { subjectsScan } from "./kinds/subjects";
 import { reconcile } from "./reconcile";
 
 // One scanner flow for every page (timetable, date sheet, marks, assignments).
@@ -159,7 +161,12 @@ export default function ScanImportModal({ open, onClose, kind, ctx, onDone }) {
     if (!file) return setError("Choose or paste a screenshot first.");
     setBusy(true); setProgress(0);
     try {
-      toReview(await ocrImage(file, setProgress));
+      // The timetable is a table: read it by position first (wrapped rows stay whole),
+      // and use the plain text when the layout can't be found or gives no courses.
+      const table = kind === subjectsScan;
+      const { text: plain, words } = await ocrPage(file, setProgress, table);
+      const rebuilt = table ? rebuildRows(words) : null;
+      toReview(rebuilt && kind.parse(rebuilt, ctx, opts).length ? rebuilt : plain);
     } catch (e) {
       setError(e.message || "Text recognition failed. Check your connection and try again.");
     } finally {
