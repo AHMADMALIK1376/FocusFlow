@@ -57,8 +57,9 @@ function to24h(h, m, meridiem) {
 
 // Fix common OCR confusions inside digit runs: O→0, l/I/|→1, S→5.
 function fixOcrDigits(text) {
+  // Only inside something that already has a digit: "MS. SIDRA" is a name, not a time.
   return text.replace(/[0-9OolIS|]{1,2}\s*[:.]\s*[0-9OolIS|]{2}/g, (t) =>
-    t.replace(/[Oo]/g, "0").replace(/[lI|]/g, "1").replace(/S/g, "5")
+    /\d/.test(t) ? t.replace(/[Oo]/g, "0").replace(/[lI|]/g, "1").replace(/S/g, "5") : t
   );
 }
 

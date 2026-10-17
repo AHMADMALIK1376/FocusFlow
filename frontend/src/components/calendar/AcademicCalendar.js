@@ -7,6 +7,7 @@ import { useApp } from "../context/AppContext";
 import Lottie from "lottie-react";
 import fireAnimation from "../../assets/animation/work managemnt.json";
 import AttendanceGraphPopup from "./AttendanceGraphPopup";
+import { fmtRange } from "../../features/schedule/todayClasses";
 
 export default function AcademicCalendar() {
   const navigate = useNavigate();
@@ -89,7 +90,7 @@ export default function AcademicCalendar() {
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-black text-ink truncate">{item.subject || item.name || "Class"}</p>
                     <p className="text-[10px] text-muted font-medium mt-0.5">
-                      {item.startTime && item.endTime ? `${item.startTime} – ${item.endTime}` : item.time || "No time set"}
+                      {item.startTime ? fmtRange(item.startTime, item.endTime) : item.time || "No time set"}
                     </p>
                     {item.room && <p className="text-[10px] text-brand font-bold mt-0.5"><MapPin size={10} className="inline -mt-0.5 mr-0.5" />{item.room}</p>}
                   </div>
