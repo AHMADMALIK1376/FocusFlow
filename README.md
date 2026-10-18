@@ -57,7 +57,7 @@ All data is saved per account in a PostgreSQL database, so it's the same on your
 | Feature | What it does |
 |---|---|
 | **Dashboard** | A personal home screen. A snapshot strip shows your CGPA, next exam countdown, flashcards due and today's classes. Below it are widgets you can turn on, off and reorder (timetable, calendar, goals, focus timer, metrics, notes, habits, budget and more). You can keep more than one dashboard. |
-| **Subjects** | Your courses shown as a **periodic table**. Each subject is an "element" with its course code, credit-hour dots and a dashed edge for labs. A small **week abacus** card shows one bead per class on each day of the week. |
+| **Subjects** | Your courses on a floating **3D Rubik's cube**: each face is one subject, with the code and name in the centre block and the teacher, room, class times, credits and attendance on the blocks around it. It tumbles slowly, scrambles and solves itself, and you can spin it by dragging; tap a subject's centre to open it. A **week timeline** shows each class as a coloured pill by time of day. A **Cube | Table** switch lets each student use the original periodic-table view instead; the choice is saved to their account. A **Progress graph** page shows attendance and grades as an atom chart. |
 | **Subject hub** (`/subjects/:id`) | One page per subject with its schedule, attendance, grades, exams, assignments and flashcards. |
 | **Exams & Deadlines** | Exams, quizzes, tests, presentations, vivas, practicals and submissions, with a countdown ("3 days left"), sorted soonest first. |
 | **Assignment board** (`/projects`) | A drag-and-drop To-do / Doing / Done board for assignments and group projects. |

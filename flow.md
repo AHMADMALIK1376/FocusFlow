@@ -188,7 +188,8 @@ Solid status fills (delete pop-up, danger `Button`, the done tick) take `text-on
 5. Adding, editing, deleting or restoring a subject by hand on `SubjectsPage` does the same: after the change it calls `refreshSubjectData()`.
 
 ### Subjects page (18 Oct 2026)
-1. `SubjectsPage` → `useSubjects()` → `SubjectTable`: `layoutZones()` puts the first two theory subjects in column 1 and splits the rest of the theory (from the left) and all labs (from the right) into rows of five. `MascotCorner` (free-standing, `speechLine` from today's classes) and `SubjectCube` sit in columns 2 and 3-4. `SubjectCube` is a four-faced CSS 3D prism: every 3.2 s `advance()` writes the NEXT subject (`nextIndex` skips dimmed ones) onto the upcoming face and increases `turn`; `faceIndex(turn)` is the front face; a pointed or focused box turns it to that subject and pauses; each face lists up to two slots with `pickSlots()` (today first, `fmtRange` plus room). Each box prints its slots. Class pills in `WeekBeads` open a body-level tooltip (`todayName()` marks today). The header mascot is off on this page (`PageHeader mascot={false}`).
+0. `SubjectsPage` reads the student's view with `useSubjectsView()` (preference `subjectsView`, default 'cube'; synced to the account); the header `ViewSwitch` changes it. 'table' renders the original `PeriodicTable` (cycling large element, chips) with the page mascot and buttons in the header and `WeekTimeline` beside it; 'cube' renders the hero below.
+1. Cube view: `SubjectsPage` → `useSubjects()` → `useSubjectStats(subjects)` (attendance) → `MascotCorner` (left, near the top), `RubikCube` (centre, buttons under it), `WeekTimeline` with the small `ViewSwitch` under it (right). `RubikCube` gives each face one subject (`faceTiles`, centre = code and name, 8 info blocks), tumbles in one rAF loop, swaps the next subject onto faces turned away (`cubeMotion`), runs a scramble-and-solve show with `applyMove`/`solveSequence`, rotates on drag, and calls `onOpen` from a centre block. Table view: `PeriodicTable` with `WeekBeads` and the switch on the right, the mascot under the title and the buttons after the grid.
 2. Add, edit, delete or restore a subject, or a timetable import: the page's own refresh, then `refreshSubjectData()` for the dashboard. The table and week graph re-render from the new list.
 3. "Progress graph" button → `/subjects/progress` → `SubjectProgressPage`: `useSubjects()` → `useSubjectStats(subjects)` (loads `GET /subject-attendance/overview` and `GET /grades` together, each may fail on its own) → `buildStats` → `AtomChart`. The page owns mode, metric (remembered in `localStorage`) and the selected subject.
 
@@ -229,12 +230,12 @@ Used by Subjects, Daily Routine, Exams, Grades and Assignments.
 
 `Pages/SubjectsPage.js`
 1. `useSubjects()` loads the subjects.
-2. `<WeekBeads>` (`components/subjects/WeekBeads.js`) sits in the header, top right:
-   - `weekBeads(subjects)` → one bead per class per day, sorted by time.
-   - It uses `fmtRange` from `features/schedule/todayClasses.js` and `subjectPalette` from `SubjectTable.js`.
-3. `<SubjectTable>` (`components/subjects/SubjectTable.js`) shows the periodic table.
-   - Clicking a subject opens `/subjects/:id` (`Pages/SubjectHubPage.js`).
-   - Edit opens the subject form modal.
+2. `<WeekTimeline>` (`components/subjects/WeekTimeline.js`) sits in the top band, right:
+   - `weekDays`, `timeRange`, `pillGeometry` and `layoutDay` turn the subjects into one pill per class on a thin track per day; overlaps share lanes of the same track height.
+   - It uses `fmtRange` from `features/schedule/todayClasses.js` and `subjectPalette` from `components/subjects/subjectPalette.js`.
+3. `<RubikCube>` (`components/subjects/RubikCube.js`, maths in `rubikModel.js`) shows the subjects on a 3D Rubik's cube.
+   - Tapping a sticker solves the cube and opens `SubjectDetailCard`; its Open goes to `/subjects/:id` (`Pages/SubjectHubPage.js`).
+   - Edit opens the subject form modal; Delete keeps the confirm.
 
 ---
 
