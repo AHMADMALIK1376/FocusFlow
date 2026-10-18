@@ -1,15 +1,17 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Pencil, Trash2, ArrowUpRight } from "lucide-react";
 import { fmtRange } from "../../features/schedule/todayClasses";
+import { isLabSubject } from "../../features/subjects/subjectStats";
 
-// The semester as a periodic table: every subject an element — its course code
-// is the symbol, its credit hours the dots in the corner (labs have a dashed
-// edge) — and one element drawn large in the gap: whichever is pointed at, or
-// each in turn. The key lights up the subjects that meet on a day, or the labs.
+// The semester as a periodic table: every subject an element: atomic number
+// (timetable order), course code as the symbol, name, credit hours as the "mass"
+// and an attendance chip. Theory subjects form the main block; labs (dashed
+// edge) sit in their own row below, like the lanthanides. The selected subject
+// (shared with the atom chart) is detailed in a card under the table. The key
+// lights up the subjects that meet on a day, or the labs.
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 const DAY_SHORT = { Monday: "Mon", Tuesday: "Tue", Wednesday: "Wed", Thursday: "Thu", Friday: "Fri", Saturday: "Sat", Sunday: "Sun" };
-const CYCLE_MS = 3200;
 
 // A subject's own colour, as a light clay tint (card), a deeper shade (text) and a mid tone.
 function hexToRgb(hex) {
@@ -27,8 +29,9 @@ export function subjectPalette(hex) {
   return { cardBg: css(mixWhite(rgb, 0.86)), badgeBg: css(mixWhite(rgb, 0.7)), deep: css(mixBlack(rgb, 0.25)), mid: css(rgb), ink: css(mixBlack(rgb, 0.78)), tile: css(mixWhite(rgb, 0.94)) };
 }
 
-export const isLab = (s) => /\blab\b/i.test(s.name || "") || /L$/i.test(s.code || "");
+export const isLab = isLabSubject;
 const symbolOf = (s) => (s.code || (s.name || "?").split(/\s+/).map((w) => w[0]).join("").slice(0, 4)).toUpperCase();
+const attTone = (pct) => (pct === null ? "bg-surface-2 text-muted" : pct < 75 ? "bg-focus/15 text-focus-ink" : "bg-sage/60 text-on-sage");
 const daysOf = (s) => new Set((s.schedule || []).map((x) => x.day));
 
 const KEYS = [
@@ -36,11 +39,8 @@ const KEYS = [
   { id: "lab", label: "Labs", test: (s) => isLab(s) },
 ];
 
-export default function SubjectTable({ subjects, onOpen, onEdit, onDelete }) {
-  const root = useRef(null);
-  const [active, setActive] = useState(0);
+export default function SubjectTable({ subjects, stats, selectedId, onSelect, onOpen, onEdit, onDelete }) {
   const [pointing, setPointing] = useState(false);
-  const [inView, setInView] = useState(true);
   const [lit, setLit] = useState(null);
   const [pinned, setPinned] = useState(null);
   const key = lit ?? pinned;
@@ -54,48 +54,21 @@ export default function SubjectTable({ subjects, onOpen, onEdit, onDelete }) {
   const keyTest = allKeys.find((k) => k.id === key)?.test;
   const shows = (s) => !keyTest || keyTest(s);
 
-  // keep the selection valid when subjects change
-  useEffect(() => { if (active >= subjects.length) setActive(0); }, [subjects.length, active]);
-
-  useEffect(() => {
-    const el = root.current;
-    if (!el || typeof IntersectionObserver === "undefined") return undefined;
-    const watch = new IntersectionObserver(([e]) => setInView(e.isIntersecting), { threshold: 0.15 });
-    watch.observe(el);
-    return () => watch.disconnect();
-  }, []);
-
-  // while nothing is pointed at, the large element goes through the subjects in turn
-  useEffect(() => {
-    const calm = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    if (!inView || pointing || calm || subjects.length < 2) return undefined;
-    const t = setInterval(() => {
-      setActive((i) => {
-        for (let k = 1; k <= subjects.length; k++) {
-          const next = (i + k) % subjects.length;
-          if (shows(subjects[next])) return next;
-        }
-        return i;
-      });
-    }, CYCLE_MS);
-    return () => clearInterval(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inView, pointing, subjects, key]);
-
   if (!subjects.length) return null;
-  const s = subjects[Math.min(active, subjects.length - 1)];
+  const attPct = new Map((stats?.subjects || []).map((x) => [x.id, x.attendance?.pct ?? null]));
+  const activeAt = Math.max(0, subjects.findIndex((x) => x.id === selectedId));
+  const s = subjects[activeAt];
   const pal = subjectPalette(s.color);
   const slots = (s.schedule || []).map((x) => ({
     when: `${DAY_SHORT[x.day] || x.day}${x.start ? " " + fmtRange(x.start, x.end) : ""}`,
     room: x.room || "",
   }));
-  const featuredAt = Math.min(2, subjects.length);
+  const select = (sub) => { if (onSelect) onSelect(sub.id); };
 
-  const featured = (
+  const detail = (
     <div
-      key="featured"
       aria-live="polite"
-      className="order-first md:order-none col-span-4 md:row-span-2 rounded-3xl shadow-neu p-4 sm:p-5 flex flex-col justify-between gap-3 min-h-[11rem]"
+      className="mt-4 rounded-3xl shadow-neu p-4 sm:p-5 flex flex-col justify-between gap-3"
       style={{ background: pal.cardBg }}
     >
       <div key={s.id} className="flex gap-4 items-start animate-in fade-in duration-300">
@@ -103,7 +76,7 @@ export default function SubjectTable({ subjects, onOpen, onEdit, onDelete }) {
           className="relative shrink-0 w-24 h-24 sm:w-28 sm:h-28 rounded-3xl flex items-center justify-center shadow-neu-sm"
           style={{ background: pal.tile, color: pal.deep }}
         >
-          <span className="absolute top-2 left-3 text-[11px] font-bold opacity-70">{active + 1}</span>
+          <span className="absolute top-2 left-3 text-[11px] font-bold opacity-70">{activeAt + 1}</span>
           <svg className="absolute inset-0 w-full h-full opacity-40" viewBox="-50 -50 100 100" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.2">
             <ellipse rx="42" ry="15" transform="rotate(-24)" />
             <ellipse rx="42" ry="15" transform="rotate(36)" />
@@ -144,23 +117,24 @@ export default function SubjectTable({ subjects, onOpen, onEdit, onDelete }) {
     </div>
   );
 
-  const tiles = subjects.map((sub, i) => {
+  const tile = ({ sub, i }) => {
     const p = subjectPalette(sub.color);
     const dots = Math.min(5, Math.max(0, Math.round(Number(sub.creditHours) || 0)));
-    const on = i === active;
+    const on = i === activeAt;
+    const pct = attPct.get(sub.id) ?? null;
     return (
       <button
         key={sub.id}
         type="button"
         aria-label={`${sub.code ? sub.code + " " : ""}${sub.name}`}
         aria-pressed={on}
-        onMouseEnter={() => { setPointing(true); setActive(i); }}
+        onMouseEnter={() => { setPointing(true); select(sub); }}
         onMouseLeave={() => setPointing(false)}
-        onFocus={() => { setPointing(true); setActive(i); }}
+        onFocus={() => { setPointing(true); select(sub); }}
         onBlur={() => setPointing(false)}
-        onClick={() => (on && pointing ? onOpen(sub) : setActive(i))}
+        onClick={() => (on && pointing ? onOpen(sub) : select(sub))}
         data-dim={shows(sub) ? undefined : ""}
-        className={`relative aspect-square min-w-0 rounded-2xl p-2 text-left flex flex-col justify-between shadow-neu-sm transition-all duration-200 ${
+        className={`relative aspect-[4/5] min-w-0 rounded-2xl p-2 text-left flex flex-col justify-between shadow-neu-sm transition-all duration-200 ${
           isLab(sub) ? "border-2 border-dashed" : "border-2 border-transparent"
         } ${on ? "-translate-y-1" : ""} ${shows(sub) ? "" : "opacity-30 scale-95"}`}
         style={{ background: p.cardBg, borderColor: isLab(sub) || on ? p.mid : undefined, boxShadow: on ? `0 0 0 2px ${p.mid}` : undefined }}
@@ -173,14 +147,21 @@ export default function SubjectTable({ subjects, onOpen, onEdit, onDelete }) {
         </span>
         <span className="text-center font-black tracking-tight text-sm sm:text-base leading-none" style={{ color: p.deep }}>{symbolOf(sub)}</span>
         <span className="text-[9px] sm:text-[10px] leading-tight opacity-80 text-center line-clamp-2 min-h-[1.5em]" style={{ color: p.ink }}>{sub.name}</span>
+        <span className="flex items-center justify-between gap-1">
+          <span data-testid="att-chip" title="Attendance" className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold leading-none ${attTone(pct)}`}>{pct === null ? "--" : `${Math.round(pct)}%`}</span>
+          <span data-testid="mass" title="Credit hours" className="text-[10px] font-bold opacity-70" style={{ color: p.deep }}>{Number(sub.creditHours) || 0}</span>
+        </span>
       </button>
     );
-  });
+  };
 
-  const items = [...tiles.slice(0, featuredAt), featured, ...tiles.slice(featuredAt)];
+  const entries = subjects.map((sub, i) => ({ sub, i }));
+  const theory = entries.filter((e) => !isLab(e.sub));
+  const labs = entries.filter((e) => isLab(e.sub));
+  const grid = "grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2.5 sm:gap-3";
 
   return (
-    <div ref={root} onMouseLeave={() => setPointing(false)}>
+    <div onMouseLeave={() => setPointing(false)}>
       <style>{`@keyframes ff-orbit{to{transform:rotate(360deg)}}.ff-electron{transform-origin:0 0;animation:ff-orbit 6s linear infinite}@media (prefers-reduced-motion:reduce){.ff-electron{animation:none}}`}</style>
 
       {/* the key: lights up what it names */}
@@ -205,8 +186,18 @@ export default function SubjectTable({ subjects, onOpen, onEdit, onDelete }) {
         ))}
       </ul>
 
-      <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2.5 sm:gap-3">{items}</div>
-      <p className="mt-3 text-xs text-muted">Point at a subject to see its classes and rooms. Dots are credit hours; dashed edges are labs.</p>
+      {theory.length > 0 && <div data-testid="theory-block" className={grid}>{theory.map(tile)}</div>}
+      {labs.length > 0 && (
+        <div data-testid="lab-row" role="group" aria-label="Lab subjects" className={theory.length ? "mt-4" : ""}>
+          <div className="flex items-center gap-2 mb-2" aria-hidden="true">
+            <span className="text-[11px] font-bold uppercase tracking-widest text-muted">Labs</span>
+            <span className="flex-1 border-t border-dashed border-[rgb(var(--ink)/0.15)]" />
+          </div>
+          <div className={grid}>{labs.map(tile)}</div>
+        </div>
+      )}
+      {detail}
+      <p className="mt-3 text-xs text-muted">Point at a subject to see its classes and rooms. Dots and the bottom number are credit hours; the chip is attendance; dashed edges are labs.</p>
     </div>
   );
 }

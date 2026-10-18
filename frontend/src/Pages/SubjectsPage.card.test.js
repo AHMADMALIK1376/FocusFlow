@@ -23,6 +23,8 @@ jest.mock("../features/subjects/useSubjects", () => ({
   }),
 }));
 jest.mock("react-router-dom", () => ({ useNavigate: () => jest.fn() }), { virtual: true });
+jest.mock("../features/subjects/useSubjectStats", () => ({ useSubjectStats: () => ({ stats: { subjects: [], overall: {} }, loading: false, error: null, refresh: jest.fn() }) }));
+jest.mock("../components/subjects/AtomChart", () => () => null);
 jest.mock("../features/subjects/TimetableImportModal", () => () => null);
 jest.mock("../services/api", () => ({ subjectAPI: {} }));
 jest.mock("../components/context/AppContext", () => ({ useApp: () => ({ refreshSubjectData: jest.fn() }) }));

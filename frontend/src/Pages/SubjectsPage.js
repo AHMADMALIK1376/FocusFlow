@@ -3,12 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { Plus, GraduationCap, Trash2, ScanText, RotateCcw, ChevronDown } from "lucide-react";
 import { Button, Input, Select, Field, Modal, EmptyState, DeleteButton, useToast } from "../components/ui";
 import { PageShell, PageHeader, Panel } from "../components/dashboard/DashKit";
-import { PageLoading, useFirstLoad } from "../components/common/LoadingSpinner";
+import { PageLoading, PanelLoading, useFirstLoad } from "../components/common/LoadingSpinner";
 import { useSubjects } from "../features/subjects/useSubjects";
+import { useSubjectStats } from "../features/subjects/useSubjectStats";
 import { useApp } from "../components/context/AppContext";
 import TimetableImportModal from "../features/subjects/TimetableImportModal";
 import SubjectTable from "../components/subjects/SubjectTable";
 import WeekBeads from "../components/subjects/WeekBeads";
+import AtomChart from "../components/subjects/AtomChart";
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 const DAY_SHORT = { Monday: "Mon", Tuesday: "Tue", Wednesday: "Wed", Thursday: "Thu", Friday: "Fri", Saturday: "Sat", Sunday: "Sun" };
@@ -18,6 +20,19 @@ const EMPTY_FORM = { name: "", code: "", color: "#E86562", instructor: "", credi
 const REMIND_BEFORE = [["", "Default (Settings)"], [0, "When it starts"], [5, "5 min before"], [10, "10 min before"], [15, "15 min before"], [30, "30 min before"], [45, "45 min before"], [60, "1 hour before"], [90, "1½ hours before"], [120, "2 hours before"]];
 const ASK_AFTER = [["", "Default (Settings)"], [0, "When it ends"], [5, "5 min after"], [10, "10 min after"], [15, "15 min after"], [30, "30 min after"], [60, "1 hour after"]];
 const fieldCls = "!py-2 !px-3.5 text-sm";
+
+// The chart's view and metric are remembered on this device only; the page works without them.
+const MODE_KEY = "ff_subjects_atom_mode";
+const METRIC_KEY = "ff_subjects_atom_metric";
+function remembered(key, allowed, fallback) {
+  try {
+    const v = window.localStorage.getItem(key);
+    return allowed.includes(v) ? v : fallback;
+  } catch { return fallback; }
+}
+function remember(key, value) {
+  try { window.localStorage.setItem(key, value); } catch { /* private mode: fine */ }
+}
 
 function mostCommon(arr) {
   if (!arr.length) return null;
@@ -43,6 +58,15 @@ export default function SubjectsPage() {
   const [saving, setSaving] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [showPast, setShowPast] = useState(false);
+  const { stats, loading: statsLoading, error: statsError } = useSubjectStats(subjects);
+  const statsFirstLoad = useFirstLoad(statsLoading);
+  const [mode, setMode] = useState(() => remembered(MODE_KEY, ["one", "all", "overall"], "all"));
+  const [metric, setMetric] = useState(() => remembered(METRIC_KEY, ["attendance", "grade"], "attendance"));
+  const [pickedId, setPickedId] = useState(null);
+  // the chart and the table share one selection; it falls back to the first subject if the picked one is gone
+  const selectedId = subjects.some((x) => x.id === pickedId) ? pickedId : subjects[0]?.id ?? null;
+  const changeMode = (m) => { setMode(m); remember(MODE_KEY, m); };
+  const changeMetric = (m) => { setMetric(m); remember(METRIC_KEY, m); };
 
   const term = mostCommon(subjects.map((s) => s.term).filter(Boolean));
 
@@ -113,7 +137,35 @@ export default function SubjectsPage() {
           </div>
         </Panel>
       ) : (
-        <SubjectTable subjects={subjects} onOpen={(x) => navigate(`/subjects/${x.id}`)} onEdit={openEdit} onDelete={onDelete} />
+        <div className="lg:grid lg:grid-cols-[minmax(0,63fr)_minmax(0,37fr)] lg:gap-6 lg:items-start">
+          <div className="min-w-0">
+            <SubjectTable
+              subjects={subjects}
+              stats={stats}
+              selectedId={selectedId}
+              onSelect={setPickedId}
+              onOpen={(x) => navigate(`/subjects/${x.id}`)}
+              onEdit={openEdit}
+              onDelete={onDelete}
+            />
+          </div>
+          <aside aria-label="Attendance and grade chart" className="mt-6 lg:mt-0 lg:sticky lg:top-4 min-w-0">
+            {statsError && <p className="text-xs text-muted mb-2">Some figures could not be loaded, so the chart may be incomplete.</p>}
+            {statsFirstLoad ? (
+              <PanelLoading message="Loading chart…" />
+            ) : (
+              <AtomChart
+                stats={stats}
+                mode={mode}
+                metric={metric}
+                selectedId={selectedId}
+                onSelect={setPickedId}
+                onModeChange={changeMode}
+                onMetricChange={changeMetric}
+              />
+            )}
+          </aside>
+        </div>
       )}
 
       {archived.length > 0 && (
