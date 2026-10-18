@@ -3,7 +3,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { subjectPalette } from "./SubjectTable";
 import {
   CENTRE, arcDash, electronPoint, isAtRisk, nucleusScale, overallValue,
-  ringRadii, ringStroke, ringTilts, subjectValue, viewFor,
+  SCENE_ASPECT, ringRadii, ringStroke, ringTilts, subjectValue, viewFor,
 } from "./atomGeometry";
 
 // The semester as an atom: the overall percentage is the nucleus, every subject an orbit ring in its own
@@ -59,20 +59,22 @@ function Ring({ subject, index, radius, tilt, stroke, mode, selected, metric, ca
   const bead = electronPoint(pct, radius);
   const view = viewFor(mode, selected, radius);
   const live = mode === "all" || (mode === "one" && selected);
-  const w = selected && mode !== "overall" ? stroke * 1.3 : stroke;
+  const w = selected && mode !== "overall" ? stroke * 1.5 : stroke;
+  const glow = selected && mode !== "overall" ? { filter: `drop-shadow(0 0 2px ${pal.mid})` } : undefined;
   return (
     <motion.div
       className="absolute inset-0"
-      style={{ transformStyle: "preserve-3d", rotateZ: tilt.rz, rotateX: tilt.rx, pointerEvents: "none" }}
+      style={{ transformStyle: "preserve-3d", rotateZ: tilt.rz, rotateX: tilt.rx, originX: "50%", originY: "50%", pointerEvents: "none" }}
       initial={false}
       animate={view}
       transition={calm ? { duration: 0 } : { type: "spring", stiffness: 110, damping: 18 }}
+      data-testid="atom-ring"
       data-ring={index}
     >
-      <svg viewBox="0 0 100 100" className="w-full h-full overflow-visible" aria-hidden="true" focusable="false">
+      <svg viewBox="0 0 100 100" className="w-full h-full overflow-visible" style={glow} aria-hidden="true" focusable="false">
         <circle
-          cx={CENTRE} cy={CENTRE} r={radius} fill="none" stroke={pal.mid} strokeWidth={w}
-          strokeOpacity={dash ? 0.18 : 0.5} strokeDasharray={dash ? undefined : `${w} ${w * 1.6}`}
+          cx={CENTRE} cy={CENTRE} r={radius} fill="none" stroke={pal.mid} strokeWidth={dash ? w * 0.6 : w}
+          strokeOpacity={dash ? 0.16 : 0.55} strokeDasharray={dash ? undefined : `${w} ${w * 1.6}`}
         />
         {dash && (
           <circle
@@ -80,7 +82,7 @@ function Ring({ subject, index, radius, tilt, stroke, mode, selected, metric, ca
             pathLength="100" strokeDasharray={`${dash.dash} ${dash.gap}`} transform={`rotate(-90 ${CENTRE} ${CENTRE})`}
           />
         )}
-        {bead && <circle cx={bead.x} cy={bead.y} r={w * 0.95} fill={pal.mid} stroke="rgb(var(--surface))" strokeWidth={w * 0.3} />}
+        {bead && <circle cx={bead.x} cy={bead.y} r={Math.max(1.7, w * 1.1)} fill={pal.mid} stroke="rgb(var(--surface))" strokeWidth={Math.max(0.6, w * 0.3)} />}
         {live && (
           <circle
             cx={CENTRE} cy={CENTRE} r={radius} fill="none" stroke="transparent" strokeWidth={Math.max(6, w + 3)}
@@ -128,38 +130,41 @@ export default function AtomChart({ stats, mode, metric, selectedId, onSelect, o
         <Pills label="Measure" options={METRICS} value={metric} onChange={onMetricChange} />
       </div>
 
-      <div className="w-full max-w-[28rem] mx-auto aspect-square relative" style={{ perspective: "900px", containerType: "inline-size" }}>
-        <motion.div
-          className="absolute inset-0"
-          style={{ transformStyle: "preserve-3d" }}
-          animate={calm ? undefined : { rotateX: [-7, 7, -7], rotateY: [-12, 12, -12] }}
-          transition={calm ? undefined : { duration: 22, repeat: Infinity, ease: "easeInOut" }}
-        >
-          {subjects.map((s, i) => (
-            <Ring
-              key={s.id} subject={s} index={i} radius={radii[i]} tilt={tilts[i]} stroke={stroke}
-              mode={mode} selected={!!picked && s.id === picked.id} metric={metric} calm={calm} onSelect={onSelect}
-            />
-          ))}
-        </motion.div>
-
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+      <div className="w-full max-w-[34rem] mx-auto relative" style={{ aspectRatio: SCENE_ASPECT, containerType: "inline-size" }}>
+        <div data-testid="atom-scene" className="absolute inset-x-0 aspect-square" style={{ top: "50%", marginTop: "-50cqw", perspective: "4000px", perspectiveOrigin: "50% 50%" }}>
           <motion.div
-            className="w-[30%] aspect-square rounded-full shadow-neu flex flex-col items-center justify-center text-center"
-            style={{ background: "radial-gradient(circle at 32% 28%, rgb(var(--surface)) 0%, rgb(var(--brand-soft) / 0.55) 100%)" }}
-            initial={false}
-            animate={{ scale: nucleusScale(mode) }}
-            transition={calm ? { duration: 0 } : { type: "spring", stiffness: 110, damping: 16 }}
+            data-testid="atom-stage"
+            className="absolute inset-0"
+            style={{ transformStyle: "preserve-3d", originX: "50%", originY: "50%" }}
+            animate={calm ? undefined : { rotateX: [-3, 3, -3], rotateY: [-8, 8, -8] }}
+            transition={calm ? undefined : { duration: 22, repeat: Infinity, ease: "easeInOut" }}
           >
-            {overall.main ? (
-              <>
-                <span className={`font-black leading-none ${attendance && isAtRisk(overall.pct) ? "text-warn-ink" : "text-ink"}`} style={{ fontSize: "8cqw" }}>{overall.main}</span>
-                {mode !== "one" && <span className="text-muted font-bold leading-tight px-1" style={{ fontSize: "2.6cqw" }}>{OVERALL_LABEL[metric]}</span>}
-              </>
-            ) : (
-              <span className="text-muted font-bold leading-tight px-1" style={{ fontSize: "3cqw" }}>No data yet</span>
-            )}
+            {subjects.map((s, i) => (
+              <Ring
+                key={s.id} subject={s} index={i} radius={radii[i]} tilt={tilts[i]} stroke={stroke}
+                mode={mode} selected={!!picked && s.id === picked.id} metric={metric} calm={calm} onSelect={onSelect}
+              />
+            ))}
           </motion.div>
+
+          <div data-testid="atom-nucleus-wrap" className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <motion.div
+              className="w-[24%] aspect-square rounded-full shadow-neu flex flex-col items-center justify-center text-center"
+              style={{ background: "radial-gradient(circle at 32% 28%, rgb(var(--surface)) 0%, rgb(var(--brand-soft) / 0.55) 100%)" }}
+              initial={false}
+              animate={{ scale: nucleusScale(mode) }}
+              transition={calm ? { duration: 0 } : { type: "spring", stiffness: 110, damping: 16 }}
+            >
+              {overall.main ? (
+                <>
+                  <span className={`font-black leading-none ${attendance && isAtRisk(overall.pct) ? "text-warn-ink" : "text-ink"}`} style={{ fontSize: "6.5cqw" }}>{overall.main}</span>
+                  {mode !== "one" && <span className="text-muted font-bold leading-tight px-1" style={{ fontSize: "2cqw" }}>{OVERALL_LABEL[metric]}</span>}
+                </>
+              ) : (
+                <span className="text-muted font-bold leading-tight px-1" style={{ fontSize: "2.4cqw" }}>No data yet</span>
+              )}
+            </motion.div>
+          </div>
         </div>
       </div>
 

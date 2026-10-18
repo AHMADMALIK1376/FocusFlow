@@ -113,3 +113,13 @@ test("no NaN anywhere, even with empty or odd stats", () => {
   expect(view.container.textContent).not.toMatch(/NaN|undefined/);
   expect(screen.getAllByText("No data yet").length).toBeGreaterThan(0);
 });
+
+test("every ring plane turns about its own centre, and the nucleus shares the planes' centre", () => {
+  setup();
+  const rings = screen.getAllByTestId("atom-ring");
+  expect(rings).toHaveLength(3);
+  rings.forEach((r) => expect(r.style.transformOrigin).toMatch(/^50% 50%/));
+  expect(screen.getByTestId("atom-stage").style.transformOrigin).toMatch(/^50% 50%/);
+  expect(screen.getByTestId("atom-scene").style.perspectiveOrigin).toBe("50% 50%");
+  expect(screen.getByTestId("atom-nucleus-wrap")).toHaveClass("absolute", "inset-0", "flex", "items-center", "justify-center");
+});

@@ -24,25 +24,30 @@ export const isAtRisk = (p) => {
 };
 
 // Radii spread evenly from the inner to the outer orbit; one subject sits on the outer orbit.
-export function ringRadii(n, inner = 20, outer = 46) {
+export function ringRadii(n, inner = 26, outer = 49) {
   if (n <= 0) return [];
   if (n === 1) return [outer];
   const step = (outer - inner) / (n - 1);
   return Array.from({ length: n }, (_, i) => inner + i * step);
 }
 
-// Each ring is a circle tipped back (rx) and then turned on the page (rz), so the ellipses fan out evenly.
+// One family of orbit planes, like Saturn's rings: all tipped back about the same amount (three close
+// angles cycling) and turned a few degrees apart, so neighbours never cross wildly.
 export function ringTilts(n) {
   return Array.from({ length: Math.max(0, n) }, (_, i) => ({
-    rx: 60 + (i % 3) * 6,
-    rz: n <= 1 ? -25 : -90 + (i * 180) / n,
+    rx: 50 + (i % 3) * 4,
+    rz: [-4, 0, 4][i % 3],
   }));
 }
 
-// Thin out the rings as more subjects arrive, but never thicker than 4 or thinner than 1.4.
-export function ringStroke(n) {
-  if (n <= 0) return 4;
-  return Math.min(4, Math.max(1.4, Math.round((20 / n) * 10) / 10));
+// The scene is as wide as it is but only as tall as the tipped rings need.
+export const SCENE_ASPECT = "100 / 72";
+
+// Stroke from the gap between neighbouring rings (about half of it), never thicker than 3.5 or thinner than 0.9.
+export function ringStroke(n, inner = 26, outer = 49) {
+  if (n <= 1) return 3.5;
+  const step = (outer - inner) / (n - 1);
+  return Math.min(3.5, Math.max(0.9, Math.round(step * 0.55 * 10) / 10));
 }
 
 // Dash pattern for a circle drawn with pathLength=100: the filled part, then the gap.
@@ -94,11 +99,11 @@ export function overallValue(overall, metric) {
 export function viewFor(mode, isSelected, ringR) {
   if (mode === "one") {
     return isSelected
-      ? { scale: 46 / ringR, opacity: 1 }
-      : { scale: 0.45, opacity: 0.1 };
+      ? { scale: 49 / ringR, opacity: 1 }
+      : { scale: 0.45, opacity: 0.05 };
   }
   if (mode === "overall") return { scale: 0.4, opacity: 0.35 };
-  return { scale: 1, opacity: isSelected ? 1 : 0.7 };
+  return { scale: 1, opacity: isSelected ? 1 : 0.5 };
 }
 
 export const nucleusScale = (mode) => (mode === "overall" ? 1.7 : mode === "one" ? 0.6 : 1);

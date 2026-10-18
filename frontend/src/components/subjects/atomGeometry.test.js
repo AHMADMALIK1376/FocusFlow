@@ -27,28 +27,29 @@ test("at risk is strictly below the minimum, and only with data", () => {
 
 test("ring radii are even, inside the box, and one subject takes the outer orbit", () => {
   expect(ringRadii(0)).toEqual([]);
-  expect(ringRadii(1)).toEqual([46]);
+  expect(ringRadii(1)).toEqual([49]);
   const r = ringRadii(14);
   expect(r).toHaveLength(14);
-  expect(r[0]).toBe(20);
-  expect(r[13]).toBeCloseTo(46);
+  expect(r[0]).toBe(26);
+  expect(r[13]).toBeCloseTo(49);
   const steps = r.slice(1).map((x, i) => x - r[i]);
   steps.forEach((d) => expect(d).toBeCloseTo(steps[0]));
 });
 
-test("tilts fan out across half a turn and stay tipped back", () => {
+test("tilts share one plane family: at most three close angles", () => {
   const t = ringTilts(6);
   expect(t).toHaveLength(6);
-  expect(new Set(t.map((x) => x.rz)).size).toBe(6);
-  t.forEach((x) => { expect(x.rx).toBeGreaterThanOrEqual(60); expect(x.rx).toBeLessThanOrEqual(72); });
+    expect(new Set(t.map((x) => x.rx)).size).toBeLessThanOrEqual(3);
+  t.forEach((x) => { expect(x.rx).toBeGreaterThanOrEqual(50); expect(x.rx).toBeLessThanOrEqual(58); expect(Math.abs(x.rz)).toBeLessThanOrEqual(5); });
   expect(ringTilts(0)).toEqual([]);
 });
 
 test("ring thickness is capped at both ends", () => {
-  expect(ringStroke(1)).toBe(4);
-  expect(ringStroke(3)).toBe(4);
-  expect(ringStroke(14)).toBeCloseTo(1.4, 1);
-  expect(ringStroke(100)).toBe(1.4);
+  expect(ringStroke(1)).toBe(3.5);
+  expect(ringStroke(3)).toBe(3.5);
+  expect(ringStroke(11)).toBeCloseTo(1.3, 1);
+  expect(ringStroke(14)).toBeGreaterThanOrEqual(0.9);
+  expect(ringStroke(100)).toBe(0.9);
 });
 
 test("arc dash fills to the percentage; no data gives none", () => {
@@ -90,7 +91,7 @@ test("overall values: pooled attendance, credit-weighted grade", () => {
 test("views: all shows every orbit, one zooms in, overall shrinks them behind the nucleus", () => {
   expect(viewFor("all", true, 30)).toEqual({ scale: 1, opacity: 1 });
   expect(viewFor("all", false, 30).opacity).toBeLessThan(1);
-  expect(viewFor("one", true, 23).scale).toBeCloseTo(2);
+  expect(viewFor("one", true, 24.5).scale).toBeCloseTo(2);
   expect(viewFor("one", false, 30).opacity).toBeLessThan(0.2);
   expect(viewFor("overall", true, 30).scale).toBeLessThan(0.5);
   expect(nucleusScale("overall")).toBeGreaterThan(nucleusScale("all"));
