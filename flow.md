@@ -188,9 +188,9 @@ Solid status fills (delete pop-up, danger `Button`, the done tick) take `text-on
 5. Adding, editing, deleting or restoring a subject by hand on `SubjectsPage` does the same: after the change it calls `refreshSubjectData()`.
 
 ### Subjects page (18 Oct 2026)
-1. `SubjectsPage` → `useSubjects()` (subjects) → `useSubjectStats(subjects)`: loads `GET /subject-attendance/overview` and `GET /grades` together (each may fail on its own) → `buildStats` gives per-subject and overall attendance and grade.
-2. The page owns `mode`, `metric` (remembered in `localStorage`) and the selected subject id. `SubjectTable` (periodic table) and `AtomChart` both receive the id; pointing at a tile or tapping a legend chip changes it for both.
-3. Add, edit, delete or restore a subject → the page's own refresh, then `refreshSubjectData()` for the dashboard.
+1. `SubjectsPage` → `useSubjects()` → `SubjectTable` (`slotPosition` gives each theory subject its row and column; `splitLabs` and `barStart` place the two lab bars; the `WeekBeads` card is placed in the gap). Pointing at, focusing or tapping a tile opens its pop-up (`todayName()` picks today's slot).
+2. Add, edit, delete or restore a subject, or a timetable import: the page's own refresh, then `refreshSubjectData()` for the dashboard. The table and week graph re-render from the new list.
+3. "Progress graph" button → `/subjects/progress` → `SubjectProgressPage`: `useSubjects()` → `useSubjectStats(subjects)` (loads `GET /subject-attendance/overview` and `GET /grades` together, each may fail on its own) → `buildStats` → `AtomChart`. The page owns mode, metric (remembered in `localStorage`) and the selected subject.
 
 ---
 
