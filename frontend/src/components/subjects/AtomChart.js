@@ -1,6 +1,6 @@
 import React, { useRef } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { subjectPalette } from "./SubjectTable";
+import { subjectPalette } from "./subjectPalette";
 import {
   CENTRE, arcDash, electronPoint, isAtRisk, nucleusScale, overallValue,
   SCENE_ASPECT, ringRadii, ringStroke, ringTilts, subjectValue, viewFor,

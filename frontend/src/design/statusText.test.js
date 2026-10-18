@@ -61,9 +61,15 @@ describe('status text', () => {
     expect(src.match(/grid\[i\] \? onClass/g)).toHaveLength(2);
   });
 
-  it("today's day letter on the Subjects week sits on the card, so it uses the theme ink", () => {
+  it("today's day letter on the table view's tube graph sits on the card, so it uses the theme ink", () => {
     const src = read('components/subjects/WeekBeads.js');
     expect(src).toContain('isToday ? "text-ink"');
+    expect(src).not.toContain('text-on-sage');
+  });
+
+  it("today's day letter on the Subjects week sits on the card, so it uses the theme's brand text colour, never text-on-sage", () => {
+    const src = read('components/subjects/WeekTimeline.js');
+    expect(src).toContain('isToday ? "text-brand"');
     expect(src).not.toContain('text-on-sage');
   });
 

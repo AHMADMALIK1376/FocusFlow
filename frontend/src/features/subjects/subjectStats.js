@@ -1,6 +1,6 @@
 import { subjectGrade } from '../grades/gpa';
 
-// Same rule as SubjectTable's isLab: the word "lab" in the name, or a code ending in L.
+// Same rule the Subjects page uses for Theory and Lab: the word "lab" in the name, or a code ending in L.
 export const isLabSubject = (s) => /\blab\b/i.test(s.name || '') || /L$/i.test(s.code || '');
 
 const round1 = (n) => Math.round(n * 10) / 10;
