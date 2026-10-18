@@ -35,7 +35,6 @@ beforeEach(() => {
 test("deleting a subject refreshes the dashboard numbers afterwards", async () => {
   window.confirm = jest.fn(() => true);
   page();
-  fireEvent.mouseEnter(screen.getByRole("button", { name: /CS100/ }).parentElement);
   fireEvent.click(screen.getByTitle("Delete subject"));
   await waitFor(() => expect(mockCalls).toEqual(["remove", "refresh"]));
 });
@@ -43,7 +42,6 @@ test("deleting a subject refreshes the dashboard numbers afterwards", async () =
 test("cancelling the delete changes nothing and refreshes nothing", async () => {
   window.confirm = jest.fn(() => false);
   page();
-  fireEvent.mouseEnter(screen.getByRole("button", { name: /CS100/ }).parentElement);
   fireEvent.click(screen.getByTitle("Delete subject"));
   await Promise.resolve();
   expect(mockCalls).toEqual([]);

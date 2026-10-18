@@ -92,7 +92,7 @@ export default function SubjectsPage() {
     <PageShell>
       <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
         <div className="min-w-0">
-          <PageHeader title="Subjects" subtitle={`Your courses this term${term ? ` (${term})` : ""} — schedule, grades, attendance and more in one place.`}>
+          <PageHeader mascot={false} title="Subjects" subtitle={`Your courses this term${term ? ` (${term})` : ""} — schedule, grades, attendance and more in one place.`}>
             <Button variant="soft" onClick={() => navigate("/subjects/progress")} className="gap-1.5"><Orbit size={16} /> Progress graph</Button>
             <Button variant="primary" onClick={() => setImportOpen(true)} className="gap-1.5"><ScanText size={16} /> Import timetable</Button>
             <Button variant="primary" onClick={openAdd} className="gap-1.5"><Plus size={16} /> Add subject</Button>
