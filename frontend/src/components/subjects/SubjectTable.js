@@ -4,12 +4,12 @@ import { fmtRange } from "../../features/schedule/todayClasses";
 import { isLabSubject } from "../../features/subjects/subjectStats";
 import WeekBeads from "./WeekBeads";
 import MascotCorner from "./MascotCorner";
-import SubjectLoop from "./SubjectLoop";
+import SubjectCube from "./SubjectCube";
 
 // The semester as one continuous grid of boxes, 5 equal columns on wide screens. The first two theory subjects
 // stack in column 1; the mascot (no card) is column 2 and "Your week" column 5, both over rows 1-2; between
-// them a plain-text loop shows every subject one by one (no card). Below, theory boxes fill each row from the left
-// and lab boxes (dashed edge) from the right. Phones get one flowing 2-column grid: mascot, loop, week
+// them a turning cube shows every subject one by one (no card). Below, theory boxes fill each row from the left
+// and lab boxes (dashed edge) from the right. Phones get one flowing 2-column grid: mascot, cube, week
 // graph, theory, labs. Every box shows its code, name (two lines at most) and class times with rooms. Clicking
 // a box opens the subject; small Edit and Delete buttons sit in its corner. The week graph's class pills carry
 // the tooltips. The key lights up the subjects that meet on a day, or the labs.
@@ -191,8 +191,8 @@ export default function SubjectTable({ subjects, onOpen, onEdit, onDelete }) {
 
       <div data-testid="mosaic" className="grid grid-cols-2 lg:grid-cols-5 gap-3 lg:auto-rows-[minmax(7.25rem,auto)]">
         <MascotCorner subjects={subjects} className="col-span-2 lg:col-span-1 lg:[grid-column:2] lg:[grid-row:1/3]" />
-        <div data-testid="loop-zone" className="col-span-2 lg:col-span-1 lg:[grid-column:3/5] lg:[grid-row:1/3] min-w-0">
-          <SubjectLoop items={ordered} today={today} pointedId={pointed} onOpen={onOpen} shows={shows} />
+        <div data-testid="cube-zone" className="col-span-2 lg:col-span-1 lg:[grid-column:3/5] lg:[grid-row:1/3] min-w-0">
+          <SubjectCube items={ordered} today={today} pointedId={pointed} onOpen={onOpen} shows={shows} />
         </div>
         <div data-testid="week-card" className="col-span-2 lg:col-span-1 lg:[grid-column:5] lg:[grid-row:1/3] min-w-0">
           <WeekBeads subjects={subjects} fill />

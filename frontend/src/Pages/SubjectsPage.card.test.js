@@ -103,12 +103,12 @@ test("the key lights up the subjects that meet on a day and dims the rest", () =
   expect(tile(/CS100/)).toHaveAttribute("data-dim");
 });
 
-test("the mascot, the loop and the week graph are in the mosaic with labs, and there is no Labs heading", () => {
+test("the mascot, the cube and the week graph are in the mosaic with labs, and there is no Labs heading", () => {
   page();
   const block = screen.getByTestId("mosaic");
   expect(within(block).getByTestId("week-card")).toBeInTheDocument();
   expect(within(block).getByTestId("mascot-corner")).toBeInTheDocument();
-  expect(within(block).getByTestId("loop")).toBeInTheDocument();
+  expect(within(block).getByTestId("cube")).toBeInTheDocument();
   expect(within(block).getByRole("button", { name: /CSC332L/ })).toBeInTheDocument();
   expect(screen.queryByRole("group", { name: "Lab subjects" })).toBeNull();
 });

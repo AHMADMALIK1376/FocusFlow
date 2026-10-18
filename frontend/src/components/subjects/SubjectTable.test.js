@@ -1,5 +1,5 @@
 // The grid: where each subject goes (theory from the left, labs from the right), tile contents and actions,
-// the centre pieces (mascot, loop, week graph) and the phone order.
+// the centre pieces (mascot, cube, week graph) and the phone order.
 import React from "react";
 import { render, screen, within, fireEvent, act } from "@testing-library/react";
 import SubjectTable, { layoutZones } from "./SubjectTable";
@@ -78,20 +78,20 @@ describe("the grid", () => {
       expect(tile.style.getPropertyValue("--c")).toBe(String(want.get(sub.id).col));
     }
     expect(screen.getByTestId("mascot-corner")).toBeInTheDocument();
-    expect(screen.getByTestId("loop")).toBeInTheDocument();
+    expect(screen.getByTestId("cube")).toBeInTheDocument();
     expect(screen.getByTestId("week-card")).toBeInTheDocument();
-    expect(screen.queryByTestId("loop-card")).toBeNull();
+    expect(screen.queryByTestId("loop")).toBeNull();
   });
 
-  it("five equal columns; mascot in column 2, loop in columns 3-4, week graph in column 5, rows 1-2", () => {
+  it("five equal columns; mascot in column 2, cube in columns 3-4, week graph in column 5, rows 1-2", () => {
     draw(theory(3));
     expect(screen.getByTestId("mosaic").className).toMatch(/lg:grid-cols-5/);
     expect(screen.getByTestId("mascot-corner").className).toMatch(/lg:\[grid-column:2\]/);
     expect(screen.getByTestId("mascot-corner").className).toMatch(/lg:\[grid-row:1\/3\]/);
     expect(screen.getByTestId("mascot-corner").className).not.toMatch(/shadow-neu|rounded-3xl/);
-    expect(screen.getByTestId("loop-zone").className).toMatch(/lg:\[grid-column:3\/5\]/);
-    expect(screen.getByTestId("loop-zone").className).not.toMatch(/bg-|shadow-neu|rounded-3xl/);
-    expect(screen.getByTestId("loop").className).not.toMatch(/bg-|shadow|rounded|border/);
+    expect(screen.getByTestId("cube-zone").className).toMatch(/lg:\[grid-column:3\/5\]/);
+    expect(screen.getByTestId("cube-zone").className).not.toMatch(/bg-|shadow-neu|rounded-3xl/);
+    expect(screen.getByTestId("cube").className).not.toMatch(/bg-|shadow|rounded|border/);
     expect(screen.getByTestId("week-card").className).toMatch(/lg:\[grid-column:5\]/);
   });
 
@@ -131,10 +131,10 @@ describe("the grid", () => {
     expect(screen.getByRole("button", { name: /^CS200L/ })).not.toHaveAttribute("data-dim");
   });
 
-  it("phone order in the page: mascot, loop, week graph, theory boxes, then the labs", () => {
+  it("phone order in the page: mascot, cube, week graph, theory boxes, then the labs", () => {
     draw([...theory(6), ...labs(2)]);
     const mascot = screen.getByTestId("mascot-corner");
-    const blocks = screen.getByTestId("loop-zone");
+    const blocks = screen.getByTestId("cube-zone");
     const week = screen.getByTestId("week-card");
     const tiles = screen.getAllByTestId("tile");
     before(mascot, blocks); before(blocks, week); before(week, tiles[0]);
@@ -150,11 +150,11 @@ describe("the grid", () => {
     expect(screen.queryByRole("tooltip")).toBeNull();
   });
 
-  it("pointing at a box shows that subject in the loop", () => {
+  it("pointing at a box shows that subject in the cube", () => {
     draw(theory(3));
     fireEvent.mouseEnter(screen.getByRole("button", { name: /^CS102/ }).parentElement);
-    expect(within(screen.getByTestId("loop")).getByText("CS102")).toBeInTheDocument();
-    expect(within(screen.getByTestId("loop")).getByText("3 of 3")).toBeInTheDocument();
+    expect(within(screen.getByTestId("cube")).getByText("CS102")).toBeInTheDocument();
+    expect(within(screen.getByTestId("cube")).getByText("3 of 3")).toBeInTheDocument();
   });
 });
 
