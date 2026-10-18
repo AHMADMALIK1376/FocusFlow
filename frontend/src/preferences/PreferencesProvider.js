@@ -9,7 +9,7 @@ import storage from '../storage/storageAdapter';
 import { useServerSync } from './useServerSync';
 import { AUTH_EVENT, getToken } from '../services/api';
 import { segmentFromAge } from './segment';
-import { migratePreferences } from './migrate';
+import { migratePreferences, sanitizeSubjectsView } from './migrate';
 import { DEFAULT_THEME, sanitizeTheme } from '../design/theme/theme';
 import { readDeviceTheme, writeDeviceTheme, pickShownTheme } from '../design/theme/deviceTheme';
 import {
@@ -227,6 +227,11 @@ export function PreferencesProvider({ children }) {
     return true;
   }, []);
 
+  // ── Subjects page view (cube or table) ────────────────────────────────────
+  const setSubjectsView = useCallback((view) => {
+    setState((prev) => ({ ...prev, subjectsView: sanitizeSubjectsView(view) }));
+  }, []);
+
   // ── Reset ─────────────────────────────────────────────────────────────────
   const resetPreferences = useCallback(() => {
     storage.remove(KEY);
@@ -264,6 +269,9 @@ export function PreferencesProvider({ children }) {
       setTheme,
       resetTheme,
       previewTheme,
+      // Subjects page view
+      subjectsView: sanitizeSubjectsView(state.subjectsView),
+      setSubjectsView,
       // Reset
       resetPreferences,
     }),
@@ -289,6 +297,8 @@ export function PreferencesProvider({ children }) {
       setTheme,
       resetTheme,
       previewTheme,
+      state.subjectsView,
+      setSubjectsView,
       resetPreferences,
     ]
   );

@@ -4,6 +4,7 @@ import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import SubjectsPage from "./SubjectsPage";
 import { ToastProvider } from "../components/ui";
+import { PreferencesContext } from "../preferences/PreferencesProvider";
 
 const mockCalls = [];
 const mockRefresh = jest.fn();
@@ -18,14 +19,19 @@ jest.mock("../features/subjects/useSubjects", () => ({
     remove: (...a) => mockRemove(...a), setArchived: (...a) => mockSetArchived(...a),
   }),
 }));
+jest.mock("../features/subjects/useSubjectStats", () => ({ useSubjectStats: () => ({ stats: { subjects: [] } }) }));
 jest.mock("react-router-dom", () => ({ useNavigate: () => jest.fn() }), { virtual: true });
 jest.mock("../features/subjects/TimetableImportModal", () => () => null);
 jest.mock("../services/api", () => ({ subjectAPI: {} }));
 jest.mock("../components/context/AppContext", () => ({ useApp: () => ({ refreshSubjectData: (...a) => mockRefresh(...a) }) }));
 
-const page = () => render(<ToastProvider><SubjectsPage /></ToastProvider>);
+// the cube has no delete button any more: the table view does
+const page = () => render(
+  <PreferencesContext.Provider value={{ subjectsView: "table", setSubjectsView: jest.fn() }}><ToastProvider><SubjectsPage /></ToastProvider></PreferencesContext.Provider>,
+);
 
 beforeEach(() => {
+  window.matchMedia = (q) => ({ matches: /reduce/.test(q), addEventListener() {}, removeEventListener() {} });
   mockCalls.length = 0;
   mockRefresh.mockImplementation(async () => { mockCalls.push("refresh"); });
   mockRemove.mockImplementation(async () => { mockCalls.push("remove"); });

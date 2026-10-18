@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, GraduationCap, Trash2, ScanText, RotateCcw, ChevronDown, Orbit } from "lucide-react";
 import { Button, Input, Select, Field, Modal, EmptyState, DeleteButton, useToast } from "../components/ui";
@@ -7,7 +7,15 @@ import { PageLoading, useFirstLoad } from "../components/common/LoadingSpinner";
 import { useSubjects } from "../features/subjects/useSubjects";
 import { useApp } from "../components/context/AppContext";
 import TimetableImportModal from "../features/subjects/TimetableImportModal";
-import SubjectTable from "../components/subjects/SubjectTable";
+import { useSubjectStats } from "../features/subjects/useSubjectStats";
+import RubikCube from "../components/subjects/RubikCube";
+import MascotCorner from "../components/subjects/MascotCorner";
+import WeekTimeline from "../components/subjects/WeekTimeline";
+import PeriodicTable from "../components/subjects/PeriodicTable";
+import WeekBeads from "../components/subjects/WeekBeads";
+import PageMascot from "../components/common/PageMascot";
+import ViewSwitch from "../components/subjects/ViewSwitch";
+import { useSubjectsView } from "../preferences/useSubjectsView";
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 const DAY_SHORT = { Monday: "Mon", Tuesday: "Tue", Wednesday: "Wed", Thursday: "Thu", Friday: "Fri", Saturday: "Sat", Sunday: "Sun" };
@@ -42,6 +50,11 @@ export default function SubjectsPage() {
   const [saving, setSaving] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [showPast, setShowPast] = useState(false);
+
+  const [view, setView] = useSubjectsView();
+  const { stats } = useSubjectStats(subjects);
+  // attendance per subject for the cube's detail card
+  const attendance = useMemo(() => Object.fromEntries(stats.subjects.map((s) => [s.id, s.attendance])), [stats]);
 
   const term = mostCommon(subjects.map((s) => s.term).filter(Boolean));
 
@@ -88,17 +101,38 @@ export default function SubjectsPage() {
     await refreshSubjectData();
   }
 
+  // The switch only makes sense with subjects to show. It sits under the week graph in both views. The table view keeps
+  // its original look (page mascot, tube graph); its buttons go after the grid so they move down as subjects are added.
+  const hasSubjects = !firstLoad && !error && subjects.length > 0;
+  const table = hasSubjects && view === "table";
+  const subtitle = `Your courses this term${term ? ` (${term})` : ""} — schedule, grades, attendance and more in one place.`;
+  const switcher = hasSubjects && <ViewSwitch value={view} onChange={setView} />;
+  const actions = (
+    <div data-testid="table-actions" className="mt-5 flex flex-wrap items-center justify-center gap-2 min-w-0 max-w-full">
+      <Button variant="soft" size="sm" onClick={() => navigate("/subjects/progress")} className="gap-1.5"><Orbit size={16} /> Progress graph</Button>
+      <Button variant="primary" size="sm" onClick={() => setImportOpen(true)} className="gap-1.5"><ScanText size={16} /> Import timetable</Button>
+      <Button variant="primary" size="sm" onClick={openAdd} className="gap-1.5"><Plus size={16} /> Add subject</Button>
+    </div>
+  );
+
   return (
     <PageShell>
-      <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
-        <div className="min-w-0">
-          <PageHeader mascot={false} title="Subjects" subtitle={`Your courses this term${term ? ` (${term})` : ""} — schedule, grades, attendance and more in one place.`}>
-            <Button variant="soft" onClick={() => navigate("/subjects/progress")} className="gap-1.5"><Orbit size={16} /> Progress graph</Button>
-            <Button variant="primary" onClick={() => setImportOpen(true)} className="gap-1.5"><ScanText size={16} /> Import timetable</Button>
-            <Button variant="primary" onClick={openAdd} className="gap-1.5"><Plus size={16} /> Add subject</Button>
-          </PageHeader>
+      {table ? (
+        <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
+          <div data-testid="subjects-header" className="min-w-0 w-full lg:w-auto lg:flex-1">
+            <PageHeader mascot={false} title="Subjects" subtitle={subtitle} />
+            <div data-testid="title-mascot" className="-mt-2"><PageMascot size={120} /></div>
+          </div>
+          <div data-testid="week-slot" className="w-full lg:w-[17rem] min-w-0 flex flex-col items-center lg:items-end gap-3">
+            <WeekBeads subjects={subjects} />
+            {switcher}
+          </div>
         </div>
-      </div>
+      ) : (
+        <div data-testid="subjects-header" className="min-w-0 w-full">
+          <PageHeader mascot={false} title="Subjects" subtitle={subtitle} />
+        </div>
+      )}
 
       {firstLoad ? (
         <PageLoading message="Loading subjects…" />
@@ -107,17 +141,38 @@ export default function SubjectsPage() {
       ) : subjects.length === 0 ? (
         <Panel>
           <EmptyState icon={GraduationCap} title="No subjects yet" description="Import your timetable from a screenshot, or add courses one by one" />
-          <div className="flex justify-center pb-6">
+          <div className="flex flex-wrap justify-center gap-2 pb-6">
             <Button variant="primary" onClick={() => setImportOpen(true)} className="gap-1.5"><ScanText size={16} /> Import timetable</Button>
+            <Button variant="primary" onClick={openAdd} className="gap-1.5"><Plus size={16} /> Add subject</Button>
           </div>
         </Panel>
+      ) : table ? (
+        <>
+          <PeriodicTable subjects={subjects} onOpen={(x) => navigate(`/subjects/${x.id}`)} onEdit={openEdit} onDelete={onDelete} />
+          {actions}
+        </>
       ) : (
-        <SubjectTable
-          subjects={subjects}
-          onOpen={(x) => navigate(`/subjects/${x.id}`)}
-          onEdit={openEdit}
-          onDelete={onDelete}
-        />
+        // Phones: mascot, cube with its buttons and card, then the week. Wide screens: mascot | cube | week.
+        <div className="grid gap-4 lg:gap-6 lg:grid-cols-[15rem_minmax(0,1fr)_15rem] xl:grid-cols-[17rem_minmax(0,1fr)_18rem] lg:items-center">
+          <MascotCorner subjects={subjects} className="lg:self-start" />
+          <RubikCube
+            subjects={subjects}
+            attendance={attendance}
+            onOpen={(x) => navigate(`/subjects/${x.id}`)}
+            onEdit={openEdit}
+            onDelete={onDelete}
+          >
+            <div className="mt-3 flex flex-wrap justify-center gap-2">
+              <Button variant="soft" size="sm" onClick={() => navigate("/subjects/progress")} className="gap-1.5"><Orbit size={16} /> Progress graph</Button>
+              <Button variant="primary" size="sm" onClick={() => setImportOpen(true)} className="gap-1.5"><ScanText size={16} /> Import timetable</Button>
+              <Button variant="primary" size="sm" onClick={openAdd} className="gap-1.5"><Plus size={16} /> Add subject</Button>
+            </div>
+          </RubikCube>
+          <div data-testid="week-slot" className="min-w-0 flex flex-col items-center lg:items-end gap-3">
+            <div className="w-full"><WeekTimeline subjects={subjects} fill /></div>
+            {switcher}
+          </div>
+        </div>
       )}
 
       {archived.length > 0 && (

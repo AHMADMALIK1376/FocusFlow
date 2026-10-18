@@ -14,6 +14,13 @@ import { DEFAULT_THEME, sanitizeTheme } from '../design/theme/theme';
 
 export const SCHEMA_VERSION = 3;
 
+// Which view of the Subjects page the student chose: the Rubik's cube or the periodic table.
+// An optional key added without a new schema version, so a device that has not updated yet
+// still reads the same saved object (an unknown key is simply ignored there).
+export const SUBJECTS_VIEWS = ['cube', 'table'];
+export const DEFAULT_SUBJECTS_VIEW = 'cube';
+export const sanitizeSubjectsView = (v) => (SUBJECTS_VIEWS.includes(v) ? v : DEFAULT_SUBJECTS_VIEW);
+
 export const DEFAULT_PROFILE = {
   displayName: '',
   username: '',
@@ -38,6 +45,7 @@ function freshV3() {
     activeDashboardId: db.id,
     dashboards: [db],
     theme: { ...DEFAULT_THEME },
+    subjectsView: DEFAULT_SUBJECTS_VIEW,
   };
 }
 
@@ -52,6 +60,7 @@ export function migratePreferences(stored) {
     const result = { ...stored };
     result.schemaVersion = SCHEMA_VERSION;
     result.theme = sanitizeTheme(stored.theme) || { ...DEFAULT_THEME };
+    result.subjectsView = sanitizeSubjectsView(stored.subjectsView);
     if (!result.profile) result.profile = { ...DEFAULT_PROFILE };
     else result.profile = { ...DEFAULT_PROFILE, ...result.profile };
     if (!Array.isArray(result.dashboards) || result.dashboards.length === 0) {
@@ -96,5 +105,6 @@ export function migratePreferences(stored) {
     activeDashboardId: id,
     dashboards: [firstDb],
     theme: { ...DEFAULT_THEME },
+    subjectsView: DEFAULT_SUBJECTS_VIEW,
   };
 }
