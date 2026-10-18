@@ -19,8 +19,6 @@ jest.mock("../features/subjects/useSubjects", () => ({
   }),
 }));
 jest.mock("react-router-dom", () => ({ useNavigate: () => jest.fn() }), { virtual: true });
-jest.mock("../features/subjects/useSubjectStats", () => ({ useSubjectStats: () => ({ stats: { subjects: [], overall: {} }, loading: false, error: null, refresh: jest.fn() }) }));
-jest.mock("../components/subjects/AtomChart", () => () => null);
 jest.mock("../features/subjects/TimetableImportModal", () => () => null);
 jest.mock("../services/api", () => ({ subjectAPI: {} }));
 jest.mock("../components/context/AppContext", () => ({ useApp: () => ({ refreshSubjectData: (...a) => mockRefresh(...a) }) }));
@@ -37,6 +35,7 @@ beforeEach(() => {
 test("deleting a subject refreshes the dashboard numbers afterwards", async () => {
   window.confirm = jest.fn(() => true);
   page();
+  fireEvent.mouseEnter(screen.getByRole("button", { name: /CS100/ }).parentElement);
   fireEvent.click(screen.getByTitle("Delete subject"));
   await waitFor(() => expect(mockCalls).toEqual(["remove", "refresh"]));
 });
@@ -44,6 +43,7 @@ test("deleting a subject refreshes the dashboard numbers afterwards", async () =
 test("cancelling the delete changes nothing and refreshes nothing", async () => {
   window.confirm = jest.fn(() => false);
   page();
+  fireEvent.mouseEnter(screen.getByRole("button", { name: /CS100/ }).parentElement);
   fireEvent.click(screen.getByTitle("Delete subject"));
   await Promise.resolve();
   expect(mockCalls).toEqual([]);

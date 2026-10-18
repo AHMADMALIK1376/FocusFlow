@@ -1,17 +1,45 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Pencil, Trash2, ArrowUpRight } from "lucide-react";
 import { fmtRange } from "../../features/schedule/todayClasses";
 import { isLabSubject } from "../../features/subjects/subjectStats";
+import WeekBeads from "./WeekBeads";
 
-// The semester as a periodic table: every subject an element: atomic number
-// (timetable order), course code as the symbol, name, credit hours as the "mass"
-// and an attendance chip. Theory subjects form the main block; labs (dashed
-// edge) sit in their own row below, like the lanthanides. The selected subject
-// (shared with the atom chart) is detailed in a card under the table. The key
-// lights up the subjects that meet on a day, or the labs.
+// The semester as a periodic table. Wide screens use the real table's shape: one subject top-left, one
+// top-right, two on the left and the rest on the right for rows 2-3, then full-width rows below, which
+// leaves the empty gap in the top middle. "Your week" sits in that gap. Labs are never in the main block:
+// they sit in two detached bars at the bottom, like the lanthanide and actinide rows. Phones get the same
+// order in a 2- or 3-column grid. Pointing at, focusing or tapping a tile pops up its teacher, credits
+// and classes with rooms (today's first). The key lights up the subjects that meet on a day, or the labs.
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 const DAY_SHORT = { Monday: "Mon", Tuesday: "Tue", Wednesday: "Wed", Thursday: "Thu", Friday: "Fri", Saturday: "Sat", Sunday: "Sun" };
+
+export const COLS = 8;
+// the week card goes into the gap whenever there is a table around it; with 0 or 1 subjects it sits above
+export const GAP_MIN = 2;
+
+// Grid position (row, column, 1-based) of the n-th theory subject: one top-left, one top-right, then the left
+// pair and right pair of rows 2 and 3 (the gap is columns 3-6), then full rows of COLS.
+export function slotPosition(n) {
+  if (n === 0) return { row: 1, col: 1 };
+  if (n === 1) return { row: 1, col: COLS };
+  if (n < 10) {
+    const k = (n - 2) % 4;
+    return { row: 2 + Math.floor((n - 2) / 4), col: k < 2 ? k + 1 : k + COLS - 3 };
+  }
+  return { row: 4 + Math.floor((n - 10) / COLS), col: 1 + ((n - 10) % COLS) };
+}
+
+// First column of a lab bar so that it sits centred under the table (a bar wider than the table just flows).
+export const barStart = (len) => (len >= COLS ? 1 : 1 + Math.floor((COLS - len) / 2));
+
+// All labs in two bars, as even as possible (the first gets the extra one); no empty bar.
+export function splitLabs(labs) {
+  const k = Math.ceil(labs.length / 2);
+  return [labs.slice(0, k), labs.slice(k)].filter((b) => b.length);
+}
+
+export const todayName = (d = new Date()) => DAYS[(d.getDay() + 6) % 7];
 
 // A subject's own colour, as a light clay tint (card), a deeper shade (text) and a mid tone.
 function hexToRgb(hex) {
@@ -31,7 +59,6 @@ export function subjectPalette(hex) {
 
 export const isLab = isLabSubject;
 const symbolOf = (s) => (s.code || (s.name || "?").split(/\s+/).map((w) => w[0]).join("").slice(0, 4)).toUpperCase();
-const attTone = (pct) => (pct === null ? "bg-surface-2 text-muted" : pct < 75 ? "bg-focus/15 text-focus-ink" : "bg-sage/60 text-on-sage");
 const daysOf = (s) => new Set((s.schedule || []).map((x) => x.day));
 
 const KEYS = [
@@ -39,11 +66,100 @@ const KEYS = [
   { id: "lab", label: "Labs", test: (s) => isLab(s) },
 ];
 
-export default function SubjectTable({ subjects, stats, selectedId, onSelect, onOpen, onEdit, onDelete }) {
-  const [pointing, setPointing] = useState(false);
+// What the pop-up lists: today's classes first, then the other days in week order.
+function classesOf(sub, today) {
+  const slots = (sub.schedule || []).filter((x) => x.day);
+  const byTime = (a, b) => DAYS.indexOf(a.day) - DAYS.indexOf(b.day) || String(a.start || "").localeCompare(String(b.start || ""));
+  return {
+    any: slots.length > 0,
+    now: slots.filter((x) => x.day === today).sort(byTime),
+    others: slots.filter((x) => x.day !== today).sort(byTime),
+  };
+}
+
+const timeOf = (x) => (x.start ? fmtRange(x.start, x.end) : "Time not set");
+
+// The pop-up card. It opens below its tile, flips above when there is no room, and slides sideways so it
+// never leaves the screen. Its padding bridges the gap to the tile so the mouse can travel onto it.
+function Popup({ id, sub, today, hostRef, onOpen, onEdit, onDelete }) {
+  const ref = useRef(null);
+  const [place, setPlace] = useState({ up: false, dx: 0 });
+  useLayoutEffect(() => {
+    const el = ref.current;
+    const host = hostRef.current;
+    if (!el || !host) return;
+    const r = host.getBoundingClientRect();
+    const w = el.offsetWidth;
+    const h = el.offsetHeight;
+    const vw = document.documentElement.clientWidth || window.innerWidth;
+    const left = Math.min(Math.max(8, r.left + r.width / 2 - w / 2), Math.max(8, vw - w - 8));
+    setPlace({ up: r.bottom + h + 8 > window.innerHeight && r.top - h - 8 >= 0, dx: left - r.left });
+  }, [hostRef]);
+
+  const p = subjectPalette(sub.color);
+  const c = classesOf(sub, today);
+  const credits = Number(sub.creditHours) || 0;
+  const btn = "p-1.5 rounded-full opacity-70 hover:opacity-100 focus-visible:opacity-100 hover:bg-ink/10 transition";
+  return (
+    <div
+      ref={ref}
+      id={id}
+      role="tooltip"
+      data-placement={place.up ? "top" : "bottom"}
+      className={`absolute z-30 w-64 max-w-[calc(100vw-1rem)] text-left ${place.up ? "bottom-full pb-2" : "top-full pt-2"}`}
+      style={{ left: place.dx }}
+    >
+      <div className="rounded-2xl shadow-neu p-3 space-y-2" style={{ background: p.cardBg, color: p.ink }}>
+        <div>
+          <p className="text-[11px] font-black uppercase tracking-widest" style={{ color: p.deep }}>{symbolOf(sub)}{isLab(sub) ? " · Lab" : ""}</p>
+          <p className="font-black text-sm leading-tight">{sub.name}</p>
+          <p className="text-xs opacity-80">{sub.instructor || "TBA"} · {credits} credit hour{credits === 1 ? "" : "s"}</p>
+        </div>
+        {!c.any ? (
+          <p className="text-xs">No class times set</p>
+        ) : (
+          <div className="space-y-1.5">
+            {c.now.length ? c.now.map((x, i) => (
+              <p key={i} data-testid="today-slot" className="flex flex-wrap items-center gap-x-2 gap-y-0.5 rounded-xl px-2 py-1.5 text-xs font-bold" style={{ background: p.badgeBg }}>
+                <span className="px-1.5 py-0.5 rounded-full text-[10px] leading-none" style={{ background: p.deep, color: p.tile }}>Today</span>
+                <span>{timeOf(x)}</span>
+                {x.room && <span>{x.room}</span>}
+              </p>
+            )) : <p className="text-xs font-bold">No class today</p>}
+            {c.others.length > 0 && (
+              <ul className="text-[11px] space-y-0.5 opacity-85">
+                {c.others.map((x, i) => (
+                  <li key={i} className="flex flex-wrap gap-x-2">
+                    <span>{DAY_SHORT[x.day] || x.day} {timeOf(x)}</span>
+                    {x.room && <span className="font-bold">{x.room}</span>}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+        <div className="flex items-center justify-between gap-1 pt-1">
+          <button type="button" onClick={() => onOpen(sub)} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold bg-surface/80 text-ink shadow-neu-sm hover:-translate-y-0.5 transition-transform">
+            Open <ArrowUpRight size={13} />
+          </button>
+          <span className="flex items-center">
+            <button type="button" onClick={() => onEdit(sub)} className={btn} title="Edit subject" aria-label="Edit subject"><Pencil size={15} /></button>
+            <button type="button" onClick={() => onDelete(sub)} className={btn} title="Delete subject" aria-label="Delete subject"><Trash2 size={15} /></button>
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function SubjectTable({ subjects, onOpen, onEdit, onDelete }) {
   const [lit, setLit] = useState(null);
   const [pinned, setPinned] = useState(null);
+  const [shown, setShown] = useState(null); // id of the subject whose pop-up is open
+  const hosts = useRef({});
+  const touch = useRef(false);
   const key = lit ?? pinned;
+  const today = todayName();
 
   // the days that actually have a class become part of the key
   const dayKeys = useMemo(() => {
@@ -54,116 +170,75 @@ export default function SubjectTable({ subjects, stats, selectedId, onSelect, on
   const keyTest = allKeys.find((k) => k.id === key)?.test;
   const shows = (s) => !keyTest || keyTest(s);
 
+  // Escape closes the pop-up; so does a tap or click anywhere outside its tile
+  useEffect(() => {
+    if (!shown) return undefined;
+    const onKey = (e) => { if (e.key === "Escape") setShown(null); };
+    const onDown = (e) => { const h = hosts.current[shown]; if (h && !h.contains(e.target)) setShown(null); };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onDown);
+    return () => { document.removeEventListener("keydown", onKey); document.removeEventListener("pointerdown", onDown); };
+  }, [shown]);
+
   if (!subjects.length) return null;
-  const attPct = new Map((stats?.subjects || []).map((x) => [x.id, x.attendance?.pct ?? null]));
-  const activeAt = Math.max(0, subjects.findIndex((x) => x.id === selectedId));
-  const s = subjects[activeAt];
-  const pal = subjectPalette(s.color);
-  const slots = (s.schedule || []).map((x) => ({
-    when: `${DAY_SHORT[x.day] || x.day}${x.start ? " " + fmtRange(x.start, x.end) : ""}`,
-    room: x.room || "",
-  }));
-  const select = (sub) => { if (onSelect) onSelect(sub.id); };
 
-  const detail = (
-    <div
-      aria-live="polite"
-      className="mt-4 rounded-3xl shadow-neu p-4 sm:p-5 flex flex-col justify-between gap-3"
-      style={{ background: pal.cardBg }}
-    >
-      <div key={s.id} className="flex gap-4 items-start animate-in fade-in duration-300">
-        <div
-          className="relative shrink-0 w-24 h-24 sm:w-28 sm:h-28 rounded-3xl flex items-center justify-center shadow-neu-sm"
-          style={{ background: pal.tile, color: pal.deep }}
-        >
-          <span className="absolute top-2 left-3 text-[11px] font-bold opacity-70">{activeAt + 1}</span>
-          <svg className="absolute inset-0 w-full h-full opacity-40" viewBox="-50 -50 100 100" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.2">
-            <ellipse rx="42" ry="15" transform="rotate(-24)" />
-            <ellipse rx="42" ry="15" transform="rotate(36)" />
-            <g className="ff-electron"><circle cx="42" cy="0" r="3.4" fill="currentColor" stroke="none" transform="rotate(-24)" /></g>
-          </svg>
-          <span className="relative font-black tracking-tight text-lg sm:text-xl">{symbolOf(s)}</span>
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-bold uppercase tracking-widest" style={{ color: pal.deep }}>
-            {isLab(s) ? "Lab" : "Theory"}{s.term ? ` · ${s.term}` : ""}
-          </p>
-          <h3 className="font-black text-lg leading-tight mt-0.5" style={{ color: pal.ink }}>{s.name}</h3>
-          <p className="text-xs opacity-70" style={{ color: pal.ink }}>{s.instructor || "TBA"}</p>
-          <div className="text-xs mt-2 space-y-0.5" style={{ color: pal.ink }}>
-            {slots.map((l, i) => (
-              <p key={i} className="flex items-baseline gap-2 min-w-0">
-                <span>{l.when}</span>
-                {l.room && <span className="font-bold">{l.room}</span>}
-              </p>
-            ))}
-            {!slots.length && <p>No class times set</p>}
-          </div>
-        </div>
-      </div>
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-bold" style={{ color: pal.ink }}>
-          {s.creditHours || 0} credit hour{Number(s.creditHours) === 1 ? "" : "s"}
-          {s.targetGrade ? <span style={{ color: pal.deep }}> · Target {s.targetGrade}</span> : null}
-        </p>
-        <div className="flex items-center gap-1">
-          <button type="button" onClick={() => onOpen(s)} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold bg-surface/80 text-ink shadow-neu-sm hover:-translate-y-0.5 transition-transform">
-            Open <ArrowUpRight size={13} />
-          </button>
-          <button type="button" onClick={() => onEdit(s)} className="p-2 rounded-full opacity-65 hover:opacity-100 hover:bg-ink/10 transition" style={{ color: pal.ink }} title="Edit subject"><Pencil size={15} /></button>
-          <button type="button" onClick={() => onDelete(s)} className="p-2 rounded-full opacity-65 hover:opacity-100 hover:bg-focus/10 transition" style={{ color: pal.ink }} title="Delete subject"><Trash2 size={15} /></button>
-        </div>
-      </div>
-    </div>
-  );
+  // atomic numbers run in slot order: theory first, then the labs
+  const theory = subjects.filter((x) => !isLab(x));
+  const labs = subjects.filter(isLab);
+  const number = new Map([...theory, ...labs].map((x, i) => [x.id, i + 1]));
+  const bars = splitLabs(labs);
+  const gapFits = theory.length >= GAP_MIN;
 
-  const tile = ({ sub, i }) => {
+  const tile = (sub, place) => {
     const p = subjectPalette(sub.color);
     const dots = Math.min(5, Math.max(0, Math.round(Number(sub.creditHours) || 0)));
-    const on = i === activeAt;
-    const pct = attPct.get(sub.id) ?? null;
+    const id = `tip-${sub.id}`;
+    const open = shown === sub.id;
+    const lab = isLab(sub);
     return (
-      <button
+      <div
         key={sub.id}
-        type="button"
-        aria-label={`${sub.code ? sub.code + " " : ""}${sub.name}`}
-        aria-pressed={on}
-        onMouseEnter={() => { setPointing(true); select(sub); }}
-        onMouseLeave={() => setPointing(false)}
-        onFocus={() => { setPointing(true); select(sub); }}
-        onBlur={() => setPointing(false)}
-        onClick={() => (on && pointing ? onOpen(sub) : select(sub))}
-        data-dim={shows(sub) ? undefined : ""}
-        className={`relative aspect-[4/5] min-w-0 rounded-2xl p-2 text-left flex flex-col justify-between shadow-neu-sm transition-all duration-200 ${
-          isLab(sub) ? "border-2 border-dashed" : "border-2 border-transparent"
-        } ${on ? "-translate-y-1" : ""} ${shows(sub) ? "" : "opacity-30 scale-95"}`}
-        style={{ background: p.cardBg, borderColor: isLab(sub) || on ? p.mid : undefined, boxShadow: on ? `0 0 0 2px ${p.mid}` : undefined }}
+        ref={(el) => { if (el) hosts.current[sub.id] = el; else delete hosts.current[sub.id]; }}
+        data-testid="tile"
+        className={`relative min-w-0 ${place ? "lg:[grid-column:var(--c)] lg:[grid-row:var(--r)]" : ""} ${open ? "z-20" : ""}`}
+        style={place}
+        onPointerDown={(e) => { touch.current = e.pointerType === "touch"; }}
+        onMouseEnter={() => { if (!touch.current) setShown(sub.id); }}
+        onMouseLeave={() => setShown((v) => (v === sub.id ? null : v))}
+        onFocus={() => { if (!touch.current) setShown(sub.id); }}
+        onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setShown((v) => (v === sub.id ? null : v)); }}
       >
-        <span className="flex items-start justify-between">
-          <span className="text-[10px] font-bold opacity-60" style={{ color: p.deep }}>{i + 1}</span>
-          <span className="flex gap-0.5 pt-0.5" aria-hidden="true">
-            {Array.from({ length: dots }).map((_, d) => <i key={d} className="w-1.5 h-1.5 rounded-full" style={{ background: p.mid }} />)}
+        <button
+          type="button"
+          aria-label={`${sub.code ? sub.code + " " : ""}${sub.name}`}
+          aria-describedby={open ? id : undefined}
+          aria-expanded={open}
+          onClick={() => (open ? onOpen(sub) : setShown(sub.id))}
+          data-dim={shows(sub) ? undefined : ""}
+          className={`w-full h-full min-h-[6rem] rounded-2xl p-2 text-left flex flex-col justify-between shadow-neu-sm transition-all duration-200 ${
+            lab ? "border-2 border-dashed" : "border-2 border-transparent"
+          } ${open ? "-translate-y-0.5" : ""} ${shows(sub) ? "" : "opacity-30 scale-95"}`}
+          style={{ background: p.cardBg, borderColor: lab || open ? p.mid : undefined, boxShadow: open ? `0 0 0 2px ${p.mid}` : undefined }}
+        >
+          <span className="text-[10px] font-bold opacity-60" style={{ color: p.deep }}>{number.get(sub.id)}</span>
+          <span className="block text-center font-black tracking-tight text-sm sm:text-base leading-none break-all" style={{ color: p.deep }}>{symbolOf(sub)}</span>
+          <span className="block text-[10px] leading-tight opacity-80 text-center line-clamp-2 break-words" style={{ color: p.ink }}>{sub.name}</span>
+          <span className="flex items-center justify-between gap-1">
+            <span className="flex gap-0.5" aria-hidden="true">
+              {Array.from({ length: dots }).map((_, d) => <i key={d} className="w-1.5 h-1.5 rounded-full" style={{ background: p.mid }} />)}
+            </span>
+            <span data-testid="mass" title="Credit hours" className="text-[10px] font-bold opacity-70" style={{ color: p.deep }}>{Number(sub.creditHours) || 0}</span>
           </span>
-        </span>
-        <span className="text-center font-black tracking-tight text-sm sm:text-base leading-none" style={{ color: p.deep }}>{symbolOf(sub)}</span>
-        <span className="text-[9px] sm:text-[10px] leading-tight opacity-80 text-center line-clamp-2 min-h-[1.5em]" style={{ color: p.ink }}>{sub.name}</span>
-        <span className="flex items-center justify-between gap-1">
-          <span data-testid="att-chip" title="Attendance" className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold leading-none ${attTone(pct)}`}>{pct === null ? "--" : `${Math.round(pct)}%`}</span>
-          <span data-testid="mass" title="Credit hours" className="text-[10px] font-bold opacity-70" style={{ color: p.deep }}>{Number(sub.creditHours) || 0}</span>
-        </span>
-      </button>
+        </button>
+        {open && <Popup id={id} sub={sub} today={today} hostRef={{ current: hosts.current[sub.id] }} onOpen={onOpen} onEdit={onEdit} onDelete={onDelete} />}
+      </div>
     );
   };
 
-  const entries = subjects.map((sub, i) => ({ sub, i }));
-  const theory = entries.filter((e) => !isLab(e.sub));
-  const labs = entries.filter((e) => isLab(e.sub));
-  const grid = "grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2.5 sm:gap-3";
+  const grid = "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-8 gap-2.5 lg:gap-3 auto-rows-[minmax(6rem,auto)]";
 
   return (
-    <div onMouseLeave={() => setPointing(false)}>
-      <style>{`@keyframes ff-orbit{to{transform:rotate(360deg)}}.ff-electron{transform-origin:0 0;animation:ff-orbit 6s linear infinite}@media (prefers-reduced-motion:reduce){.ff-electron{animation:none}}`}</style>
-
+    <div>
       {/* the key: lights up what it names */}
       <ul className="flex flex-wrap gap-2 mb-3" aria-label="Filter subjects">
         {allKeys.map((k) => (
@@ -175,7 +250,7 @@ export default function SubjectTable({ subjects, stats, selectedId, onSelect, on
               onMouseLeave={() => setLit(null)}
               onFocus={() => setLit(k.id)}
               onBlur={() => setLit(null)}
-              onClick={() => setPinned((p) => (p === k.id ? null : k.id))}
+              onClick={() => setPinned((q) => (q === k.id ? null : k.id))}
               className={`px-3 py-1 rounded-full text-xs font-bold border transition-colors ${
                 (key === k.id) ? "bg-sage/60 border-sage-deep text-on-sage" : "bg-surface border-[rgb(var(--ink)/0.12)] text-muted hover:text-ink"
               } ${k.id === "lab" ? "border-dashed" : ""}`}
@@ -186,18 +261,39 @@ export default function SubjectTable({ subjects, stats, selectedId, onSelect, on
         ))}
       </ul>
 
-      {theory.length > 0 && <div data-testid="theory-block" className={grid}>{theory.map(tile)}</div>}
-      {labs.length > 0 && (
-        <div data-testid="lab-row" role="group" aria-label="Lab subjects" className={theory.length ? "mt-4" : ""}>
+      {!gapFits && <div data-testid="week-above" className="mb-4 lg:max-w-sm"><WeekBeads subjects={subjects} fill /></div>}
+
+      {theory.length > 0 && (
+        <div data-testid="theory-block" className={grid}>
+          {gapFits && (
+            <div data-testid="week-gap" className="col-span-full lg:[grid-column:3/7] lg:[grid-row:1/4] min-w-0">
+              <WeekBeads subjects={subjects} fill />
+            </div>
+          )}
+          {theory.map((sub, n) => {
+            const { row, col } = slotPosition(n);
+            return tile(sub, { "--r": row, "--c": col });
+          })}
+        </div>
+      )}
+
+      {bars.length > 0 && (
+        <div data-testid="lab-row" role="group" aria-label="Lab subjects" className={theory.length ? "mt-6" : ""}>
           <div className="flex items-center gap-2 mb-2" aria-hidden="true">
             <span className="text-[11px] font-bold uppercase tracking-widest text-muted">Labs</span>
             <span className="flex-1 border-t border-dashed border-[rgb(var(--ink)/0.15)]" />
           </div>
-          <div className={grid}>{labs.map(tile)}</div>
+          <div className="space-y-2.5 lg:space-y-3 border-l-2 border-dashed border-[rgb(var(--ink)/0.15)] pl-2.5 lg:pl-3">
+            {bars.map((bar, b) => (
+              <div key={b} data-testid="lab-bar" className={grid}>
+                {bar.map((sub, i) => tile(sub, i === 0 && bar.length < COLS ? { "--r": "auto", "--c": barStart(bar.length) } : undefined))}
+              </div>
+            ))}
+          </div>
         </div>
       )}
-      {detail}
-      <p className="mt-3 text-xs text-muted">Point at a subject to see its classes and rooms. Dots and the bottom number are credit hours; the chip is attendance; dashed edges are labs.</p>
+
+      <p className="mt-3 text-xs text-muted">Point at a subject to see its teacher, today's class and room. Dots and the bottom number are credit hours; dashed edges are labs.</p>
     </div>
   );
 }

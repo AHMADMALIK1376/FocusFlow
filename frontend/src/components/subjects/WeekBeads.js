@@ -4,7 +4,7 @@ import { subjectPalette } from "./SubjectTable";
 
 // A small clay abacus of the week: one rod per day, one soft bead per class in
 // that subject's pastel tint. Today's rod is sage. Pointing at a bead names the
-// class and its room. Sits in the page header, top right.
+// class and its room. Sits in the gap of the Subjects periodic table (`fill` stretches it to the gap).
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 const SHORT = { Monday: "M", Tuesday: "T", Wednesday: "W", Thursday: "T", Friday: "F", Saturday: "S", Sunday: "S" };
@@ -24,7 +24,7 @@ export function weekBeads(subjects) {
   return { days, total, busiest: busiest?.day || null };
 }
 
-export default function WeekBeads({ subjects }) {
+export default function WeekBeads({ subjects, fill = false }) {
   const week = useMemo(() => weekBeads(subjects), [subjects]);
   const [focus, setFocus] = useState(null);
   if (!week.total) return null;
@@ -32,13 +32,13 @@ export default function WeekBeads({ subjects }) {
   const credits = subjects.reduce((n, s) => n + (Number(s.creditHours) || 0), 0);
 
   return (
-    <section aria-label="Your week" className="rounded-3xl bg-surface shadow-neu px-4 py-3 w-[17rem] max-w-full">
+    <section aria-label="Your week" className={`rounded-3xl bg-surface shadow-neu px-4 py-3 ${fill ? "w-full h-full flex flex-col" : "w-[17rem] max-w-full"}`}>
       <div className="flex items-baseline justify-between gap-2">
         <p className="text-[11px] font-black uppercase tracking-widest text-muted">Your week</p>
         <p className="text-[11px] font-bold text-muted">{subjects.length} subjects · {credits} cr</p>
       </div>
 
-      <div className="flex items-end justify-between gap-1.5 mt-2 h-[5.5rem]">
+      <div className={`flex items-end justify-between gap-1.5 mt-2 ${fill ? "flex-1 min-h-[5.5rem]" : "h-[5.5rem]"}`}>
         {week.days.map((d) => {
           const isToday = d.day === today;
           return (
