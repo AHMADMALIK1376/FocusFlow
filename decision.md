@@ -6,6 +6,19 @@ Update this file with every change.
 
 ---
 
+## 2026-10-18 — Subjects page: periodic table and 3D atom chart
+
+### Decided
+- **Periodic table (`SubjectTable.js`).** Every subject is an element tile: atomic number (timetable order), course code as the symbol, name, credit hours as the "mass", dots for credits, and an attendance chip (`--` with no data, warning tone under 75%). Theory subjects form the main block; labs sit in their own detached row below, like the lanthanide row of the real table. The key (Theory, Labs, days), hover/focus/click and the Open / Edit / Delete controls are kept; the big central element became a compact detail card under the table.
+- **Atom chart (`AtomChart.js`, `atomGeometry.js`).** The overall percentage is the nucleus; each subject is a tilted orbit ring in its own colour, filled to its percentage with a bead at the end. Switches at the top of the panel: One / All / Overall and Attendance / Grade. Plain CSS 3D (perspective, preserve-3d, framer-motion), no 3D library; drift and morph are switched off for reduced motion; a hidden table gives screen readers every value; legend chips are the always-working way to pick a subject.
+- **Numbers (`subjectStats.js`, `useSubjectStats.js`).** Attendance per subject = (present + late) / (present + absent + late), excused ignored, the same rule as the server. **Overall attendance is pooled** (all attended / all counted), not an average of percentages, so a 2-class subject does not weigh like a 40-class one. **Overall grade is weighted by credit hours**; subjects with no grades are left out; a subject with 0 or missing credit hours counts as weight 1. One existing endpoint (`GET /api/grades`) returns every grade, so no backend change.
+- **Layout.** Wide screens: table left (63 parts), chart right (37 parts), sticky. Phones: the chart goes under the table, full width. Mode and metric are remembered per device in `localStorage` (try/catch, a convenience only). Table and chart share the selected subject.
+- **Removed:** the table's automatic cycling of the large element every 3.2 s. With a chart that follows the selection, a timer would move the chart by itself all the time.
+- **Rejected:** three.js (heavy, tilted rings do not need it); averaging percentages; hiding the metric switch in a menu.
+- **Not seen in a real browser yet:** the 3D look, sticky behaviour and phone widths are checked by tests and class names only. Owner to check on the Vercel preview.
+
+---
+
 ## 2026-10-17 — Timetable scanner reads the table by position
 
 ### The problem

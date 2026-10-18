@@ -187,6 +187,11 @@ Solid status fills (delete pop-up, danger `Button`, the done tick) take `text-on
 4. On save, `TimetableImportModal` calls `useApp().refreshSubjectData()` (dashboard card and attendance graph), then the page's own refresh.
 5. Adding, editing, deleting or restoring a subject by hand on `SubjectsPage` does the same: after the change it calls `refreshSubjectData()`.
 
+### Subjects page (18 Oct 2026)
+1. `SubjectsPage` → `useSubjects()` (subjects) → `useSubjectStats(subjects)`: loads `GET /subject-attendance/overview` and `GET /grades` together (each may fail on its own) → `buildStats` gives per-subject and overall attendance and grade.
+2. The page owns `mode`, `metric` (remembered in `localStorage`) and the selected subject id. `SubjectTable` (periodic table) and `AtomChart` both receive the id; pointing at a tile or tapping a legend chip changes it for both.
+3. Add, edit, delete or restore a subject → the page's own refresh, then `refreshSubjectData()` for the dashboard.
+
 ---
 
 ## 3. Scanner flow (screenshot → saved data)
