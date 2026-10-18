@@ -64,6 +64,7 @@ const TimeTrackPage = lazy(() => import("./Pages/TimeTrackPage"));
 const FinancePage = lazy(() => import("./Pages/FinancePage"));
 const SubjectsPage = lazy(() => import("./Pages/SubjectsPage"));
 const SubjectHubPage = lazy(() => import("./Pages/SubjectHubPage"));
+const SubjectProgressPage = lazy(() => import("./Pages/SubjectProgressPage"));
 const GradesPage = lazy(() => import("./Pages/GradesPage"));
 const ExamsPage = lazy(() => import("./Pages/ExamsPage"));
 const FlashcardsPage = lazy(() => import("./Pages/FlashcardsPage"));
@@ -170,6 +171,7 @@ function App() {
                         <Route path="/time" element={<TimeTrackPage />} />
                         <Route path="/budget" element={<FinancePage />} />
                         <Route path="/subjects" element={<SubjectsPage />} />
+                        <Route path="/subjects/progress" element={<SubjectProgressPage />} />
                         <Route path="/subjects/:id" element={<SubjectHubPage />} />
                         <Route path="/grades" element={<GradesPage />} />
                         <Route path="/exams" element={<ExamsPage />} />

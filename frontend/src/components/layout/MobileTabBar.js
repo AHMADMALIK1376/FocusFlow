@@ -27,7 +27,7 @@ export default function MobileTabBar() {
       >
         <div className="mx-2 mb-2 flex items-stretch justify-around p-1 gap-0.5 rounded-token-lg bg-grad-hero shadow-clay-brand">
           {primaryItems.map((item) => {
-            const active = pathname === item.path;
+            const active = pathname === item.path || pathname.startsWith(item.path + '/');
             return (
               <button
                 key={item.id}
@@ -60,7 +60,7 @@ export default function MobileTabBar() {
         <h2 className="text-xl font-black text-ink mb-4">More</h2>
         <div className="grid grid-cols-2 gap-1.5">
           {overflowItems.map((item) => {
-            const active = pathname === item.path;
+            const active = pathname === item.path || pathname.startsWith(item.path + '/');
             return (
               <button
                 key={item.id}

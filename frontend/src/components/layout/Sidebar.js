@@ -29,7 +29,7 @@ export default function Sidebar() {
   const workspace = NAV_ITEMS.filter((i) => !MAIN_IDS.includes(i.id));
 
   const renderItem = (item) => {
-    const active = pathname === item.path;
+    const active = pathname === item.path || pathname.startsWith(item.path + '/');
     return (
       <button
         key={item.id}
