@@ -6,6 +6,15 @@ Update this file with every change.
 
 ---
 
+## 2026-10-24 — Attendance skyline: the hover lists the day's classes
+
+### Decided
+- Hovering a tower now shows each class of that day with its name and a clear status: Attended, Attended (late), Missed or Excused (check, clock, X and dash line icons). Before it only showed the date and "N classes attended".
+- `GET /api/subject-attendance/all` stays backward compatible (same fields) and adds `classes: [{ name, code, status }]` per day, from a LEFT JOIN to SUBJECTS scoped to the same user (bound parameters). No database change. A record whose subject was deleted shows "Class".
+- **Rejected:** a second request per hover (slow, flickers); a click-to-open panel (the owner asked for hover).
+
+---
+
 ## 2026-10-18 — Subjects: the cube carries the information; layout changes in both views
 
 ### Decided

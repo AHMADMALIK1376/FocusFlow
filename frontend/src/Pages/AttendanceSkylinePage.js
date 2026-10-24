@@ -17,7 +17,7 @@
 // (4) each tower memoized so only the previously/now-hovered pair re-render.
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useAccountYears } from '../features/account/useAccountYears';
-import { ChevronDown, TriangleAlert } from "lucide-react";
+import { ChevronDown, TriangleAlert, Check, X, Clock, Minus } from "lucide-react";
 import { subjectAttendanceAPI } from "../services/api";
 import { PageShell, Panel } from "../components/dashboard/DashKit";
 import { PanelLoading } from "../components/common/LoadingSpinner";
@@ -76,6 +76,17 @@ function toLocalKey(d) {
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
+}
+
+// How one class of the day reads in the hover: attended, late (counts as attended), missed or excused.
+export function classStatus(status) {
+  switch (status) {
+    case "Present": return { text: "Attended", Icon: Check, tone: "text-success-ink" };
+    case "Late": return { text: "Attended (late)", Icon: Clock, tone: "text-success-ink" };
+    case "Absent": return { text: "Missed", Icon: X, tone: "text-focus-ink" };
+    case "Excused": return { text: "Excused", Icon: Minus, tone: "text-ink/60" };
+    default: return { text: String(status || "Unknown"), Icon: Minus, tone: "text-ink/60" };
+  }
 }
 
 function formatDate(d) {
@@ -312,6 +323,7 @@ export default function AttendanceSkylinePage() {
           raw.push({
             w, d, date, attended,
             absent: rec ? rec.absent : 0,
+            classes: rec && Array.isArray(rec.classes) ? rec.classes : [],
             hasClass: Boolean(rec),
             isFuture,
             level: levelForCount(attended),
@@ -361,6 +373,7 @@ export default function AttendanceSkylinePage() {
         anchorX: (t0[0] + t1[0] + t2[0] + t3[0]) / 4,
         anchorY: Math.min(t0[1], t1[1], t2[1], t3[1]),
         label: formatDate(cell.date),
+        classes: cell.classes,
         sub: cell.hasClass
           ? `${cell.attended} class${cell.attended === 1 ? "" : "es"} attended${cell.absent ? ` · ${cell.absent} missed` : ""}`
           : cell.isFuture ? "Upcoming" : "No classes scheduled",
@@ -426,6 +439,7 @@ export default function AttendanceSkylinePage() {
       d: cell.d,
       label: cell.label,
       sub: cell.sub,
+      classes: cell.classes,
     });
   }
 
@@ -625,6 +639,20 @@ export default function AttendanceSkylinePage() {
         >
           <p className="text-xs font-bold">{hover.label}</p>
           <p className="text-[11px] text-ink/70">{hover.sub}</p>
+          {hover.classes && hover.classes.length > 0 && (
+            <ul className="mt-1.5 space-y-1 border-t border-ink/10 pt-1.5" aria-label="Classes that day">
+              {hover.classes.map((c, i) => {
+                const st = classStatus(c.status);
+                return (
+                  <li key={i} className="flex items-center gap-2 text-[11px]">
+                    <st.Icon size={12} className={st.tone} aria-hidden="true" />
+                    <span className="font-semibold text-ink">{c.name || c.code || "Class"}</span>
+                    <span className={`ml-auto pl-3 ${st.tone}`}>{st.text}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </div>
       )}
     </PageShell>

@@ -193,6 +193,9 @@ Solid status fills (delete pop-up, danger `Button`, the done tick) take `text-on
 2. Add, edit, delete or restore a subject, or a timetable import: the page's own refresh, then `refreshSubjectData()` for the dashboard. The table and week graph re-render from the new list.
 3. "Progress graph" button → `/subjects/progress` → `SubjectProgressPage`: `useSubjects()` → `useSubjectStats(subjects)` (loads `GET /subject-attendance/overview` and `GET /grades` together, each may fail on its own) → `buildStats` → `AtomChart`. The page owns mode, metric (remembered in `localStorage`) and the selected subject.
 
+### Attendance skyline hover (24 Oct 2026)
+`AttendanceSkylinePage` loads `subjectAttendanceAPI.getAllForUser()` (`GET /subject-attendance/all`, each day now carries `classes`). The cell's `classes` go into the hover state; the tooltip lists each class with `classStatus(status)`.
+
 ---
 
 ## 3. Scanner flow (screenshot → saved data)
