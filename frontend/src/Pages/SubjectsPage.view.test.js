@@ -144,14 +144,15 @@ test("exactly one mascot in each view: the header one in the table, the corner o
   expect(screen.queryByTestId("mascot-corner")).toBeNull();
 });
 
-test("the table view draws the old tube graph and the cube view the week timeline", () => {
+test("both views draw the tube graph (the timeline is not used on this page)", () => {
   page("table");
   expect(screen.getAllByRole("region", { name: "Your week" })).toHaveLength(1);
   expect(screen.queryAllByTestId("day-track")).toHaveLength(0); // WeekTimeline's rows
   expect(screen.getByRole("button", { name: /Fri 8:00–9:30 AM, Internet of Things, LR26/ })).toBeInTheDocument();
   fireEvent.click(radio(/Cube/));
   expect(screen.getAllByRole("region", { name: "Your week" })).toHaveLength(1);
-  expect(screen.getAllByTestId("day-track").length).toBeGreaterThan(0);
+  expect(screen.queryAllByTestId("day-track")).toHaveLength(0);
+  expect(screen.getByRole("button", { name: /Fri 8:00–9:30 AM, Internet of Things, LR26/ })).toBeInTheDocument();
 });
 
 test("in the table view Open, Edit and Delete work on the large element, with the delete confirm", () => {

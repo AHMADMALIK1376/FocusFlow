@@ -116,11 +116,11 @@ test("exactly one mascot is on the page (the header one is turned off)", () => {
 test("the tooltip comes from a pill in the Your Week graph, with teacher and room", () => {
   page();
   const week = within(screen.getByRole("region", { name: "Your week" }));
-  fireEvent.focus(week.getByRole("button", { name: /11:10 AM to 12:40 PM, Internet of Things, LR29/ }));
+  fireEvent.focus(week.getByRole("button", { name: /Fri 8:00–9:30 AM, Internet of Things, LR26/ }));
   const tip = screen.getByRole("tooltip");
-  expect(tip).toHaveTextContent("CSC467 · Internet of Things");
+  expect(tip).toHaveTextContent("Internet of Things");
   expect(tip).toHaveTextContent("Ms. Seher Saeed");
-  expect(tip).toHaveTextContent("LR29");
+  expect(tip).toHaveTextContent("LR26");
 });
 
 test("the faces carry the subject's information, with attendance and TBA", () => {

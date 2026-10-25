@@ -23,7 +23,25 @@ test("summary, then the class and room for the bead pointed at", () => {
   expect(screen.getByText(/5 classes · Thu is busiest/)).toBeInTheDocument();
   fireEvent.mouseEnter(screen.getByRole("button", { name: /Thu 8:00–11:05 AM, Web Engineering Lab, COMP LAB8/ }));
   expect(screen.getByText("CSC312L")).toBeInTheDocument();
-  expect(screen.getByText("COMP LAB8")).toBeInTheDocument();
+  expect(screen.getAllByText("COMP LAB8").length).toBeGreaterThan(0);
+});
+
+test("a small tooltip names the subject, teacher, day, time and room, and goes away", () => {
+  const subjects = [{ ...SUBJECTS[0], instructor: "Ms. Seher Saeed" }, SUBJECTS[1], SUBJECTS[2], SUBJECTS[3]];
+  render(<WeekBeads subjects={subjects} />);
+  const bead = screen.getByRole("button", { name: /Mon 11:10 AM – 12:40 PM, Internet of Things, LR29/ });
+  fireEvent.mouseEnter(bead);
+  const tip = screen.getByRole("tooltip");
+  expect(tip).toHaveTextContent("Internet of Things");
+  expect(tip).toHaveTextContent("Ms. Seher Saeed");
+  expect(tip).toHaveTextContent("Mon");
+  expect(tip).toHaveTextContent("LR29");
+  fireEvent.mouseLeave(bead);
+  expect(screen.queryByRole("tooltip")).toBeNull();
+  fireEvent.mouseEnter(screen.getByRole("button", { name: /Thu 8:00–11:05 AM, Web Engineering Lab/ }));
+  expect(screen.getByRole("tooltip")).toHaveTextContent("TBA"); // no teacher saved
+  fireEvent.keyDown(screen.getByRole("button", { name: /Thu 8:00–11:05 AM, Web Engineering Lab/ }), { key: "Escape" });
+  expect(screen.queryByRole("tooltip")).toBeNull();
 });
 
 test("nothing drawn without class times", () => {

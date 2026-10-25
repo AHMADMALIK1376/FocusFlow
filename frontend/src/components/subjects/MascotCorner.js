@@ -34,7 +34,7 @@ export default function MascotCorner({ subjects, className = "" }) {
   return (
     <div data-testid="mascot-corner" className={`flex items-end justify-center gap-2 pb-1 min-w-0 lg:flex-col-reverse lg:items-center lg:justify-start lg:gap-1 ${className}`}>
       <style>{`@keyframes ff-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}.ff-float{animation:ff-float 3.6s ease-in-out infinite}@media (prefers-reduced-motion:reduce){.ff-float{animation:none}}`}</style>
-      <div className="relative w-28 h-28 lg:w-60 lg:h-60 xl:w-[17rem] xl:h-[17rem] shrink-0">
+      <div className="relative w-28 h-28 lg:w-40 lg:h-40 shrink-0">
         <span aria-hidden="true" className="absolute left-1/2 bottom-1 -translate-x-1/2 w-20 lg:w-40 h-3 rounded-[50%] bg-[rgb(var(--ink)/0.12)] blur-[3px]" />
         <div className="ff-float relative w-full h-full">
           <Mascot directions={sheets.directions} reactions={sheets.reactions} size="100%" label={mascotName(id)} />

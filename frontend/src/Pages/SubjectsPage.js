@@ -10,7 +10,6 @@ import TimetableImportModal from "../features/subjects/TimetableImportModal";
 import { useSubjectStats } from "../features/subjects/useSubjectStats";
 import RubikCube from "../components/subjects/RubikCube";
 import MascotCorner from "../components/subjects/MascotCorner";
-import WeekTimeline from "../components/subjects/WeekTimeline";
 import PeriodicTable from "../components/subjects/PeriodicTable";
 import WeekBeads from "../components/subjects/WeekBeads";
 import PageMascot from "../components/common/PageMascot";
@@ -121,7 +120,7 @@ export default function SubjectsPage() {
         <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
           <div data-testid="subjects-header" className="min-w-0 w-full lg:w-auto lg:flex-1">
             <PageHeader mascot={false} title="Subjects" subtitle={subtitle} />
-            <div data-testid="title-mascot" className="-mt-2"><PageMascot size={120} /></div>
+            <div data-testid="title-mascot" className="-mt-2"><PageMascot size={160} /></div>
           </div>
           <div data-testid="week-slot" className="w-full lg:w-[17rem] min-w-0 flex flex-col items-center lg:items-end gap-3">
             <WeekBeads subjects={subjects} />
@@ -168,8 +167,8 @@ export default function SubjectsPage() {
               <Button variant="primary" size="sm" onClick={openAdd} className="gap-1.5"><Plus size={16} /> Add subject</Button>
             </div>
           </RubikCube>
-          <div data-testid="week-slot" className="min-w-0 flex flex-col items-center lg:items-end gap-3">
-            <div className="w-full"><WeekTimeline subjects={subjects} fill /></div>
+          <div data-testid="week-slot" className="min-w-0 flex flex-col items-center lg:items-end lg:self-start gap-3">
+            <WeekBeads subjects={subjects} />
             {switcher}
           </div>
         </div>

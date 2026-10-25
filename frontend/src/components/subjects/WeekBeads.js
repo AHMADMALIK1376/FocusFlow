@@ -27,6 +27,13 @@ export function weekBeads(subjects) {
 export default function WeekBeads({ subjects }) {
   const week = useMemo(() => weekBeads(subjects), [subjects]);
   const [focus, setFocus] = useState(null);
+  const [tip, setTip] = useState(null); // { b, day, x, y } for the small tooltip
+  const showTip = (e, b, day) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    setFocus(b);
+    setTip({ b, day, x: r.left + r.width / 2, y: r.top });
+  };
+  const hideTip = () => { setFocus(null); setTip(null); };
   if (!week.total) return null;
   const today = DAYS[(new Date().getDay() + 6) % 7];
   const credits = subjects.reduce((n, s) => n + (Number(s.creditHours) || 0), 0);
@@ -52,11 +59,12 @@ export default function WeekBeads({ subjects }) {
                       key={i}
                       type="button"
                       aria-label={`${NAME[d.day]} ${fmtRange(b.start, b.end)}, ${b.subject.name}${b.room ? `, ${b.room}` : ""}`}
-                      onMouseEnter={() => setFocus(b)}
-                      onMouseLeave={() => setFocus(null)}
-                      onFocus={() => setFocus(b)}
-                      onBlur={() => setFocus(null)}
-                      onClick={() => setFocus(b)}
+                      onMouseEnter={(e) => showTip(e, b, d.day)}
+                      onMouseLeave={hideTip}
+                      onFocus={(e) => showTip(e, b, d.day)}
+                      onBlur={hideTip}
+                      onClick={(e) => showTip(e, b, d.day)}
+                      onKeyDown={(e) => { if (e.key === "Escape") hideTip(); }}
                       className={`w-full max-w-[1.6rem] h-3.5 rounded-full transition-transform ${on ? "scale-110" : ""}`}
                       style={{
                         background: p.badgeBg,
@@ -79,6 +87,14 @@ export default function WeekBeads({ subjects }) {
           <>{week.total} classes · {NAME[week.busiest]} is busiest</>
         )}
       </p>
+      {tip && (
+        <div role="tooltip" data-testid="week-tip" className="fixed z-[9999] pointer-events-none max-w-[13rem] rounded-xl bg-surface text-ink shadow-neu-sm border border-ink/10 px-2.5 py-1.5 text-[11px] leading-snug"
+          style={{ left: Math.min(Math.max(tip.x, 100), window.innerWidth - 100), top: tip.y, transform: "translate(-50%, -100%) translateY(-6px)" }}>
+          <p className="font-black truncate">{tip.b.subject.name}</p>
+          <p className="text-ink/70 truncate">{tip.b.subject.instructor || "TBA"}</p>
+          <p className="text-ink/80">{NAME[tip.day]} {fmtRange(tip.b.start, tip.b.end)}{tip.b.room ? <> · <b>{tip.b.room}</b></> : null}</p>
+        </div>
+      )}
     </section>
   );
 }

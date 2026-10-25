@@ -6,6 +6,15 @@ Update this file with every change.
 
 ---
 
+## 2026-10-25 — Subjects: the same tube graph in both views, small tooltip, equal mascots
+
+- The cube view now uses the same Your Week tube graph (`WeekBeads`) as the table view, at the top right of the hero (it used to be the week timeline, centred low). `WeekTimeline.js` stays in the repo but is no longer used on the page.
+- Pointing at, focusing or tapping a capsule shows a small tooltip (fixed, kept on screen): subject name, teacher (TBA when none), day and time, room. Escape or leaving hides it. The old one-line caption under the graph stays.
+- The mascot is the same size in both views (about 10rem on desktop): the table view's grew from 120px to 160px, the cube view's shrank from 15-17rem to 10rem.
+- Rejected: a bigger tooltip card (the owner wants it small).
+
+---
+
 ## 2026-10-24 — Attendance skyline: the hover lists the day's classes
 
 ### Decided
