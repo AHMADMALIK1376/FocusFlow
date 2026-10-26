@@ -9,6 +9,7 @@ import { useActiveTheme } from "../../preferences/useActiveTheme";
 import ThemedMark from "../common/ThemedMark";
 import { LogoutButton } from "../ui/LogoutButton";
 import { MascotPicker } from "../ui/MascotPicker";
+import { fileToAvatar } from "../ui/avatarImage";
 import { mascotSrc } from "../ui/mascots";
 
 export default function Navbar() {
@@ -28,10 +29,9 @@ export default function Navbar() {
 
   function onPickImage(e) {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => updateProfile({ avatarUrl: reader.result, mascot: null });
-    reader.readAsDataURL(file);
+    fileToAvatar(file).then((url) => updateProfile({ avatarUrl: url, mascot: null })).catch(() => {});
   }
 
   useEffect(() => {
@@ -159,6 +159,7 @@ export default function Navbar() {
         onClose={() => setPickerOpen(false)}
         value={profile?.mascot}
         onPick={(id) => updateProfile({ mascot: id, avatarUrl: null })}
+        onPhoto={(url) => updateProfile({ avatarUrl: url, mascot: null })}
       />
     </nav>
   );

@@ -114,7 +114,8 @@ function MascotCard() {
         </Button>
       </div>
       <MascotPicker open={pickerOpen} onClose={() => setPickerOpen(false)} value={profile?.mascot}
-        onPick={(m) => updateProfile({ mascot: m, avatarUrl: null })} />
+        onPick={(m) => updateProfile({ mascot: m, avatarUrl: null })}
+        onPhoto={(url) => updateProfile({ avatarUrl: url, mascot: null })} />
     </section>
   );
 }

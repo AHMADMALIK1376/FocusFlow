@@ -87,7 +87,7 @@ Solid status fills (delete pop-up, danger `Button`, the done tick) take `text-on
 - **Photo:** if `profile.avatarUrl` is set, the photo fills the card.
 - **Mascot:** if `profile.mascot` is set instead, a sage backdrop fills the card, and the mascot is sized from it with CSS container units.
 - **Neither:** the initial and "Pick a mascot".
-- "Change mascot" opens `MascotPicker`. A pick saves `{ mascot, avatarUrl: null }`.
+- "Change mascot" opens `MascotPicker`. A mascot pick saves `{ mascot, avatarUrl: null }`. "Add a picture of yourself" runs the file through `fileToAvatar` (square crop, 256 px JPEG) and saves `{ avatarUrl, mascot: null }`; a bad file shows a message and nothing changes. The same pop-up is used by Settings and the header menu.
 
 ### Talking to the backend — `services/api.js`
 1. Every page calls a helper such as `subjectAPI.getAll()` or `examAPI.create()`.

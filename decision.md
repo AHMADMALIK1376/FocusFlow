@@ -6,6 +6,31 @@ Update this file with every change.
 
 ---
 
+## 2026-10-31 — Pick your own picture instead of a mascot
+
+- **What:** the mascot pop-up has an "Add a picture of yourself" button above the mascots. A chosen photo is centre-cropped to a square, shrunk to 256 px and saved as a JPEG (`components/ui/avatarImage.js`). Picking a mascot clears the photo and picking a photo clears the mascot, as before. It is offered from the dashboard card, Settings and the header menu.
+- **Why:** a student may prefer their own face to a cartoon. The old header upload saved the raw photo, which could be megabytes; anything over 60 KB was kept on that device only (`forServer`). The shrunk picture is about 20-40 KB, so it now syncs to the account.
+- **Files that are not images, or are over 10 MB, are refused with a plain message;** the pop-up stays open and nothing changes.
+- **Rejected:** uploading photos to a server or storage bucket (needs new infrastructure and a paid-tier risk); a separate "profile picture" page (the one pop-up already decides what represents you).
+
+---
+
+## 2026-10-31 — Profile card: trading card chosen over a floating mascot with orbiting bubbles
+
+- **Decision:** you compared the trading card with a mascot on a pedestal with three orbiting stat bubbles and kept the trading card. The orbit version and its temporary `?card=orbit` switch were deleted.
+- **Why the orbit lost:** your pick. For the record, it needed the ring drawn twice to pass bubbles behind and in front of the mascot, and a moving target is harder to hit on a phone.
+
+---
+
+## 2026-10-31 — Dashboard profile card as a collectible trading card
+
+- The owner found the old card (mascot on a coral fade, three numbers) old fashioned. It is now drawn like a trading card (`ProfileCard.js`): a coral frame, a light art window where the mascot stands, **its head stepping out over the window's top edge** (the mascot hangs from the top of the window and a clip layer cuts it at the window's bottom and sides; sized with plain percentages (135% of the window width, a -13.5% top margin) and no container-query units or 3D flattening, after the first version showed no mascot in the owner's dashboard), a corner badge (the segment, for example "Gen Z"), a **nameplate banner** at the window's foot, and three **power stats** (Streak, Done, Focus) as small tiles with bars that fill toward a goal (14 days, 20 tasks, 10 sessions; capped at full).
+- The card **leans toward the pointer** (at most 9 degrees, 3D) with a soft shine that follows it. No tilt on touch or for reduced motion. The photo (avatar) and no-mascot cases keep working inside the art window; Change mascot, the picker and poking the mascot are unchanged.
+- Options offered and not built: an XP ring, a floating mascot with orbiting bubbles, a die-cut sticker, a talking mascot. The trading card was the owner's pick.
+- Mascot sprites have different amounts of empty space under their feet; the nameplate and a light fade at the foot of the window turn that space into part of the design.
+
+---
+
 ## 2026-10-30 — Attendance skyline: the hover tooltip follows its tower in every view
 
 - Bug: the chart measured its position on screen once, when the page opened. After scrolling (and after the layout changed when the data or the camera changed, most visible in the Skyline view) the tooltip appeared away from the tower, up to the scroll distance off. Fix: measure the chart when a new tower is hovered (one measurement per tower change, still cheap), hide the tooltip while the page scrolls or resizes, and place it with `tooltipPlacement`: above the tower, below it when there is no room above, never past the screen edges (tested).
