@@ -17,7 +17,7 @@
 // (4) each tower memoized so only the previously/now-hovered pair re-render.
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useAccountYears } from '../features/account/useAccountYears';
-import { ChevronDown, TriangleAlert, Check, X, Clock, Minus } from "lucide-react";
+import { ChevronDown, TriangleAlert, Check, X, Clock, Minus, Box, BarChart3, LayoutGrid } from "lucide-react";
 import { subjectAttendanceAPI } from "../services/api";
 import { PageShell, Panel } from "../components/dashboard/DashKit";
 import { PanelLoading } from "../components/common/LoadingSpinner";
@@ -28,8 +28,14 @@ const DAYS = 7;
 // ── Isometric projection ────────────────────────────────────────────────────
 // Two basis vectors: one step along the week axis (right + slightly down) and
 // one along the weekday axis (left + down). Everything else follows from these.
-const WEEK = { x: 16.5, y: 6.6 };
-const DAY = { x: -13.5, y: 7.4 };
+// Each viewpoint is a pair of basis vectors plus a height scale (hs). The camera buttons
+// glide between them by interpolating these numbers, so every tower slides smoothly.
+export const VIEWS = {
+  iso: { label: "Isometric", WEEK: { x: 16.5, y: 6.6 }, DAY: { x: -13.5, y: 7.4 }, hs: 1 },
+  side: { label: "Skyline", WEEK: { x: 15, y: 1.3 }, DAY: { x: -2.6, y: 2.8 }, hs: 1.9 },
+  top: { label: "Top", WEEK: { x: 21, y: 0 }, DAY: { x: 0, y: 21 }, hs: 0 },
+};
+const VIEW_ICONS = { iso: Box, side: BarChart3, top: LayoutGrid };
 const UNIT_H = 18;    // px of bar height per class attended
 const BASE_H = 3.5;   // every tile is a thin slab, so empty days still read as blocks
 const TILE = 0.7;     // shrink each tile inside its cell to leave clear gaps
@@ -57,11 +63,68 @@ const WALL_MARGIN = 16;   // clearance between the tallest tower and the axis li
 const WALL_MIN = 2 * UNIT_H; // keeps the axis a consistent height even with sparse data
 const LABEL_GAP = 8;      // axis line → label text, upward
 const DAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
+const MIN_DAY_STEP = 9; // px between two weekdays below which their letters would overlap
 
-const dayLen = Math.hypot(DAY.x, DAY.y);
-const weekLen = Math.hypot(WEEK.x, WEEK.y);
-const OUT_MONTH = { x: -DAY.x / dayLen, y: -DAY.y / dayLen };   // away from the d=0 edge
-const OUT_DAY = { x: -WEEK.x / weekLen, y: -WEEK.y / weekLen }; // away from the w=0 edge
+const lerp = (a, b, t) => a + (b - a) * t;
+export const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+export function lerpView(a, b, t) {
+  return {
+    label: b.label,
+    WEEK: { x: lerp(a.WEEK.x, b.WEEK.x, t), y: lerp(a.WEEK.y, b.WEEK.y, t) },
+    DAY: { x: lerp(a.DAY.x, b.DAY.x, t), y: lerp(a.DAY.y, b.DAY.y, t) },
+    hs: lerp(a.hs, b.hs, t),
+  };
+}
+
+// Where everything sits for one camera: the canvas size that just fits the slab, the
+// tallest tower and the axis labels, the origin to draw from, and the axis directions.
+export function slabLayout(view, weeks, maxTowerH) {
+  const { WEEK, DAY, hs } = view;
+  const maxH = maxTowerH * hs;
+  const lift = Math.max(maxH, WALL_MIN * hs) + WALL_MARGIN;
+  const dayLen = Math.hypot(DAY.x, DAY.y) || 1;
+  const weekLen = Math.hypot(WEEK.x, WEEK.y) || 1;
+  const outMonth = { x: -DAY.x / dayLen, y: -DAY.y / dayLen };   // away from the d=0 edge
+  const outDay = { x: -WEEK.x / weekLen, y: -WEEK.y / weekLen }; // away from the w=0 edge
+  const pt = (w, d) => [w * WEEK.x + d * DAY.x, w * WEEK.y + d * DAY.y];
+  const anchor = (w, d) => {
+    const p = pt(w, d);
+    return [p[0] + (outMonth.x + outDay.x) * AXIS_GAP, p[1] + (outMonth.y + outDay.y) * AXIS_GAP - lift];
+  };
+  const pts = [];
+  for (const w of [0, weeks]) for (const d of [0, DAYS]) { const p = pt(w, d); pts.push(p, [p[0], p[1] - maxH]); }
+  for (const [w, d] of [[0, 0], [weeks, 0], [0, DAYS]]) { const a = anchor(w, d); pts.push(a, [a[0], a[1] - LABEL_GAP - 14]); }
+  const xs = pts.map((p) => p[0]);
+  const ys = pts.map((p) => p[1]);
+  const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+  return { width: maxX - minX + PAD * 2, height: maxY - minY + PAD * 2, oX: PAD - minX, oY: PAD - minY, lift, outMonth, outDay };
+}
+
+// Glides the camera to the chosen viewpoint (instant when the user prefers reduced motion).
+function useAnimatedView(key) {
+  const [view, setView] = useState(VIEWS[key]);
+  const current = useRef(VIEWS[key]);
+  useEffect(() => {
+    const to = VIEWS[key];
+    const from = current.current;
+    if (from === to) return undefined;
+    const reduce = typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) { current.current = to; setView(to); return undefined; }
+    let raf;
+    const t0 = performance.now();
+    const DURATION = 750;
+    const step = (now) => {
+      const t = Math.min(1, (now - t0) / DURATION);
+      const next = t >= 1 ? to : lerpView(from, to, easeInOut(t));
+      current.current = next;
+      setView(next);
+      if (t < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [key]);
+  return view;
+}
 
 function levelForCount(n) {
   if (!n) return 0;
@@ -277,7 +340,14 @@ export default function AttendanceSkylinePage() {
 
   const years = useAccountYears(); // only years since the account was created
 
-  const { renderCells, cellByKey, stats, width, height, monthTicks, wallLift, weekToTick, totalWeeks, originX, originY } = useMemo(() => {
+  const [viewKey, setViewKey] = useState("iso");
+  const view = useAnimatedView(viewKey);
+  const WEEK = view.WEEK;
+  const DAY = view.DAY;
+  const HS = view.hs;
+
+  // Data pass: depends on the attendance and the year only, never on the camera.
+  const { raw, stats, monthTicks, weekToTick, totalWeeks, maxTowerH } = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const jan1 = new Date(year, 0, 1);
@@ -333,21 +403,23 @@ export default function AttendanceSkylinePage() {
     }
 
     const { longest, current } = computeStreaks(classDays);
-    // The axis floats this far above ground zero — tall enough to clear the
-    // tallest tower plus a margin, but never shorter than WALL_MIN so it looks
-    // the same height on a sparse year as on a busy one.
-    const lift = Math.max(maxTowerH, WALL_MIN) + WALL_MARGIN;
-    const topRoom = lift + LABEL_GAP + 14;
-    const leftRoom = 46;
-    const oX = PAD + DAYS * Math.abs(DAY.x) + leftRoom;
-    const oY = PAD + lift + LABEL_GAP + 14;
+    return {
+      raw,
+      stats: { total, busiest, longest, current, classDayCount: classDays.length },
+      monthTicks: ticks,
+      weekToTick: weekToTickArr,
+      totalWeeks: weeks,
+      maxTowerH,
+    };
+  }, [byDate, year]);
 
-    // Pass 2: now that the origin is fixed, precompute each tower's geometry
-    // and fill ONCE — this is what lets each <Tower> be memoized so a hover
-    // change only re-renders the two towers whose isHovered actually flipped.
+  // Geometry pass: reruns on every frame of a camera move. Each <Tower> is memoized on its
+  // point strings, so only towers whose geometry actually changed repaint.
+  const { renderCells, cellByKey, width, height, wallLift, originX, originY, outMonth, outDay } = useMemo(() => {
+    const { width: canvasW, height: canvasH, oX, oY, lift, outMonth: om, outDay: od } = slabLayout(view, totalWeeks, maxTowerH);
     const pts = (arr) => arr.map((p) => p.join(",")).join(" ");
     const out = raw.map((cell) => {
-      const h = cell.attended * UNIT_H + BASE_H;
+      const h = (cell.attended * UNIT_H + BASE_H) * HS;
       const cx = oX + cell.w * WEEK.x + cell.d * DAY.x;
       const cy = oY + cell.w * WEEK.y + cell.d * DAY.y;
       const ox = ((WEEK.x + DAY.x) * (1 - TILE)) / 2;
@@ -391,17 +463,15 @@ export default function AttendanceSkylinePage() {
     return {
       renderCells: out,
       cellByKey: byKey,
-      stats: { total, busiest, longest, current, classDayCount: classDays.length },
-      monthTicks: ticks,
-      weekToTick: weekToTickArr,
-      totalWeeks: weeks,
       wallLift: lift,
       originX: oX,
       originY: oY,
-      width: weeks * WEEK.x + DAYS * Math.abs(DAY.x) + PAD * 2 + leftRoom,
-      height: topRoom + weeks * WEEK.y + DAYS * DAY.y + PAD,
+      width: canvasW,
+      height: canvasH,
+      outMonth: om,
+      outDay: od,
     };
-  }, [byDate, year, brand]);
+  }, [raw, brand, view, totalWeeks, maxTowerH, WEEK.x, WEEK.y, DAY.x, DAY.y, HS]);
 
   const proj = (w, d) => [originX + w * WEEK.x + d * DAY.x, originY + w * WEEK.y + d * DAY.y];
   const push = (p, out, dist) => [p[0] + out.x * dist, p[1] + out.y * dist];
@@ -498,6 +568,24 @@ export default function AttendanceSkylinePage() {
           </p>
         </div>
         <div className="flex items-start gap-3 ml-auto">
+        <div role="radiogroup" aria-label="Viewpoint" className="flex items-center gap-1 rounded-full bg-surface shadow-neu-sm p-1">
+          {Object.entries(VIEWS).map(([key, v]) => {
+            const Icon = VIEW_ICONS[key];
+            const on = key === viewKey;
+            return (
+              <button
+                key={key}
+                type="button"
+                role="radio"
+                aria-checked={on}
+                onClick={() => setViewKey(key)}
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 h-8 text-xs font-bold transition-colors ${on ? "bg-grad-hero text-on-brand shadow-clay-brand" : "text-muted hover:text-ink"}`}
+              >
+                <Icon size={14} aria-hidden="true" /> {v.label}
+              </button>
+            );
+          })}
+        </div>
         <div className="relative" ref={yearRef}>
           <button
             type="button"
@@ -532,11 +620,11 @@ export default function AttendanceSkylinePage() {
           leaves the top-right and bottom-left empty — the stats sit in that
           negative space, exactly as in the reference. */}
       <Panel className="relative">
-        <div className="hidden xl:flex flex-col gap-6 absolute top-7 right-7 z-10 items-end">
+        <div className={`${viewKey === "iso" ? "hidden xl:flex" : "hidden"} flex-col gap-6 absolute top-7 right-7 z-10 items-end`}>
           {statTotal}
           {statBusiest}
         </div>
-        <div className="hidden xl:flex flex-col gap-6 absolute bottom-7 left-7 z-10">
+        <div className={`${viewKey === "iso" ? "hidden xl:flex" : "hidden"} flex-col gap-6 absolute bottom-7 left-7 z-10`}>
           {statLongest}
           {statCurrent}
         </div>
@@ -548,7 +636,7 @@ export default function AttendanceSkylinePage() {
             viewBox={`0 0 ${width} ${height}`}
             style={{ maxWidth: "none", cursor: "pointer" }}
             role="img"
-            aria-label={`Isometric attendance chart for ${year}`}
+            aria-label={`${VIEWS[viewKey].label} view of the attendance chart for ${year}`}
             onPointerMove={handlePointerMove}
             onPointerLeave={handlePointerLeave}
           >
@@ -572,13 +660,15 @@ export default function AttendanceSkylinePage() {
             {(() => {
               // Two straight lines — one under the months, one under the days —
               // that meet at a shared corner. Both use the SAME combined offset
-              // (OUT_MONTH*AXIS_GAP + OUT_DAY*AXIS_GAP), so their w=0/d=0
+              // (outMonth*AXIS_GAP + outDay*AXIS_GAP), so their w=0/d=0
               // endpoint is the exact same point, not just visually close.
               const lineStyle = { stroke: "rgb(var(--ink) / 0.22)", strokeWidth: 1 };
               const textStyle = { fill: "rgb(var(--muted))", fontSize: 10, fontWeight: 700, transition: "fill 150ms ease" };
               const textActiveStyle = { fill: "rgb(var(--brand))", fontWeight: 800 };
 
-              const axisAnchor = (w, d) => liftPoint(push(push(proj(w, d), OUT_MONTH, AXIS_GAP), OUT_DAY, AXIS_GAP), wallLift);
+              const axisAnchor = (w, d) => liftPoint(push(push(proj(w, d), outMonth, AXIS_GAP), outDay, AXIS_GAP), wallLift);
+              // In the side view the seven days are squeezed together, so their letters would pile up.
+              const showDayLabels = Math.hypot(DAY.x, DAY.y) >= MIN_DAY_STEP;
               const monthLineStart = axisAnchor(0, 0);
               const monthLineEnd = axisAnchor(totalWeeks, 0);
               const dayLineStart = axisAnchor(0, 0);
@@ -587,7 +677,7 @@ export default function AttendanceSkylinePage() {
               return (
                 <g>
                   <line x1={monthLineStart[0]} y1={monthLineStart[1]} x2={monthLineEnd[0]} y2={monthLineEnd[1]} style={lineStyle} />
-                  <line x1={dayLineStart[0]} y1={dayLineStart[1]} x2={dayLineEnd[0]} y2={dayLineEnd[1]} style={lineStyle} />
+                  {showDayLabels && <line x1={dayLineStart[0]} y1={dayLineStart[1]} x2={dayLineEnd[0]} y2={dayLineEnd[1]} style={lineStyle} />}
 
                   {monthTicks.map(({ w, label }, idx) => {
                     const lab = liftPoint(axisAnchor(w, 0), LABEL_GAP);
@@ -599,7 +689,7 @@ export default function AttendanceSkylinePage() {
                     );
                   })}
 
-                  {DAY_LABELS.map((lbl, d) => {
+                  {showDayLabels && DAY_LABELS.map((lbl, d) => {
                     const lab = liftPoint(axisAnchor(0, d + 0.5), LABEL_GAP);
                     const active = d === activeDay;
                     return (
@@ -615,7 +705,7 @@ export default function AttendanceSkylinePage() {
         </div>
 
         {/* Below the chart on narrower screens, where there's no room to overlay. */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-5 xl:hidden mt-5 pt-5 border-t border-[rgb(var(--ink)/0.08)]">
+        <div className={`grid grid-cols-2 sm:grid-cols-4 gap-5 ${viewKey === "iso" ? "xl:hidden" : ""} mt-5 pt-5 border-t border-[rgb(var(--ink)/0.08)]`}>
           {statTotal}
           {statBusiest}
           {statLongest}

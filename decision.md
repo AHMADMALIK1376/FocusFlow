@@ -6,6 +6,15 @@ Update this file with every change.
 
 ---
 
+## 2026-10-28 — Attendance skyline: viewpoint buttons
+
+- Three buttons (Isometric, Skyline, Top) change the camera, and the chart glides there in 0.75 s (eased; instant for reduced motion). Isometric is the original. **Skyline** looks from the side (flatter ground, bars 1.9 times taller, like a city skyline). **Top** looks straight down, a flat heatmap grid with no tower height.
+- How: a viewpoint is two basis vectors plus a height scale. The animation interpolates those numbers and recomputes every tower's points per frame (`slabLayout`, `lerpView`, `easeInOut`, pure and tested). Each tower stays memoized on its point strings. The canvas resizes to fit each view; the four stat blocks sit around the chart only in the isometric view and in a row under it in the other two. Weekday letters are hidden in the Skyline view (days are squeezed together there and the letters overlapped).
+- **Rejected:** a CSS 3D rotation of the whole picture (the towers need correct back-to-front overlap, and the SVG painter order only works for this one camera family; interpolating the projection keeps it right); the circular chart from the owner's references (a different chart type, not a viewpoint; offered separately).
+- Not saved between visits; it opens in Isometric every time.
+
+---
+
 ## 2026-10-25 — Subjects: the same tube graph in both views, small tooltip, equal mascots
 
 - The cube view now uses the same Your Week tube graph (`WeekBeads`) as the table view, at the top right of the hero (it used to be the week timeline, centred low). `WeekTimeline.js` stays in the repo but is no longer used on the page.
