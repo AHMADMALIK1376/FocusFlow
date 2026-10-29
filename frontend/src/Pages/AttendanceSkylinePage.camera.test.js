@@ -39,12 +39,28 @@ test("every viewpoint gets a finite canvas, and the flat top view is much shorte
   expect(sizes.top.height).toBeLessThan(sizes.iso.height);
 });
 
-test("the axis directions point away from the slab edges in every viewpoint", () => {
-  for (const v of Object.values(VIEWS)) {
-    const l = slabLayout(v, 53, 60);
-    expect(Math.hypot(l.outMonth.x, l.outMonth.y)).toBeCloseTo(1);
-    expect(Math.hypot(l.outDay.x, l.outDay.y)).toBeCloseTo(1);
+test("the skyline stands on level ground with the months along the bottom", () => {
+  expect(VIEWS.side.WEEK.y).toBe(0); // the baseline runs straight across
+  const l = slabLayout(VIEWS.side, 53, 60);
+  const jan = l.axes.monthAnchor(0);
+  const dec = l.axes.monthAnchor(53);
+  expect(jan[1]).toBeCloseTo(dec[1]); // the month line is level
+  expect(l.axes.monthLabel(10)[1]).toBeGreaterThan(l.axes.monthAnchor(10)[1]); // labels sit under the line
+  expect(l.axes.monthAnchor(10)[1]).toBeGreaterThan(0); // and the line is at ground level, below the bars
+  expect(l.axes.showDays).toBe(false); // squeezed weekdays are not drawn
+});
+
+test("in the isometric and top views the months stay on the wall above the slab, with weekdays", () => {
+  for (const key of ["iso", "top"]) {
+    const l = slabLayout(VIEWS[key], 53, 60);
+    expect(l.axes.monthLabel(10)[1]).toBeLessThan(l.axes.monthAnchor(10)[1]); // labels above the line
+    expect(l.axes.showDays).toBe(true);
   }
+});
+
+test("halfway through a camera move the month line is halfway between wall and baseline", () => {
+  const mid = lerpView(VIEWS.iso, VIEWS.side, 0.5);
+  expect(mid.wall).toBeCloseTo(0.5);
 });
 
 test("an empty year still lays out (no towers)", () => {

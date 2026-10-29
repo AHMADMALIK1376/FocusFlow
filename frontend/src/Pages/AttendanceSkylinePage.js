@@ -22,6 +22,7 @@ import { subjectAttendanceAPI } from "../services/api";
 import { PageShell, Panel } from "../components/dashboard/DashKit";
 import { PanelLoading } from "../components/common/LoadingSpinner";
 import PageMascot from "../components/common/PageMascot";
+import { subjectPalette } from "../components/subjects/subjectPalette";
 
 const DAYS = 7;
 
@@ -31,9 +32,10 @@ const DAYS = 7;
 // Each viewpoint is a pair of basis vectors plus a height scale (hs). The camera buttons
 // glide between them by interpolating these numbers, so every tower slides smoothly.
 export const VIEWS = {
-  iso: { label: "Isometric", WEEK: { x: 16.5, y: 6.6 }, DAY: { x: -13.5, y: 7.4 }, hs: 1 },
-  side: { label: "Skyline", WEEK: { x: 15, y: 1.3 }, DAY: { x: -2.6, y: 2.8 }, hs: 1.9 },
-  top: { label: "Top", WEEK: { x: 21, y: 0 }, DAY: { x: 0, y: 21 }, hs: 0 },
+  iso: { label: "Isometric", WEEK: { x: 16.5, y: 6.6 }, DAY: { x: -13.5, y: 7.4 }, hs: 1, wall: 1 },
+  // Level ground (WEEK has no vertical part), shallow depth, months along the bottom like a real skyline.
+  side: { label: "Skyline", WEEK: { x: 16, y: 0 }, DAY: { x: -3, y: 2.3 }, hs: 2.2, wall: 0 },
+  top: { label: "Top", WEEK: { x: 21, y: 0 }, DAY: { x: 0, y: 21 }, hs: 0, wall: 1 },
 };
 const VIEW_ICONS = { iso: Box, side: BarChart3, top: LayoutGrid };
 const UNIT_H = 18;    // px of bar height per class attended
@@ -73,6 +75,7 @@ export function lerpView(a, b, t) {
     WEEK: { x: lerp(a.WEEK.x, b.WEEK.x, t), y: lerp(a.WEEK.y, b.WEEK.y, t) },
     DAY: { x: lerp(a.DAY.x, b.DAY.x, t), y: lerp(a.DAY.y, b.DAY.y, t) },
     hs: lerp(a.hs, b.hs, t),
+    wall: lerp(a.wall, b.wall, t),
   };
 }
 
@@ -80,6 +83,7 @@ export function lerpView(a, b, t) {
 // tallest tower and the axis labels, the origin to draw from, and the axis directions.
 export function slabLayout(view, weeks, maxTowerH) {
   const { WEEK, DAY, hs } = view;
+  const wall = view.wall ?? 1;
   const maxH = maxTowerH * hs;
   const lift = Math.max(maxH, WALL_MIN * hs) + WALL_MARGIN;
   const dayLen = Math.hypot(DAY.x, DAY.y) || 1;
@@ -87,17 +91,39 @@ export function slabLayout(view, weeks, maxTowerH) {
   const outMonth = { x: -DAY.x / dayLen, y: -DAY.y / dayLen };   // away from the d=0 edge
   const outDay = { x: -WEEK.x / weekLen, y: -WEEK.y / weekLen }; // away from the w=0 edge
   const pt = (w, d) => [w * WEEK.x + d * DAY.x, w * WEEK.y + d * DAY.y];
-  const anchor = (w, d) => {
+  const mix = (p, q, t) => [lerp(p[0], q[0], t), lerp(p[1], q[1], t)];
+  // On the wall: above the back (d=0) edge, raised clear of the tallest tower.
+  const above = (w, d) => {
     const p = pt(w, d);
     return [p[0] + (outMonth.x + outDay.x) * AXIS_GAP, p[1] + (outMonth.y + outDay.y) * AXIS_GAP - lift];
   };
+  // On the baseline: just in front of the front (d=DAYS) edge, at ground level.
+  const below = (w) => {
+    const p = pt(w, DAYS);
+    return [p[0] - outMonth.x * AXIS_GAP, p[1] - outMonth.y * AXIS_GAP];
+  };
+  const axes = {
+    showDays: dayLen >= MIN_DAY_STEP, // squeezed days (side view) would pile their letters up
+    monthAnchor: (w) => mix(below(w), above(w, 0), wall),
+    monthLabel: (w) => {
+      const up = above(w, 0);
+      const down = below(w);
+      return mix([down[0], down[1] + LABEL_GAP + 10], [up[0], up[1] - LABEL_GAP], wall);
+    },
+    dayAnchor: (d) => above(0, d),
+    dayLabel: (d) => { const p = above(0, d); return [p[0], p[1] - LABEL_GAP]; },
+  };
   const pts = [];
   for (const w of [0, weeks]) for (const d of [0, DAYS]) { const p = pt(w, d); pts.push(p, [p[0], p[1] - maxH]); }
-  for (const [w, d] of [[0, 0], [weeks, 0], [0, DAYS]]) { const a = anchor(w, d); pts.push(a, [a[0], a[1] - LABEL_GAP - 14]); }
+  for (const w of [0, weeks]) {
+    const l = axes.monthLabel(w);
+    pts.push(axes.monthAnchor(w), [l[0] - 16, l[1] - 12], [l[0] + 16, l[1] + 3]);
+  }
+  if (axes.showDays) for (const d of [0, DAYS]) { const l = axes.dayLabel(d); pts.push(axes.dayAnchor(d), [l[0], l[1] - 12]); }
   const xs = pts.map((p) => p[0]);
   const ys = pts.map((p) => p[1]);
   const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
-  return { width: maxX - minX + PAD * 2, height: maxY - minY + PAD * 2, oX: PAD - minX, oY: PAD - minY, lift, outMonth, outDay };
+  return { width: maxX - minX + PAD * 2, height: maxY - minY + PAD * 2, oX: PAD - minX, oY: PAD - minY, lift, axes };
 }
 
 // Glides the camera to the chosen viewpoint (instant when the user prefers reduced motion).
@@ -259,25 +285,86 @@ const Tower = React.memo(function Tower({ dataKey, pointsTop, pointsRight, point
   );
 });
 
-// Per-subject attended / missed / % (same numbers as the attendance report
-// sent after each "Did you attend?" answer).
-function SubjectBreakdown() {
+// One bead per class, oldest first, for each subject in the chosen year. Classes are matched
+// to subjects by id; an older server without ids falls back to the subject's name.
+const MAX_BEADS = 40; // a long term shows its latest classes and how many earlier ones are hidden
+export function subjectBeads(byDate, year) {
+  const bySubject = new Map();
+  const prefix = `${year}-`;
+  for (const date of Object.keys(byDate || {}).sort()) {
+    if (!date.startsWith(prefix)) continue;
+    for (const c of byDate[date].classes || []) {
+      const key = c.subjectId != null ? `id:${c.subjectId}` : `name:${c.name || c.code || ""}`;
+      if (!bySubject.has(key)) bySubject.set(key, []);
+      bySubject.get(key).push({ date, status: c.status });
+    }
+  }
+  return bySubject;
+}
+export const beadsFor = (map, subject) => map.get(`id:${subject.id}`) || map.get(`name:${subject.name}`) || [];
+
+// How a bead looks for each status: attended is a filled clay bead, late is filled with a warning
+// ring, missed is a hollow dashed ring, excused a hollow dotted ring.
+export function beadKind(status) {
+  if (status === "Present") return "attended";
+  if (status === "Late") return "late";
+  if (status === "Absent") return "missed";
+  return "excused";
+}
+const BEAD_TEXT = { attended: "Attended", late: "Attended (late)", missed: "Missed", excused: "Excused" };
+
+function Bead({ kind, palette, label, onEnter, onLeave }) {
+  const base = "w-3.5 h-3.5 rounded-full shrink-0 transition-transform hover:scale-125 focus:scale-125 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring";
+  const filled = kind === "attended" || kind === "late";
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      onMouseEnter={onEnter}
+      onFocus={onEnter}
+      onMouseLeave={onLeave}
+      onBlur={onLeave}
+      className={`${base} ${kind === "late" ? "ring-2 ring-warn" : ""} ${kind === "missed" ? "border-2 border-dashed border-focus-ink bg-transparent" : ""} ${kind === "excused" ? "border-2 border-dotted border-ink/30 bg-transparent" : ""}`}
+      style={filled ? {
+        background: palette.mid,
+        boxShadow: `inset 0 2px 2px rgb(var(--surface) / 0.55), inset 0 -2px 2px rgb(var(--ink) / 0.12), 0 1px 2px rgb(var(--ink) / 0.18)`,
+      } : undefined}
+    />
+  );
+}
+
+// Per-subject attendance as a bead string (one bead per class, in date order), with the same
+// attended / missed / % numbers as the attendance report sent after each "Did you attend?".
+export function SubjectBreakdown({ byDate, year }) {
   const [data, setData] = useState(null);
+  const [tip, setTip] = useState(null); // { x, y, title, text }
   useEffect(() => {
     let alive = true;
     subjectAttendanceAPI.getOverview().then((d) => alive && setData(d)).catch(() => alive && setData({ subjects: [] }));
     return () => { alive = false; };
   }, []);
+  const beadMap = useMemo(() => subjectBeads(byDate, year), [byDate, year]);
   if (!data) return null;
   const rows = (data.subjects || []).slice().sort((a, b) => a.name.localeCompare(b.name));
+  const show = (e, title, text) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    setTip({ x: r.left + r.width / 2, y: r.top, title, text });
+  };
   return (
     <Panel className="mt-5">
-      <div className="flex items-baseline justify-between gap-3 mb-3">
+      <div className="flex items-baseline justify-between gap-3 mb-1">
         <h2 className="text-base font-black text-ink uppercase tracking-wider">By subject</h2>
         <span className="text-sm text-muted">
           Overall <b className="text-ink">{data.overallPercentage == null ? "—" : `${data.overallPercentage}%`}</b>
         </span>
       </div>
+      <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted mb-3" aria-hidden="true">
+        <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-brand" /> attended</span>
+        <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-brand ring-2 ring-warn" /> late</span>
+        <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full border-2 border-dashed border-focus-ink" /> missed</span>
+        <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full border-2 border-dotted border-ink/30" /> excused</span>
+        <span>· one bead per class in {year}, oldest first</span>
+      </p>
       {rows.length === 0 ? (
         <p className="text-sm text-muted">Add subjects to track attendance per course.</p>
       ) : (
@@ -285,21 +372,49 @@ function SubjectBreakdown() {
           {rows.map((s) => {
             const attended = (s.present || 0) + (s.late || 0);
             const pct = s.percentage;
+            const palette = subjectPalette(s.color);
+            const all = beadsFor(beadMap, s);
+            const hidden = Math.max(0, all.length - MAX_BEADS);
+            const beads = hidden ? all.slice(hidden) : all;
             return (
-              <div key={s.id} className="py-2.5 grid grid-cols-[1fr_auto] sm:grid-cols-[minmax(0,1fr)_9rem_8rem] items-center gap-x-4 gap-y-1">
+              <div key={s.id} data-testid="bead-row" className="py-3 grid grid-cols-[1fr_auto] sm:grid-cols-[minmax(0,14rem)_minmax(0,1fr)_7rem] items-center gap-x-4 gap-y-2">
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: s.color || "rgb(var(--brand))" }} />
-                  <span className="text-sm font-bold text-ink truncate">{s.name}</span>
+                  <span className="text-sm font-bold text-ink truncate" title={s.name}>{s.name}</span>
                 </div>
-                <span className={`text-sm font-black text-right sm:order-3 ${pct == null ? "text-muted" : s.isAtRisk ? "text-focus" : "text-ink"}`}>
-                  {pct == null ? "No classes yet" : <span className="inline-flex items-center gap-1">{s.isAtRisk && <TriangleAlert size={14} />}{pct}%</span>}
-                </span>
-                <span className="text-xs text-muted col-span-2 sm:col-span-1 sm:order-2">
-                  {pct == null ? "" : `${attended} attended · ${s.absent || 0} missed`}
-                </span>
+                <div className="col-span-2 sm:col-span-1 sm:order-2 flex flex-wrap items-center gap-1.5 min-w-0" role="group" aria-label={`${s.name} classes`}>
+                  {hidden > 0 && <span className="text-[10px] text-muted mr-1">+{hidden} earlier</span>}
+                  {beads.length === 0 && <span className="text-xs text-muted">No classes marked in {year}</span>}
+                  {beads.map((b, i) => {
+                    const kind = beadKind(b.status);
+                    const when = formatDate(new Date(`${b.date}T00:00:00`));
+                    return (
+                      <Bead
+                        key={`${b.date}-${i}`}
+                        kind={kind}
+                        palette={palette}
+                        label={`${when}: ${BEAD_TEXT[kind]}`}
+                        onEnter={(e) => show(e, when, BEAD_TEXT[kind])}
+                        onLeave={() => setTip(null)}
+                      />
+                    );
+                  })}
+                </div>
+                <div className="text-right sm:order-3">
+                  <span className={`block text-sm font-black ${pct == null ? "text-muted" : s.isAtRisk ? "text-focus" : "text-ink"}`}>
+                    {pct == null ? "No classes yet" : <span className="inline-flex items-center gap-1">{s.isAtRisk && <TriangleAlert size={14} />}{pct}%</span>}
+                  </span>
+                  {pct != null && <span className="block text-[11px] text-muted">{attended} attended · {s.absent || 0} missed</span>}
+                </div>
               </div>
             );
           })}
+        </div>
+      )}
+      {tip && (
+        <div role="tooltip" className="fixed z-[9999] pointer-events-none rounded-lg bg-surface text-ink shadow-neu-sm border border-ink/10 px-2 py-1 text-[11px] leading-snug whitespace-nowrap"
+          style={{ left: tip.x, top: tip.y, transform: "translate(-50%, -100%) translateY(-6px)" }}>
+          <b>{tip.title}</b> · {tip.text}
         </div>
       )}
     </Panel>
@@ -415,11 +530,11 @@ export default function AttendanceSkylinePage() {
 
   // Geometry pass: reruns on every frame of a camera move. Each <Tower> is memoized on its
   // point strings, so only towers whose geometry actually changed repaint.
-  const { renderCells, cellByKey, width, height, wallLift, originX, originY, outMonth, outDay } = useMemo(() => {
-    const { width: canvasW, height: canvasH, oX, oY, lift, outMonth: om, outDay: od } = slabLayout(view, totalWeeks, maxTowerH);
+  const { renderCells, cellByKey, width, height, originX, originY, axes } = useMemo(() => {
+    const { width: canvasW, height: canvasH, oX, oY, axes: ax } = slabLayout(view, totalWeeks, maxTowerH);
     const pts = (arr) => arr.map((p) => p.join(",")).join(" ");
     const out = raw.map((cell) => {
-      const h = (cell.attended * UNIT_H + BASE_H) * HS;
+      const h = cell.attended * UNIT_H * HS + BASE_H * Math.min(HS, 1);
       const cx = oX + cell.w * WEEK.x + cell.d * DAY.x;
       const cy = oY + cell.w * WEEK.y + cell.d * DAY.y;
       const ox = ((WEEK.x + DAY.x) * (1 - TILE)) / 2;
@@ -463,19 +578,15 @@ export default function AttendanceSkylinePage() {
     return {
       renderCells: out,
       cellByKey: byKey,
-      wallLift: lift,
       originX: oX,
       originY: oY,
       width: canvasW,
       height: canvasH,
-      outMonth: om,
-      outDay: od,
+      axes: ax,
     };
   }, [raw, brand, view, totalWeeks, maxTowerH, WEEK.x, WEEK.y, DAY.x, DAY.y, HS]);
 
-  const proj = (w, d) => [originX + w * WEEK.x + d * DAY.x, originY + w * WEEK.y + d * DAY.y];
-  const push = (p, out, dist) => [p[0] + out.x * dist, p[1] + out.y * dist];
-  const liftPoint = (p, amount) => [p[0], p[1] - amount];
+  const at = (p) => [originX + p[0], originY + p[1]]; // layout coordinates -> canvas
 
   // ── Hover: one delegated handler instead of 365 pairs of listeners ────────
   const wrapRef = useRef(null);
@@ -666,13 +777,11 @@ export default function AttendanceSkylinePage() {
               const textStyle = { fill: "rgb(var(--muted))", fontSize: 10, fontWeight: 700, transition: "fill 150ms ease" };
               const textActiveStyle = { fill: "rgb(var(--brand))", fontWeight: 800 };
 
-              const axisAnchor = (w, d) => liftPoint(push(push(proj(w, d), outMonth, AXIS_GAP), outDay, AXIS_GAP), wallLift);
-              // In the side view the seven days are squeezed together, so their letters would pile up.
-              const showDayLabels = Math.hypot(DAY.x, DAY.y) >= MIN_DAY_STEP;
-              const monthLineStart = axisAnchor(0, 0);
-              const monthLineEnd = axisAnchor(totalWeeks, 0);
-              const dayLineStart = axisAnchor(0, 0);
-              const dayLineEnd = axisAnchor(0, DAYS);
+              const showDayLabels = axes.showDays;
+              const monthLineStart = at(axes.monthAnchor(0));
+              const monthLineEnd = at(axes.monthAnchor(totalWeeks));
+              const dayLineStart = at(axes.dayAnchor(0));
+              const dayLineEnd = at(axes.dayAnchor(DAYS));
 
               return (
                 <g>
@@ -680,7 +789,7 @@ export default function AttendanceSkylinePage() {
                   {showDayLabels && <line x1={dayLineStart[0]} y1={dayLineStart[1]} x2={dayLineEnd[0]} y2={dayLineEnd[1]} style={lineStyle} />}
 
                   {monthTicks.map(({ w, label }, idx) => {
-                    const lab = liftPoint(axisAnchor(w, 0), LABEL_GAP);
+                    const lab = at(axes.monthLabel(w));
                     const active = idx === activeTickIdx;
                     return (
                       <text key={`m-${w}`} x={lab[0]} y={lab[1]} textAnchor="middle" style={active ? { ...textStyle, ...textActiveStyle } : textStyle}>
@@ -690,7 +799,7 @@ export default function AttendanceSkylinePage() {
                   })}
 
                   {showDayLabels && DAY_LABELS.map((lbl, d) => {
-                    const lab = liftPoint(axisAnchor(0, d + 0.5), LABEL_GAP);
+                    const lab = at(axes.dayLabel(d + 0.5));
                     const active = d === activeDay;
                     return (
                       <text key={`d-${d}`} x={lab[0]} y={lab[1]} textAnchor="middle" style={active ? { ...textStyle, ...textActiveStyle } : textStyle}>
@@ -720,7 +829,7 @@ export default function AttendanceSkylinePage() {
         )}
       </Panel>
 
-      <SubjectBreakdown />
+      <SubjectBreakdown byDate={byDate} year={year} />
 
       {hover && (
         <div

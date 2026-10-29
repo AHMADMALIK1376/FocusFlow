@@ -6,9 +6,18 @@ Update this file with every change.
 
 ---
 
+## 2026-10-30 — Attendance skyline: subjects as bead strings
+
+- The "By subject" list shows each subject as a **string of clay beads, one per class in the chosen year, oldest first**: a filled bead in the subject colour = attended, filled with a warning ring = late, a hollow dashed red ring = missed, a hollow dotted ring = excused. A legend sits under the heading. Hovering or focusing a bead shows a small tooltip with the date and the status. The percentage (warning icon under 75%) and "N attended · N missed" stay on the right. More than 40 classes show the latest 40 and "+N earlier".
+- Data: the page already loads `GET /api/subject-attendance/all`; each class there now also carries `subjectId` (additive, same user scope, no database change). `subjectBeads` groups by id and falls back to the subject name for an older server; pure and tested.
+- Chosen over test tubes, batteries, a flower and a brick wall (owner picked the beads): beads show WHEN classes were missed, not only how many.
+- Bead shading uses design tokens (surface and ink with alpha), passing the colour guard.
+
+---
+
 ## 2026-10-28 — Attendance skyline: viewpoint buttons
 
-- Three buttons (Isometric, Skyline, Top) change the camera, and the chart glides there in 0.75 s (eased; instant for reduced motion). Isometric is the original. **Skyline** looks from the side (flatter ground, bars 1.9 times taller, like a city skyline). **Top** looks straight down, a flat heatmap grid with no tower height.
+- Three buttons (Isometric, Skyline, Top) change the camera, and the chart glides there in 0.75 s (eased; instant for reduced motion). Isometric is the original. **Skyline** looks from the side on **level ground** (the week axis has no vertical part), bars 2.2 times taller, and the months along a straight baseline under the front edge, like a city skyline; empty days keep a thin slab instead of thick bricks. (The first Skyline was rejected by the owner: tilted ground, month line slanting high above the bars.) Each viewpoint carries a `wall` amount (1 = month labels on the wall above, 0 = on the baseline below) that is interpolated with the camera. **Top** looks straight down, a flat heatmap grid with no tower height.
 - How: a viewpoint is two basis vectors plus a height scale. The animation interpolates those numbers and recomputes every tower's points per frame (`slabLayout`, `lerpView`, `easeInOut`, pure and tested). Each tower stays memoized on its point strings. The canvas resizes to fit each view; the four stat blocks sit around the chart only in the isometric view and in a row under it in the other two. Weekday letters are hidden in the Skyline view (days are squeezed together there and the letters overlapped).
 - **Rejected:** a CSS 3D rotation of the whole picture (the towers need correct back-to-front overlap, and the SVG painter order only works for this one camera family; interpolating the projection keeps it right); the circular chart from the owner's references (a different chart type, not a viewpoint; offered separately).
 - Not saved between visits; it opens in Isometric every time.

@@ -68,13 +68,13 @@ exports.mark = async (req, res) => {
 
 // GET /api/subject-attendance/all — every record for the user, across all subjects,
 // grouped by date (for the dashboard's contribution-style heatmap and the skyline).
-// Each day also lists its classes (subject name, code, status) for the skyline's hover.
+// Each day also lists its classes (subject id, name, code, status) for the skyline's hover and bead strings.
 exports.getAllForUser = async (req, res) => {
   let connection;
   try {
     connection = await getConnection();
     const result = await connection.execute(
-      `SELECT TO_CHAR(sa.class_date,'YYYY-MM-DD') AS class_date, sa.status, s.name, s.code
+      `SELECT TO_CHAR(sa.class_date,'YYYY-MM-DD') AS class_date, sa.status, sa.subject_id, s.name, s.code
        FROM SUBJECT_ATTENDANCE sa
        LEFT JOIN SUBJECTS s ON s.subject_id = sa.subject_id AND s.user_id = :userId
        WHERE sa.user_id = :userId ORDER BY sa.class_date ASC, s.name ASC`,
@@ -84,12 +84,12 @@ exports.getAllForUser = async (req, res) => {
     for (const r of result.rows) {
       const date = r.CLASS_DATE;
       if (!byDate.has(date)) byDate.set(date, []);
-      byDate.get(date).push({ status: r.STATUS, name: r.NAME || null, code: r.CODE || null });
+      byDate.get(date).push({ status: r.STATUS, subjectId: r.SUBJECT_ID, name: r.NAME || null, code: r.CODE || null });
     }
     const days = [...byDate.entries()].map(([date, records]) => ({
       date,
       ...summarize(records),
-      classes: records.map((r) => ({ name: r.name, code: r.code, status: r.status })),
+      classes: records.map((r) => ({ subjectId: r.subjectId, name: r.name, code: r.code, status: r.status })),
     }));
     res.json(days);
   } catch (err) {
