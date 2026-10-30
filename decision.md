@@ -6,6 +6,13 @@ Update this file with every change.
 
 ---
 
+## 2026-10-30 — Attendance skyline: the hover tooltip follows its tower in every view
+
+- Bug: the chart measured its position on screen once, when the page opened. After scrolling (and after the layout changed when the data or the camera changed, most visible in the Skyline view) the tooltip appeared away from the tower, up to the scroll distance off. Fix: measure the chart when a new tower is hovered (one measurement per tower change, still cheap), hide the tooltip while the page scrolls or resizes, and place it with `tooltipPlacement`: above the tower, below it when there is no room above, never past the screen edges (tested).
+- Checked in a real browser: Skyline view, page scrolled 160px, tooltip 8px above the tallest tower and centred on it (it was 158px away before).
+
+---
+
 ## 2026-10-30 — Attendance skyline: subjects as bead strings
 
 - The "By subject" list shows each subject as a **string of clay beads, one per class in the chosen year, oldest first**: a filled bead in the subject colour = attended, filled with a warning ring = late, a hollow dashed red ring = missed, a hollow dotted ring = excused. A legend sits under the heading. Hovering or focusing a bead shows a small tooltip with the date and the status. The percentage (warning icon under 75%) and "N attended · N missed" stay on the right. More than 40 classes show the latest 40 and "+N earlier".

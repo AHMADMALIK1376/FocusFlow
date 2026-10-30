@@ -178,6 +178,16 @@ export function classStatus(status) {
   }
 }
 
+// Above the tower normally; below its top when there is no room above (near the top of the
+// screen); and never past the left or right edge.
+export const TIP_HALF_WIDTH = 120;
+export const TIP_ROOM_ABOVE = 150;
+export function tooltipPlacement(x, y, viewportWidth) {
+  const left = Math.min(Math.max(x, TIP_HALF_WIDTH + 8), Math.max(TIP_HALF_WIDTH + 8, viewportWidth - TIP_HALF_WIDTH - 8));
+  const below = y < TIP_ROOM_ABOVE;
+  return { left, top: y, transform: below ? "translate(-50%, 0) translateY(14px)" : "translate(-50%, -100%) translateY(-8px)" };
+}
+
 function formatDate(d) {
   return d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", year: "numeric" });
 }
@@ -590,16 +600,19 @@ export default function AttendanceSkylinePage() {
 
   // ── Hover: one delegated handler instead of 365 pairs of listeners ────────
   const wrapRef = useRef(null);
-  const wrapRectRef = useRef(null);
   const hoverKeyRef = useRef(null);
 
+  // The tooltip is fixed to the screen, so it would float away from its tower when the page
+  // scrolls: hide it instead (the next pointer move shows it again in the right place).
   useEffect(() => {
-    function measure() {
-      if (wrapRef.current) wrapRectRef.current = wrapRef.current.getBoundingClientRect();
+    function hide() {
+      if (hoverKeyRef.current === null) return;
+      hoverKeyRef.current = null;
+      setHover(null);
     }
-    measure();
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
+    window.addEventListener("scroll", hide, { passive: true });
+    window.addEventListener("resize", hide);
+    return () => { window.removeEventListener("scroll", hide); window.removeEventListener("resize", hide); };
   }, []);
 
   function handlePointerMove(e) {
@@ -610,7 +623,9 @@ export default function AttendanceSkylinePage() {
     if (!key) { setHover(null); return; }
     const cell = cellByKey.get(key);
     if (!cell) { setHover(null); return; }
-    const rect = wrapRectRef.current;
+    // Measured now, not once at mount: the page may have scrolled, the data may have changed the
+    // layout, and a camera change resizes the chart. One measurement per new tower is cheap.
+    const rect = wrapRef.current ? wrapRef.current.getBoundingClientRect() : null;
     const scrollLeft = wrapRef.current ? wrapRef.current.scrollLeft : 0;
     setHover({
       x: (rect ? rect.left : 0) - scrollLeft + cell.anchorX,
@@ -834,7 +849,7 @@ export default function AttendanceSkylinePage() {
       {hover && (
         <div
           className="fixed z-[9999] pointer-events-none bg-surface text-ink rounded-md shadow-lg border border-ink/10 px-2.5 py-1.5 whitespace-nowrap"
-          style={{ left: hover.x, top: hover.y, transform: "translate(-50%, -100%) translateY(-8px)" }}
+          style={tooltipPlacement(hover.x, hover.y, window.innerWidth)}
         >
           <p className="text-xs font-bold">{hover.label}</p>
           <p className="text-[11px] text-ink/70">{hover.sub}</p>

@@ -1,4 +1,4 @@
-import { VIEWS, lerpView, easeInOut, slabLayout } from "./AttendanceSkylinePage";
+import { VIEWS, lerpView, easeInOut, slabLayout, tooltipPlacement, TIP_HALF_WIDTH } from "./AttendanceSkylinePage";
 
 jest.mock("react-router-dom", () => ({ useNavigate: () => jest.fn() }), { virtual: true });
 jest.mock("../services/api", () => ({ subjectAttendanceAPI: {} }));
@@ -67,4 +67,14 @@ test("an empty year still lays out (no towers)", () => {
   const l = slabLayout(VIEWS.side, 53, 0);
   expect(l.height).toBeGreaterThan(0);
   expect(l.lift).toBeGreaterThan(0);
+});
+
+test("the hover tooltip sits above its tower, flips below near the top, and never leaves the screen", () => {
+  const mid = tooltipPlacement(600, 400, 1366);
+  expect(mid.left).toBe(600);
+  expect(mid.top).toBe(400);
+  expect(mid.transform).toMatch(/-100%/); // above the tower
+  expect(tooltipPlacement(600, 40, 1366).transform).not.toMatch(/-100%/); // no room above: below
+  expect(tooltipPlacement(5, 400, 1366).left).toBe(TIP_HALF_WIDTH + 8); // clamped at the left edge
+  expect(tooltipPlacement(1360, 400, 1366).left).toBe(1366 - TIP_HALF_WIDTH - 8); // and the right edge
 });
