@@ -198,6 +198,15 @@ Solid status fills (delete pop-up, danger `Button`, the done tick) take `text-on
 
 ---
 
+### University LMS sync (31 Oct 2026)
+0. Settings > University LMS (`features/lms/LmsConnectCard.js`) reads `GET /api/lms/status`. It shows "not switched on" unless the server has `LMS_TOKEN_KEY` and the tables.
+1. "Sign in with the LMS" goes to the university's Moodle launch address with `urlscheme=<this site>/settings?open=lms#`. After the Microsoft sign-in Moodle redirects to `<this site>/settings?open=lms#://token=<key>`. The card reads the key from the address (`keyFromHash`), wipes it (`history.replaceState`), and calls `POST /api/lms/connect`. The pasted-text box is the fallback.
+2. `lmsController.connect` finds the 32-character key in the text (`utils/lms.js parseLaunchText`), checks it with Moodle (`core_webservice_get_site_info`), stores it encrypted in `LMS_CONNECTIONS`, and runs a first sync.
+3. `services/lmsSync.js syncUser`: courses (`LMS_ITEM_MAP` remembers which LMS course is which subject) -> subjects and their class slot; assignments + submission status -> board cards; the calendar's attendance events for the semester -> `LMS_SESSIONS`. Only differences are written, so a quiet run writes nothing.
+4. It runs when the dashboard opens (`useLmsAutoSync`, once per browser session; the server skips if synced in the last 10 minutes), from "Sync now" (not more than once a minute), and every 20 minutes for connections that are due (`startLmsSync`, started next to the reminder scheduler).
+5. `GET /api/subject-attendance/overview` adds `classesTotal`, `classesLeft`, `lastClassDate` per subject from `LMS_SESSIONS`; the attendance page shows them under each subject.
+6. Disconnect (`DELETE /api/lms`) deletes the key, the remembered mapping and the sessions; subjects and cards stay.
+
 ## 3. Scanner flow (screenshot → saved data)
 
 Used by Subjects, Daily Routine, Exams, Grades and Assignments.

@@ -322,6 +322,10 @@ The Google button uses the OAuth client ID set in `frontend/src/Pages/Authpage.j
 | `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN` | With `gmail-api` | The Gmail API permission you grant once |
 | `APPS_SCRIPT_URL`, `APPS_SCRIPT_SECRET` | With `apps-script` | The web address of your Apps Script relay and its shared secret |
 | `CRON_SECRET` | Recommended in production | Private key for `/api/cron/tick` (the free keep-alive and reminder trigger) and the server's diagnostics. Unset means both are switched off. |
+| `LMS_TOKEN_KEY` | To use the university LMS connection | 32 random bytes, base64 (for example `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`). Encrypts each student's LMS key in the database. Unset means the LMS connection is switched off. Never commit it. |
+| `LMS_BASE_URL` | No | The Moodle site. Defaults to `https://lms.iqra.edu.pk`. |
+| `LMS_TIMEZONE` | No | Time zone for class dates from the LMS. Defaults to `Asia/Karachi`. |
+| `LMS_SYNC` | No | Set to `off` to stop the 20-minute LMS refresh on this copy of the server. |
 | `REMINDER_SCHEDULER` | No | Set to `off` on a copy running on your own computer, so it does not also send reminders while the real server is live. |
 | `PORT` | No | API port. Defaults to `5000`, but the frontend expects `5555` locally. |
 | `APP_URL` | No | Frontend address used in email links. Defaults to `http://localhost:3000`. |

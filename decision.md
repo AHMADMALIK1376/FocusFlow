@@ -6,6 +6,19 @@ Update this file with every change.
 
 ---
 
+## 2026-10-31 — Connect to the university LMS (read-only), phase 1
+
+- **What:** a student can connect their own Moodle LMS account in Settings > University LMS. FocusFlow then brings in their courses (as subjects, with the class day, time and room read from the course name), their assignments (as board cards, moved to Done once the LMS says "submitted"), and the semester's class dates from the LMS calendar (so the attendance row can say "9 of 16 classes left, last class 26 Feb"). It refreshes when the dashboard opens (at most once per visit) and every 20 minutes on the server. Plan and evidence: `docs/superpowers/specs/2026-10-31-lms-connect.md`.
+- **Why:** the owner's university runs Moodle 5.0 and the dean allowed it. A read-only test with the owner's own key showed courses, assignments with due dates and submission status, grades and the calendar are readable through Moodle's official mobile API.
+- **How the key is obtained:** the student signs in on the university's own page (Microsoft 365). Moodle's launch address hands the key back inside the address after "#", which never leaves the browser; the settings page sends it once to `POST /api/lms/connect` and wipes it from the address. Pasting the text by hand is the fallback. FocusFlow never sees a password.
+- **Key safety:** stored in `LMS_CONNECTIONS.token_enc`, AES-256-GCM with `LMS_TOKEN_KEY` (32 random bytes, base64, set on Render). Never returned in a response, never logged, never in `localStorage`. The site address is fixed on the server (`LMS_BASE_URL`, default the university), so no user can point the server at another address. Only `..._get_...` functions are ever called.
+- **The student's edits win:** an LMS course that matches a subject they already have (same name, ignoring case and symbols) is linked, not duplicated, and never renamed; a deleted subject or card stays deleted; the class slot is only added to a subject that has none; a card is moved by the LMS only when the assignment becomes "submitted"; a changed title or due date follows the teacher.
+- **Failure rules:** a key the LMS rejects marks the connection "needs reconnect" (a message, never a sign-out); an LMS outage just skips that run. If `LMS_TOKEN_KEY` or the tables are missing, the feature shows "not switched on" and the rest of the app is untouched.
+- **Not in phase 1:** Present/Absent per class (the API gives no attendance functions and the token had no private key for auto-login), grades, quizzes. Attendance status stays the student's own "Did you attend?" answer.
+- **Rejected:** storing passwords; scraping with a student's login (breaks with Microsoft sign-in, fragile, unsafe); a browser extension; writing anything back to the LMS; asking the user for the LMS address.
+
+---
+
 ## 2026-10-31 — Pick your own picture instead of a mascot
 
 - **What:** the mascot pop-up has an "Add a picture of yourself" button above the mascots. A chosen photo is centre-cropped to a square, shrunk to 256 px and saved as a JPEG (`components/ui/avatarImage.js`). Picking a mascot clears the photo and picking a photo clears the mascot, as before. It is offered from the dashboard card, Settings and the header menu.
