@@ -15,6 +15,7 @@ import StudentSnapshot from "../components/dashboard/StudentSnapshot";
 import AttendanceHeatmap from "../components/dashboard/AttendanceHeatmap";
 import BudgetSnapshotCard from "../components/dashboard/BudgetSnapshotCard";
 import ProfileCard from "../components/dashboard/ProfileCard";
+import useLmsAutoSync from "../features/lms/useLmsAutoSync";
 
 const FEATURE_IDS = ["notes", "goalsx", "habits", "kanban", "timetrack", "finance"];
 
@@ -58,6 +59,7 @@ function InlineEdit({ value, onSave, className }) {
 }
 
 export default function Home() {
+  useLmsAutoSync(); // refresh from a connected university LMS, at most once per visit
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { userName } = useUser();

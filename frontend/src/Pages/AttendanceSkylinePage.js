@@ -415,6 +415,11 @@ export function SubjectBreakdown({ byDate, year }) {
                     {pct == null ? "No classes yet" : <span className="inline-flex items-center gap-1">{s.isAtRisk && <TriangleAlert size={14} />}{pct}%</span>}
                   </span>
                   {pct != null && <span className="block text-[11px] text-muted">{attended} attended · {s.absent || 0} missed</span>}
+                  {s.classesTotal > 0 && (
+                    <span className="block text-[11px] text-muted">
+                      {s.classesLeft} of {s.classesTotal} classes left{s.lastClassDate ? ` · last ${formatDate(new Date(`${s.lastClassDate}T00:00:00`))}` : ""}
+                    </span>
+                  )}
                 </div>
               </div>
             );

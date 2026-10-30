@@ -336,6 +336,17 @@ export const subjectAttendanceAPI = {
 };
 
 // ==============================================
+// UNIVERSITY LMS (read-only sync)
+// ==============================================
+export const lmsAPI = {
+    status: async () => authFetch('/lms/status'),
+    // text: what the LMS sign-in gave back (the app link, or just the key).
+    connect: async (text) => authFetch('/lms/connect', { method: 'POST', body: JSON.stringify({ text }) }),
+    sync: async (manual = false) => authFetch('/lms/sync', { method: 'POST', body: JSON.stringify({ manual }) }),
+    disconnect: async () => authFetch('/lms', { method: 'DELETE' }),
+};
+
+// ==============================================
 // ASSIGNMENT APIs
 // ==============================================
 export const assignmentAPI = {
