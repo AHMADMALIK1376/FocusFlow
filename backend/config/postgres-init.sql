@@ -464,3 +464,30 @@ CREATE TABLE IF NOT EXISTS SCHEDULER_STATUS (
   updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 ALTER TABLE NOTIFICATION_LOG ADD COLUMN IF NOT EXISTS result TEXT;
+
+-- LMS (Moodle) connection: the student's encrypted key, what was synced, and the semester's class dates
+CREATE TABLE IF NOT EXISTS LMS_CONNECTIONS (
+  user_id         VARCHAR(50) PRIMARY KEY REFERENCES USERS(user_id) ON DELETE CASCADE,
+  token_enc       TEXT NOT NULL,
+  lms_user_id     INTEGER,
+  needs_reconnect SMALLINT DEFAULT 0,
+  last_error      VARCHAR(200),
+  last_synced     TIMESTAMP,
+  created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS LMS_ITEM_MAP (
+  user_id  VARCHAR(50) NOT NULL REFERENCES USERS(user_id) ON DELETE CASCADE,
+  kind     VARCHAR(12) NOT NULL,
+  lms_id   INTEGER NOT NULL,
+  local_id VARCHAR(50) NOT NULL,
+  state    TEXT,
+  PRIMARY KEY (user_id, kind, lms_id)
+);
+CREATE TABLE IF NOT EXISTS LMS_SESSIONS (
+  user_id      VARCHAR(50) NOT NULL REFERENCES USERS(user_id) ON DELETE CASCADE,
+  lms_event_id INTEGER NOT NULL,
+  subject_id   VARCHAR(50) NOT NULL REFERENCES SUBJECTS(subject_id) ON DELETE CASCADE,
+  session_date DATE NOT NULL,
+  PRIMARY KEY (user_id, lms_event_id)
+);
+CREATE INDEX IF NOT EXISTS idx_lms_sessions_subject ON LMS_SESSIONS(subject_id);
