@@ -127,7 +127,7 @@ export default function FinancePage() {
         </Panel>
       </div>
 
-      <div className="grid lg:grid-cols-[340px_1fr] gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-[340px_minmax(0,1fr)] gap-5">
         <Panel title="Add entry">
           <div className="space-y-2.5">
             <div className="flex rounded-token-md overflow-hidden border border-[rgb(var(--ink)/0.12)]">

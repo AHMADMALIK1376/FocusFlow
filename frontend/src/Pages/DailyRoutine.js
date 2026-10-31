@@ -320,7 +320,7 @@ export default function DailyRoutine() {
           <h1 className="text-4xl font-black text-brand">Create Your Routine</h1>
           <p className="text-muted text-sm mt-2">Add activities for each day of the week</p>
         </div>
-        <div className="flex items-end gap-3 ml-auto">
+        <div className="flex flex-wrap items-end justify-end gap-3 ml-auto max-w-full">
           <Button variant="primary" onClick={() => setImportOpen(true)} className="gap-1.5">
             <ScanText size={16} /> Import timetable
           </Button>

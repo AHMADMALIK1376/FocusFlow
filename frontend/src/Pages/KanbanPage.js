@@ -133,7 +133,7 @@ export default function KanbanPage() {
           <h1 className="text-3xl md:text-4xl font-black text-ink tracking-tight">Assignments</h1>
           <p className="text-muted mt-1">Plan assignments across your subjects — drag between columns.</p>
         </div>
-        <div className="flex items-end gap-3 ml-auto">
+        <div className="flex flex-wrap items-end justify-end gap-3 ml-auto max-w-full">
           <div className="flex flex-wrap gap-2">
             <Button variant="primary" size="md" onClick={() => setScanOpen(true)} className="gap-2">
               <ScanText size={16} /> Scan assignments

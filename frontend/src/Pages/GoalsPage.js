@@ -94,7 +94,7 @@ export default function GoalsPage() {
         </div>
       </Panel>
 
-      <div className="grid lg:grid-cols-[320px_1fr] gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)] gap-5">
         <Panel title="Your goals">
           {goals.length === 0 ? (
             <EmptyState icon={Target} title="No goals yet" description="Add one above to get started" />

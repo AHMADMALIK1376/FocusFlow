@@ -610,9 +610,12 @@ export default function AttendanceSkylinePage() {
       hoverKeyRef.current = null;
       setHover(null);
     }
+    // On touch the tooltip stays after the finger lifts (there is no hover), so a tap outside the chart closes it.
+    const tapOutside = (e) => { if (!wrapRef.current || !wrapRef.current.contains(e.target)) hide(); };
     window.addEventListener("scroll", hide, { passive: true });
     window.addEventListener("resize", hide);
-    return () => { window.removeEventListener("scroll", hide); window.removeEventListener("resize", hide); };
+    window.addEventListener("pointerdown", tapOutside);
+    return () => { window.removeEventListener("scroll", hide); window.removeEventListener("resize", hide); window.removeEventListener("pointerdown", tapOutside); };
   }, []);
 
   function handlePointerMove(e) {
@@ -639,7 +642,8 @@ export default function AttendanceSkylinePage() {
     });
   }
 
-  function handlePointerLeave() {
+  function handlePointerLeave(e) {
+    if (e && e.pointerType === "touch") return; // a finger lifting is not "leaving": keep the tooltip until the next tap
     hoverKeyRef.current = null;
     setHover(null);
   }
@@ -687,13 +691,13 @@ export default function AttendanceSkylinePage() {
   return (
     <PageShell>
       <div className="flex items-start justify-between gap-4 flex-wrap mb-5">
-        <div>
+        <div className="min-w-0">
           <h1 className="text-3xl font-black text-ink tracking-tight">Attendance skyline</h1>
           <p className="text-muted mt-1 text-sm">
             Every class day in {year} — taller means more classes attended.
           </p>
         </div>
-        <div className="flex items-start gap-3 ml-auto">
+        <div className="flex flex-wrap items-start justify-end gap-3 ml-auto max-w-full">
         <div role="radiogroup" aria-label="Viewpoint" className="flex items-center gap-1 rounded-full bg-surface shadow-neu-sm p-1">
           {Object.entries(VIEWS).map(([key, v]) => {
             const Icon = VIEW_ICONS[key];
@@ -755,7 +759,7 @@ export default function AttendanceSkylinePage() {
           {statCurrent}
         </div>
 
-        <div className="overflow-x-auto" ref={wrapRef}>
+        <div className="overflow-x-auto" ref={wrapRef} onScroll={handlePointerLeave}>
           <svg
             width={width}
             height={height}
@@ -764,6 +768,7 @@ export default function AttendanceSkylinePage() {
             role="img"
             aria-label={`${VIEWS[viewKey].label} view of the attendance chart for ${year}`}
             onPointerMove={handlePointerMove}
+            onPointerDown={(e) => { if (e.pointerType === "touch") handlePointerMove(e); }}
             onPointerLeave={handlePointerLeave}
           >
             {/* Out-of-year padding cells (the partial weeks before Jan 1 / after
@@ -860,7 +865,7 @@ export default function AttendanceSkylinePage() {
                 return (
                   <li key={i} className="flex items-center gap-2 text-[11px]">
                     <st.Icon size={12} className={st.tone} aria-hidden="true" />
-                    <span className="font-semibold text-ink">{c.name || c.code || "Class"}</span>
+                    <span className="font-semibold text-ink truncate max-w-[9rem] sm:max-w-none">{c.name || c.code || "Class"}</span>
                     <span className={`ml-auto pl-3 ${st.tone}`}>{st.text}</span>
                   </li>
                 );

@@ -70,7 +70,7 @@ export default function FlashcardDeckPage() {
       </div>
 
       <Panel title="Add a card" className="mb-6">
-        <div className="grid sm:grid-cols-[1fr_1fr_auto] gap-2 items-end">
+        <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-2 items-end">
           <div>
             <label className="text-xs font-bold text-muted block mb-1">Front (question)</label>
             <Input value={front} onChange={(e) => setFront(e.target.value)} placeholder="Term / question" />

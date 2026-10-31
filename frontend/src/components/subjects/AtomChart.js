@@ -204,7 +204,7 @@ export default function AtomChart({ stats, mode, metric, selectedId, onSelect, o
         </ul>
       )}
 
-      <table className="sr-only">
+      <div className="sr-only"><table>
         <caption>Attendance and grade for every subject</caption>
         <thead>
           <tr><th scope="col">Subject</th><th scope="col">Attendance</th><th scope="col">Grade</th></tr>
@@ -227,7 +227,7 @@ export default function AtomChart({ stats, mode, metric, selectedId, onSelect, o
             <td>{cell(overallValue(stats && stats.overall, "grade"))}</td>
           </tr>
         </tbody>
-      </table>
+      </table></div>
     </section>
   );
 }

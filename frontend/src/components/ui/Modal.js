@@ -87,26 +87,28 @@ export function Modal({
             exit={{ scale: 0.95, y: 10, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 300, damping: 26 }}
             className={cx(
-              'relative w-full bg-surface text-ink shadow-glass p-6 overflow-y-auto outline-none',
+              'relative w-full bg-surface text-ink shadow-glass p-4 sm:p-6 overflow-y-auto outline-none',
               fullHeightOnMobile
                 ? 'h-[100dvh] max-h-[100dvh] rounded-none sm:h-auto sm:max-h-[85vh] sm:rounded-token-lg'
-                : 'max-h-[85vh] rounded-token-lg',
+                : 'max-h-[90dvh] sm:max-h-[85vh] rounded-token-lg',
               maxWidthClassName,
               noScrollbar && 'ff-modal-no-scrollbar',
               className
             )}
           >
             {showClose && (
+              <div className="sticky top-3 z-10 -mt-3 mb-3 -mr-3 h-0 flex justify-end pointer-events-none">
               <button
                 type="button"
                 onClick={onClose}
                 aria-label="Close"
-                className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center text-focus hover:bg-focus/10 transition-colors z-10"
+                className="pointer-events-auto w-8 h-8 rounded-full flex items-center justify-center text-focus bg-surface/80 sm:bg-transparent hover:bg-focus/10 transition-colors"
               >
                 <X size={18} />
               </button>
+              </div>
             )}
-            {title && <h2 id={titleId} className="text-xl font-black text-ink mb-4">{title}</h2>}
+            {title && <h2 id={titleId} className={cx('text-xl font-black text-ink mb-4 break-words', showClose && 'pr-8 sm:pr-0')}>{title}</h2>}
             {children}
           </motion.div>
         </motion.div>

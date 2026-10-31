@@ -152,7 +152,7 @@ export default function SubjectsPage() {
         </>
       ) : (
         // Phones: mascot, cube with its buttons and card, then the week. Wide screens: mascot | cube | week.
-        <div className="grid gap-4 lg:gap-6 lg:grid-cols-[15rem_minmax(0,1fr)_15rem] xl:grid-cols-[17rem_minmax(0,1fr)_18rem] lg:items-center">
+        <div className="grid grid-cols-1 gap-4 lg:gap-6 lg:grid-cols-[15rem_minmax(0,1fr)_15rem] xl:grid-cols-[17rem_minmax(0,1fr)_18rem] lg:items-center">
           <MascotCorner subjects={subjects} className="lg:self-start" />
           <RubikCube
             subjects={subjects}
