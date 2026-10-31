@@ -23,6 +23,8 @@ test("not connected: a sign-in link to the university LMS, and what FocusFlow do
   render(<LmsConnectCard />);
   const link = await screen.findByRole("link", { name: /sign in with the lms/i });
   expect(link.getAttribute("href")).toMatch(/^https:\/\/lms\.iqra\.edu\.pk\/admin\/tool\/mobile\/launch\.php\?/);
+  expect(new URL(link.getAttribute("href")).searchParams.get("urlscheme")).toBe("web+focusflow");
+  expect(screen.getByRole("link", { name: /sign in the manual way/i }).getAttribute("href")).toContain("urlscheme=moodlemobile");
   expect(screen.getByText(/only reads/i)).toBeInTheDocument();
   expect(screen.getByText(/never sees your Microsoft password/i)).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: /sync now/i })).toBeNull();
@@ -31,12 +33,13 @@ test("not connected: a sign-in link to the university LMS, and what FocusFlow do
 test("coming back from the LMS: the key in the address is used once, wiped from the address, and the result is shown", async () => {
   mockApi.status.mockResolvedValue({ available: true, site: SITE, connected: false });
   mockApi.connect.mockResolvedValue({ connected: true, result: { subjects: 3, assignments: 7, moved: 1 } });
-  window.history.replaceState(null, "", "/settings?open=lms#://token=SECRETKEY==");
+  window.history.replaceState(null, "", "/settings?open=lms&lmskey=web%2Bfocusflow%3A%2F%2Ftoken%3DSECRETKEY%3D%3D");
   render(<LmsConnectCard />);
   await waitFor(() => expect(mockApi.connect).toHaveBeenCalledWith("SECRETKEY=="));
   expect(mockApi.connect).toHaveBeenCalledTimes(1);
   expect(window.location.hash).toBe("");
   expect(window.location.search).toBe("?open=lms");
+  expect(window.location.href).not.toContain("SECRETKEY");
   expect(await screen.findByText("Added 3 subjects, 7 assignments, 1 marked done.")).toBeInTheDocument();
 });
 
@@ -88,6 +91,16 @@ test("disconnect asks first, says the subjects and assignments stay, and cancels
   await waitFor(() => expect(mockApi.disconnect).toHaveBeenCalledTimes(1));
   expect(await screen.findByRole("link", { name: /sign in with the lms/i })).toBeInTheDocument();
   expect(screen.getByText(/Disconnected\. Your subjects and assignments stay\./)).toBeInTheDocument();
+});
+
+test("the browser is asked to send LMS sign-in links to FocusFlow", async () => {
+  mockApi.status.mockResolvedValue({ available: true, site: SITE, connected: false });
+  const original = navigator.registerProtocolHandler;
+  navigator.registerProtocolHandler = jest.fn();
+  render(<LmsConnectCard />);
+  await screen.findByRole("link", { name: /sign in with the lms/i });
+  expect(navigator.registerProtocolHandler).toHaveBeenCalledWith("web+focusflow", expect.stringContaining("/settings?open=lms&lmskey=%s"));
+  navigator.registerProtocolHandler = original;
 });
 
 test("the key never appears on the page", async () => {

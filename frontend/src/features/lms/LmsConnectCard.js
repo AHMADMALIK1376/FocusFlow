@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { GraduationCap, RefreshCw, Unplug } from "lucide-react";
 import { lmsAPI } from "../../services/api";
 import { Button } from "../../components/ui";
-import { buildLaunchUrl, keyFromHash, randomPassport, summarizeSync } from "./lmsLink";
+import { buildLaunchUrl, keyFromAddress, MANUAL_SCHEME, randomPassport, registerHandler, summarizeSync } from "./lmsLink";
 
 const when = (iso) => {
   const d = iso ? new Date(iso) : null;
@@ -40,13 +40,16 @@ export default function LmsConnectCard() {
 
   useEffect(() => { refresh(); }, [refresh]);
 
-  // Coming back from the LMS sign-in: the key is in the address after "#". Use it once, then wipe it from the address.
+  // Let the browser send the LMS sign-in result back to FocusFlow (it may ask once; the manual way still works without it).
+  useEffect(() => { registerHandler(window.location.origin); }, []);
+
+  // Coming back from the LMS sign-in: the key is in the address. Use it once, then wipe it from the address.
   useEffect(() => {
     if (returned.current) return;
-    const key = keyFromHash(window.location.hash);
+    const key = keyFromAddress(window.location.search, window.location.hash);
     if (!key) return;
     returned.current = true;
-    window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    window.history.replaceState(null, "", window.location.pathname + "?open=lms");
     connect(key);
   }, [connect]);
 
@@ -83,7 +86,8 @@ export default function LmsConnectCard() {
     return <p className="text-sm text-muted">Connecting to your university LMS is not switched on for this server yet.</p>;
   }
 
-  const signIn = buildLaunchUrl(status.site, window.location.origin, passport);
+  const signIn = buildLaunchUrl(status.site, passport);
+  const signInManual = buildLaunchUrl(status.site, passport, MANUAL_SCHEME);
   const needsConnect = !status.connected || status.needsReconnect;
 
   return (
@@ -113,10 +117,16 @@ export default function LmsConnectCard() {
           <a href={signIn} className="inline-flex items-center gap-2 rounded-full bg-grad-hero text-on-brand font-bold px-4 py-2 shadow-neu-sm">
             <GraduationCap size={16} aria-hidden="true" /> Sign in with the LMS
           </a>
-          <p className="text-xs text-muted">You sign in on the university's own page, then come back here and are connected.</p>
+          <p className="text-xs text-muted">
+            You sign in on the university's own page. If your browser then asks to let FocusFlow open links, choose Allow: you come back here and are connected.
+          </p>
           <details className="text-xs text-muted">
             <summary className="cursor-pointer font-bold text-ink">It did not bring me back</summary>
-            <p className="mt-2">Copy the address or text that begins with <code>moodlemobile://token=</code> and paste it here.</p>
+            <p className="mt-2">
+              <a href={signInManual} className="font-bold text-brand underline">Sign in the manual way</a>. The page will stop with an error or a blank page, because the key goes
+              to an app. Open your browser's developer tools (F12) on the Network tab before signing in, find the <code>launch.php</code> request, and copy the
+              address after <code>Location:</code> in its response headers. It begins with <code>moodlemobile://token=</code>. Paste it here.
+            </p>
             <textarea
               value={text}
               onChange={(e) => setText(e.target.value)}

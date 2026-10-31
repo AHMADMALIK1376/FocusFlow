@@ -1,20 +1,37 @@
 // Pure helpers for the "Connect my LMS" flow.
 
-// The university's own sign-in address (Microsoft 365 is handled by the LMS). When it finishes, Moodle sends the
-// browser to "<urlscheme>://token=<key>"; giving it our settings address plus "#" makes that land back here, with the key
-// in the part of the address after "#" (which is never sent to any server).
-export function buildLaunchUrl(site, origin, passport) {
-  const back = `${origin}/settings?open=lms#`;
-  return `${String(site).replace(/\/+$/, "")}/admin/tool/mobile/launch.php?service=moodle_mobile_app&passport=${encodeURIComponent(passport)}&urlscheme=${encodeURIComponent(back)}`;
+// Moodle will only send the sign-in result back to an "app name" made of letters, numbers and . + -  (never a web
+// address). "web+" names are the ones a website is allowed to claim in the browser, so FocusFlow claims this one and,
+// when Moodle redirects to "web+focusflow://token=<key>", the browser opens FocusFlow with that text.
+export const PROTOCOL = "web+focusflow";
+export const MANUAL_SCHEME = "moodlemobile"; // what the Moodle phone app uses; the browser cannot open it, so the key is copied by hand
+
+// The university's own sign-in address (Microsoft 365 is handled by the LMS).
+export function buildLaunchUrl(site, passport, scheme = PROTOCOL) {
+  return `${String(site).replace(/\/+$/, "")}/admin/tool/mobile/launch.php?service=moodle_mobile_app&passport=${encodeURIComponent(passport)}&urlscheme=${encodeURIComponent(scheme)}`;
 }
 
-// The key Moodle left in the address after "#", or "" when there is none.
-export function keyFromHash(hash) {
-  const m = String(hash || "").match(/token=([^&\s]+)/i);
+// Where the browser should open FocusFlow when it is handed a web+focusflow:// link (%s is replaced by the link).
+export const handlerUrl = (origin) => `${origin}/settings?open=lms&lmskey=%s`;
+
+// Ask the browser to send web+focusflow:// links to FocusFlow. Not every browser can; then the manual way still works.
+export function registerHandler(origin) {
+  try {
+    if (typeof navigator !== "undefined" && navigator.registerProtocolHandler) {
+      navigator.registerProtocolHandler(PROTOCOL, handlerUrl(origin));
+      return true;
+    }
+  } catch (e) { /* not allowed here */ }
+  return false;
+}
+
+// The key handed back in the address (?lmskey=... or #...token=...), or "" when there is none.
+export function keyFromAddress(search, hash) {
+  const fromSearch = new URLSearchParams(String(search || "")).get("lmskey") || "";
+  const m = `${fromSearch} ${hash || ""}`.match(/token=([^&\s]+)/i);
   return m ? m[1] : "";
 }
 
-// A number that is different every time (the LMS only echoes it back); it is not a secret.
 export const randomPassport = () => {
   const bytes = new Uint32Array(2);
   const c = typeof window !== "undefined" && window.crypto;
