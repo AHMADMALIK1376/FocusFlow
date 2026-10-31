@@ -96,15 +96,15 @@ export default function VerifyForm() {
         <p className="text-muted text-[10px] font-bold mb-2 uppercase tracking-[2px] text-center max-w-[250px]">
           We sent a 4-digit code to
         </p>
-        <p className="text-brand font-bold text-sm mb-4">{email}</p>
+        <p className="text-brand font-bold text-sm mb-4 max-w-full [overflow-wrap:anywhere] text-center">{email}</p>
 
         {error && (
-          <div className="w-[85%] mb-4 p-3 bg-focus/10 border border-focus/30 text-focus rounded-token-sm text-sm font-bold text-center">
+          <div className="w-full md:w-[85%] mb-4 p-3 bg-focus/10 border border-focus/30 text-focus rounded-token-sm text-sm font-bold text-center">
             {error}
           </div>
         )}
         {info && (
-          <div className="w-[85%] mb-4 p-3 bg-info/10 border border-info/30 text-info rounded-token-sm text-xs font-bold text-center">
+          <div className="w-full md:w-[85%] mb-4 p-3 bg-info/10 border border-info/30 text-info rounded-token-sm text-xs font-bold text-center">
             {info}
           </div>
         )}
@@ -128,14 +128,14 @@ export default function VerifyForm() {
         <button
           onClick={handleVerify}
           disabled={isLoading}
-          className="w-[85%] py-4 bg-grad-hero text-on-brand rounded-token-md font-black shadow-[0_10px_24px_rgb(var(--brand)/0.4)] hover:-translate-y-0.5 active:scale-95 transition-all tracking-widest text-xs disabled:opacity-60"
+          className="w-full md:w-[85%] py-4 bg-grad-hero text-on-brand rounded-token-md font-black shadow-[0_10px_24px_rgb(var(--brand)/0.4)] hover:-translate-y-0.5 active:scale-95 transition-all tracking-widest text-xs disabled:opacity-60"
         >
           {isLoading ? "VERIFYING..." : "VERIFY & ENTER"}
         </button>
 
         <p
           onClick={handleResendCode}
-          className={`mt-6 text-[10px] font-bold text-muted uppercase transition-all ${
+          className={`mt-3 md:mt-6 py-3 md:py-0 text-[12px] md:text-[10px] font-bold text-muted uppercase transition-all ${
             canResend ? "cursor-pointer hover:text-sage-deep" : "cursor-not-allowed opacity-50"
           }`}
         >

@@ -37,7 +37,7 @@ export default function LoginForm() {
   };
 
   const inputCls =
-    "w-[85%] py-4 px-5 rounded-token-md bg-surface text-ink placeholder:text-muted/70 shadow-[inset_0_4px_8px_rgb(var(--sage)/0.55),inset_0_-2px_4px_rgb(var(--highlight)/0.9)] outline-none text-sm font-medium focus:ring-2 focus:ring-focus-ring transition-all";
+    "w-full md:w-[85%] py-3.5 md:py-4 px-5 rounded-token-md bg-surface text-ink placeholder:text-muted/70 shadow-[inset_0_4px_8px_rgb(var(--sage)/0.55),inset_0_-2px_4px_rgb(var(--highlight)/0.9)] outline-none text-base md:text-sm font-medium focus:ring-2 focus:ring-focus-ring transition-all";
 
   return (
     <div className="w-full flex flex-col items-center">
@@ -46,19 +46,19 @@ export default function LoginForm() {
         <p className="text-muted text-xs font-bold mb-6 uppercase tracking-widest">Reconnect with goals</p>
 
         {signedOutNote && !error && (
-          <div role="status" className="w-[85%] mb-4 p-3 bg-surface-2 shadow-neu-inset text-ink rounded-token-sm text-xs font-bold text-center leading-relaxed">
+          <div role="status" className="w-full md:w-[85%] mb-4 p-3 bg-surface-2 shadow-neu-inset text-ink rounded-token-sm text-xs font-bold text-center leading-relaxed">
             <Info size={14} className="inline -mt-0.5 mr-1.5 text-brand" />{signedOutNote}
           </div>
         )}
 
         {error && (
-          <div className="w-[85%] mb-4 p-3 bg-focus/10 border border-focus/30 text-focus rounded-token-sm text-sm font-bold text-center">
+          <div className="w-full md:w-[85%] mb-4 p-3 bg-focus/10 border border-focus/30 text-focus rounded-token-sm text-sm font-bold text-center">
             {error}
           </div>
         )}
 
         {requiresVerification && (
-          <div className="w-[85%] mb-4 p-3 bg-warn/15 border border-warn/40 text-ink rounded-token-sm text-sm font-bold text-center">
+          <div className="w-full md:w-[85%] mb-4 p-3 bg-warn/15 border border-warn/40 text-ink rounded-token-sm text-sm font-bold text-center">
             <TriangleAlert size={15} className="inline -mt-0.5 mr-1.5 text-warn" />Email not verified! Redirecting to verification page...
           </div>
         )}
@@ -82,8 +82,8 @@ export default function LoginForm() {
           />
         </div>
 
-        <div className="w-[85%] text-right mt-2">
-          <Link to="/forgot-password" className="text-[10px] font-bold text-sage-deep hover:text-ink transition-colors">
+        <div className="w-full md:w-[85%] text-right mt-0 md:mt-2">
+          <Link to="/forgot-password" className="inline-flex md:inline items-center min-h-[44px] md:min-h-0 text-[12px] md:text-[10px] font-bold text-sage-deep hover:text-ink transition-colors">
             Forgot Password?
           </Link>
         </div>
@@ -91,12 +91,12 @@ export default function LoginForm() {
         <button
           type="submit"
           disabled={isLoading}
-          className="w-[85%] py-4 mt-6 rounded-token-md bg-grad-hero text-on-brand font-black text-[11px] tracking-widest uppercase shadow-[0_10px_24px_rgb(var(--brand)/0.4)] hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-300 disabled:opacity-60"
+          className="w-full md:w-[85%] py-4 mt-2 md:mt-6 rounded-token-md bg-grad-hero text-on-brand font-black text-[11px] tracking-widest uppercase shadow-[0_10px_24px_rgb(var(--brand)/0.4)] hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-300 disabled:opacity-60"
         >
           {isLoading ? "LOGGING IN..." : "UNLEASH FOCUS"}
         </button>
 
-        <div className="relative w-[85%] my-5">
+        <div className="relative w-full md:w-[85%] my-5">
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-sage"></div>
           </div>

@@ -50,7 +50,7 @@ export default function ResetPassword() {
     }
   };
 
-  const inputCls = "w-[80%] p-4 bg-surface rounded-token-md border border-sage shadow-[inset_0_4px_8px_rgb(var(--sage)/0.55),inset_0_-2px_4px_rgb(var(--highlight)/0.9)] outline-none text-sm text-ink placeholder:text-muted focus:border-sage-deep transition-all";
+  const inputCls = "w-full md:w-[80%] p-4 bg-surface rounded-token-md border border-sage shadow-[inset_0_4px_8px_rgb(var(--sage)/0.55),inset_0_-2px_4px_rgb(var(--highlight)/0.9)] outline-none text-base md:text-sm text-ink placeholder:text-muted focus:border-sage-deep transition-all";
 
   return (
     <div className="w-full flex flex-col items-center p-0">
@@ -61,13 +61,13 @@ export default function ResetPassword() {
         </p>
 
         {error && (
-          <div className="w-[80%] mb-4 p-3 bg-focus/10 border border-focus/30 text-focus rounded-token-sm text-sm font-bold text-center">
+          <div className="w-full md:w-[80%] mb-4 p-3 bg-focus/10 border border-focus/30 text-focus rounded-token-sm text-sm font-bold text-center">
             {error}
           </div>
         )}
 
         {success && (
-          <div className="w-[80%] mb-4 p-3 bg-success/10 border border-success/30 text-success rounded-token-sm text-sm font-bold text-center">
+          <div className="w-full md:w-[80%] mb-4 p-3 bg-success/10 border border-success/30 text-success rounded-token-sm text-sm font-bold text-center">
             {success}
           </div>
         )}
@@ -94,14 +94,14 @@ export default function ResetPassword() {
 
         <button
           type="submit"
-          className="w-[80%] py-4 mt-8 rounded-token-md bg-grad-hero text-on-brand font-black text-[11px] tracking-widest uppercase shadow-[0_10px_24px_rgb(var(--brand)/0.4)] hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-300 disabled:opacity-60"
+          className="w-full md:w-[80%] py-4 mt-8 rounded-token-md bg-grad-hero text-on-brand font-black text-[11px] tracking-widest uppercase shadow-[0_10px_24px_rgb(var(--brand)/0.4)] hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-300 disabled:opacity-60"
           disabled={loading}
         >
           {loading ? "RESETTING..." : "RESET PASSWORD"}
         </button>
 
         <div className="mt-6 text-center">
-          <Link to="/login" className="text-sage-deep font-bold text-sm hover:underline">
+          <Link to="/login" className="inline-flex md:inline items-center min-h-[44px] md:min-h-0 text-sage-deep font-bold text-sm hover:underline">
             Back to Login
           </Link>
         </div>
