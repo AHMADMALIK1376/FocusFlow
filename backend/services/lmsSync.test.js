@@ -70,7 +70,7 @@ test('a first sync makes the subject (named, coloured, with its class slot), the
   assert.deepEqual(r, { subjects: 1, assignments: 1, moved: 0, sessions: 2, quizzes: 0, grades: 0, files: 0 });
   const subject = stmts(/INSERT INTO SUBJECTS/)[0].params;
   assert.equal(subject.name, 'Advance Database Management Systems');
-  assert.equal(subject.code, 'IUIC_COURSE_FALL26_576');
+  assert.equal(subject.code, 'ADMS');
   assert.equal(subject.term, 'Fall 2026');
   assert.equal(subject.userId, 'u1');
   assert.ok(/^#[0-9A-F]{6}$/i.test(subject.color));
@@ -370,4 +370,48 @@ test('no files table yet, or the LMS declining, never stops the rest of the sync
   assert.equal(r.assignments, 1);
   assert.equal(stmts(/UPDATE LMS_CONNECTIONS SET last_synced/).length, 1);
   db.noFilesTable = false;
+});
+
+// ---- repairs (found on the owner's account)
+const ESC = { SUBJECT_ID: 'dupe', NAME: 'Advance Database Management Systems &amp; More', CODE: 'IUIC_COURSE_FALL26_576', IS_ARCHIVED: 0 };
+
+test('a copy the sync made (escaped name) is merged into the subject the student already had: everything moves over and the copy goes', async () => {
+  db.subjects = [ESC, { SUBJECT_ID: 'mine', NAME: 'Advance Database Management Systems & More', CODE: 'ADBMS', IS_ARCHIVED: 0 }];
+  db.maps = [{ KIND: 'course', LMS_ID: 7, LOCAL_ID: 'dupe', STATE: '' }];
+  await sync({ api: fakeApi({ assignments: async () => [], calendarEvents: async () => [] }) });
+  const moved = stmts(/^\s*UPDATE (\w+) SET subject_id = :to/i).map((c) => c.sql.match(/UPDATE (\w+)/)[1]);
+  assert.deepEqual(moved, ['ASSIGNMENTS', 'GRADES', 'EXAMS_DEADLINES', 'NOTES', 'FLASHCARD_DECKS', 'STUDY_HOURS', 'LMS_SESSIONS', 'LMS_GRADES', 'SUBJECT_ATTENDANCE', 'SUBJECT_SCHEDULE']);
+  stmts(/^\s*UPDATE (ASSIGNMENTS|GRADES|SUBJECT_ATTENDANCE) SET subject_id/i).forEach((c) => assert.deepEqual([c.params.from, c.params.to, c.params.userId], ['dupe', 'mine', 'u1']));
+  const attendance = stmts(/UPDATE SUBJECT_ATTENDANCE/)[0].sql;
+  assert.match(attendance, /class_date NOT IN \(SELECT class_date FROM SUBJECT_ATTENDANCE WHERE subject_id = :to\)/); // a day the original already has is kept
+  assert.equal(stmts(/UPDATE LMS_ITEM_MAP SET local_id/)[0].params.to, 'mine');
+  const del = stmts(/DELETE FROM SUBJECTS/)[0];
+  assert.deepEqual([del.params.from, del.params.userId], ['dupe', 'u1']);
+  assert.equal(stmts(/INSERT INTO SUBJECTS/).length, 0); // and no new copy is made
+});
+
+test('the student\'s own subject is never renamed or recoded by the repair', async () => {
+  db.subjects = [ESC, { SUBJECT_ID: 'mine', NAME: 'Advance Database Management Systems & More', CODE: 'IUIC_X', IS_ARCHIVED: 0 }];
+  db.maps = [{ KIND: 'course', LMS_ID: 7, LOCAL_ID: 'dupe', STATE: '' }];
+  await sync({ api: fakeApi({ assignments: async () => [], calendarEvents: async () => [] }) });
+  assert.equal(stmts(/UPDATE SUBJECTS/).length, 0);
+});
+
+test('a copy with no original is kept but cleaned: the escaped name is decoded and the long code becomes a short one', async () => {
+  db.subjects = [ESC];
+  db.maps = [{ KIND: 'course', LMS_ID: 7, LOCAL_ID: 'dupe', STATE: '' }];
+  await sync({ api: fakeApi({ assignments: async () => [], calendarEvents: async () => [] }) });
+  assert.equal(stmts(/UPDATE SUBJECTS SET name/)[0].params.name, 'Advance Database Management Systems & More');
+  assert.equal(stmts(/UPDATE SUBJECTS SET code/)[0].params.code, 'ADMSM');
+  assert.equal(stmts(/DELETE FROM SUBJECTS/).length, 0);
+});
+
+test('an escaped LMS name now matches the student\'s own subject, so a first sync links it instead of making a copy', async () => {
+  db.subjects = [{ SUBJECT_ID: 'mine', NAME: 'HCI & Computer Graphics Lab', CODE: 'CSC452', IS_ARCHIVED: 0 }];
+  db.scheduled = ['mine'];
+  const course = { id: 9, fullname: 'HCI & COMPUTER GRAPHICS LAB - IUIC_COURSE_FALL26_589 (THU 09:00 11:00 CL2)', startdate: 0, enddate: 0 };
+  const r = await sync({ api: fakeApi({ courses: async () => [course], assignments: async () => [], calendarEvents: async () => [] }) });
+  assert.equal(r.subjects, 0);
+  assert.equal(stmts(/INSERT INTO SUBJECTS/).length, 0);
+  assert.equal(stmts(/INSERT INTO LMS_ITEM_MAP/)[0].params.localId, 'mine');
 });

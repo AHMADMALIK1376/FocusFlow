@@ -6,6 +6,15 @@ Update this file with every change.
 
 ---
 
+## 2026-10-31 — Subject page redesign; "&amp;" names; duplicate subjects merged back
+
+- **What went wrong (owner's screenshots):** subjects made by the LMS sync showed "HCI &amp; Computer Graphics Lab" (the LMS sends names HTML-escaped) and a code like `IUIC_COURSE_FALL26_589` that overflowed the cube; and some subject pages had no attendance. Nothing was deleted: the sync could not match "HCI &amp; ..." to the student's own "HCI & ...", so it made a **second, empty copy**, and the marks the student had made were still on the original.
+- **Fix, going forward:** every name from the LMS (courses, assignments, quizzes, files, marks) is decoded once (`decodeEntities`); an LMS subject gets a short code from its name (`acronym`, "HCICGL"), the long section name is kept only as `section`.
+- **Fix, for what already exists (runs at the start of every sync):** a copy made by the sync is merged into the student's own subject with the same name: assignments, grades, exams, notes, decks, study hours, class dates, marks and the class times move over; attendance moves day by day (a day the original already has is kept); the LMS mapping points at the original; then the copy is removed. A copy with no original is kept but cleaned (decoded name, short code). A student's own subject is never renamed, recoded or removed. Copies whose names differ in more than case and symbols (for example "ADBMS" against "Advance Database Management Systems") cannot be matched safely and stay: the student deletes them by hand.
+- **Subject page:** a slim header filled with a light tint of the subject's colour (code, target, teacher, term, credits); the pencil (opens that subject's edit form: `/subjects?edit=<id>`) and the delete button (design unchanged) show only when the header is pointed at, always on touch screens. The sections are compact cards, each a light tint from the design tokens (class schedule, assignments, attendance, grades, exams, flashcards), in two columns on a laptop so most fit on one screen, one column on a phone; long lists scroll inside their card. `Panel` gained optional `tone` and `compact` and `EmptyState` a `compact` size; their defaults are unchanged everywhere else.
+
+---
+
 ## 2026-10-31 — Subject page: assignment progress graph; local file links; slow-query switch
 
 - **Subject page:** the assignments panel (already filtered to that subject) now starts with a ring showing the percentage submitted, "N of M submitted", a bar split into done / in progress / to do, and a red "N overdue" count. Each assignment also lists the teacher's files. Nothing is drawn for a subject with no assignments.

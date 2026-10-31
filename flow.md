@@ -208,6 +208,10 @@ Solid status fills (delete pop-up, danger `Button`, the done tick) take `text-on
 6. Disconnect (`DELETE /api/lms`) deletes the key, the remembered mapping, the sessions and the marks; subjects and cards stay.
 7. Phase 2: the same calendar read (`calendarEvents`) also returns quizzes, which become Quiz rows in `EXAMS_DEADLINES` (remembered in `LMS_ITEM_MAP` as `quiz`). `syncGrades` reads each course's marks (`gradereport_user_get_grade_items`) into `LMS_GRADES` in one batched statement, only for changed marks. `GET /api/lms/grades` groups them by subject for the Grades page (`LmsGradesPanel`), read-only and never part of the CGPA.
 
+### Subject page and repairs (31 Oct 2026)
+- `SubjectHubPage`: slim tinted header (pencil and delete on hover) above two columns of tinted compact panels. The pencil goes to `/subjects?edit=<id>`; `SubjectsPage` reads that once on load, opens the edit form and clears the address.
+- Every sync starts with `repairSubjects` (before it maps courses): it merges a sync-made copy into the student's own subject of the same name (`mergeSubject` moves the rows, then deletes the copy) or cleans the copy's escaped name and long code.
+
 ### LMS files, emails and attendance paste (31 Oct 2026)
 - Sync (`syncFiles`) stores each assignment's attachment list in `LMS_FILES` (name, size, path on the LMS). `GET /api/assignments` adds `files: [{id, name, size}]` to a card; the board shows them (`AttachmentLinks`) as links to `/api/lms/file/<id>`, which the server answers by fetching the file from the LMS with the student's key (`lmsController.getFile`).
 - Emails: `notificationScheduler.loadUserData` also loads `pending` (not submitted, not due today/tomorrow; only in the morning-email window) and `fresh` (LMS items added after connecting, last two days). `computeDue` turns `pending` into the "Not submitted yet" part of the digest and each `fresh` item into one `lmsnew:` message.

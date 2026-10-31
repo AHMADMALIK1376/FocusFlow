@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, GraduationCap, Trash2, ScanText, RotateCcw, ChevronDown, Orbit } from "lucide-react";
 import { Button, Input, Select, Field, Modal, EmptyState, DeleteButton, useToast } from "../components/ui";
@@ -69,6 +69,16 @@ export default function SubjectsPage() {
     });
     setOpen(true);
   }
+  // The pencil on a subject's own page sends the student here with ?edit=<id>: open that subject's form once, then tidy the address.
+  useEffect(() => {
+    if (loading) return;
+    const wanted = new URLSearchParams(window.location.search).get("edit");
+    if (!wanted) return;
+    const found = [...subjects, ...archived].find((s) => s.id === wanted);
+    window.history.replaceState(null, "", window.location.pathname);
+    if (found) openEdit(found);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
   const setField = (k, v) => setForm((f) => ({ ...f, [k]: v }));
   const addSlot = () => setForm((f) => ({ ...f, schedule: [...f.schedule, { day: "Monday", start: "", end: "", room: "" }] }));
   const setSlot = (i, k, v) => setForm((f) => ({ ...f, schedule: f.schedule.map((s, idx) => (idx === i ? { ...s, [k]: v } : s)) }));

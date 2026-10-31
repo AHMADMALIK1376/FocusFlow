@@ -31,7 +31,7 @@ export default function AssignmentsPanel({ subjectId }) {
   }
 
   return (
-    <Panel title="Assignments" className="mb-6" right={<Button size="sm" variant="ghost" onClick={() => navigate("/projects")}>Board</Button>}>
+    <Panel title="Assignments" tone="blush" compact right={<Button size="sm" variant="ghost" onClick={() => navigate("/projects")}>Board</Button>}>
       {!firstLoad && <AssignmentProgress cards={cards} />}
       <div className="flex gap-2 mb-3">
         <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="New assignment…" onKeyDown={(e) => e.key === "Enter" && add()} className="!py-2 !px-3 text-sm" />
@@ -40,9 +40,9 @@ export default function AssignmentsPanel({ subjectId }) {
       {firstLoad ? (
         <PanelLoading message="Loading assignments…" />
       ) : cards.length === 0 ? (
-        <EmptyState icon={SquareKanban} title="No assignments yet" description="Add one above" />
+        <EmptyState compact icon={SquareKanban} title="No assignments yet" description="Add one above" />
       ) : (
-        <ul className="divide-y divide-[rgb(var(--ink)/0.07)]">
+        <ul className="divide-y divide-[rgb(var(--ink)/0.07)] max-h-56 overflow-y-auto pr-1">
           {cards.map((c) => (
             <li key={c.id} className="flex items-center gap-3 py-2.5">
               <button

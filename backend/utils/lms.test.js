@@ -45,7 +45,8 @@ test('the server key must be exactly 32 bytes, otherwise the feature stays off',
 test('a course name gives the subject name, code, term, lab flag and its first class slot', () => {
   const c = lms.parseCourseName('ADVANCE DATABASE MANAGEMENT SYSTEMS - IUIC_COURSE_FALL26_576 (FRI 01:15 03:20 LR26)');
   assert.equal(c.name, 'Advance Database Management Systems');
-  assert.equal(c.code, 'IUIC_COURSE_FALL26_576');
+  assert.equal(c.code, 'ADMS'); // a short code, not the LMS's long section name
+  assert.equal(c.section, 'IUIC_COURSE_FALL26_576');
   assert.equal(c.term, 'Fall 2026');
   assert.equal(c.isLab, false);
   assert.deepEqual(c.meetings, [{ day: 'Friday', start: '13:15', end: '15:20', room: 'LR26' }]);
@@ -56,7 +57,7 @@ test('a course name gives the subject name, code, term, lab flag and its first c
 });
 
 test('odd course names never crash: no code, no times, two slots, a missing room', () => {
-  assert.deepEqual(lms.parseCourseName('Plain Course'), { name: 'Plain Course', code: null, isLab: false, term: null, meetings: [] });
+  assert.deepEqual(lms.parseCourseName('Plain Course'), { name: 'Plain Course', code: 'PC', section: null, isLab: false, term: null, meetings: [] });
   assert.deepEqual(lms.parseCourseName('').meetings, []);
   assert.deepEqual(lms.parseCourseName(undefined).meetings, []);
   const two = lms.parseCourseName('WEB ENGINEERING - IUIC_COURSE_FALL26_592 (MON 12:41 02:00 LR3, WED 10:00 11:30)');
@@ -130,4 +131,26 @@ test('only a file path on the LMS itself is accepted', () => {
   assert.equal(lms.relativeFilePath('http://lms.iqra.edu.pk/pluginfile.php/1/a.pdf', base), null);
   assert.equal(lms.relativeFilePath('not a url', base), null);
   assert.equal(lms.relativeFilePath(undefined, base), null);
+});
+
+test('names the LMS sends HTML-escaped read as the words they are, once', () => {
+  assert.equal(lms.decodeEntities('HCI &amp; Computer Graphics'), 'HCI & Computer Graphics');
+  assert.equal(lms.decodeEntities('Q&amp;A &lt;draft&gt; it&#39;s &quot;ok&quot;&nbsp;now'), 'Q&A <draft> it\'s "ok" now');
+  assert.equal(lms.decodeEntities('&amp;amp;'), '&amp;');
+  assert.equal(lms.decodeEntities('&#65;&#x41;'), 'A&#x41;');
+  assert.equal(lms.decodeEntities(null), '');
+  const c = lms.parseCourseName('HCI &amp; COMPUTER GRAPHICS LAB - IUIC_COURSE_FALL26_589 (THU 09:00 11:00 CL2)');
+  assert.equal(c.name, 'HCI & Computer Graphics Lab');
+  assert.equal(c.code, 'HCICGL');
+  assert.equal(c.isLab, true);
+});
+
+test('a short code is the first letters of the words, keeping a whole acronym, at most six characters', () => {
+  assert.equal(lms.acronym('Advance Database Management Systems'), 'ADMS');
+  assert.equal(lms.acronym('HCI & Computer Graphics'), 'HCICG');
+  assert.equal(lms.acronym('Internet of Things'), 'IT');
+  assert.equal(lms.acronym('Web Engineering Lab'), 'WEL');
+  assert.equal(lms.acronym('A Very Long Name With Many Many Words Here'), 'AVLNMM');
+  assert.equal(lms.acronym(''), '');
+  assert.equal(lms.acronym(undefined), '');
 });

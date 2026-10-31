@@ -93,13 +93,16 @@ async function runSync(connection, userId, token, lmsUserId, api, now) {
   // What we already know from earlier syncs.
   const maps = await connection.execute(`SELECT kind, lms_id, local_id, state FROM LMS_ITEM_MAP WHERE user_id = :userId`, { userId });
   const mapOf = new Map(maps.rows.map((r) => [`${r.KIND}:${r.LMS_ID}`, { localId: r.LOCAL_ID, state: r.STATE }]));
-  const subjectRows = await connection.execute(`SELECT subject_id, name, is_archived FROM SUBJECTS WHERE user_id = :userId`, { userId });
+  const subjectRows = await connection.execute(`SELECT subject_id, name, code, is_archived FROM SUBJECTS WHERE user_id = :userId`, { userId });
   const subjectIds = new Set(subjectRows.rows.map((r) => r.SUBJECT_ID));
   const claimed = new Set([...mapOf.entries()].filter(([k]) => k.startsWith('course:')).map(([, v]) => v.localId));
   const withSchedule = new Set((await connection.execute(
     `SELECT DISTINCT sc.subject_id FROM SUBJECT_SCHEDULE sc JOIN SUBJECTS s ON s.subject_id = sc.subject_id WHERE s.user_id = :userId`, { userId }
   )).rows.map((r) => r.SUBJECT_ID));
   let colorIndex = subjectRows.rows.length;
+
+  // 0. Repair what an earlier version made (an escaped name, a long code, a copy of a subject the student already had).
+  await repairSubjects(connection, userId, { mapOf, subjectRows, subjectIds, claimed, withSchedule });
 
   const addSchedule = async (subjectId, meetings) => {
     for (const mt of meetings) {
@@ -126,7 +129,7 @@ async function runSync(connection, userId, token, lmsUserId, api, now) {
       continue;
     }
     const wanted = lms.normalizeName(info.name);
-    const same = subjectRows.rows.find((r) => !claimed.has(r.SUBJECT_ID) && lms.normalizeName(r.NAME) === wanted);
+    const same = subjectRows.rows.find((r) => !claimed.has(r.SUBJECT_ID) && lms.normalizeName(lms.decodeEntities(r.NAME)) === wanted);
     let subjectId;
     if (same) {
       subjectId = same.SUBJECT_ID;
@@ -281,6 +284,67 @@ async function runSync(connection, userId, token, lmsUserId, api, now) {
 
 // The teacher's attachments (a PDF, a lab file) for each assignment. Only the name, size and where the file lives are kept:
 // the file itself is fetched from the LMS, with the student's own key, when they open it. Optional like the marks.
+// Repairs for what an earlier version of the sync did (found on the owner's own account):
+//  - the LMS sends names HTML-escaped ("HCI &amp; Graphics"), which stopped a course from matching the subject the student already had, so a second,
+//    empty copy was made. The copy is merged back into the student's own subject: everything on it moves over, then the copy is removed.
+//  - a subject made by the sync could keep the escaped name and a code like IUIC_COURSE_FALL26_589 (now a short code such as "HCICGL").
+// A student's own subject is never renamed, recoded or removed: only the copy the sync made (a subject with an LMS course mapping) is touched.
+const MOVE_WITH_SUBJECT = ['ASSIGNMENTS', 'GRADES', 'EXAMS_DEADLINES', 'NOTES', 'FLASHCARD_DECKS', 'STUDY_HOURS', 'LMS_SESSIONS', 'LMS_GRADES'];
+
+async function mergeSubject(connection, userId, from, to) {
+  for (const table of MOVE_WITH_SUBJECT) {
+    try {
+      await connection.execute(`UPDATE ${table} SET subject_id = :to WHERE subject_id = :from AND user_id = :userId`, { to, from, userId });
+    } catch (err) {
+      if (!(err && err.code === '42P01')) throw err; // an optional LMS table that does not exist yet
+    }
+  }
+  // One mark per class day: a day the original already has is kept as it is.
+  await connection.execute(
+    `UPDATE SUBJECT_ATTENDANCE SET subject_id = :to
+     WHERE subject_id = :from AND user_id = :userId AND class_date NOT IN (SELECT class_date FROM SUBJECT_ATTENDANCE WHERE subject_id = :to)`,
+    { to, from, userId }
+  );
+  await connection.execute(
+    `UPDATE SUBJECT_SCHEDULE SET subject_id = :to
+     WHERE subject_id = :from AND NOT EXISTS (SELECT 1 FROM SUBJECT_SCHEDULE WHERE subject_id = :to)`,
+    { to, from }
+  );
+  await connection.execute(`UPDATE LMS_ITEM_MAP SET local_id = :to WHERE user_id = :userId AND kind = 'course' AND local_id = :from`, { to, from, userId });
+  await connection.execute(`DELETE FROM SUBJECTS WHERE subject_id = :from AND user_id = :userId`, { from, userId });
+}
+
+async function repairSubjects(connection, userId, ctx) {
+  const { mapOf, subjectRows, subjectIds, claimed, withSchedule } = ctx;
+  for (const [key, entry] of [...mapOf.entries()]) {
+    if (!key.startsWith('course:') || !subjectIds.has(entry.localId)) continue;
+    const mine = subjectRows.rows.find((r) => r.SUBJECT_ID === entry.localId);
+    if (!mine) continue;
+    const cleanName = lms.decodeEntities(mine.NAME);
+    const wanted = lms.normalizeName(cleanName);
+    const original = subjectRows.rows.find((r) => r.SUBJECT_ID !== mine.SUBJECT_ID && !claimed.has(r.SUBJECT_ID) && Number(r.IS_ARCHIVED) !== 1 && lms.normalizeName(lms.decodeEntities(r.NAME)) === wanted);
+    if (original) {
+      await mergeSubject(connection, userId, mine.SUBJECT_ID, original.SUBJECT_ID);
+      subjectRows.rows = subjectRows.rows.filter((r) => r.SUBJECT_ID !== mine.SUBJECT_ID);
+      subjectIds.delete(mine.SUBJECT_ID);
+      claimed.delete(mine.SUBJECT_ID);
+      claimed.add(original.SUBJECT_ID);
+      mapOf.set(key, { ...entry, localId: original.SUBJECT_ID });
+      if (withSchedule.has(mine.SUBJECT_ID)) withSchedule.add(original.SUBJECT_ID);
+      continue;
+    }
+    if (cleanName !== mine.NAME) {
+      await connection.execute(`UPDATE SUBJECTS SET name = :name WHERE subject_id = :id AND user_id = :userId`, { name: cleanName, id: mine.SUBJECT_ID, userId });
+      mine.NAME = cleanName;
+    }
+    if (/^IUIC_/i.test(String(mine.CODE || ''))) {
+      const code = lms.acronym(cleanName);
+      await connection.execute(`UPDATE SUBJECTS SET code = :code WHERE subject_id = :id AND user_id = :userId`, { code, id: mine.SUBJECT_ID, userId });
+      mine.CODE = code;
+    }
+  }
+}
+
 async function syncFiles(connection, userId, targets) {
   const wantedRows = [];
   const live = new Set((await connection.execute(`SELECT assignment_id FROM ASSIGNMENTS WHERE user_id = :userId`, { userId })).rows.map((r) => r.ASSIGNMENT_ID));

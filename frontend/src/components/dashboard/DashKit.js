@@ -46,11 +46,20 @@ export function StatTile({ icon, label, value, sub, primary, tone }) {
 }
 
 // Surface panel with an optional header row.
-export function Panel({ title, subtitle, right, children, className }) {
+// Light colour fills for a panel (from the design tokens): <Panel tone="sage">.
+export const PANEL_TONES = {
+  sage: "bg-[rgb(var(--sage)/0.32)]",
+  sun: "bg-[rgb(var(--sun)/0.18)]",
+  blush: "bg-[rgb(var(--blush)/0.85)]",
+  info: "bg-[rgb(var(--info)/0.10)]",
+  brand: "bg-[rgb(var(--brand)/0.09)]",
+};
+
+export function Panel({ title, subtitle, right, children, className, tone, compact }) {
   return (
-    <section className={cx("bg-surface rounded-token-lg shadow-neu p-6", className)}>
+    <section className={cx(PANEL_TONES[tone] || "bg-surface", "rounded-token-lg shadow-neu", compact ? "p-4" : "p-6", className)}>
       {(title || right) && (
-        <div className="flex items-start justify-between gap-3 mb-3">
+        <div className={cx("flex items-start justify-between gap-3", compact ? "mb-2" : "mb-3")}>
           <div>
             {title && <h3 className="text-sm font-black uppercase tracking-wider text-ink">{title}</h3>}
             {subtitle && <p className="text-xs text-muted mt-0.5">{subtitle}</p>}

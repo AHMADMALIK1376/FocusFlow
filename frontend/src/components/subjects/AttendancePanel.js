@@ -35,7 +35,8 @@ export default function AttendancePanel({ subjectId }) {
   return (
     <Panel
       title="Attendance"
-      className="mb-6"
+      tone="sage"
+      compact
       right={pct != null ? <Badge tone={pct >= 75 ? "success" : "focus"}>{pct}%</Badge> : <Badge tone="muted">—</Badge>}
     >
       <div className="flex flex-wrap items-center gap-2 mb-4">
@@ -56,9 +57,9 @@ export default function AttendancePanel({ subjectId }) {
       {firstLoad ? (
         <PanelLoading message="Loading attendance…" />
       ) : data.records.length === 0 ? (
-        <EmptyState icon={UserCheck} title="No attendance yet" description="Mark today's class above" />
+        <EmptyState compact icon={UserCheck} title="No attendance yet" description="Mark today's class above" />
       ) : (
-        <ul className="divide-y divide-[rgb(var(--ink)/0.07)]">
+        <ul className="divide-y divide-[rgb(var(--ink)/0.07)] max-h-56 overflow-y-auto pr-1">
           {data.records.slice(0, 8).map((r) => (
             <li key={r.id} className="flex items-center gap-3 py-2.5">
               <Badge tone={STATUS_TONE[r.status] || "muted"}>{r.status}</Badge>

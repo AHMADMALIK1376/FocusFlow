@@ -35,15 +35,16 @@ export default function ExamsPanel({ subjectId }) {
   return (
     <Panel
       title="Exams & Deadlines"
-      className="mb-6"
+      tone="brand"
+      compact
       right={<Button size="sm" variant="primary" onClick={() => { setForm(EMPTY); setOpen(true); }} className="gap-1"><Plus size={14} /> Add</Button>}
     >
       {firstLoad ? (
         <PanelLoading message="Loading exams…" />
       ) : items.length === 0 ? (
-        <EmptyState icon={CalendarClock} title="Nothing upcoming" description="Add an exam, quiz or deadline for this subject" />
+        <EmptyState compact icon={CalendarClock} title="Nothing upcoming" description="Add an exam, quiz or deadline for this subject" />
       ) : (
-        <ul className="divide-y divide-[rgb(var(--ink)/0.07)]">
+        <ul className="divide-y divide-[rgb(var(--ink)/0.07)] max-h-56 overflow-y-auto pr-1">
           {items.map((x) => (
             <li key={x.id} className="flex items-center gap-3 py-2.5">
               <Checkbox checked={x.isDone} size={20} onChange={() => toggle(x.id)} />

@@ -68,8 +68,23 @@ function to24h(h, m) {
   return `${String(hour).padStart(2, '0')}:${m}`;
 }
 
+// The LMS sends names HTML-escaped ("HCI &amp; Graphics"): show them as the words they are.
+function decodeEntities(s) {
+  return String(s == null ? '' : s)
+    .replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#0?39;/g, "'").replace(/&apos;/g, "'")
+    .replace(/&#(\d{1,5});/g, (m, n) => { const c = Number(n); return c > 0 && c < 65536 ? String.fromCharCode(c) : m; })
+    .replace(/&amp;/g, '&');
+}
+
+// A short code for a subject from its name: "HCI & Computer Graphics Lab" -> "HCICGL".
+function acronym(name) {
+  const words = decodeEntities(name).split(/[^A-Za-z0-9]+/).filter((w) => w && !SMALL.has(w.toLowerCase()));
+  const code = words.map((w) => (w.length > 1 && w === w.toUpperCase() ? w : w[0].toUpperCase())).join('');
+  return code.slice(0, 6);
+}
+
 function parseCourseName(fullname) {
-  const full = String(fullname || '').trim();
+  const full = decodeEntities(fullname).trim();
   const m = full.match(/^(.+?)\s+-\s+([A-Z0-9]+(?:_[A-Z0-9]+)+)\s*(?:\((.*)\))?\s*$/i);
   const rawName = m ? m[1] : full.replace(/\s*\(.*$/, '');
   const code = m ? m[2].slice(0, 50) : null;
@@ -84,7 +99,8 @@ function parseCourseName(fullname) {
   const termMatch = full.match(/(FALL|SPRING|SUMMER)(\d{2})(?!\d)/i);
   return {
     name: titleCase(rawName).slice(0, 200),
-    code,
+    code: acronym(titleCase(rawName)) || code,
+    section: code,
     isLab: /\blab\b/i.test(rawName),
     term: termMatch ? `${termMatch[1][0].toUpperCase()}${termMatch[1].slice(1).toLowerCase()} 20${termMatch[2]}` : null,
     meetings,
@@ -161,5 +177,5 @@ function isCurrentCourse(course, nowSeconds = Date.now() / 1000) {
 module.exports = {
   parseLaunchText, keyFromEnv, encryptToken, decryptToken,
   parseCourseName, titleCase, to24h, normalizeName,
-  htmlToText, relativeFilePath, localDate, localTime, assignmentState, parseAssignmentState, diffSessions, isCurrentCourse,
+  decodeEntities, acronym, htmlToText, relativeFilePath, localDate, localTime, assignmentState, parseAssignmentState, diffSessions, isCurrentCourse,
 };

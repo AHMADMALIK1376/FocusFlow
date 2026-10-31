@@ -26,13 +26,13 @@ export default function FlashcardsPanel({ subjectId }) {
   }
 
   return (
-    <Panel title="Flashcards" className="mb-6" right={<Button size="sm" variant="ghost" onClick={() => navigate("/flashcards")}>All decks</Button>}>
+    <Panel title="Flashcards" tone="sage" compact right={<Button size="sm" variant="ghost" onClick={() => navigate("/flashcards")}>All decks</Button>}>
       {firstLoad ? (
         <PanelLoading message="Loading decks…" />
       ) : decks.length === 0 ? (
-        <EmptyState icon={Layers} title="No decks yet" description="Create a deck for this subject" />
+        <EmptyState compact icon={Layers} title="No decks yet" description="Create a deck for this subject" />
       ) : (
-        <ul className="divide-y divide-[rgb(var(--ink)/0.07)] mb-3">
+        <ul className="divide-y divide-[rgb(var(--ink)/0.07)] mb-3 max-h-56 overflow-y-auto pr-1">
           {decks.map((d) => (
             <li key={d.id} onClick={() => navigate(`/flashcards/${d.id}`)} className="flex items-center gap-3 py-2.5 cursor-pointer hover:bg-surface-2 -mx-2 px-2 rounded-token-md transition-colors">
               <Layers size={18} strokeWidth={1.75} className="text-brand" />

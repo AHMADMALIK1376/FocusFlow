@@ -11,6 +11,9 @@ class LmsError extends Error {
 const KEY_REJECTED = new Set(['invalidtoken', 'accessexception', 'invalidlogin', 'forbidden', 'servicenotavailable', 'nopermissions', 'requireloginerror']);
 const keyRejected = (err) => Boolean(err && KEY_REJECTED.has(err.code));
 
+const lmsText = require('../utils/lms');
+const clean = (s) => lmsText.decodeEntities(s);
+
 const baseUrl = () => (process.env.LMS_BASE_URL || 'https://lms.iqra.edu.pk').replace(/\/+$/, '');
 
 async function call(token, fn, params = {}) {
@@ -48,15 +51,15 @@ async function siteInfo(token) {
 
 async function courses(token, userId) {
   const list = await call(token, 'core_enrol_get_users_courses', { userid: userId });
-  return (Array.isArray(list) ? list : []).map((c) => ({ id: c.id, fullname: c.fullname || '', startdate: c.startdate || 0, enddate: c.enddate || 0 }));
+  return (Array.isArray(list) ? list : []).map((c) => ({ id: c.id, fullname: clean(c.fullname), startdate: c.startdate || 0, enddate: c.enddate || 0 }));
 }
 
 async function assignments(token, courseIds) {
   if (!courseIds.length) return [];
   const d = await call(token, 'mod_assign_get_assignments', { courseids: courseIds });
   return (d.courses || []).flatMap((c) => (c.assignments || []).map((a) => ({
-    id: a.id, courseId: c.id, name: a.name || 'Assignment', duedate: a.duedate || 0, intro: a.intro || '',
-    files: (a.introattachments || []).map((f) => ({ name: f.filename, size: f.filesize, mime: f.mimetype, url: f.fileurl })),
+    id: a.id, courseId: c.id, name: clean(a.name) || 'Assignment', duedate: a.duedate || 0, intro: a.intro || '',
+    files: (a.introattachments || []).map((f) => ({ name: clean(f.filename), size: f.filesize, mime: f.mimetype, url: f.fileurl })),
   })));
 }
 
@@ -86,7 +89,7 @@ async function calendarEvents(token, year, month) {
   const events = (d.weeks || []).flatMap((w) => w.days || []).flatMap((day) => day.events || []);
   return events
     .filter((e) => e.modulename === 'attendance' || e.modulename === 'quiz')
-    .map((e) => ({ id: e.id, modulename: e.modulename, name: e.name || '', courseId: (e.course && e.course.id) || e.courseid, timestart: e.timestart }));
+    .map((e) => ({ id: e.id, modulename: e.modulename, name: clean(e.name), courseId: (e.course && e.course.id) || e.courseid, timestart: e.timestart }));
 }
 
 // The student's marks in one course: one row per graded item (and the course total). Read-only.
@@ -97,7 +100,7 @@ async function grades(token, userId, courseId) {
     .filter((i) => i.itemtype !== 'category' && (i.itemname || i.itemtype === 'course'))
     .map((i) => ({
       id: i.id,
-      name: i.itemname || 'Course total',
+      name: clean(i.itemname) || 'Course total',
       isTotal: i.itemtype === 'course',
       score: i.graderaw == null ? null : Number(i.graderaw),
       max: i.grademax == null ? null : Number(i.grademax),
