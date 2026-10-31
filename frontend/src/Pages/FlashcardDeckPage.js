@@ -70,7 +70,7 @@ export default function FlashcardDeckPage() {
       </div>
 
       <Panel title="Add a card" className="mb-6">
-        <div className="grid sm:grid-cols-[1fr_1fr_auto] gap-2 items-end">
+        <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-2 items-end">
           <div>
             <label className="text-xs font-bold text-muted block mb-1">Front (question)</label>
             <Input value={front} onChange={(e) => setFront(e.target.value)} placeholder="Term / question" />
@@ -96,7 +96,7 @@ export default function FlashcardDeckPage() {
                   <p className="text-xs text-muted truncate">{c.back}</p>
                 </div>
                 <span className="text-[11px] text-muted shrink-0">{isDue(c) ? "due" : c.dueDate}</span>
-                <button onClick={() => openEdit(c)} className="p-1.5 rounded-lg text-muted hover:text-brand hover:bg-brand/10 transition-colors" title="Edit card"><Pencil size={15} /></button>
+                <button onClick={() => openEdit(c)} className="p-1.5 max-sm:p-2.5 rounded-lg text-muted hover:text-brand hover:bg-brand/10 transition-colors" title="Edit card"><Pencil size={15} /></button>
                 <DeleteButton onClick={() => onDeleteCard(c)} title="Delete card" />
               </li>
             ))}
@@ -116,15 +116,15 @@ export default function FlashcardDeckPage() {
       </Modal>
 
       {queue && (
-        <div className="fixed inset-0 z-[1000] bg-canvas flex flex-col items-center justify-center p-6">
+        <div className="fixed inset-0 z-[1500] bg-canvas flex flex-col items-center justify-center p-4 sm:p-6 overflow-y-auto">
           <div className="w-full max-w-xl">
             <div className="flex items-center justify-between mb-4">
               <span className="text-sm font-bold text-muted">{idx + 1} / {queue.length}</span>
-              <button onClick={() => setQueue(null)} className="text-muted hover:text-focus" title="Close"><X size={20} /></button>
+              <button onClick={() => setQueue(null)} className="text-muted hover:text-focus p-2 -m-2" title="Close" aria-label="Close"><X size={20} /></button>
             </div>
-            <div onClick={() => setFlipped((f) => !f)} className="bg-surface rounded-token-lg shadow-neu p-10 min-h-[240px] flex flex-col items-center justify-center text-center cursor-pointer select-none">
+            <div onClick={() => setFlipped((f) => !f)} className="bg-surface rounded-token-lg shadow-neu p-5 sm:p-10 min-h-[240px] flex flex-col items-center justify-center text-center cursor-pointer select-none">
               <span className="text-[10px] uppercase tracking-widest text-muted mb-3">{flipped ? "Answer" : "Question"}</span>
-              <p className="text-2xl font-black text-ink">{flipped ? queue[idx].back : queue[idx].front}</p>
+              <p className="text-xl sm:text-2xl font-black text-ink break-words max-w-full">{flipped ? queue[idx].back : queue[idx].front}</p>
               {!flipped && <span className="text-xs text-muted mt-6 inline-flex items-center gap-1"><RotateCcw size={12} /> tap to flip</span>}
             </div>
             {flipped ? (

@@ -124,10 +124,19 @@ function leadText(mins) {
  * @param {Array}  p.routines   [{routineId, name, time, days:[...] }]
  * @param {Array}  p.exams      [{id, title, type, date, time, duration?, location, subjectId?, subjectName}] (not done, today/tomorrow)
  * @param {Array}  p.assignments [{id, title, dueDate, subjectName}] (not done, today/tomorrow)
+ * @param {Array}  p.pending    [{id, title, dueDate, subjectName}] not submitted and not due today/tomorrow (overdue, or later); only used by the morning email
+ * @param {Array}  p.fresh      [{id, kind: 'assignment'|'quiz', title, date, time, subjectName}] just added from the LMS (one "new" email each)
  * @param {Set}    p.markedSubjectIds subjects that already have attendance for today
  * @returns {Array<{key, kind, title, body, url, data?}>}
  */
-function computeDue({ now, settings, classes = [], routines = [], exams = [], assignments = [], markedSubjectIds = new Set() }) {
+// "Tue 6 Oct" from a YYYY-MM-DD date (no time zone maths: it is only a label).
+function shortDate(iso) {
+  const d = new Date(`${iso}T00:00:00Z`);
+  return Number.isNaN(d.getTime()) ? String(iso || '') : d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+}
+const MAX_PENDING = 8;
+
+function computeDue({ now, settings, classes = [], routines = [], exams = [], assignments = [], pending = [], fresh = [], markedSubjectIds = new Set() }) {
   const s = { ...DEFAULT_SETTINGS, ...settings };
   const lead = Math.max(0, Number(s.leadMinutes) || 0);
   const out = [];
@@ -156,6 +165,20 @@ function computeDue({ now, settings, classes = [], routines = [], exams = [], as
       for (const e of examsTomorrow) lines.push(`• ${e.type || 'Exam'} tomorrow${e.time ? ` at ${fmt12(e.time)}` : ''}: ${e.title}`);
       for (const a of dueTomorrow) lines.push(`• Due tomorrow: ${a.title}`);
     }
+    const notSubmitted = !s.deadlineReminders ? [] : [...pending]
+      .sort((a, b) => String(a.dueDate || '9999').localeCompare(String(b.dueDate || '9999')))
+      .slice(0, MAX_PENDING)
+      .map((a) => ({
+        title: a.title,
+        subjectName: a.subjectName || '',
+        overdue: Boolean(a.dueDate) && a.dueDate < now.date,
+        label: !a.dueDate ? 'No due date' : a.dueDate < now.date ? `Overdue since ${shortDate(a.dueDate)}` : `Due ${shortDate(a.dueDate)}`,
+      }));
+    if (notSubmitted.length) {
+      lines.push('Not submitted yet:');
+      for (const p of notSubmitted) lines.push(`• ${p.title}${p.subjectName ? ` (${p.subjectName})` : ''} — ${p.label.toLowerCase()}`);
+      if (pending.length > MAX_PENDING) lines.push(`…and ${pending.length - MAX_PENDING} more`);
+    }
     if (s.routineReminders && todaysRoutines.length) {
       lines.push(`Routine: ${todaysRoutines.map((r) => `${fmt12(r.time)} ${r.name}`).join(', ')}`);
     }
@@ -176,6 +199,8 @@ function computeDue({ now, settings, classes = [], routines = [], exams = [], as
         sub: todaysClasses.length ? `${todaysClasses.length} class${todaysClasses.length === 1 ? '' : 'es'} on your timetable today.` : 'A free day on your timetable.',
         classes: todaysClasses.map((c) => ({ start: fmt12(c.start), end: fmt12(c.end), name: c.name, room: c.room || '' })),
         deadlines,
+        pending: notSubmitted,
+        morePending: Math.max(0, pending.length - notSubmitted.length),
         routines: s.routineReminders ? todaysRoutines.map((r) => ({ time: fmt12(r.time), name: r.name })) : [],
       },
     });
@@ -333,6 +358,29 @@ function computeDue({ now, settings, classes = [], routines = [], exams = [], as
           },
         });
       }
+    }
+  }
+
+  // 8) Something new from the LMS: one email each (the log keeps it to one), for an assignment or a quiz the teacher just posted.
+  if (s.deadlineReminders) {
+    for (const f of fresh) {
+      const quiz = f.kind === 'quiz';
+      const when = f.date ? `${shortDate(f.date)}${f.time ? ` at ${fmt12(f.time)}` : ''}` : '';
+      out.push({
+        key: `lmsnew:${quiz ? 'q' : 'a'}:${f.id}`,
+        kind: quiz ? 'exam' : 'submit',
+        title: `New ${quiz ? 'quiz' : 'assignment'} on your LMS: ${f.title}`,
+        body: [f.subjectName, when && (quiz ? when : `due ${when}`)].filter(Boolean).join(' · '),
+        url: quiz ? '/exams' : '/projects',
+        view: {
+          headline: f.title,
+          sub: `Your teacher posted a new ${quiz ? 'quiz' : 'assignment'} on the LMS.`,
+          facts: [
+            fact('book-open', 'Subject', f.subjectName),
+            fact(quiz ? 'calendar-clock' : 'alarm-clock', quiz ? 'When' : 'Due', when),
+          ].filter(Boolean),
+        },
+      });
     }
   }
 

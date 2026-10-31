@@ -53,7 +53,8 @@ export default function GradesPanel({ subjectId }) {
   return (
     <Panel
       title="Grades"
-      className="mb-6"
+      tone="sun"
+      compact
       right={
         <div className="flex items-center gap-2">
           {g ? (
@@ -68,9 +69,9 @@ export default function GradesPanel({ subjectId }) {
       {firstLoad ? (
         <PanelLoading message="Loading grades…" />
       ) : grades.length === 0 ? (
-        <EmptyState icon={Award} title="No grades yet" description="Add a quiz, assignment or exam score" />
+        <EmptyState compact icon={Award} title="No grades yet" description="Add a quiz, assignment or exam score" />
       ) : (
-        <ul className="divide-y divide-[rgb(var(--ink)/0.07)]">
+        <ul className="divide-y divide-[rgb(var(--ink)/0.07)] max-h-56 overflow-y-auto pr-1">
           {grades.map((x) => {
             const pct = x.maxScore > 0 ? Math.round((x.score / x.maxScore) * 1000) / 10 : null;
             return (
@@ -84,7 +85,7 @@ export default function GradesPanel({ subjectId }) {
                     {x.score ?? "—"}/{x.maxScore ?? "—"}{pct != null ? ` · ${pct}%` : ""}{x.weight ? ` · wt ${x.weight}%` : ""}
                   </p>
                 </div>
-                <button onClick={() => openEdit(x)} className="p-1.5 rounded-lg text-muted hover:text-brand hover:bg-brand/10 transition-colors" title="Edit grade"><Pencil size={15} /></button>
+                <button onClick={() => openEdit(x)} className="p-1.5 max-sm:p-2.5 rounded-lg text-muted hover:text-brand hover:bg-brand/10 transition-colors" title="Edit grade"><Pencil size={15} /></button>
                 <DeleteButton onClick={() => onDelete(x)} title="Delete grade" />
               </li>
             );

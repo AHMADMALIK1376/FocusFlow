@@ -1,7 +1,7 @@
 import React, { useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ArrowRight, BellRing, ChevronRight, Languages, LayoutGrid, Palette, Paintbrush, ShieldCheck, Smile, UserRound } from "lucide-react";
+import { ArrowRight, BellRing, ChevronRight, GraduationCap, Languages, LayoutGrid, Palette, Paintbrush, ShieldCheck, Smile, UserRound } from "lucide-react";
 import { usePreferences } from "../preferences/usePreferences";
 import { useToast } from "../components/ui/Toast";
 import {
@@ -18,6 +18,7 @@ import FontSelector from "../components/dashboard/FontSelector";
 import WidgetManager from "../components/dashboard/WidgetManager";
 import DashboardSwitcher from "../components/dashboard/DashboardSwitcher";
 import RemindersSettings from "../features/notifications/RemindersSettings";
+import LmsConnectCard from "../features/lms/LmsConnectCard";
 import CookieChoice from "../components/consent/CookieChoice";
 import DesignStudio from "../components/studio/DesignStudio";
 import Mascot from "../components/common/Mascot";
@@ -141,6 +142,12 @@ export default function SettingsPage() {
       subtitle: "Class alarms, your morning timetable, exams, deadlines and attendance.",
       wide: true,
       body: <RemindersSettings />,
+    },
+    {
+      id: "lms", icon: GraduationCap, title: "University LMS",
+      subtitle: "Bring in your courses, assignments and class dates automatically.",
+      wide: true,
+      body: <LmsConnectCard />,
     },
     {
       id: "appearance", icon: Palette, title: t("settings.appearance", "Appearance"),

@@ -26,6 +26,8 @@ const studyHoursRoutes = require('./routes/studyHoursRoutes');
 const notifyRoutes = require('./routes/notifyRoutes');
 const preferencesRoutes = require('./routes/preferencesRoutes');
 const cronRoutes = require('./routes/cronRoutes');
+const lmsRoutes = require('./routes/lmsRoutes');
+const { startLmsSync } = require('./services/lmsSync');
 const { requireCronSecret } = require('./middleware/cronSecret');
 
 const app = express();
@@ -164,6 +166,7 @@ app.use('/api/study-hours', studyHoursRoutes);
 app.use('/api/notify', notifyRoutes);
 app.use('/api/preferences', preferencesRoutes);
 app.use('/api/cron', cronRoutes);
+app.use('/api/lms', lmsRoutes);
 
 // ==============================================
 // HEALTH CHECK
@@ -236,6 +239,7 @@ async function startServer() {
         
         // Class / exam / routine reminders, morning digest and attendance prompts.
         startNotificationScheduler();
+        startLmsSync();
 
         app.listen(PORT, () => {
             console.log('='.repeat(60));

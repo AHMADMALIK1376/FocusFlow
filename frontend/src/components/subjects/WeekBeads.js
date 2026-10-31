@@ -65,7 +65,7 @@ export default function WeekBeads({ subjects }) {
                       onBlur={hideTip}
                       onClick={(e) => showTip(e, b, d.day)}
                       onKeyDown={(e) => { if (e.key === "Escape") hideTip(); }}
-                      className={`w-full max-w-[1.6rem] h-3.5 rounded-full transition-transform ${on ? "scale-110" : ""}`}
+                      className={`relative w-full max-w-[1.6rem] h-3.5 rounded-full transition-transform before:absolute before:-inset-x-1 before:-inset-y-1 before:content-[''] ${on ? "scale-110" : ""}`}
                       style={{
                         background: p.badgeBg,
                         boxShadow: `inset 0 2px 3px rgb(255 255 255 / 0.85), inset 0 -2px 3px ${p.mid}33, 0 2px 4px -1px ${p.mid}55`,

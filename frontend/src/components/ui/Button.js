@@ -38,7 +38,7 @@ export function Button({
   return (
     <Tag
       className={cx(
-        'inline-flex items-center justify-center font-bold rounded-token-md',
+        'inline-flex items-center justify-center font-bold rounded-token-md whitespace-nowrap',
         'transition-all duration-300 ease-spring select-none',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
         'active:scale-[0.96] active:shadow-neu-inset disabled:opacity-50 disabled:pointer-events-none',

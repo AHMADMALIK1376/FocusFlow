@@ -39,7 +39,7 @@ export default function BudgetSnapshotCard() {
         <dl className="flex-1 grid grid-cols-2 gap-x-3 gap-y-2.5 min-w-0">
           {rows.map(([label, v, cls]) => (
             <div key={label} className="min-w-0">
-              <dt className="text-[10px] font-bold uppercase tracking-wider text-muted">{label}</dt>
+              <dt className="text-[10px] font-bold uppercase tracking-wider text-muted truncate">{label}</dt>
               <dd className={`text-sm font-black truncate ${cls}`}>{money(v ?? 0)}</dd>
             </div>
           ))}

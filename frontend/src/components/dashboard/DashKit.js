@@ -12,11 +12,11 @@ export function PageHeader({ title, subtitle, children, mascot = true }) {
   return (
     <header className="flex flex-wrap items-end justify-between gap-4 mb-6">
       <div className="flex-1 min-w-[14rem]">
-        <h1 className="text-3xl md:text-4xl font-black text-ink tracking-tight">{title}</h1>
+        <h1 className="text-3xl md:text-4xl font-black text-ink tracking-tight break-words">{title}</h1>
         {subtitle && <p className="text-muted mt-1">{subtitle}</p>}
       </div>
-      <div className="flex items-end gap-3 ml-auto">
-        {children && <div className="flex items-center gap-2">{children}</div>}
+      <div className="flex flex-wrap items-end justify-end gap-3 ml-auto max-w-full">
+        {children && <div className="flex flex-wrap items-center gap-2">{children}</div>}
         {mascot && <PageMascot />}
       </div>
     </header>
@@ -46,11 +46,20 @@ export function StatTile({ icon, label, value, sub, primary, tone }) {
 }
 
 // Surface panel with an optional header row.
-export function Panel({ title, subtitle, right, children, className }) {
+// Light colour fills for a panel (from the design tokens): <Panel tone="sage">.
+export const PANEL_TONES = {
+  sage: "bg-[rgb(var(--sage)/0.32)]",
+  sun: "bg-[rgb(var(--sun)/0.18)]",
+  blush: "bg-[rgb(var(--blush)/0.85)]",
+  info: "bg-[rgb(var(--info)/0.10)]",
+  brand: "bg-[rgb(var(--brand)/0.09)]",
+};
+
+export function Panel({ title, subtitle, right, children, className, tone, compact }) {
   return (
-    <section className={cx("bg-surface rounded-token-lg shadow-neu p-6", className)}>
+    <section className={cx(PANEL_TONES[tone] || "bg-surface", "rounded-token-lg shadow-neu", compact ? "p-4" : "p-6", className)}>
       {(title || right) && (
-        <div className="flex items-start justify-between gap-3 mb-3">
+        <div className={cx("flex items-start justify-between gap-3", compact ? "mb-2" : "mb-3")}>
           <div>
             {title && <h3 className="text-sm font-black uppercase tracking-wider text-ink">{title}</h3>}
             {subtitle && <p className="text-xs text-muted mt-0.5">{subtitle}</p>}

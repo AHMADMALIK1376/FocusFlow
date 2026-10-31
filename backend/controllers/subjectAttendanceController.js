@@ -1,5 +1,6 @@
 const { getConnection } = require('../config/database');
 const { generateId } = require('../utils/helpers');
+const { localDate } = require('../utils/lms');
 
 const STATUSES = ['Present', 'Absent', 'Late', 'Excused'];
 
@@ -126,6 +127,23 @@ exports.getOverview = async (req, res) => {
       if (r.STATUS) bySubject.get(r.SUBJECT_ID).records.push({ status: r.STATUS });
     }
 
+    // The semester's class dates from a connected LMS (empty when there is none, or the tables are not created yet).
+    const planned = new Map();
+    try {
+      const sess = await connection.execute(
+        `SELECT subject_id, TO_CHAR(session_date, 'YYYY-MM-DD') AS session_date FROM LMS_SESSIONS WHERE user_id = :userId`,
+        { userId: req.user.userId }
+      );
+      const today = localDate(Date.now() / 1000);
+      for (const r of sess.rows) {
+        const p = planned.get(r.SUBJECT_ID) || { classesTotal: 0, classesLeft: 0, lastClassDate: null };
+        p.classesTotal += 1;
+        if (r.SESSION_DATE >= today) p.classesLeft += 1;
+        if (!p.lastClassDate || r.SESSION_DATE > p.lastClassDate) p.lastClassDate = r.SESSION_DATE;
+        planned.set(r.SUBJECT_ID, p);
+      }
+    } catch (e) { /* no LMS data: the numbers stay as they were */ }
+
     const subjects = [...bySubject.values()].map((s) => {
       const summary = summarize(s.records);
       return {
@@ -133,6 +151,7 @@ exports.getOverview = async (req, res) => {
         name: s.name,
         color: s.color,
         ...summary,
+        ...(planned.get(s.id) || {}),
         isAtRisk: summary.percentage !== null && summary.percentage < AT_RISK_BELOW,
       };
     });

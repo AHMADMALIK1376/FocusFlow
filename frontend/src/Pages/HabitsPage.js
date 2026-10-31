@@ -123,12 +123,12 @@ export default function HabitsPage() {
                   )}
                   <div className="flex items-center gap-1.5 shrink-0">
                     <span className="text-sm font-bold text-ink inline-flex items-center gap-1"><Flame size={15} className="text-brand" />{streak}</span>
-                    <button onClick={() => { setRenaming(habit.id); setRenameVal(habit.name); }} className="text-muted hover:text-ink p-1" aria-label="Rename"><Pencil size={14} /></button>
-                    <button onClick={() => removeHabit(habit.id)} className="text-muted hover:text-focus p-1" aria-label="Delete"><X size={15} /></button>
+                    <button onClick={() => { setRenaming(habit.id); setRenameVal(habit.name); }} className="text-muted hover:text-ink p-1 max-sm:p-2.5" aria-label="Rename"><Pencil size={14} /></button>
+                    <button onClick={() => removeHabit(habit.id)} className="text-muted hover:text-focus p-1 max-sm:p-2.5" aria-label="Delete"><X size={15} /></button>
                   </div>
                 </div>
 
-                <div className="flex gap-1.5 flex-wrap">
+                <div className="grid grid-cols-7 gap-1 sm:flex sm:gap-1.5 sm:flex-wrap">
                   {WEEK_DAYS.map((day, i) => {
                     const d = new Date(weekStart);
                     d.setDate(d.getDate() + i);
@@ -138,7 +138,7 @@ export default function HabitsPage() {
                         key={i}
                         onClick={() => toggleDay(habit.id, dayKey)}
                         title={dayKey}
-                        className={`flex flex-col items-center gap-0.5 rounded-token-md p-1.5 w-10 transition-all ${grid[i] ? `${colorClass} shadow-neu-sm` : "bg-surface-2 hover:bg-[rgb(var(--ink)/0.08)]"}`}
+                        className={`flex flex-col items-center gap-0.5 rounded-token-md p-1.5 w-full min-w-0 sm:w-10 transition-all ${grid[i] ? `${colorClass} shadow-neu-sm` : "bg-surface-2 hover:bg-[rgb(var(--ink)/0.08)]"}`}
                       >
                         <span className={`text-[10px] font-black ${grid[i] ? onClass : "text-muted"}`}>{day}</span>
                         <span className={`text-xs ${grid[i] ? onClass : "text-ink/40"}`}>{grid[i] ? <Check size={13} strokeWidth={3} /> : "·"}</span>

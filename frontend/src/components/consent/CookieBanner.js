@@ -29,7 +29,7 @@ export default function CookieBanner() {
       role="dialog"
       aria-live="polite"
       aria-label="Cookies and privacy"
-      className="fixed z-[2500] bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 sm:max-w-[420px] rounded-token-lg bg-surface shadow-neu border border-[rgb(var(--ink)/0.08)] p-5"
+      className="fixed z-[2500] bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 sm:max-w-[420px] max-h-[85dvh] overflow-y-auto rounded-token-lg bg-surface shadow-neu border border-[rgb(var(--ink)/0.08)] p-4 sm:p-5"
     >
       <div className="flex items-start gap-3">
         <span className="shrink-0 w-11 h-11 rounded-2xl bg-grad-sage text-on-sage shadow-neu-sm grid place-items-center">
@@ -50,13 +50,13 @@ export default function CookieBanner() {
       <div className="flex flex-wrap gap-2.5 mt-4">
         <button
           onClick={() => pick("all")}
-          className="flex-1 min-w-[130px] px-4 py-2.5 rounded-token-md bg-grad-hero text-on-brand shadow-clay-brand font-black text-xs tracking-wider uppercase hover:-translate-y-0.5 transition-transform"
+          className="flex-1 min-w-[130px] px-4 py-3.5 sm:py-2.5 rounded-token-md bg-grad-hero text-on-brand shadow-clay-brand font-black text-xs tracking-wider uppercase hover:-translate-y-0.5 transition-transform"
         >
           Accept all
         </button>
         <button
           onClick={() => pick("essential")}
-          className="flex-1 min-w-[130px] px-4 py-2.5 rounded-token-md bg-surface text-ink shadow-neu-sm font-black text-xs tracking-wider uppercase hover:-translate-y-0.5 transition-transform"
+          className="flex-1 min-w-[130px] px-4 py-3.5 sm:py-2.5 rounded-token-md bg-surface text-ink shadow-neu-sm font-black text-xs tracking-wider uppercase hover:-translate-y-0.5 transition-transform"
         >
           Essential only
         </button>

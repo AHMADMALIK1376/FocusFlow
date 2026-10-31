@@ -19,6 +19,7 @@ import { useSubjects } from "../features/subjects/useSubjects";
 import ScanImportModal from "../features/scanner/ScanImportModal";
 import { assignmentsScan } from "../features/scanner/kinds/assignments";
 import PageMascot from "../components/common/PageMascot";
+import AttachmentLinks from "../features/lms/AttachmentLinks";
 
 const COLUMN_DOT = { "col-todo": "bg-warn", "col-doing": "bg-info", "col-done": "bg-success" };
 
@@ -33,7 +34,8 @@ function SortableCard({ card, onEdit, onRemove }) {
         </button>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-bold text-ink break-words">{card.title}</p>
-          {card.note && <p className="text-xs text-muted mt-0.5 break-words">{card.note}</p>}
+          {card.note && <p className="text-xs text-muted mt-0.5 break-words whitespace-pre-line">{card.note}</p>}
+          <AttachmentLinks files={card.files} />
           {(card.subjectName || card.dueDate) && (
             <div className="flex items-center gap-2 mt-1.5">
               {card.subjectName && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand/10 text-brand">{card.subjectName}</span>}
@@ -41,7 +43,7 @@ function SortableCard({ card, onEdit, onRemove }) {
             </div>
           )}
         </div>
-        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity">
           <button onClick={() => onEdit(card)} className="text-muted hover:text-ink p-1" aria-label="Edit"><Pencil size={14} /></button>
           <button onClick={() => onRemove(card.id)} className="text-muted hover:text-focus p-1" aria-label="Delete"><X size={15} /></button>
         </div>
@@ -133,7 +135,7 @@ export default function KanbanPage() {
           <h1 className="text-3xl md:text-4xl font-black text-ink tracking-tight">Assignments</h1>
           <p className="text-muted mt-1">Plan assignments across your subjects — drag between columns.</p>
         </div>
-        <div className="flex items-end gap-3 ml-auto">
+        <div className="flex flex-wrap items-end justify-end gap-3 ml-auto max-w-full">
           <div className="flex flex-wrap gap-2">
             <Button variant="primary" size="md" onClick={() => setScanOpen(true)} className="gap-2">
               <ScanText size={16} /> Scan assignments
@@ -236,7 +238,7 @@ export default function KanbanPage() {
       {/* Create modal */}
       {creating && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgb(var(--ink)/0.25)] backdrop-blur-sm p-4" onClick={() => setCreating(false)}>
-          <Card className="w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+          <Card className="w-full max-w-sm max-h-[90dvh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-sm font-black uppercase tracking-wider text-muted mb-3">New task</h3>
             <div className="space-y-2.5">
               <Input value={createTitle} onChange={(e) => setCreateTitle(e.target.value)} placeholder="Task title…" autoFocus onKeyDown={(e) => e.key === "Enter" && handleCreate()} />
@@ -267,7 +269,7 @@ export default function KanbanPage() {
       {/* Edit modal */}
       {editCard && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgb(var(--ink)/0.25)] backdrop-blur-sm p-4" onClick={() => setEditCard(null)}>
-          <Card className="w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+          <Card className="w-full max-w-sm max-h-[90dvh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-sm font-black uppercase tracking-wider text-muted mb-3">Edit card</h3>
             <div className="space-y-2.5">
               <Input value={editVal} onChange={(e) => setEditVal(e.target.value)} placeholder="Card title…" autoFocus />

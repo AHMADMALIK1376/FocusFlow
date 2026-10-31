@@ -61,7 +61,7 @@ export default function Sidebar() {
   return (
     <aside
       className={cx(
-        'hidden md:flex flex-col flex-shrink-0 sticky top-3 h-[calc(100vh-1.5rem)] m-3 mr-0 rounded-token-xl bg-grad-hero text-on-brand z-40 transition-[width] duration-300 ease-spring shadow-clay-brand',
+        'hidden lg:flex flex-col flex-shrink-0 sticky top-3 h-[calc(100vh-1.5rem)] m-3 mr-0 rounded-token-xl bg-grad-hero text-on-brand z-40 transition-[width] duration-300 ease-spring shadow-clay-brand',
         collapsed ? 'w-[76px]' : 'w-[248px]'
       )}
     >

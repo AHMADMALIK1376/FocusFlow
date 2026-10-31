@@ -79,7 +79,7 @@ export const LoadingSpinner = ({ size = 'medium', fullScreen = false, message = 
   );
 
   if (fullScreen) {
-    return <div className="min-h-screen bg-canvas flex items-center justify-center">{spinner}</div>;
+    return <div className="min-h-[100dvh] bg-canvas flex items-center justify-center">{spinner}</div>;
   }
   return spinner;
 };

@@ -176,7 +176,7 @@ export default function OnboardingPage() {
     <div key="profession" className="flex flex-col gap-5">
       <div className="flex flex-wrap gap-2.5">
         {PROFESSION_OPTIONS.map((opt) => (
-          <Pill key={opt.id} active={draft.profession === opt.id} onClick={() => patch("profession", opt.id)}>
+          <Pill key={opt.id} className="py-3 md:py-2" active={draft.profession === opt.id} onClick={() => patch("profession", opt.id)}>
             {opt.label}
           </Pill>
         ))}
@@ -210,13 +210,13 @@ export default function OnboardingPage() {
       </p>
       <div className="flex flex-col gap-3 w-full">
         <Button variant="primary" size="lg" onClick={handleFinish} full>Enter my workspace →</Button>
-        <Button variant="ghost" size="sm" onClick={goBack} full>Back</Button>
+        <Button variant="ghost" size="sm" className="h-11 md:h-9" onClick={goBack} full>Back</Button>
       </div>
     </div>,
   ];
 
   return (
-    <div className="min-h-screen flex bg-canvas">
+    <div className="min-h-[100dvh] flex bg-canvas">
       {/* LEFT — navy brand panel */}
       <aside className="hidden md:flex md:w-2/5 lg:w-[38%] bg-grad-hero text-on-brand relative overflow-hidden flex-col justify-between p-10">
         <div className="absolute -bottom-24 -left-10 w-72 h-72 rounded-full bg-[rgb(var(--on-brand)/0.08)] blur-3xl" />
@@ -250,8 +250,8 @@ export default function OnboardingPage() {
           <div className="h-full bg-grad-hero transition-all duration-500 ease-spring" style={{ width: `${progress}%` }} />
         </div>
 
-        <div className="flex-1 flex items-center justify-center p-6 sm:p-10 md:p-14 overflow-y-auto">
-          <div className="w-full max-w-lg">
+        <div className="flex-1 flex p-6 sm:p-10 md:p-14 overflow-y-auto overflow-x-hidden">
+          <div className="w-full max-w-lg m-auto">
             {/* mobile step label */}
             <div className="md:hidden mb-6">
               <p className="text-[11px] font-bold uppercase tracking-[3px] text-brand mb-1">Step {step + 1} of {STEPS}</p>

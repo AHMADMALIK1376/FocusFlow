@@ -198,6 +198,25 @@ Solid status fills (delete pop-up, danger `Button`, the done tick) take `text-on
 
 ---
 
+### University LMS sync (31 Oct 2026)
+0. Settings > University LMS (`features/lms/LmsConnectCard.js`) reads `GET /api/lms/status`. It shows "not switched on" unless the server has `LMS_TOKEN_KEY` and the tables.
+1. The card registers `web+focusflow` with the browser (`registerHandler`). "Sign in with the LMS" goes to the university's Moodle launch address with `urlscheme=web+focusflow` (Moodle only accepts letters, numbers and . + -). After the Microsoft sign-in Moodle redirects to `web+focusflow://token=<key>`, the browser opens `/settings?open=lms&lmskey=<that link>`, and the card reads the key (`keyFromAddress`), wipes it (`history.replaceState`), and calls `POST /api/lms/connect`. Fallback: "Sign in the manual way" (`moodlemobile` scheme) plus a paste box.
+2. `lmsController.connect` finds the 32-character key in the text (`utils/lms.js parseLaunchText`), checks it with Moodle (`core_webservice_get_site_info`), stores it encrypted in `LMS_CONNECTIONS`, and starts a first sync. It waits up to 15 s for the result; if the sync is still running it answers `syncing: true` and the card polls `GET /api/lms/status` (which reports `syncing`) every 3 s.
+3. `services/lmsSync.js syncUser`: courses (`LMS_ITEM_MAP` remembers which LMS course is which subject) -> subjects and their class slot; assignments + submission status -> board cards; the calendar's attendance events for the semester -> `LMS_SESSIONS`. Only differences are written, so a quiet run writes nothing.
+4. It runs when the dashboard opens (`useLmsAutoSync`, once per browser session; the server skips if synced in the last 10 minutes), from "Sync now" (not more than once a minute), and every 20 minutes for connections that are due (`startLmsSync`, started next to the reminder scheduler).
+5. `GET /api/subject-attendance/overview` adds `classesTotal`, `classesLeft`, `lastClassDate` per subject from `LMS_SESSIONS`; the attendance page shows them under each subject.
+6. Disconnect (`DELETE /api/lms`) deletes the key, the remembered mapping, the sessions and the marks; subjects and cards stay.
+7. Phase 2: the same calendar read (`calendarEvents`) also returns quizzes, which become Quiz rows in `EXAMS_DEADLINES` (remembered in `LMS_ITEM_MAP` as `quiz`). `syncGrades` reads each course's marks (`gradereport_user_get_grade_items`) into `LMS_GRADES` in one batched statement, only for changed marks. `GET /api/lms/grades` groups them by subject for the Grades page (`LmsGradesPanel`), read-only and never part of the CGPA.
+
+### Subject page and repairs (31 Oct 2026)
+- `SubjectHubPage`: slim tinted header (pencil and delete on hover) above two columns of tinted compact panels. The pencil goes to `/subjects?edit=<id>`; `SubjectsPage` reads that once on load, opens the edit form and clears the address.
+- Every sync starts with `repairSubjects` (before it maps courses): it merges a sync-made copy into the student's own subject of the same name (`mergeSubject` moves the rows, then deletes the copy) or cleans the copy's escaped name and long code.
+
+### LMS files, emails and attendance paste (31 Oct 2026)
+- Sync (`syncFiles`) stores each assignment's attachment list in `LMS_FILES` (name, size, path on the LMS). `GET /api/assignments` adds `files: [{id, name, size}]` to a card; the board shows them (`AttachmentLinks`) as links to `/api/lms/file/<id>`, which the server answers by fetching the file from the LMS with the student's key (`lmsController.getFile`).
+- Emails: `notificationScheduler.loadUserData` also loads `pending` (not submitted, not due today/tomorrow; only in the morning-email window) and `fresh` (LMS items added after connecting, last two days). `computeDue` turns `pending` into the "Not submitted yet" part of the digest and each `fresh` item into one `lmsnew:` message.
+- Attendance paste: Settings > University LMS > Attendance from the LMS (`AttendanceImport`) posts the pasted text to `POST /api/lms/attendance` (`dryRun` first); `utils/lmsAttendance.js` reads it; new and changed days are written in one statement into `SUBJECT_ATTENDANCE`.
+
 ## 3. Scanner flow (screenshot → saved data)
 
 Used by Subjects, Daily Routine, Exams, Grades and Assignments.
@@ -264,3 +283,6 @@ Used by Subjects, Daily Routine, Exams, Grades and Assignments.
 4. `completeRoutine` checks the date with `completionDate()`, then adds or removes that date's row in `ROUTINE_COMPLETIONS` and replies `{ completed }`.
 5. The page applies `setDoneOn()` to its list and to `AppContext`. `routineToday()` then updates the navbar's done/total and the dashboard's Routine cube.
 | Tests | `*.test.js` beside each file above, plus fixtures in `features/scanner/__fixtures__/` and `features/subjects/__fixtures__/` |
+
+## Responsive layout
+`Layout` shows `Sidebar` from `lg` and `MobileTabBar` (with the More sheet) below it. Pages sit in one column on phones and widen at `md`/`lg`/`xl`. Signed-out pages render a phone-only header and switch link (`md:hidden`) and the sliding two-panel card from `md`. Modals cap at 90dvh and scroll inside. Wide charts scroll inside their card.

@@ -114,7 +114,7 @@ export default function ExamsPage() {
                         <p className={`text-xs font-bold ${sec.key === "overdue" ? "text-focus" : "text-ink"}`}>{x.isDone ? "Done" : countdownLabel(x.date)}</p>
                         <p className="text-[11px] text-muted">{x.date}{x.time ? ` · ${fmt12(x.time)}` : ""}</p>
                       </div>
-                      <button onClick={() => openEdit(x)} className="p-1.5 rounded-lg text-muted hover:text-brand hover:bg-brand/10 transition-colors" title="Edit"><Pencil size={15} /></button>
+                      <button onClick={() => openEdit(x)} className="p-1.5 max-sm:p-2.5 rounded-lg text-muted hover:text-brand hover:bg-brand/10 transition-colors" title="Edit"><Pencil size={15} /></button>
                       <DeleteButton onClick={() => onDelete(x)} title="Delete" />
                     </li>
                   ))}
@@ -132,8 +132,8 @@ export default function ExamsPage() {
             <Field label="Type"><Select value={form.type} onChange={(e) => setF("type", e.target.value)} className={fieldCls}>{TYPES.map((t) => <option key={t} value={t}>{t}</option>)}</Select></Field>
             <Field label="Subject"><Select value={form.subjectId} onChange={(e) => setF("subjectId", e.target.value)} className={fieldCls}><option value="">General</option>{subjects.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</Select></Field>
           </div>
-          <div className={`grid gap-3 ${TIMED.includes(form.type) ? "grid-cols-3" : "grid-cols-2"}`}>
-            <Field label="Date"><Input type="date" value={form.date} onChange={(e) => setF("date", e.target.value)} className={fieldCls} /></Field>
+          <div className={`grid gap-3 ${TIMED.includes(form.type) ? "grid-cols-2 sm:grid-cols-3" : "grid-cols-2"}`}>
+            <div className={TIMED.includes(form.type) ? "col-span-2 sm:col-span-1" : ""}><Field label="Date"><Input type="date" value={form.date} onChange={(e) => setF("date", e.target.value)} className={fieldCls} /></Field></div>
             <Field label={TIMED.includes(form.type) ? "Starts" : "Due time"}><Input type="time" value={form.time} onChange={(e) => setF("time", e.target.value)} className={fieldCls} /></Field>
             {TIMED.includes(form.type) && (
               <Field label="Length (min)"><Input type="number" min="1" step="5" value={form.duration} onChange={(e) => setF("duration", e.target.value)} placeholder="60" className={fieldCls} /></Field>

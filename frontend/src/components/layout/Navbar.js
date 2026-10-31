@@ -62,15 +62,15 @@ export default function Navbar() {
         <span className="font-black tracking-tight text-on-brand text-lg truncate hidden sm:block">FocusFlow</span>
       </button>
 
-      <div className="flex items-center gap-2 sm:gap-3">
+      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
         {/* Pending / routine cells */}
-        <div className="hidden md:flex gap-2 items-center">
+        <div className="hidden sm:flex gap-2 items-center">
           <div className="flex items-center gap-2 px-3 h-9 rounded-full bg-grad-sage shadow-neu-sm">
             <Target size={16} className="text-on-sage" />
             <span className="font-mono text-sm font-black text-on-sage leading-none">
               {(pendingCount ?? 0).toString().padStart(2, "0")}
             </span>
-            <span className="text-[0.55rem] font-bold text-[rgb(var(--on-sage)/0.75)] tracking-widest uppercase">
+            <span className="hidden md:inline text-[0.55rem] font-bold text-[rgb(var(--on-sage)/0.75)] tracking-widest uppercase">
               {t("nav.pending")}
             </span>
           </div>
@@ -84,7 +84,7 @@ export default function Navbar() {
             <span className="font-mono text-sm font-black text-on-sage leading-none">
               {routineTodayDone ?? 0}/{routineTodayTotal ?? 0}
             </span>
-            <span className="text-[0.55rem] font-bold text-[rgb(var(--on-sage)/0.75)] tracking-widest uppercase">
+            <span className="hidden md:inline text-[0.55rem] font-bold text-[rgb(var(--on-sage)/0.75)] tracking-widest uppercase">
               {t("nav.routine")}
             </span>
           </button>

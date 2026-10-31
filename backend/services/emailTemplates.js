@@ -178,6 +178,15 @@ function digestBody(P, ic, v) {
         <div style="padding-top:6px;"><span style="font:500 13px/1.6 ${FONT};color:${P.muted};">${esc(d.type)} · </span>${chip(P, d.when === 'Today' ? `Today${d.time ? ` ${d.time}` : ''}` : `Tomorrow${d.time ? ` ${d.time}` : ''}`, d.when === 'Today' ? 'coral' : 'sun')}</div>
       </td></tr></table>`).join('');
   }
+  if (v.pending && v.pending.length) {
+    html += sectionTitle(P, 'Not submitted yet', v.pending.length + (v.morePending || 0));
+    html += v.pending.map((d) => `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:10px;"><tr>
+      <td style="background-color:${P.surface};border:1px solid ${P.edge};border-radius:20px;box-shadow:${S.small};padding:12px 16px;">
+        ${withIcon(ic, 'send', 'coral', 18, `<span style="font:700 15px/1.4 ${FONT};color:${P.ink};">${esc(d.title)}</span>`)}
+        <div style="padding-top:6px;">${d.subjectName ? `<span style="font:500 13px/1.6 ${FONT};color:${P.muted};">${esc(d.subjectName)} · </span>` : ''}${chip(P, d.label, d.overdue ? 'coral' : 'sun')}</div>
+      </td></tr></table>`).join('');
+    if (v.morePending) html += `<p style="margin:0 0 10px;font:500 13px/1.5 ${FONT};color:${P.muted};">…and ${v.morePending} more on your assignments board.</p>`;
+  }
   if (v.routines && v.routines.length) {
     html += sectionTitle(P, 'Routine');
     html += `<div>${v.routines.map((r) => `<span style="display:inline-block;margin:0 8px 8px 0;padding:9px 14px;border-radius:999px;${grad([P.sageTop, P.sage])}box-shadow:${S.small};">${withIcon(ic, 'clock', 'sage', 14, `<span style="font:600 13px/1.2 ${FONT};color:${P.onSage};">${esc(r.time)} · ${esc(r.name)}</span>`)}</span>`).join('')}</div>`;
@@ -266,7 +275,7 @@ function reminderEmail(n, appUrl, theme = null) {
   const v = n.view || {};
   const openUrl = `${appUrl}${n.url || '/'}`;
   let body;
-  if (n.kind === 'digest' && (v.classes || v.deadlines || v.routines)) body = digestBody(P, ic, v);
+  if (n.kind === 'digest' && (v.classes || v.deadlines || v.routines || v.pending)) body = digestBody(P, ic, v);
   else if (n.kind === 'report' && v.rows) body = reportBody(v, ic, P);
   else body = v.facts ? facts(P, ic, v.facts) : textBlock(P, n.body);
 

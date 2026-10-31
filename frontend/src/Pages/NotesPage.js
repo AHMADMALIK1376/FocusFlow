@@ -121,7 +121,7 @@ export default function NotesPage() {
         </ChartBox>
       </Panel>
 
-      <div className="grid lg:grid-cols-[320px_1fr] gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)] gap-5">
         <Panel title="All notes">
           {notes.length === 0 ? (
             <EmptyState icon={StickyNote} title="No notes yet" description="Create your first note" />
@@ -166,7 +166,7 @@ export default function NotesPage() {
               {preview ? (
                 <div className="leading-relaxed text-sm">{renderSegments(renderInline(selected.body || ""))}</div>
               ) : (
-                <pre className="text-ink text-sm font-mono whitespace-pre-wrap bg-surface-2 rounded-token-md p-4 min-h-[160px]">{selected.body || "Empty note"}</pre>
+                <pre className="text-ink text-sm font-mono whitespace-pre-wrap break-words bg-surface-2 rounded-token-md p-4 min-h-[160px]">{selected.body || "Empty note"}</pre>
               )}
             </div>
           ) : null}

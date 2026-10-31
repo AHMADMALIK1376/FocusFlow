@@ -41,7 +41,7 @@ test("without trapFocus a modal behaves as before", () => {
   fireEvent.click(screen.getByRole("button", { name: "Open" }));
   const dialog = screen.getByRole("dialog", { name: "Test" });
   expect(dialog).not.toHaveAttribute("tabindex");
-  expect(dialog).toHaveClass("max-h-[85vh]", "rounded-token-lg");
+  expect(dialog).toHaveClass("max-h-[90dvh]", "sm:max-h-[85vh]", "rounded-token-lg");
   expect(dialog.parentElement).toHaveClass("z-[1000]", "p-4");
 });
 
@@ -74,4 +74,11 @@ test("trapFocus: a closing <details> summary counts as a stop, so Tab wraps from
   summary.focus();
   fireEvent.keyDown(document, { key: "Tab" });
   expect(document.activeElement).toBe(screen.getByRole("dialog").querySelector("button"));
+});
+
+test("the Close button sits in a sticky wrapper so it stays visible while the body scrolls", () => {
+  render(<Harness />);
+  fireEvent.click(screen.getByRole("button", { name: "Open" }));
+  const close = screen.getByRole("button", { name: "Close" });
+  expect(close.parentElement).toHaveClass("sticky", "top-3");
 });
