@@ -30,6 +30,18 @@ CREATE TABLE IF NOT EXISTS LMS_SESSIONS (
   PRIMARY KEY (user_id, lms_event_id)
 );
 CREATE INDEX IF NOT EXISTS idx_lms_sessions_subject ON LMS_SESSIONS(subject_id);
+CREATE TABLE IF NOT EXISTS LMS_GRADES (
+  user_id      VARCHAR(50) NOT NULL REFERENCES USERS(user_id) ON DELETE CASCADE,
+  item_id      INTEGER NOT NULL,
+  subject_id   VARCHAR(50) NOT NULL REFERENCES SUBJECTS(subject_id) ON DELETE CASCADE,
+  name         VARCHAR(200) NOT NULL,
+  score        DOUBLE PRECISION,
+  max_score    DOUBLE PRECISION,
+  is_total     SMALLINT DEFAULT 0,
+  graded_date  DATE,
+  PRIMARY KEY (user_id, item_id)
+);
+CREATE INDEX IF NOT EXISTS idx_lms_grades_subject ON LMS_GRADES(subject_id);
 `;
 
 (async () => {
@@ -43,7 +55,7 @@ CREATE INDEX IF NOT EXISTS idx_lms_sessions_subject ON LMS_SESSIONS(subject_id);
   });
   await client.connect();
   await client.query(SQL);
-  for (const t of ['lms_connections', 'lms_item_map', 'lms_sessions']) {
+  for (const t of ['lms_connections', 'lms_item_map', 'lms_sessions', 'lms_grades']) {
     const r = await client.query('SELECT to_regclass($1) AS t', [`public.${t}`]);
     console.log(`${t} table:`, r.rows[0].t);
   }

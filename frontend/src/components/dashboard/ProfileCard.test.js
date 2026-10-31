@@ -151,3 +151,9 @@ test("the picker also offers a picture of yourself, and a photo replaces the mas
   const dialog = screen.getByRole("dialog", { name: "Choose your mascot" });
   expect(within(dialog).getByRole("button", { name: /add a picture of yourself/i })).toBeInTheDocument();
 });
+
+test("in a one-column page the card stays card-sized and centred (the mascot is sized from its width)", () => {
+  card({ mascot: "cap" });
+  const section = screen.getByTestId("profile-card");
+  expect(section).toHaveClass("max-w-[24rem]", "mx-auto", "lg:max-w-none");
+});

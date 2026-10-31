@@ -8,6 +8,8 @@ import Mascot from "../common/Mascot";
 // top. The square is hung from the top of the art window, raised so the head pokes out over
 // the window's top edge into the frame (like a collectible card), and a clip layer cuts it off
 // at the window's bottom and sides while leaving room above.
+// The card keeps a card-like shape: when the page is one column (small screens) it stays 24rem wide and centred, because
+// the mascot is sized from the card's width and would otherwise fill a whole phone-or-tablet row.
 // Plain percentages only (no container-query units): the square is 135% of the window's width, and
 // a percentage margin is measured against the width too, so -13.5% is exactly a tenth of the square.
 export const MASCOT_WIDTH_PCT = 135;
@@ -70,7 +72,7 @@ export default function ProfileCard({ displayName, streak, doneTasks, focusSessi
   }
 
   return (
-    <section data-testid="profile-card" className="group relative h-full [perspective:900px]" onPointerMove={onMove} onPointerLeave={onLeave}>
+    <section data-testid="profile-card" className="group relative h-full w-full max-w-[24rem] mx-auto lg:max-w-none [perspective:900px]" onPointerMove={onMove} onPointerLeave={onLeave}>
       <div
         ref={tilt}
         data-testid="profile-tilt"

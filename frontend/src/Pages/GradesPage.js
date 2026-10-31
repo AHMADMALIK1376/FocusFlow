@@ -7,6 +7,7 @@ import { PageLoading } from "../components/common/LoadingSpinner";
 import { gradeAPI } from "../services/api";
 import { useSubjects } from "../features/subjects/useSubjects";
 import ScanImportModal from "../features/scanner/ScanImportModal";
+import LmsGradesPanel from "../features/lms/LmsGradesPanel";
 import { gradesScan } from "../features/scanner/kinds/grades";
 
 function SubjectList({ items, onOpen }) {
@@ -118,6 +119,8 @@ export default function GradesPage() {
               <SubjectList items={past} onOpen={openSubject} />
             </Panel>
           )}
+
+          <LmsGradesPanel />
         </>
       )}
 

@@ -101,3 +101,9 @@ test('finished courses older than a month are left out', () => {
   assert.equal(lms.isCurrentCourse({ enddate: now - 10 * 86400 }, now), true);
   assert.equal(lms.isCurrentCourse({ enddate: now - 40 * 86400 }, now), false);
 });
+
+test('the clock time of a quiz is the student\'s local time, 24 hour, not UTC', () => {
+  assert.equal(lms.localTime(Date.UTC(2026, 9, 29, 20, 5) / 1000), '01:05'); // Karachi is UTC+5
+  assert.equal(lms.localTime(Date.UTC(2026, 9, 29, 20, 5) / 1000, 'UTC'), '20:05');
+  assert.equal(lms.localTime(0), null);
+});

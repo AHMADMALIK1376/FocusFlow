@@ -6,6 +6,17 @@ Update this file with every change.
 
 ---
 
+## 2026-10-31 — LMS phase 2: quizzes and marks (read-only)
+
+- **What:** the same sync now also (1) turns each quiz in the LMS calendar into a **Quiz** in Exams & Deadlines (date and local time, moved when the teacher moves it, left alone if the student deleted it), and (2) stores the student's marks per course and shows them on the Grades page under "From your LMS".
+- **Why marks are separate from the student's own grades:** the GPA code treats weight-less marks as "total score over total possible", so importing them into `GRADES` would silently change the CGPA mid-semester (3/3 on one quiz reads as 100%). The owner can later decide how an LMS mark maps to a weight. Until then they are shown for reference and say so on the page. New table `LMS_GRADES` (additive, in `migrate-lms.js` and `postgres-init.sql`); marks are written in one batched statement and only when something changed.
+- **Safe if the new table is missing:** a problem with the marks (no table yet, or the LMS declining) never stops the rest of the sync; only a refused key does. The marks panel shows nothing without data.
+- **Not possible yet: Present/Absent per class.** The LMS API gives no attendance functions, and the key from the sign-in has no private part (Moodle's auto-login needs one), so the attendance page cannot be read on the student's behalf. It stays the student's own "Did you attend?" answer; the semester's class dates still give the real total.
+- **Also fixed here (owner's screenshot):** the dashboard profile card had no width limit in a one-column page, so the mascot, sized from the card's width, filled a whole row and was cropped. The card is now 24rem wide and centred below the large-screen layout.
+- **Rejected:** writing LMS marks into `GRADES` (changes the CGPA); fetching the PDF files attached to assignments (needs file storage and is not asked for yet).
+
+---
+
 ## 2026-10-31 — Connect to the university LMS (read-only), phase 1
 
 - **What:** a student can connect their own Moodle LMS account in Settings > University LMS. FocusFlow then brings in their courses (as subjects, with the class day, time and room read from the course name), their assignments (as board cards, moved to Done once the LMS says "submitted"), and the semester's class dates from the LMS calendar (so the attendance row can say "9 of 16 classes left, last class 26 Feb"). It refreshes when the dashboard opens (at most once per visit) and every 20 minutes on the server. Plan and evidence: `docs/superpowers/specs/2026-10-31-lms-connect.md`.

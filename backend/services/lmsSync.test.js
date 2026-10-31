@@ -20,6 +20,7 @@ require.cache[dbPath] = {
         if (sql.includes('FROM SUBJECTS')) return { rows: db.subjects };
         if (sql.includes('COUNT(*)')) return { rows: [{ C: db.count }] };
         if (sql.includes('FROM LMS_SESSIONS')) return { rows: db.sessions };
+        if (sql.includes('FROM LMS_GRADES')) { if (db.noGradesTable) { const e = new Error('missing'); e.code = '42P01'; throw e; } return { rows: db.gradeRows }; }
         throw new Error('unexpected select: ' + sql);
       },
       close: async () => { calls.push({ closed: true }); },
@@ -41,7 +42,12 @@ function fakeApi(over = {}) {
     courses: async () => [COURSE],
     assignments: async () => [{ id: 21, courseId: 7, name: 'assigment 1', duedate: OCT(30, 0) }],
     isSubmitted: async () => false,
-    attendanceEvents: async (t, y, m) => (m === 10 ? [{ id: 101, courseId: 7, timestart: OCT(23, 20) }, { id: 102, courseId: 7, timestart: OCT(30, 20) }, { id: 103, courseId: 999, timestart: OCT(30, 20) }] : []),
+    calendarEvents: async (t, y, m) => (m === 10 ? [
+      { id: 101, modulename: 'attendance', name: 'Attendance', courseId: 7, timestart: OCT(23, 20) },
+      { id: 102, modulename: 'attendance', name: 'Attendance', courseId: 7, timestart: OCT(30, 20) },
+      { id: 103, modulename: 'attendance', name: 'Attendance', courseId: 999, timestart: OCT(30, 20) },
+    ] : []),
+    grades: async () => [],
     ...over,
   };
 }
@@ -51,12 +57,12 @@ const connRow = (over = {}) => ({ TOKEN_ENC: lms.encryptToken(TOKEN, KEY), LMS_U
 
 beforeEach(() => {
   calls = [];
-  db = { conn: connRow(), maps: [], subjects: [], scheduled: [], sessions: [], count: 0, rowsAffected: 1 };
+  db = { conn: connRow(), maps: [], subjects: [], scheduled: [], sessions: [], gradeRows: [], count: 0, rowsAffected: 1 };
 });
 
 test('a first sync makes the subject (named, coloured, with its class slot), the card, the map and the semester sessions', async () => {
   const r = await sync();
-  assert.deepEqual(r, { subjects: 1, assignments: 1, moved: 0, sessions: 2 });
+  assert.deepEqual(r, { subjects: 1, assignments: 1, moved: 0, sessions: 2, quizzes: 0, grades: 0 });
   const subject = stmts(/INSERT INTO SUBJECTS/)[0].params;
   assert.equal(subject.name, 'Advance Database Management Systems');
   assert.equal(subject.code, 'IUIC_COURSE_FALL26_576');
@@ -110,7 +116,7 @@ test('an existing subject with no schedule gets the LMS class slot', async () =>
 test('a subject the student deleted stays deleted, and so do its assignments and sessions', async () => {
   db.maps = [{ KIND: 'course', LMS_ID: 7, LOCAL_ID: 'gone', STATE: '' }];
   const r = await sync();
-  assert.deepEqual(r, { subjects: 0, assignments: 0, moved: 0, sessions: 0 });
+  assert.deepEqual(r, { subjects: 0, assignments: 0, moved: 0, sessions: 0, quizzes: 0, grades: 0 });
   assert.equal(stmts(/INSERT INTO (SUBJECTS|ASSIGNMENTS|LMS_SESSIONS)/).length, 0);
 });
 
@@ -223,4 +229,81 @@ test('two syncs for the same student never run at once', async () => {
 test('the token is never written to a statement in the clear', async () => {
   await sync();
   assert.ok(!JSON.stringify(calls).includes(TOKEN));
+});
+
+const QUIZ = { id: 301, modulename: 'quiz', name: 'Quiz 1', courseId: 7, timestart: OCT(28, 5) };
+const known = () => {
+  db.subjects = [{ SUBJECT_ID: 's1', NAME: 'x', IS_ARCHIVED: 0 }];
+  db.maps = [{ KIND: 'course', LMS_ID: 7, LOCAL_ID: 's1', STATE: '' }];
+};
+
+test('a quiz in the LMS calendar becomes a Quiz in Exams and Deadlines, once, with its date and time', async () => {
+  known();
+  const api = fakeApi({ assignments: async () => [], calendarEvents: async (t, y, m) => (m === 10 ? [QUIZ] : []) });
+  const r = await sync({ api });
+  assert.equal(r.quizzes, 1);
+  const q = stmts(/INSERT INTO EXAMS_DEADLINES/)[0];
+  assert.match(q.sql, /'Quiz'/);
+  assert.deepEqual([q.params.title, q.params.date, q.params.time, q.params.subjectId, q.params.userId], ['Quiz 1', '2026-10-28', '10:00', 's1', 'u1']);
+  assert.equal(stmts(/INSERT INTO LMS_ITEM_MAP/)[0].params.kind, 'quiz');
+});
+
+test('a quiz already imported is left alone, follows a new date, and stays deleted if the student deleted it', async () => {
+  known();
+  db.maps.push({ KIND: 'quiz', LMS_ID: 301, LOCAL_ID: 'e1', STATE: '2026-10-28|10:00|Quiz 1' });
+  const api = (ev) => fakeApi({ assignments: async () => [], calendarEvents: async (t, y, m) => (m === 10 ? [ev] : []) });
+  let r = await sync({ api: api(QUIZ) });
+  assert.equal(r.quizzes, 0);
+  assert.equal(stmts(/EXAMS_DEADLINES/).length, 0);
+  r = await sync({ api: api({ ...QUIZ, timestart: OCT(29, 5) }) });
+  assert.equal(r.quizzes, 0);
+  const up = stmts(/UPDATE EXAMS_DEADLINES/)[0].params;
+  assert.deepEqual([up.id, up.date, up.userId], ['e1', '2026-10-29', 'u1']);
+});
+
+test('marks are stored in one statement, with the course total flagged, and an unchanged mark is not written again', async () => {
+  known();
+  const marks = [
+    { id: 1, name: 'Course total', isTotal: true, score: 17, max: 20, date: '2026-10-30' },
+    { id: 2, name: 'Quiz 1', isTotal: false, score: null, max: 10, date: null },
+  ];
+  const api = fakeApi({ assignments: async () => [], grades: async () => marks });
+  const r = await sync({ api });
+  assert.equal(r.grades, 2);
+  const w = stmts(/INSERT INTO LMS_GRADES/);
+  assert.equal(w.length, 1);
+  assert.deepEqual(w[0].params, {
+    userId: 'u1', ids: [1, 2], subjectIds: ['s1', 's1'], names: ['Course total', 'Quiz 1'], scores: [17, null], maxes: [20, 10], totals: [1, 0], dates: ['2026-10-30', null],
+  });
+  calls = [];
+  db.gradeRows = [
+    { ITEM_ID: 1, SUBJECT_ID: 's1', NAME: 'Course total', SCORE: 17, MAX_SCORE: 20 },
+    { ITEM_ID: 2, SUBJECT_ID: 's1', NAME: 'Quiz 1', SCORE: null, MAX_SCORE: 10 },
+  ];
+  await sync({ api });
+  assert.equal(stmts(/INSERT INTO LMS_GRADES|DELETE FROM LMS_GRADES/).length, 0);
+  calls = [];
+  await sync({ api: fakeApi({ assignments: async () => [], grades: async () => [{ ...marks[1], score: 9 }] }) });
+  assert.deepEqual(stmts(/INSERT INTO LMS_GRADES/)[0].params.ids, [2]);
+  assert.equal(stmts(/DELETE FROM LMS_GRADES/)[0].params.id, 1); // a mark that disappeared from the LMS is removed
+});
+
+test('a problem with the marks (no table yet, or the LMS declining) never stops the rest of the sync', async () => {
+  known();
+  db.noGradesTable = true;
+  let r = await sync({ api: fakeApi({ grades: async () => [{ id: 1, name: 'x', isTotal: false, score: 1, max: 2, date: null }] }) });
+  assert.equal(r.assignments, 1);
+  assert.equal(stmts(/UPDATE LMS_CONNECTIONS SET last_synced/).length, 1);
+  db.noGradesTable = false;
+  calls = [];
+  r = await sync({ api: fakeApi({ grades: async () => { throw new LmsError('nopermissions2'); } }) });
+  assert.equal(r.error, undefined);
+  assert.equal(stmts(/UPDATE LMS_CONNECTIONS SET last_synced/).length, 1);
+});
+
+test('a key the LMS refuses while reading marks still marks the connection for reconnect', async () => {
+  known();
+  const r = await sync({ api: fakeApi({ grades: async () => { throw new LmsError('invalidtoken'); } }) });
+  assert.deepEqual(r, { error: 'invalidtoken' });
+  assert.equal(stmts(/UPDATE LMS_CONNECTIONS SET last_error/)[0].params.nr, 1);
 });

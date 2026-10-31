@@ -3,6 +3,7 @@
 //  - Each LMS course becomes a subject (or is matched to a subject the student already has, by name).
 //  - Each assignment becomes a card on the board; "submitted" in the LMS moves it to Done once.
 //  - Each attendance session in the LMS calendar is stored, so FocusFlow knows the whole semester's classes.
+//  - Each quiz in the calendar becomes a Quiz in Exams & Deadlines; the student's marks are stored to show (read-only).
 //
 // The student's own edits win: an existing subject is never renamed, a deleted subject or card stays deleted,
 // and a card the student moved is only moved by the LMS when the assignment becomes "submitted".
@@ -87,7 +88,7 @@ async function syncUser(userId, opts = {}) {
 
 async function runSync(connection, userId, token, lmsUserId, api, now) {
   const nowSec = now.getTime() / 1000;
-  const out = { subjects: 0, assignments: 0, moved: 0, sessions: 0 };
+  const out = { subjects: 0, assignments: 0, moved: 0, sessions: 0, quizzes: 0, grades: 0 };
 
   // What we already know from earlier syncs.
   const maps = await connection.execute(`SELECT kind, lms_id, local_id, state FROM LMS_ITEM_MAP WHERE user_id = :userId`, { userId });
@@ -198,11 +199,14 @@ async function runSync(connection, userId, token, lmsUserId, api, now) {
   const horizon = new Date(Math.min(Math.max(...ends, nowSec + 31 * 86400), nowSec + 9 * 31 * 86400) * 1000);
   const from = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
   const wanted = new Map();
+  const quizzes = new Map();
   for (const { year, month } of monthsBetween(from, horizon)) {
-    for (const e of await api.attendanceEvents(token, year, month)) {
+    for (const e of await api.calendarEvents(token, year, month)) {
       const subjectId = subjectOfCourse.get(e.courseId);
       const date = lms.localDate(e.timestart);
-      if (subjectId && date) wanted.set(String(e.id), { id: e.id, subjectId, date });
+      if (!subjectId || !date) continue;
+      if (e.modulename === 'attendance') wanted.set(String(e.id), { id: e.id, subjectId, date });
+      else if (e.modulename === 'quiz') quizzes.set(String(e.id), { id: e.id, subjectId, title: e.name || 'Quiz', date, time: lms.localTime(e.timestart) });
     }
   }
   const fromDate = lms.localDate(from.getTime() / 1000);
@@ -228,7 +232,74 @@ async function runSync(connection, userId, token, lmsUserId, api, now) {
     await connection.execute(`DELETE FROM LMS_SESSIONS WHERE user_id = :userId AND lms_event_id = :id`, { userId, id: s.id });
   }
   out.sessions = wanted.size;
+
+  // 4. Quizzes -> Exams & Deadlines (type Quiz). A quiz the student deleted stays deleted; a moved quiz follows the teacher.
+  for (const q of quizzes.values()) {
+    const known = mapOf.get(`quiz:${q.id}`);
+    const state = `${q.date}|${q.time}|${q.title}`;
+    if (!known) {
+      const id = generateId();
+      await connection.execute(
+        `INSERT INTO EXAMS_DEADLINES (item_id, user_id, subject_id, title, type, event_date, event_time, notes, is_done)
+         VALUES (:id, :userId, :subjectId, :title, 'Quiz', :date, :time, 'From your LMS', 0)`,
+        { id, userId, subjectId: q.subjectId, title: q.title.slice(0, 200), date: q.date, time: q.time }
+      );
+      await remember('quiz', q.id, id, state);
+      out.quizzes += 1;
+    } else if (known.state !== state) {
+      await connection.execute(
+        `UPDATE EXAMS_DEADLINES SET title = :title, event_date = :date, event_time = :time WHERE item_id = :id AND user_id = :userId`,
+        { title: q.title.slice(0, 200), date: q.date, time: q.time, id: known.localId, userId }
+      );
+      await remember('quiz', q.id, known.localId, state);
+    }
+  }
+
+  // 5. Marks, shown read-only (they never change the student's own grades or CGPA). Optional: a problem here
+  // never stops the rest, except a key the LMS refuses.
+  try {
+    out.grades = await syncGrades(connection, userId, token, lmsUserId, api, subjectOfCourse);
+  } catch (err) {
+    if (moodleReal.keyRejected(err)) throw err;
+    if (!(err && (err.code === '42P01' || err instanceof moodleReal.LmsError))) throw err; // tables not created yet, or the LMS declined: skip
+  }
   return out;
+}
+
+async function syncGrades(connection, userId, token, lmsUserId, api, subjectOfCourse) {
+  const wanted = new Map();
+  for (const [courseId, subjectId] of subjectOfCourse) {
+    for (const g of await api.grades(token, lmsUserId, courseId)) wanted.set(String(g.id), { ...g, subjectId });
+  }
+  const have = new Map((await connection.execute(
+    `SELECT item_id, subject_id, name, score, max_score FROM LMS_GRADES WHERE user_id = :userId`, { userId }
+  )).rows.map((r) => [String(r.ITEM_ID), r]));
+  const sameNum = (a, b) => (a == null && b == null) || (a != null && b != null && Number(a) === Number(b));
+  const changed = [...wanted.values()].filter((g) => {
+    const h = have.get(String(g.id));
+    return !h || h.SUBJECT_ID !== g.subjectId || h.NAME !== g.name || !sameNum(h.SCORE, g.score) || !sameNum(h.MAX_SCORE, g.max);
+  });
+  if (changed.length) {
+    await connection.execute(
+      `INSERT INTO LMS_GRADES (user_id, item_id, subject_id, name, score, max_score, is_total, graded_date)
+       SELECT CAST(:userId AS VARCHAR), t.item_id, t.subject_id, t.name, t.score, t.max_score, t.is_total, t.graded_date
+       FROM unnest(CAST(:ids AS INTEGER[]), CAST(:subjectIds AS VARCHAR[]), CAST(:names AS VARCHAR[]), CAST(:scores AS DOUBLE PRECISION[]),
+                   CAST(:maxes AS DOUBLE PRECISION[]), CAST(:totals AS SMALLINT[]), CAST(:dates AS DATE[]))
+         AS t(item_id, subject_id, name, score, max_score, is_total, graded_date)
+       ON CONFLICT (user_id, item_id) DO UPDATE SET subject_id = EXCLUDED.subject_id, name = EXCLUDED.name, score = EXCLUDED.score,
+         max_score = EXCLUDED.max_score, is_total = EXCLUDED.is_total, graded_date = EXCLUDED.graded_date`,
+      {
+        userId,
+        ids: changed.map((g) => g.id), subjectIds: changed.map((g) => g.subjectId), names: changed.map((g) => String(g.name).slice(0, 200)),
+        scores: changed.map((g) => g.score), maxes: changed.map((g) => g.max), totals: changed.map((g) => (g.isTotal ? 1 : 0)),
+        dates: changed.map((g) => g.date),
+      }
+    );
+  }
+  for (const [id] of have) {
+    if (!wanted.has(id)) await connection.execute(`DELETE FROM LMS_GRADES WHERE user_id = :userId AND item_id = :id`, { userId, id: Number(id) });
+  }
+  return wanted.size;
 }
 
 // Every 20 minutes, bring a few students whose last sync is old up to date (a sleeping server catches up when it wakes).

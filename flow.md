@@ -205,7 +205,8 @@ Solid status fills (delete pop-up, danger `Button`, the done tick) take `text-on
 3. `services/lmsSync.js syncUser`: courses (`LMS_ITEM_MAP` remembers which LMS course is which subject) -> subjects and their class slot; assignments + submission status -> board cards; the calendar's attendance events for the semester -> `LMS_SESSIONS`. Only differences are written, so a quiet run writes nothing.
 4. It runs when the dashboard opens (`useLmsAutoSync`, once per browser session; the server skips if synced in the last 10 minutes), from "Sync now" (not more than once a minute), and every 20 minutes for connections that are due (`startLmsSync`, started next to the reminder scheduler).
 5. `GET /api/subject-attendance/overview` adds `classesTotal`, `classesLeft`, `lastClassDate` per subject from `LMS_SESSIONS`; the attendance page shows them under each subject.
-6. Disconnect (`DELETE /api/lms`) deletes the key, the remembered mapping and the sessions; subjects and cards stay.
+6. Disconnect (`DELETE /api/lms`) deletes the key, the remembered mapping, the sessions and the marks; subjects and cards stay.
+7. Phase 2: the same calendar read (`calendarEvents`) also returns quizzes, which become Quiz rows in `EXAMS_DEADLINES` (remembered in `LMS_ITEM_MAP` as `quiz`). `syncGrades` reads each course's marks (`gradereport_user_get_grade_items`) into `LMS_GRADES` in one batched statement, only for changed marks. `GET /api/lms/grades` groups them by subject for the Grades page (`LmsGradesPanel`), read-only and never part of the CGPA.
 
 ## 3. Scanner flow (screenshot → saved data)
 

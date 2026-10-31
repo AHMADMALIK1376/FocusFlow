@@ -102,6 +102,12 @@ function localDate(unixSeconds, tz = TIMEZONE()) {
   return new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(n * 1000));
 }
 
+function localTime(unixSeconds, tz = TIMEZONE()) {
+  const n = Number(unixSeconds);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(n * 1000));
+}
+
 // ---- What changed? ----------------------------------------------------------------------------------
 // State kept per assignment between syncs: "<submitted 0/1>|<due unix>|<title>".
 const assignmentState = (submitted, due, title) => `${submitted ? 1 : 0}|${Number(due) || 0}|${title}`;
@@ -133,5 +139,5 @@ function isCurrentCourse(course, nowSeconds = Date.now() / 1000) {
 module.exports = {
   parseLaunchText, keyFromEnv, encryptToken, decryptToken,
   parseCourseName, titleCase, to24h, normalizeName,
-  localDate, assignmentState, parseAssignmentState, diffSessions, isCurrentCourse,
+  localDate, localTime, assignmentState, parseAssignmentState, diffSessions, isCurrentCourse,
 };

@@ -42,6 +42,7 @@ test("each sign-in link gets a fresh number", () => {
 test("the result of a sync is said in plain words", () => {
   expect(summarizeSync({ subjects: 1, assignments: 5, moved: 0 })).toBe("Added 1 subject, 5 assignments.");
   expect(summarizeSync({ subjects: 0, assignments: 1, moved: 2 })).toBe("Added 1 assignment, 2 marked done.");
+  expect(summarizeSync({ subjects: 2, assignments: 0, quizzes: 1 })).toBe("Added 2 subjects, 1 quiz.");
   expect(summarizeSync({ subjects: 0, assignments: 0, moved: 0, sessions: 40 })).toBe("Everything is up to date.");
   expect(summarizeSync({ skipped: "recent" })).toBe("Everything is up to date.");
   expect(summarizeSync({ error: "unreachable" })).toBe("");

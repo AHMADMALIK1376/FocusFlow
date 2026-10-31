@@ -46,6 +46,7 @@ export function summarizeSync(result) {
   const bits = [];
   if (result.subjects) bits.push(`${result.subjects} ${result.subjects === 1 ? "subject" : "subjects"}`);
   if (result.assignments) bits.push(`${result.assignments} ${result.assignments === 1 ? "assignment" : "assignments"}`);
+  if (result.quizzes) bits.push(`${result.quizzes} ${result.quizzes === 1 ? "quiz" : "quizzes"}`);
   if (result.moved) bits.push(`${result.moved} marked done`);
   return bits.length ? `Added ${bits.join(", ")}.` : "Everything is up to date.";
 }

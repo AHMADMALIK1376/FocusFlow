@@ -137,6 +137,48 @@ test('sync: passes the button flag through and answers with the counts', async (
 test('disconnect: forgets the key and the memory of the LMS for this student only, and keeps their subjects and cards', async () => {
   const r = res(); await ctl.disconnect(req(), r);
   assert.equal(r.body.success, true);
-  assert.deepEqual(calls.map((c) => c.sql.match(/FROM (\w+)/)[1]), ['LMS_SESSIONS', 'LMS_ITEM_MAP', 'LMS_CONNECTIONS']);
+  assert.deepEqual(calls.map((c) => c.sql.match(/FROM (\w+)/)[1]), ['LMS_GRADES', 'LMS_SESSIONS', 'LMS_ITEM_MAP', 'LMS_CONNECTIONS']);
   calls.forEach((c) => assert.equal(c.params.userId, 'u1'));
+});
+
+test('marks: grouped by subject, totals last, read-only; no table or no marks gives an empty list', async () => {
+  rows = [
+    { SUBJECT_ID: 'a', SUBJECT_NAME: 'AI', COLOR: '#111111', NAME: 'Quiz 1', SCORE: 8, MAX_SCORE: 10, IS_TOTAL: 0, GRADED_DATE: '2026-10-28' },
+    { SUBJECT_ID: 'a', SUBJECT_NAME: 'AI', COLOR: '#111111', NAME: 'Course total', SCORE: 8, MAX_SCORE: 10, IS_TOTAL: 1, GRADED_DATE: null },
+    { SUBJECT_ID: 'b', SUBJECT_NAME: 'Web', COLOR: null, NAME: 'Lab 1', SCORE: null, MAX_SCORE: 5, IS_TOTAL: 0, GRADED_DATE: null },
+  ];
+  let r = res(); await ctl.getGrades(req(), r);
+  assert.equal(r.body.length, 2);
+  assert.deepEqual(r.body[0], { subjectId: 'a', subjectName: 'AI', color: '#111111', items: [
+    { name: 'Quiz 1', score: 8, max: 10, isTotal: false, date: '2026-10-28' },
+    { name: 'Course total', score: 8, max: 10, isTotal: true, date: null },
+  ] });
+  assert.equal(r.body[1].items[0].score, null);
+  assert.equal(calls[0].params.userId, 'u1');
+  assert.ok(!/INSERT|UPDATE|DELETE/i.test(calls[0].sql));
+  failWith = '42P01';
+  r = res(); await ctl.getGrades(req(), r);
+  assert.deepEqual(r.body, []);
+});
+
+test('disconnect still works when the marks table has not been created yet', async () => {
+  failWith = null;
+  let first = true;
+  const p = require('node:path').join(__dirname, '..', 'config', 'database.js');
+  const original = require.cache[p].exports.getConnection;
+  require.cache[p].exports.getConnection = async () => ({
+    execute: async (sql, params) => {
+      calls.push({ sql, params });
+      if (first && /LMS_GRADES/.test(sql)) { first = false; const e = new Error('missing'); e.code = '42P01'; throw e; }
+      return { rows: [], rowsAffected: 1 };
+    },
+    close: async () => {},
+  });
+  try {
+    const r = res(); await ctl.disconnect(req(), r);
+    assert.equal(r.body.success, true);
+    assert.deepEqual(calls.map((c) => c.sql.match(/FROM (\w+)/)[1]), ['LMS_GRADES', 'LMS_SESSIONS', 'LMS_ITEM_MAP', 'LMS_CONNECTIONS']);
+  } finally {
+    require.cache[p].exports.getConnection = original;
+  }
 });

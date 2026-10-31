@@ -340,6 +340,8 @@ export const subjectAttendanceAPI = {
 // ==============================================
 export const lmsAPI = {
     status: async () => authFetch('/lms/status'),
+    // The marks imported from the LMS, grouped by subject (read-only).
+    grades: async () => authFetch('/lms/grades'),
     // text: what the LMS sign-in gave back (the app link, or just the key).
     connect: async (text) => authFetch('/lms/connect', { method: 'POST', body: JSON.stringify({ text }) }),
     sync: async (manual = false) => authFetch('/lms/sync', { method: 'POST', body: JSON.stringify({ manual }) }),

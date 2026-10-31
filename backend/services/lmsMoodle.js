@@ -65,13 +65,29 @@ async function isSubmitted(token, assignId) {
   return status === 'submitted';
 }
 
-// Class sessions the teacher created in the attendance activity show up as calendar events.
-async function attendanceEvents(token, year, month) {
+// Class sessions (the attendance activity) and quizzes show up as calendar events.
+async function calendarEvents(token, year, month) {
   const d = await call(token, 'core_calendar_get_calendar_monthly_view', { year, month });
   const events = (d.weeks || []).flatMap((w) => w.days || []).flatMap((day) => day.events || []);
   return events
-    .filter((e) => e.modulename === 'attendance')
-    .map((e) => ({ id: e.id, courseId: (e.course && e.course.id) || e.courseid, timestart: e.timestart }));
+    .filter((e) => e.modulename === 'attendance' || e.modulename === 'quiz')
+    .map((e) => ({ id: e.id, modulename: e.modulename, name: e.name || '', courseId: (e.course && e.course.id) || e.courseid, timestart: e.timestart }));
 }
 
-module.exports = { LmsError, keyRejected, baseUrl, call, siteInfo, courses, assignments, isSubmitted, attendanceEvents };
+// The student's marks in one course: one row per graded item (and the course total). Read-only.
+async function grades(token, userId, courseId) {
+  const d = await call(token, 'gradereport_user_get_grade_items', { courseid: courseId, userid: userId });
+  const items = ((d.usergrades || [])[0] || {}).gradeitems || [];
+  return items
+    .filter((i) => i.itemtype !== 'category' && (i.itemname || i.itemtype === 'course'))
+    .map((i) => ({
+      id: i.id,
+      name: i.itemname || 'Course total',
+      isTotal: i.itemtype === 'course',
+      score: i.graderaw == null ? null : Number(i.graderaw),
+      max: i.grademax == null ? null : Number(i.grademax),
+      date: i.gradedategraded ? new Date(Number(i.gradedategraded) * 1000).toISOString().slice(0, 10) : null,
+    }));
+}
+
+module.exports = { LmsError, keyRejected, baseUrl, call, siteInfo, courses, assignments, isSubmitted, calendarEvents, grades };

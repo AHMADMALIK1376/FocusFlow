@@ -92,13 +92,45 @@ exports.sync = async (req, res) => {
   }
 };
 
+// GET /api/lms/grades  -- the marks imported from the LMS, grouped by subject (read-only; never part of the CGPA)
+exports.getGrades = async (req, res) => {
+  let connection;
+  try {
+    connection = await getConnection();
+    const r = await connection.execute(
+      `SELECT g.subject_id, s.name AS subject_name, s.color, g.name, g.score, g.max_score, g.is_total, TO_CHAR(g.graded_date, 'YYYY-MM-DD') AS graded_date
+       FROM LMS_GRADES g JOIN SUBJECTS s ON s.subject_id = g.subject_id
+       WHERE g.user_id = :userId ORDER BY s.name ASC, g.is_total ASC, g.name ASC`,
+      { userId: req.user.userId }
+    );
+    const bySubject = new Map();
+    for (const row of r.rows) {
+      if (!bySubject.has(row.SUBJECT_ID)) bySubject.set(row.SUBJECT_ID, { subjectId: row.SUBJECT_ID, subjectName: row.SUBJECT_NAME, color: row.COLOR, items: [] });
+      bySubject.get(row.SUBJECT_ID).items.push({
+        name: row.NAME, score: row.SCORE, max: row.MAX_SCORE, isTotal: Number(row.IS_TOTAL) === 1, date: row.GRADED_DATE || null,
+      });
+    }
+    res.json([...bySubject.values()]);
+  } catch (err) {
+    if (tablesMissing(err)) return res.json([]);
+    console.error('LMS grades error:', err.message);
+    res.status(500).json({ error: 'Failed to get the LMS marks.' });
+  } finally {
+    if (connection) await connection.close();
+  }
+};
+
 // DELETE /api/lms  -- forget the key and what was remembered about the LMS. Subjects and cards stay: they are the student's.
 exports.disconnect = async (req, res) => {
   let connection;
   try {
     connection = await getConnection();
-    for (const table of ['LMS_SESSIONS', 'LMS_ITEM_MAP', 'LMS_CONNECTIONS']) {
-      await connection.execute(`DELETE FROM ${table} WHERE user_id = :userId`, { userId: req.user.userId });
+    for (const table of ['LMS_GRADES', 'LMS_SESSIONS', 'LMS_ITEM_MAP', 'LMS_CONNECTIONS']) {
+      try {
+        await connection.execute(`DELETE FROM ${table} WHERE user_id = :userId`, { userId: req.user.userId });
+      } catch (err) {
+        if (!(tablesMissing(err) && table === 'LMS_GRADES')) throw err; // the marks table may not exist yet
+      }
     }
     res.json({ success: true });
   } catch (err) {
