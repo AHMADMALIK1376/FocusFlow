@@ -21,7 +21,9 @@ stub('config/database.js', {
     close: async () => {},
   }),
 });
-stub('services/lmsSync.js', { syncUser: async (userId, opts) => { synced = { userId, opts }; return { subjects: 1, assignments: 2, moved: 0, sessions: 3 }; } });
+let syncAnswer;  // what the sync "returns"; a promise that never settles stands for a long first sync
+let syncing = false;
+stub('services/lmsSync.js', { syncUser: (userId, opts) => { synced = { userId, opts }; return syncAnswer; }, isSyncing: () => syncing });
 const moodle = require('../services/lmsMoodle');
 const lms = require('../utils/lms');
 const ctl = require('./lmsController');
@@ -37,7 +39,8 @@ const res = () => {
 const req = (body) => ({ user: { userId: 'u1' }, body });
 
 beforeEach(() => {
-  rows = []; calls = []; failWith = null; synced = null;
+  rows = []; calls = []; failWith = null; synced = null; syncing = false;
+  syncAnswer = Promise.resolve({ subjects: 1, assignments: 2, moved: 0, sessions: 3 });
   process.env.LMS_TOKEN_KEY = KEY_B64;
   moodle.siteInfo = async () => ({ userId: 5, siteName: 'Iqra' });
 });
@@ -55,6 +58,9 @@ test('status: off until the server has a key; then connected or not, never any s
   assert.equal(r.body.connected, true);
   assert.equal(r.body.needsReconnect, false);
   assert.ok(!JSON.stringify(r.body).includes('secret'));
+  syncing = true;
+  r = res(); await ctl.getStatus(req(), r);
+  assert.equal(r.body.syncing, true);
   assert.equal(calls[calls.length - 1].params.userId, 'u1');
 });
 
@@ -78,6 +84,21 @@ test('connect: the pasted text is checked with the LMS, saved encrypted, and syn
   assert.equal(lms.decryptToken(save.enc, lms.keyFromEnv()), TOKEN);
   assert.deepEqual(synced, { userId: 'u1', opts: { manual: true, ignoreGap: true } });
   assert.ok(!JSON.stringify(r.body).includes(TOKEN));
+});
+
+test('connect: a first sync that takes too long does not hold the request: it answers "syncing" and the key is already saved', async () => {
+  syncAnswer = new Promise(() => {}); // never finishes
+  const realSetTimeout = global.setTimeout;
+  global.setTimeout = (fn, ms, ...a) => realSetTimeout(fn, ms === 15000 ? 5 : ms, ...a);
+  try {
+    const r = res();
+    await ctl.connect(req({ text: TOKEN }), r);
+    assert.equal(r.statusCode, 201);
+    assert.deepEqual([r.body.connected, r.body.syncing, r.body.result], [true, true, undefined]);
+    assert.ok(calls.some((c) => /INSERT INTO LMS_CONNECTIONS/.test(c.sql)));
+  } finally {
+    global.setTimeout = realSetTimeout;
+  }
 });
 
 test('connect: text that is not a key, and a key the LMS refuses, are told apart and nothing is saved', async () => {

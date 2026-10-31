@@ -67,8 +67,9 @@ test('a first sync makes the subject (named, coloured, with its class slot), the
   assert.deepEqual([slot.day, slot.start, slot.end, slot.room], ['Friday', '13:15', '15:20', 'LR26']);
   const card = stmts(/INSERT INTO ASSIGNMENTS/)[0].params;
   assert.deepEqual([card.title, card.due, card.col, card.userId, card.subjectId], ['assigment 1', '2026-10-30', 'col-todo', 'u1', subject.id]);
-  const sessions = stmts(/INSERT INTO LMS_SESSIONS/).map((c) => c.params);
-  assert.deepEqual(sessions.map((s) => [s.id, s.date, s.subjectId]), [[101, '2026-10-24', subject.id], [102, '2026-10-31', subject.id]]);
+  const sessions = stmts(/INSERT INTO LMS_SESSIONS/);
+  assert.equal(sessions.length, 1); // all new class dates in ONE statement
+  assert.deepEqual(sessions[0].params, { userId: 'u1', ids: [101, 102], subjectIds: [subject.id, subject.id], dates: ['2026-10-24', '2026-10-31'] });
   assert.equal(stmts(/INSERT INTO LMS_ITEM_MAP/).length, 2);
   assert.equal(stmts(/UPDATE LMS_CONNECTIONS SET last_synced/).length, 1);
   assert.equal(calls.filter((c) => c.closed).length, 1);
@@ -172,7 +173,7 @@ test('class dates that moved or were cancelled in the LMS are updated or removed
   assert.equal(stmts(/UPDATE LMS_SESSIONS/)[0].params.id, 101);
   assert.equal(stmts(/UPDATE LMS_SESSIONS/)[0].params.date, '2026-10-24');
   assert.equal(stmts(/DELETE FROM LMS_SESSIONS/)[0].params.id, 555);
-  assert.equal(stmts(/INSERT INTO LMS_SESSIONS/)[0].params.id, 102);
+  assert.deepEqual(stmts(/INSERT INTO LMS_SESSIONS/)[0].params.ids, [102]);
 });
 
 test('a key the LMS rejects marks the connection "reconnect" and does not throw; a slow LMS does not', async () => {

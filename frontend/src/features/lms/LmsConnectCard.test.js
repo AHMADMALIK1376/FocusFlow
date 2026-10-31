@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import LmsConnectCard from "./LmsConnectCard";
 
 const mockApi = { status: jest.fn(), connect: jest.fn(), sync: jest.fn(), disconnect: jest.fn() };
@@ -110,4 +110,33 @@ test("the key never appears on the page", async () => {
   const { container } = render(<LmsConnectCard />);
   await waitFor(() => expect(mockApi.connect).toHaveBeenCalled());
   expect(container.innerHTML).not.toContain("SECRETKEY");
+});
+
+test("a server error is not shown as \"not switched on\": it says the server could not be reached, and Try again asks again", async () => {
+  mockApi.status.mockRejectedValueOnce(new Error("500")).mockResolvedValue({ available: true, site: SITE, connected: false });
+  render(<LmsConnectCard />);
+  expect(await screen.findByText(/could not reach the focusflow server/i)).toBeInTheDocument();
+  expect(screen.queryByText(/not switched on/i)).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+  expect(await screen.findByRole("link", { name: /sign in with the lms/i })).toBeInTheDocument();
+});
+
+test("a first sync that is still running is waited for: the card says so and checks again until it is done", async () => {
+  jest.useFakeTimers();
+  try {
+    mockApi.status
+      .mockResolvedValueOnce({ available: true, site: SITE, connected: false })
+      .mockResolvedValueOnce({ available: true, site: SITE, connected: true, needsReconnect: false, syncing: true })
+      .mockResolvedValue({ available: true, site: SITE, connected: true, needsReconnect: false, syncing: false, lastSynced: "2026-10-31T08:00:00Z" });
+    mockApi.connect.mockResolvedValue({ connected: true, syncing: true });
+    window.history.replaceState(null, "", "/settings?open=lms&lmskey=web%2Bfocusflow%3A%2F%2Ftoken%3Dabc");
+    render(<LmsConnectCard />);
+    expect(await screen.findByText("Syncing now...")).toBeInTheDocument();
+    expect(await screen.findByText(/adding your courses and assignments now/i)).toBeInTheDocument();
+    await act(async () => { jest.advanceTimersByTime(3100); });
+    expect(await screen.findByText(/Last synced:/)).toBeInTheDocument();
+    expect(mockApi.status).toHaveBeenCalledTimes(3);
+  } finally {
+    jest.useRealTimers();
+  }
 });

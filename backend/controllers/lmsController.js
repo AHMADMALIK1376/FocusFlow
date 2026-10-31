@@ -1,7 +1,19 @@
 const { getConnection } = require('../config/database');
 const lms = require('../utils/lms');
 const moodle = require('../services/lmsMoodle');
-const { syncUser } = require('../services/lmsSync');
+const { syncUser, isSyncing } = require('../services/lmsSync');
+
+// A first sync can take a minute (many questions to the LMS, many rows to the far-away database), longer than a request
+// may last. Wait a little for the result; if it is not ready, answer now and let the sync finish on its own.
+const WAIT_MS = 15000;
+async function startSync(userId, opts) {
+  const run = syncUser(userId, opts);
+  run.catch((e) => console.error('LMS sync error:', e.message)); // never an unhandled rejection
+  let timer;
+  const waited = await Promise.race([run, new Promise((resolve) => { timer = setTimeout(() => resolve(undefined), WAIT_MS); })]);
+  clearTimeout(timer);
+  return waited; // undefined = still running
+}
 
 // A table that was never created (the migration has not been run yet) must not break the app.
 const tablesMissing = (err) => Boolean(err && err.code === '42P01');
@@ -12,6 +24,7 @@ const sessionFor = (row) => ({
   needsReconnect: Number(row.NEEDS_RECONNECT) === 1,
   lastError: row.LAST_ERROR || null,
 });
+const withSyncing = (body, userId) => ({ ...body, syncing: isSyncing(userId) });
 
 // GET /api/lms/status
 exports.getStatus = async (req, res) => {
@@ -24,7 +37,7 @@ exports.getStatus = async (req, res) => {
       `SELECT last_synced, needs_reconnect, last_error FROM LMS_CONNECTIONS WHERE user_id = :userId`,
       { userId: req.user.userId }
     );
-    res.json(r.rows.length ? { ...base, ...sessionFor(r.rows[0]) } : base);
+    res.json(withSyncing(r.rows.length ? { ...base, ...sessionFor(r.rows[0]) } : base, req.user.userId));
   } catch (err) {
     if (tablesMissing(err)) return res.json({ ...base, available: false });
     console.error('LMS status error:', err.message);
@@ -63,15 +76,15 @@ exports.connect = async (req, res) => {
   } finally {
     if (connection) await connection.close();
   }
-  const result = await syncUser(req.user.userId, { manual: true, ignoreGap: true });
-  res.status(201).json({ connected: true, result });
+  const result = await startSync(req.user.userId, { manual: true, ignoreGap: true });
+  res.status(201).json({ connected: true, result, syncing: result === undefined });
 };
 
 // POST /api/lms/sync  { manual? }  -- cheap when nothing is due: the server decides how often it really asks the LMS
 exports.sync = async (req, res) => {
   try {
-    const result = await syncUser(req.user.userId, { manual: Boolean(req.body && req.body.manual) });
-    res.json({ result });
+    const result = await startSync(req.user.userId, { manual: Boolean(req.body && req.body.manual) });
+    res.json({ result, syncing: result === undefined });
   } catch (err) {
     if (tablesMissing(err)) return res.json({ result: { skipped: 'not_set_up' } });
     console.error('LMS sync error:', err.message);

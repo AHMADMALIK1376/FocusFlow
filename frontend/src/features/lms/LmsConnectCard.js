@@ -21,7 +21,7 @@ export default function LmsConnectCard() {
   const returned = useRef(false);
 
   const refresh = useCallback(async () => {
-    try { setStatus(await lmsAPI.status()); } catch (e) { setStatus({ available: false }); }
+    try { setStatus(await lmsAPI.status()); } catch (e) { setStatus({ unreachable: true }); }
   }, []);
 
   const connect = useCallback(async (pasted) => {
@@ -29,7 +29,7 @@ export default function LmsConnectCard() {
     try {
       const r = await lmsAPI.connect(pasted);
       setText("");
-      setNote(summarizeSync(r && r.result) || "Connected.");
+      setNote(r && r.syncing ? "Connected. Adding your courses and assignments now: this can take a minute." : summarizeSync(r && r.result) || "Connected.");
     } catch (e) {
       setError(e.message || "Could not connect. Try again.");
     } finally {
@@ -39,6 +39,13 @@ export default function LmsConnectCard() {
   }, [refresh]);
 
   useEffect(() => { refresh(); }, [refresh]);
+
+  // A sync that is still running on the server: check again every few seconds until it finishes.
+  useEffect(() => {
+    if (!status || !status.syncing) return undefined;
+    const t = setTimeout(refresh, 3000);
+    return () => clearTimeout(t);
+  }, [status, refresh]);
 
   // Let the browser send the LMS sign-in result back to FocusFlow (it may ask once; the manual way still works without it).
   useEffect(() => { registerHandler(window.location.origin); }, []);
@@ -58,7 +65,7 @@ export default function LmsConnectCard() {
     try {
       const r = await lmsAPI.sync(true);
       const res = r && r.result;
-      setNote(res && res.skipped === "recent" ? "Just synced a moment ago." : summarizeSync(res) || "Done.");
+      setNote(r && r.syncing ? "Still working on it: this can take a minute." : res && res.skipped === "recent" ? "Just synced a moment ago." : summarizeSync(res) || "Done.");
     } catch (e) {
       setError(e.message || "Could not sync.");
     } finally {
@@ -82,6 +89,14 @@ export default function LmsConnectCard() {
   }
 
   if (!status) return <p className="text-sm text-muted">Loading...</p>;
+  if (status.unreachable) {
+    return (
+      <div className="text-sm text-muted space-y-2">
+        <p>Could not reach the FocusFlow server just now. Your LMS connection is not lost.</p>
+        <Button variant="primary" size="sm" onClick={refresh}>Try again</Button>
+      </div>
+    );
+  }
   if (!status.available) {
     return <p className="text-sm text-muted">Connecting to your university LMS is not switched on for this server yet.</p>;
   }
@@ -101,7 +116,7 @@ export default function LmsConnectCard() {
       {status.connected && !status.needsReconnect && (
         <div className="rounded-token-md bg-surface-2 p-3 space-y-1">
           <p className="font-black flex items-center gap-2"><GraduationCap size={16} aria-hidden="true" /> Connected</p>
-          <p className="text-muted">Last synced: {when(status.lastSynced)}</p>
+          <p className="text-muted">{status.syncing ? "Syncing now..." : `Last synced: ${when(status.lastSynced)}`}</p>
           {status.lastError && <p role="alert" className="text-focus font-bold">{status.lastError}</p>}
         </div>
       )}

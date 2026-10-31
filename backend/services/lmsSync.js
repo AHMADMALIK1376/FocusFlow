@@ -211,11 +211,14 @@ async function runSync(connection, userId, token, lmsUserId, api, now) {
     { userId, fromDate }
   )).rows.map((r) => ({ id: r.LMS_EVENT_ID, subjectId: r.SUBJECT_ID, date: r.SESSION_DATE }));
   const diff = lms.diffSessions(have, [...wanted.values()]);
-  for (const s of diff.add) {
+  if (diff.add.length) {
+    // One statement for all new dates: a first sync has hundreds, and the database is far away.
     await connection.execute(
-      `INSERT INTO LMS_SESSIONS (user_id, lms_event_id, subject_id, session_date) VALUES (:userId, :id, :subjectId, :date)
-       ON CONFLICT (user_id, lms_event_id) DO UPDATE SET subject_id = :subjectId, session_date = :date`,
-      { userId, id: s.id, subjectId: s.subjectId, date: s.date }
+      `INSERT INTO LMS_SESSIONS (user_id, lms_event_id, subject_id, session_date)
+       SELECT CAST(:userId AS VARCHAR), t.id, t.subject_id, t.session_date
+       FROM unnest(CAST(:ids AS INTEGER[]), CAST(:subjectIds AS VARCHAR[]), CAST(:dates AS DATE[])) AS t(id, subject_id, session_date)
+       ON CONFLICT (user_id, lms_event_id) DO UPDATE SET subject_id = EXCLUDED.subject_id, session_date = EXCLUDED.session_date`,
+      { userId, ids: diff.add.map((s) => s.id), subjectIds: diff.add.map((s) => s.subjectId), dates: diff.add.map((s) => s.date) }
     );
   }
   for (const s of diff.update) {
@@ -265,4 +268,6 @@ function startLmsSync() {
   console.log('LMS sync started (every 20 minutes)');
 }
 
-module.exports = { syncUser, syncStale, startLmsSync, monthsBetween, MIN_GAP_MS, MIN_GAP_MANUAL_MS };
+const isSyncing = (userId) => running.has(userId);
+
+module.exports = { syncUser, isSyncing, syncStale, startLmsSync, monthsBetween, MIN_GAP_MS, MIN_GAP_MANUAL_MS };
