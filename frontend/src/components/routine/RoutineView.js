@@ -199,7 +199,7 @@ export default function RoutineView() {
                       <div key={task.id} className="flex items-center gap-1.5 group justify-end w-full">
                         {!missed && (
                           <button onClick={() => handleEditClick(task)}
-                            className="text-info opacity-0 group-hover:opacity-100 transition-opacity leading-none mr-0.5" aria-label="Edit"><Pencil size={13} /></button>
+                            className="text-info opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity leading-none mr-0.5" aria-label="Edit"><Pencil size={13} /></button>
                         )}
                         {missed && <Lock size={11} className="text-focus mr-0.5 shrink-0" />}
                         <span className={`text-[11px] font-bold text-right leading-tight max-w-[115px] truncate ${completed ? 'text-success line-through' : missed ? 'text-focus line-through font-black' : 'text-ink'}`}>
@@ -230,7 +230,7 @@ export default function RoutineView() {
                         </span>
                         {!missed && (
                           <button onClick={() => handleEditClick(task)}
-                            className="text-info opacity-0 group-hover:opacity-100 transition-opacity leading-none ml-0.5" aria-label="Edit"><Pencil size={13} /></button>
+                            className="text-info opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity leading-none ml-0.5" aria-label="Edit"><Pencil size={13} /></button>
                         )}
                         {missed && <Lock size={11} className="text-focus ml-0.5 shrink-0" />}
                       </div>
@@ -257,7 +257,7 @@ export default function RoutineView() {
                 setShowDeletePopup(true);
               }
             }}
-            className="pointer-events-auto text-xl text-muted hover:text-focus opacity-0 group-hover/card:opacity-100 transition-all duration-300 hover:scale-110 z-10"
+            className="pointer-events-auto text-xl text-muted hover:text-focus opacity-0 group-hover/card:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 transition-all duration-300 hover:scale-110 z-10"
             title="Delete activities">
             <Trash2 size={16} />
           </button>

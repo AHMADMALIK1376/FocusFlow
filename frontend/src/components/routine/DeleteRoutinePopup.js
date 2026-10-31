@@ -47,13 +47,14 @@ export default function DeleteRoutinePopup({ routine, allRoutines, onClose, onDe
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className={`relative bg-surface rounded-token-lg shadow-glass p-5 w-full max-w-[440px] z-10 max-h-[85vh] overflow-y-auto border border-[rgb(var(--ink)/0.08)]
+        className={`relative bg-surface rounded-token-lg shadow-glass p-5 w-full max-w-[440px] z-10 max-h-[90dvh] sm:max-h-[85vh] overflow-y-auto border border-[rgb(var(--ink)/0.08)]
           transition-all duration-300 ease-spring
           ${isVisible ? 'scale-100 opacity-100 translate-y-0' : 'scale-90 opacity-0 translate-y-8'}`}
       >
-        <button onClick={handleClose}
-          className="absolute top-3 right-3 w-5 h-5 rounded-full bg-focus text-on-focus text-[10px] flex items-center justify-center shadow-neu-sm hover:scale-110 transition-all z-20"><X size={11} strokeWidth={3} />
-        </button>
+        <div className="sticky top-3 z-20 -mt-2 mb-2 -mr-2 h-0 flex justify-end pointer-events-none">
+          <button onClick={handleClose} aria-label="Close"
+            className="pointer-events-auto relative w-5 h-5 rounded-full bg-focus text-on-focus text-[10px] flex items-center justify-center shadow-neu-sm hover:scale-110 transition-all before:absolute before:-inset-3 before:content-['']"><X size={11} strokeWidth={3} /></button>
+        </div>
 
         <div className="text-center mb-4">
           <Trash2 size={22} strokeWidth={1.75} className="mx-auto mb-0.5 text-focus" />

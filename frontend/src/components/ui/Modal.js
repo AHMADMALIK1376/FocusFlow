@@ -87,7 +87,7 @@ export function Modal({
             exit={{ scale: 0.95, y: 10, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 300, damping: 26 }}
             className={cx(
-              'relative w-full bg-surface text-ink shadow-glass p-4 sm:p-6 overflow-y-auto outline-none',
+              'relative w-full bg-surface text-ink shadow-glass p-6 max-sm:p-4 overflow-y-auto outline-none',
               fullHeightOnMobile
                 ? 'h-[100dvh] max-h-[100dvh] rounded-none sm:h-auto sm:max-h-[85vh] sm:rounded-token-lg'
                 : 'max-h-[90dvh] sm:max-h-[85vh] rounded-token-lg',
@@ -102,7 +102,7 @@ export function Modal({
                 type="button"
                 onClick={onClose}
                 aria-label="Close"
-                className="pointer-events-auto w-8 h-8 rounded-full flex items-center justify-center text-focus bg-surface/80 sm:bg-transparent hover:bg-focus/10 transition-colors"
+                className="pointer-events-auto w-8 h-8 max-sm:w-10 max-sm:h-10 rounded-full flex items-center justify-center text-focus bg-surface/80 sm:bg-transparent hover:bg-focus/10 transition-colors"
               >
                 <X size={18} />
               </button>

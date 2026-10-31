@@ -41,7 +41,7 @@ function SortableCard({ card, onEdit, onRemove }) {
             </div>
           )}
         </div>
-        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity">
           <button onClick={() => onEdit(card)} className="text-muted hover:text-ink p-1" aria-label="Edit"><Pencil size={14} /></button>
           <button onClick={() => onRemove(card.id)} className="text-muted hover:text-focus p-1" aria-label="Delete"><X size={15} /></button>
         </div>
@@ -236,7 +236,7 @@ export default function KanbanPage() {
       {/* Create modal */}
       {creating && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgb(var(--ink)/0.25)] backdrop-blur-sm p-4" onClick={() => setCreating(false)}>
-          <Card className="w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+          <Card className="w-full max-w-sm max-h-[90dvh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-sm font-black uppercase tracking-wider text-muted mb-3">New task</h3>
             <div className="space-y-2.5">
               <Input value={createTitle} onChange={(e) => setCreateTitle(e.target.value)} placeholder="Task title…" autoFocus onKeyDown={(e) => e.key === "Enter" && handleCreate()} />
@@ -267,7 +267,7 @@ export default function KanbanPage() {
       {/* Edit modal */}
       {editCard && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgb(var(--ink)/0.25)] backdrop-blur-sm p-4" onClick={() => setEditCard(null)}>
-          <Card className="w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+          <Card className="w-full max-w-sm max-h-[90dvh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-sm font-black uppercase tracking-wider text-muted mb-3">Edit card</h3>
             <div className="space-y-2.5">
               <Input value={editVal} onChange={(e) => setEditVal(e.target.value)} placeholder="Card title…" autoFocus />
