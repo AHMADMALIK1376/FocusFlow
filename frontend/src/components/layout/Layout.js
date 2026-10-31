@@ -13,7 +13,7 @@ export default function Layout() {
       <Sidebar />
       <div className="flex-1 min-w-0 flex flex-col">
         <Navbar />
-        <main className="flex-1 pb-24 md:pb-8">
+        <main className="flex-1 pb-24 lg:pb-8">
           <Outlet />
         </main>
       </div>

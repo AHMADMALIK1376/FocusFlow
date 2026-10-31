@@ -21,11 +21,11 @@ export default function MobileTabBar() {
   return (
     <>
       <nav
-        className="md:hidden fixed bottom-0 inset-x-0 z-[1000] px-2"
+        className="lg:hidden fixed bottom-0 inset-x-0 z-[1000] px-1 sm:px-2"
         aria-label="Primary"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
-        <div className="mx-2 mb-2 flex items-stretch justify-around p-1 gap-0.5 rounded-token-lg bg-grad-hero shadow-clay-brand">
+        <div className="mx-1 sm:mx-2 mb-2 flex items-stretch justify-around p-1 gap-0.5 rounded-token-lg bg-grad-hero shadow-clay-brand">
           {primaryItems.map((item) => {
             const active = pathname === item.path || pathname.startsWith(item.path + '/');
             return (
@@ -33,13 +33,14 @@ export default function MobileTabBar() {
                 key={item.id}
                 onClick={() => navigate(item.path)}
                 aria-current={active ? 'page' : undefined}
+                title={t(item.labelKey)}
                 className={cx(
-                  'flex-1 flex flex-col items-center gap-1 py-2 transition-colors duration-200 rounded-token-md',
+                  'flex-1 min-w-0 flex flex-col items-center gap-1 py-2 transition-colors duration-200 rounded-token-md',
                   active ? 'bg-surface text-brand shadow-neu-sm' : 'text-[rgb(var(--on-brand)/0.92)]'
                 )}
               >
                 <NavIcon id={item.id} size={20} />
-                <span className="text-[9px] font-bold tracking-wide leading-none">{t(item.labelKey)}</span>
+                <span className="max-w-full truncate text-[9px] sm:text-[11px] font-bold tracking-normal sm:tracking-wide leading-none">{t(item.labelKey)}</span>
               </button>
             );
           })}
@@ -47,10 +48,10 @@ export default function MobileTabBar() {
           {overflowItems.length > 0 && (
             <button
               onClick={() => setMoreOpen(true)}
-              className="flex-1 flex flex-col items-center gap-1 py-2 text-[rgb(var(--on-brand)/0.92)] transition-colors rounded-token-md"
+              className="flex-1 min-w-0 flex flex-col items-center gap-1 py-2 text-[rgb(var(--on-brand)/0.92)] transition-colors rounded-token-md"
             >
               <MoreHorizontal size={20} />
-              <span className="text-[9px] font-bold tracking-wide leading-none">More</span>
+              <span className="max-w-full truncate text-[9px] sm:text-[11px] font-bold tracking-normal sm:tracking-wide leading-none">More</span>
             </button>
           )}
         </div>
