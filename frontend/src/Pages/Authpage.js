@@ -27,6 +27,7 @@ export default function AuthPage() {
 
   const isLogin = location.pathname === "/login";
   const isVerify = location.pathname === "/verify";
+  const isSignup = location.pathname === "/signup";
   const animationData = useThemedLottie(isVerify ? securityAnimationData : workingAnimationData); // decoration follows the brand colour
   const syncTransition = "transition-all duration-[700ms] ease-[cubic-bezier(0.4,0,0.2,1)]";
 
@@ -108,10 +109,10 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="relative flex justify-center items-center h-screen font-sans overflow-hidden bg-canvas">
+    <div className="relative flex justify-center items-center min-h-[100dvh] md:h-screen p-4 md:p-0 font-sans md:overflow-hidden bg-canvas">
       
       {/* BACKGROUND LAYER */}
-      <div className={`absolute inset-0 flex w-[200%] h-full will-change-transform ${syncTransition} ${isLogin ? 'translate-x-0' : '-translate-x-1/2'}`}>
+      <div className={`absolute inset-0 hidden md:flex w-[200%] h-full will-change-transform ${syncTransition} ${isLogin ? 'translate-x-0' : '-translate-x-1/2'}`}>
         <div className="flex w-1/2 h-full">
           <div className="w-1/2 h-full bg-brand"></div>
           <div className="w-1/2 h-full bg-canvas"></div>
@@ -123,28 +124,36 @@ export default function AuthPage() {
       </div>
 
       {/* MAIN AUTH CARD */}
-      <div className="relative z-10 bg-surface rounded-[50px] shadow-[0_30px_60px_-24px_rgb(var(--brand)/0.38),inset_0_6px_12px_rgb(var(--highlight)/0.9)] w-[900px] max-w-[95%] min-h-[620px] overflow-hidden border border-[rgb(var(--ink)/0.06)] animate-in fade-in duration-500">
+      <div className="relative z-10 bg-surface rounded-[28px] md:rounded-[50px] shadow-[0_30px_60px_-24px_rgb(var(--brand)/0.38),inset_0_6px_12px_rgb(var(--highlight)/0.9)] w-full max-w-[480px] md:w-[900px] md:max-w-[95%] md:min-h-[620px] overflow-hidden border border-[rgb(var(--ink)/0.06)] animate-in fade-in duration-500">
         
+        {/* PHONE HEADER: a short brand strip instead of the sliding hero */}
+        <div className="md:hidden bg-grad-hero text-on-brand text-center px-5 pt-7 pb-6">
+          <p className="text-2xl font-black tracking-[4px]">FOCUS FLOW</p>
+          <p className="mt-1.5 text-xs font-bold tracking-[3px] uppercase opacity-90">
+            {isVerify ? "Identity Check" : isLogin ? "The Ascent Awaits." : isSignup ? "System Ready." : "Reset Access"}
+          </p>
+        </div>
+
         {/* TOP TITLE */}
-        <div className="absolute top-10 w-full flex justify-center items-center gap-4 z-[1000] tracking-[4px] pointer-events-none">
+        <div className="hidden md:flex absolute top-10 w-full justify-center items-center gap-4 z-[1000] tracking-[4px] pointer-events-none">
           <span className={`text-3xl font-black transition-colors duration-[700ms] ${isLogin ? 'text-brand' : 'text-on-brand'}`}>FOCUS</span>
           <span className={`text-3xl font-black transition-colors duration-[700ms] ${isLogin ? 'text-on-brand' : 'text-brand'}`}>FLOW</span>
         </div>
 
         {/* FORMS SIDE */}
-        <div className={`absolute top-0 h-full w-full md:w-1/2 will-change-transform ${syncTransition} ${isLogin ? 'left-0' : 'translate-x-full'}`}>
-          <div className="relative w-full h-full flex flex-col bg-surface items-center pt-28 px-10">
+        <div className={`relative md:absolute md:top-0 md:h-full w-full md:w-1/2 will-change-transform ${syncTransition} ${isLogin ? 'md:left-0' : 'md:translate-x-full'}`}>
+          <div className="relative w-full md:h-full flex flex-col bg-surface items-center pt-6 px-5 pb-6 md:pt-28 md:px-10 md:pb-0">
             
             <div className="w-full z-10">
               <Outlet />
             </div>
 
             {!isVerify && (
-              <div className="w-full flex flex-col items-center px-10 mt-4">
+              <div className="w-full flex flex-col items-center md:px-10 mt-2 md:mt-4">
                 {/* Error message display */}
                 {googleError && (
                   <div className="mb-3 w-full p-2 bg-focus/10 border border-focus/20 rounded-token-sm text-center">
-                    <p className="text-[10px] text-focus font-medium">{googleError}</p>
+                    <p className="text-[12px] md:text-[10px] text-focus font-medium">{googleError}</p>
                   </div>
                 )}
                 
@@ -153,13 +162,13 @@ export default function AuthPage() {
                     <p className="text-[11px] text-muted leading-relaxed">
                       Signing in with Google loads Google&apos;s own script, and Google may set its cookies.
                     </p>
-                    <div className="flex gap-2 justify-center mt-2">
+                    <div className="flex flex-wrap gap-2 justify-center mt-2">
                       <button type="button" onClick={() => { setConsent("all"); handleGoogleSignIn(); }}
-                        className="px-4 py-2 rounded-token-md bg-grad-hero text-on-brand shadow-clay-brand text-[10px] font-black tracking-widest uppercase">
+                        className="px-4 py-3 md:py-2 rounded-token-md bg-grad-hero text-on-brand shadow-clay-brand text-[10px] font-black tracking-widest uppercase">
                         Allow and continue
                       </button>
                       <button type="button" onClick={() => setAskGoogle(false)}
-                        className="px-4 py-2 rounded-token-md bg-surface text-ink shadow-neu-sm text-[10px] font-black tracking-widest uppercase">
+                        className="px-4 py-3 md:py-2 rounded-token-md bg-surface text-ink shadow-neu-sm text-[10px] font-black tracking-widest uppercase">
                         Not now
                       </button>
                     </div>
@@ -195,7 +204,16 @@ export default function AuthPage() {
                 </button>
                 )}
 
-                <Link to="/privacy" className="mt-3 text-[10px] font-bold text-muted hover:text-brand transition-colors">
+                {(isLogin || isSignup) && (
+                  <p className="md:hidden mt-3 text-center text-sm text-muted">
+                    {isLogin ? "New to FocusFlow?" : "Already have an account?"}{" "}
+                    <Link to={isLogin ? "/signup" : "/login"} className="inline-flex items-center min-h-[44px] font-black text-brand">
+                      {isLogin ? "Create an account" : "Sign in"}
+                    </Link>
+                  </p>
+                )}
+
+                <Link to="/privacy" className="mt-1 md:mt-3 py-[13px] md:py-0 text-[12px] md:text-[10px] font-bold text-muted hover:text-brand transition-colors">
                   Privacy and cookies
                 </Link>
               </div>

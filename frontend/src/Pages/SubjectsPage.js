@@ -152,7 +152,7 @@ export default function SubjectsPage() {
         </>
       ) : (
         // Phones: mascot, cube with its buttons and card, then the week. Wide screens: mascot | cube | week.
-        <div className="grid gap-4 lg:gap-6 lg:grid-cols-[15rem_minmax(0,1fr)_15rem] xl:grid-cols-[17rem_minmax(0,1fr)_18rem] lg:items-center">
+        <div className="grid grid-cols-1 gap-4 lg:gap-6 lg:grid-cols-[15rem_minmax(0,1fr)_15rem] xl:grid-cols-[17rem_minmax(0,1fr)_18rem] lg:items-center">
           <MascotCorner subjects={subjects} className="lg:self-start" />
           <RubikCube
             subjects={subjects}
@@ -213,10 +213,10 @@ export default function SubjectsPage() {
         className="p-5"
       >
         <div className="space-y-2">
-          <div className="grid grid-cols-[1fr_7rem_auto] gap-3">
-            <Field label="Subject name">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[1fr_7rem_auto] gap-3">
+            <div className="col-span-2 sm:col-span-1 min-w-0"><Field label="Subject name">
               <Input value={form.name} onChange={(e) => setField("name", e.target.value)} placeholder="e.g. Data Structures" autoFocus className={fieldCls} />
-            </Field>
+            </Field></div>
             <Field label="Code"><Input value={form.code} onChange={(e) => setField("code", e.target.value)} placeholder="CS201" className={fieldCls} /></Field>
             <Field label="Colour">
               <input type="color" value={form.color} onChange={(e) => setField("color", e.target.value)} className="w-11 h-[38px] rounded-token-md border-0 bg-transparent cursor-pointer" title={form.color} />
@@ -251,14 +251,14 @@ export default function SubjectsPage() {
             ) : (
               <div className="space-y-1.5">
                 {form.schedule.map((slot, i) => (
-                  <div key={i} className="grid grid-cols-[4.5rem_1fr_1fr_1fr_auto] gap-1.5 items-center">
+                  <div key={i} className="grid grid-cols-2 sm:grid-cols-[4.5rem_1fr_1fr_1fr_auto] gap-1.5 items-center max-sm:pb-2 max-sm:border-b max-sm:border-[rgb(var(--ink)/0.08)]">
                     <Select value={slot.day} onChange={(e) => setSlot(i, "day", e.target.value)} className="!py-2 !px-2.5 text-sm">
                       {DAYS.map((d) => <option key={d} value={d}>{DAY_SHORT[d]}</option>)}
                     </Select>
                     <Input type="time" value={slot.start} onChange={(e) => setSlot(i, "start", e.target.value)} className="!py-2 !px-2 text-sm" />
                     <Input type="time" value={slot.end} onChange={(e) => setSlot(i, "end", e.target.value)} className="!py-2 !px-2 text-sm" />
                     <Input value={slot.room} onChange={(e) => setSlot(i, "room", e.target.value)} placeholder="Room" className="!py-2 !px-2.5 text-sm" />
-                    <button onClick={() => removeSlot(i)} className="p-1.5 text-muted hover:text-focus" title="Remove slot"><Trash2 size={15} /></button>
+                    <button onClick={() => removeSlot(i)} className="p-1.5 max-sm:p-2.5 max-sm:col-span-2 max-sm:justify-self-end text-muted hover:text-focus" title="Remove slot" aria-label="Remove slot"><Trash2 size={15} /></button>
                   </div>
                 ))}
               </div>

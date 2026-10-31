@@ -126,9 +126,9 @@ export default function Home() {
   return (
     <div className="w-full px-3 sm:px-5 md:px-6 pb-10 pt-8 md:pt-10">
       {/* ── BENTO GRID ─────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-5 items-start">
         {/* Main column: hero header, snapshot+clock, then activity */}
-        <div className="lg:col-span-8 flex flex-col gap-5 min-w-0">
+        <div className="md:col-span-2 lg:col-span-8 flex flex-col gap-5 min-w-0">
           {/* ── HERO ROW ─────────────────────────────────────── */}
           <header className="animate-[fadeInUp_0.6s_ease-out]">
             <p className="text-xs font-bold uppercase tracking-[3px] text-brand mb-2">{workspace}</p>
@@ -142,9 +142,9 @@ export default function Home() {
             </p>
           </header>
 
-          <div className="flex flex-col sm:flex-row gap-5">
+          <div className="flex flex-col xl:flex-row gap-5">
             <div className="flex-1 min-w-0"><StudentSnapshot /></div>
-            <div className="shrink-0"><Clock /></div>
+            <div className="xl:shrink-0 [&>div]:block xl:[&>div]:inline-block"><Clock /></div>
           </div>
 
           {/* Attendance heatmap — GitHub-contribution style */}
@@ -159,16 +159,16 @@ export default function Home() {
         </div>
 
         {/* Right rail: profile + schedule */}
-        <div className="lg:col-span-4 flex flex-col gap-5 min-w-0">
+        <div className="md:col-span-2 lg:col-span-4 grid grid-cols-1 md:grid-cols-2 lg:flex lg:flex-col gap-5 min-w-0">
           {/* Profile card — a photo or the mascot, full-cover, with overlay text */}
-          <ProfileCard displayName={displayName} streak={streak} doneTasks={doneTasks} focusSessions={totalFocusSessions} />
+          <div className="w-full max-w-[24rem] mx-auto md:max-w-none lg:max-w-none"><ProfileCard displayName={displayName} streak={streak} doneTasks={doneTasks} focusSessions={totalFocusSessions} /></div>
 
           {/* Budget — this month at a glance (today's classes are in the snapshot tile) */}
           <BudgetSnapshotCard />
         </div>
 
         {/* Lower main column: Focus/Streak + Progress side by side, then the Assignment board */}
-        <div className="lg:col-span-8 flex flex-col gap-5 min-w-0">
+        <div className="md:col-span-2 lg:col-span-8 flex flex-col gap-5 min-w-0">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             {/* Focus ring + Keep the streak, stacked */}
             <div className="flex flex-col gap-5">
@@ -221,7 +221,7 @@ export default function Home() {
         </div>
 
         {/* Rail beside the board: today's tasks + study time */}
-        <div className="lg:col-span-4 flex flex-col gap-5 min-w-0">
+        <div className="md:col-span-2 lg:col-span-4 grid grid-cols-1 md:grid-cols-2 lg:flex lg:flex-col gap-5 min-w-0">
           <section className="tone-coral rounded-token-lg bg-grad-hero shadow-clay-brand p-5">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-black uppercase tracking-wider text-ink">
@@ -256,7 +256,7 @@ export default function Home() {
 
         {/* Under the board: remaining feature cards in an even grid, so each
             row lines up instead of one long column down the right side. */}
-        <div className="lg:col-span-12 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 items-stretch">
+        <div className="md:col-span-2 lg:col-span-12 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 items-stretch">
           <Suspense fallback={null}>
             {["goalsx", "habits", "notes", "finance"].filter((id) => enabledFeatures.includes(id)).map((id) => {
               const W = WIDGET_BY_ID[id]?.component;
@@ -269,7 +269,7 @@ export default function Home() {
         {/* Customize — a slim bar under the grid (never an orphan tile) */}
         <button
           onClick={() => navigate("/settings")}
-          className="lg:col-span-12 h-14 rounded-token-lg border-2 border-dashed border-[rgb(var(--ink)/0.2)] flex items-center justify-center gap-3 text-muted hover:border-[rgb(var(--brand)/0.6)] hover:text-brand transition-colors"
+          className="md:col-span-2 lg:col-span-12 h-14 rounded-token-lg border-2 border-dashed border-[rgb(var(--ink)/0.2)] flex items-center justify-center gap-3 text-muted hover:border-[rgb(var(--brand)/0.6)] hover:text-brand transition-colors"
         >
           <span className="w-8 h-8 rounded-xl bg-surface shadow-neu-sm flex items-center justify-center"><Plus size={16} /></span>
           <span className="text-sm font-bold">Customize features</span>

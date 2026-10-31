@@ -24,7 +24,7 @@ export default function ErrorScreen({ code, dial = 0, dialColor, dialCenter, tit
   const t = useActiveTheme();
   const themed = !!t && t.brand !== DEFAULT_THEME.brand;
   return (
-    <main className="min-h-screen bg-canvas flex flex-col items-center justify-center px-4 py-10 text-center">
+    <main className="min-h-[100dvh] bg-canvas flex flex-col items-center justify-center px-4 py-10 text-center">
       <div className="flex items-center gap-2.5 mb-8">
         {themed ? (
           <span aria-hidden="true" className="w-10 h-10 rounded-xl shadow-neu-sm bg-grad-hero grid place-items-center">
@@ -44,7 +44,7 @@ export default function ErrorScreen({ code, dial = 0, dialColor, dialCenter, tit
         {code && <Digit>{code[2]}</Digit>}
       </div>
 
-      <h1 className="text-2xl sm:text-3xl font-black text-ink">{title}</h1>
+      <h1 className="text-2xl sm:text-3xl font-black text-ink break-words max-w-full">{title}</h1>
       <p className="text-muted mt-2 max-w-md text-sm sm:text-base break-words">{message}</p>
       {children}
       {actions && <div className="flex flex-wrap gap-3 justify-center mt-7">{actions}</div>}

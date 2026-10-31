@@ -244,3 +244,13 @@
   transition-duration: 0.5s;
   transform: rotate(160deg);
 }
+
+/* Phones: 16px text in fields so Android and iOS do not zoom the page when one is tapped.
+   The long selector beats a page's own text-sm; wider screens keep their size. */
+@media (max-width: 639px) {
+  html input:not(#ff):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+  html select:not(#ff),
+  html textarea:not(#ff) {
+    font-size: 16px;
+  }
+}

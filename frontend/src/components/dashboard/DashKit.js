@@ -12,11 +12,11 @@ export function PageHeader({ title, subtitle, children, mascot = true }) {
   return (
     <header className="flex flex-wrap items-end justify-between gap-4 mb-6">
       <div className="flex-1 min-w-[14rem]">
-        <h1 className="text-3xl md:text-4xl font-black text-ink tracking-tight">{title}</h1>
+        <h1 className="text-3xl md:text-4xl font-black text-ink tracking-tight break-words">{title}</h1>
         {subtitle && <p className="text-muted mt-1">{subtitle}</p>}
       </div>
-      <div className="flex items-end gap-3 ml-auto">
-        {children && <div className="flex items-center gap-2">{children}</div>}
+      <div className="flex flex-wrap items-end justify-end gap-3 ml-auto max-w-full">
+        {children && <div className="flex flex-wrap items-center gap-2">{children}</div>}
         {mascot && <PageMascot />}
       </div>
     </header>

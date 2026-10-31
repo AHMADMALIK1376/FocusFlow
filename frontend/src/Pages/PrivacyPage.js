@@ -7,7 +7,7 @@ import { ArrowLeft, Cookie, Database, Share2, ShieldCheck, SlidersHorizontal } f
 import CookieChoice from "../components/consent/CookieChoice";
 
 const Section = ({ icon: Icon, title, children }) => (
-  <section className="rounded-token-lg bg-surface shadow-neu p-6">
+  <section className="rounded-token-lg bg-surface shadow-neu p-4 sm:p-6">
     <h2 className="flex items-center gap-3 text-lg font-black text-ink mb-3">
       <span className="w-9 h-9 rounded-xl bg-grad-sage text-on-sage shadow-neu-sm grid place-items-center shrink-0"><Icon size={18} strokeWidth={1.75} /></span>
       {title}
@@ -25,9 +25,9 @@ const Row = ({ name, children }) => (
 
 export default function PrivacyPage() {
   return (
-    <main className="min-h-screen bg-canvas px-4 py-8">
+    <main className="min-h-[100dvh] bg-canvas px-4 py-8">
       <div className="max-w-3xl mx-auto space-y-5">
-        <Link to="/" className="inline-flex items-center gap-2 text-sm font-bold text-brand hover:underline">
+        <Link to="/" className="inline-flex items-center gap-2 min-h-[44px] sm:min-h-0 text-sm font-bold text-brand hover:underline">
           <ArrowLeft size={16} /> Back to FocusFlow
         </Link>
 
@@ -79,7 +79,7 @@ export default function PrivacyPage() {
         <Section icon={ShieldCheck} title="Questions or deleting your data">
           <p>
             To ask for your data to be deleted or corrected, open an issue on the project page:{" "}
-            <a className="font-bold text-brand hover:underline" href="https://github.com/AHMADMALIK1376/FocusFlow/issues" target="_blank" rel="noreferrer">github.com/AHMADMALIK1376/FocusFlow</a>.
+            <a className="font-bold text-brand hover:underline [overflow-wrap:anywhere]" href="https://github.com/AHMADMALIK1376/FocusFlow/issues" target="_blank" rel="noreferrer">github.com/AHMADMALIK1376/FocusFlow</a>.
             Because the app is still being tested, data may be reset without notice.
           </p>
         </Section>

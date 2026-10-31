@@ -40,7 +40,7 @@ export function Checkbox({ checked, onChange, size = 24, className = '', label }
       onClick={() => onChange && onChange(!checked)}
       style={{ width: size, height: size }}
       className={cx(
-        'relative shrink-0 rounded-full flex items-center justify-center transition-all duration-200 active:scale-90',
+        "relative shrink-0 rounded-full flex items-center justify-center transition-all duration-200 active:scale-90 before:absolute before:-inset-2 before:content-['']",
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
         checked
           ? 'bg-grad-sage shadow-neu-sm'

@@ -77,7 +77,7 @@ export default function ProfileCard({ displayName, streak, doneTasks, focusSessi
         ref={tilt}
         data-testid="profile-tilt"
         className={cx(
-          "relative h-full min-h-[260px] lg:min-h-[460px] flex flex-col rounded-token-lg bg-grad-hero p-3 shadow-glass text-on-brand",
+          "relative h-full min-h-[340px] lg:min-h-[460px] flex flex-col rounded-token-lg bg-grad-hero p-3 shadow-glass text-on-brand",
           "transition-transform duration-150 ease-out motion-reduce:transition-none"
         )}
         style={{ transform: "rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg))" }}

@@ -98,10 +98,10 @@ export default function ResetPasswordVerify() {
         <p className="text-muted text-[10px] font-bold mb-2 uppercase tracking-[2px] text-center max-w-[250px]">
           We sent a 4-digit code to
         </p>
-        <p className="text-brand font-bold text-sm mb-4">{email}</p>
+        <p className="text-brand font-bold text-sm mb-4 max-w-full [overflow-wrap:anywhere] text-center">{email}</p>
 
         {error && (
-          <div className="w-[80%] mb-4 p-3 bg-focus/10 border border-focus/30 text-focus rounded-token-sm text-sm font-bold text-center">
+          <div className="w-full md:w-[80%] mb-4 p-3 bg-focus/10 border border-focus/30 text-focus rounded-token-sm text-sm font-bold text-center">
             {error}
           </div>
         )}
@@ -123,7 +123,7 @@ export default function ResetPasswordVerify() {
 
         <button
           onClick={handleVerify}
-          className="w-[80%] py-4 rounded-token-md bg-grad-hero text-on-brand font-black shadow-[0_10px_24px_rgb(var(--brand)/0.4)] hover:scale-[1.02] active:scale-95 transition-all tracking-widest text-xs disabled:opacity-60"
+          className="w-full md:w-[80%] py-4 rounded-token-md bg-grad-hero text-on-brand font-black shadow-[0_10px_24px_rgb(var(--brand)/0.4)] hover:scale-[1.02] active:scale-95 transition-all tracking-widest text-xs disabled:opacity-60"
           disabled={loading}
         >
           {loading ? "VERIFYING..." : "VERIFY CODE"}
@@ -131,7 +131,7 @@ export default function ResetPasswordVerify() {
 
         <p
           onClick={handleResendCode}
-          className={`mt-6 text-[10px] font-bold text-muted uppercase transition-all ${
+          className={`mt-3 md:mt-6 py-3 md:py-0 text-[12px] md:text-[10px] font-bold text-muted uppercase transition-all ${
             canResend ? 'cursor-pointer hover:text-sage-deep' : 'cursor-not-allowed opacity-50'
           }`}
         >
@@ -139,7 +139,7 @@ export default function ResetPasswordVerify() {
         </p>
 
         <div className="mt-6 text-center">
-          <Link to="/login" className="text-sage-deep font-bold text-xs hover:underline">
+          <Link to="/login" className="inline-flex md:inline items-center min-h-[44px] md:min-h-0 text-sage-deep font-bold text-xs hover:underline">
             Back to Login
           </Link>
         </div>

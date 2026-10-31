@@ -99,7 +99,7 @@ export default function RegisterForm() {
   };
 
   const inputCls =
-    "w-full py-4 px-5 rounded-token-md bg-surface text-ink placeholder:text-muted/70 shadow-[inset_0_4px_8px_rgb(var(--sage)/0.55),inset_0_-2px_4px_rgb(var(--highlight)/0.9)] outline-none text-sm font-medium focus:ring-2 focus:ring-focus-ring transition-all";
+    "w-full py-3.5 md:py-4 px-5 rounded-token-md bg-surface text-ink placeholder:text-muted/70 shadow-[inset_0_4px_8px_rgb(var(--sage)/0.55),inset_0_-2px_4px_rgb(var(--highlight)/0.9)] outline-none text-base md:text-sm font-medium focus:ring-2 focus:ring-focus-ring transition-all";
 
   return (
     <div className="w-full flex flex-col items-center">
@@ -108,18 +108,18 @@ export default function RegisterForm() {
         <p className="text-muted text-xs font-bold mb-6 uppercase tracking-widest">Start the journey</p>
 
         {error && (
-          <div className="w-[85%] mb-4 p-3 bg-focus/10 border border-focus/30 text-focus rounded-token-sm text-sm font-bold text-center">
+          <div className="w-full md:w-[85%] mb-4 p-3 bg-focus/10 border border-focus/30 text-focus rounded-token-sm text-sm font-bold text-center">
             {error}
           </div>
         )}
 
         {successMessage && (
-          <div className="w-[85%] mb-4 p-3 bg-success/15 border border-success/40 text-success rounded-token-sm text-sm font-bold text-center">
+          <div className="w-full md:w-[85%] mb-4 p-3 bg-success/15 border border-success/40 text-success rounded-token-sm text-sm font-bold text-center">
             {successMessage}
           </div>
         )}
 
-        <div className="w-[85%] mx-auto space-y-3">
+        <div className="w-full md:w-[85%] mx-auto space-y-3">
           <input
             type="text"
             placeholder="Full Name"
@@ -169,7 +169,7 @@ export default function RegisterForm() {
                   onClick={useSuggestedPassword}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <code className="text-sm font-mono font-bold tracking-wide text-ink bg-canvas px-4 py-2 rounded-token-sm">
+                    <code className="min-w-0 [overflow-wrap:anywhere] text-sm font-mono font-bold tracking-wide text-ink bg-canvas px-4 py-2 rounded-token-sm">
                       {suggestedPassword}
                     </code>
                     <span className="text-xs font-black text-brand bg-brand/10 px-3 py-1.5 rounded-full">
@@ -203,12 +203,12 @@ export default function RegisterForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-[85%] py-4 mt-6 rounded-token-md bg-grad-hero text-on-brand font-black text-[11px] tracking-widest uppercase shadow-[0_10px_24px_rgb(var(--brand)/0.4)] hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-300 disabled:opacity-60"
+          className="w-full md:w-[85%] py-4 mt-6 rounded-token-md bg-grad-hero text-on-brand font-black text-[11px] tracking-widest uppercase shadow-[0_10px_24px_rgb(var(--brand)/0.4)] hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-300 disabled:opacity-60"
         >
           {loading ? "SENDING CODE..." : "CLAIM YOUR REIGN"}
         </button>
 
-        <div className="relative w-[85%] my-5">
+        <div className="relative w-full md:w-[85%] my-5">
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-sage"></div>
           </div>

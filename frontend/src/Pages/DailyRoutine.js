@@ -14,6 +14,7 @@ import { dateOfWeekday, setDoneOn } from "../features/routine/routineDays";
 import EditRoutinePopup from "../components/routine/EditRoutinePopup";
 import DeleteRoutinePopup from "../components/routine/DeleteRoutinePopup";
 import PageMascot from "../components/common/PageMascot";
+import { useMaxWidth } from "../components/common/useMaxWidth";
 
 const WEEKDAY_INDEX = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
 const WEEKS_TRACKED = 8;
@@ -77,6 +78,7 @@ export default function DailyRoutine() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [activeDay, setActiveDay] = useState(null);
+  const narrow = useMaxWidth(639); // the big donut is drawn in pixels, so it is made smaller on a phone
   const [currentDayName, setCurrentDayName] = useState("");
   const [hoveredDay, setHoveredDay] = useState(null);
   const [importOpen, setImportOpen] = useState(false);
@@ -320,7 +322,7 @@ export default function DailyRoutine() {
           <h1 className="text-4xl font-black text-brand">Create Your Routine</h1>
           <p className="text-muted text-sm mt-2">Add activities for each day of the week</p>
         </div>
-        <div className="flex items-end gap-3 ml-auto">
+        <div className="flex flex-wrap items-end justify-end gap-3 ml-auto max-w-full">
           <Button variant="primary" onClick={() => setImportOpen(true)} className="gap-1.5">
             <ScanText size={16} /> Import timetable
           </Button>
@@ -396,7 +398,7 @@ export default function DailyRoutine() {
                     <CardDeleteButton
                       onClick={(e) => { e.stopPropagation(); setDeletingRoutine(tasks[0]); setDeletingRoutineDay(day); setShowDeletePopup(true); }}
                       ghost
-                      className="absolute bottom-2 right-2 opacity-0 group-hover/card:opacity-100 transition-opacity"
+                      className="absolute bottom-2 right-2 opacity-0 group-hover/card:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity"
                     />
 
                     <AnimatePresence>
@@ -430,7 +432,7 @@ export default function DailyRoutine() {
               )}
             </div>
           ) : (
-          <Card className="relative group/card p-10 mt-4">
+          <Card className="relative group/card p-4 sm:p-10 mt-4">
             {dayTasks.length === 0 ? (
               <div className="text-center py-10">
                 <Sunrise size={44} strokeWidth={1.75} className="mx-auto mb-4 text-brand" />
@@ -438,7 +440,7 @@ export default function DailyRoutine() {
               </div>
             ) : (
               <>
-                <div className="absolute top-6 right-6 flex flex-col gap-1.5 text-[11px] font-bold items-end">
+                <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mb-3 text-[11px] font-bold md:absolute md:top-6 md:right-6 md:mb-0 md:flex-col md:items-end md:gap-1.5 md:justify-start">
                   <span className="text-success flex items-center gap-1.5"><CircleCheck size={13} /> Completed {completedCount}</span>
                   <span className="text-focus flex items-center gap-1.5"><CircleX size={13} /> Missed {missedCount}</span>
                   <span className="text-muted flex items-center gap-1.5"><Circle size={13} /> Upcoming {upcomingCount}</span>
@@ -449,9 +451,9 @@ export default function DailyRoutine() {
                   <p className="text-xs text-muted mt-1">Click slice to complete · hover for details</p>
                 </div>
 
-                <div className="flex items-center justify-between gap-6">
+                <div className="flex flex-col xl:flex-row items-center xl:justify-between gap-6">
                   {/* LEFT: Day timeline */}
-                  <div className="w-[280px] shrink-0">
+                  <div className="w-full max-w-[280px] xl:w-[280px] shrink-0 order-2 xl:order-none">
                     <p className="text-[10px] font-black text-muted uppercase tracking-widest mb-4 flex items-center gap-1.5"><Clock size={12} /> Timeline</p>
                     <div className={`relative pl-1 ${dayTasks.length > 3 ? 'max-h-[280px] overflow-y-auto pr-2 ff-side-scroll' : ''}`}>
                       <div className="absolute left-[6px] top-1 bottom-1 w-0.5 bg-[rgb(var(--ink)/0.1)]" />
@@ -478,7 +480,7 @@ export default function DailyRoutine() {
                                 </span>
                                 {!missed && (
                                   <button onClick={() => handleEditClick(task)}
-                                    className="text-info opacity-0 group-hover:opacity-100 transition-opacity leading-none" aria-label="Edit"><Pencil size={13} /></button>
+                                    className="text-info opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity leading-none p-1 -m-1" aria-label="Edit"><Pencil size={13} /></button>
                                 )}
                                 {missed && <Lock size={12} className="text-focus" />}
                               </div>
@@ -497,12 +499,12 @@ export default function DailyRoutine() {
                   </div>
 
                   {/* CENTER: Donut Chart */}
-                  <div className="flex-shrink-0">
-                    <DonutChart tasks={dayTasks} activeDay={activeDay} onToggle={toggleComplete} sliceAngle={sliceAngle} isLocked={false} currentDayName={currentDayName} size={260} strokeRatio={0.11} />
+                  <div className="flex-shrink-0 order-1 xl:order-none">
+                    <DonutChart tasks={dayTasks} activeDay={activeDay} onToggle={toggleComplete} sliceAngle={sliceAngle} isLocked={false} currentDayName={currentDayName} size={narrow ? 220 : 260} strokeRatio={0.11} />
                   </div>
 
                   {/* RIGHT: Consistency tracker */}
-                  <div className="w-[280px] shrink-0">
+                  <div className="w-full max-w-[280px] xl:w-[280px] shrink-0 order-3 xl:order-none">
                     <p className="text-[10px] font-black text-muted uppercase tracking-widest mb-4 flex items-center gap-1.5"><TrendingUp size={12} /> Consistency</p>
                     <div className={`flex flex-col divide-y divide-[rgb(var(--ink)/0.06)] ${dayTasks.length > 3 ? 'max-h-[280px] overflow-y-auto pr-2 ff-side-scroll' : ''}`}>
                       {dayTasks.map((task, taskIndex) => {
@@ -556,7 +558,7 @@ export default function DailyRoutine() {
               <CardDeleteButton
                 onClick={() => { setDeletingRoutine(dayTasks[0]); setDeletingRoutineDay(activeDay); setShowDeletePopup(true); }}
                 ghost
-                className="absolute bottom-2 right-2 opacity-0 group-hover/card:opacity-100 transition-opacity"
+                className="absolute bottom-2 right-2 opacity-0 group-hover/card:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity"
               />
             )}
           </Card>
