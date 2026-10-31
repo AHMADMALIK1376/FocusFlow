@@ -52,12 +52,20 @@ export default function AttendanceImport() {
   return (
     <div className="space-y-3 text-sm text-ink">
       <h3 className="flex items-center gap-2 font-black uppercase tracking-wider text-sm">
-        <ClipboardPaste size={16} aria-hidden="true" /> Attendance from the LMS
+        <ClipboardPaste size={16} aria-hidden="true" /> Bring in my attendance
       </h3>
       <p className="text-muted leading-relaxed">
-        The LMS does not let other apps read who was present, so copy it yourself: in the LMS open the course, open Attendance, select the whole page and copy it
-        (Ctrl+A, then Ctrl+C; on a phone, touch and hold, Select all, Copy). Choose the subject below, paste, and check it first.
+        Your university's LMS does not allow other apps to read who was present, so FocusFlow cannot fetch your attendance by itself. You can bring it in
+        yourself, once per subject, in a minute. Everything else (subjects, assignments, quizzes, files) syncs on its own.
       </p>
+      <details className="text-xs text-muted">
+        <summary className="cursor-pointer font-bold text-ink">How to bring in my attendance</summary>
+        <ol className="mt-2 list-decimal pl-5 space-y-1">
+          <li>In the LMS, open the course, then Attendance.</li>
+          <li>Select the whole page and copy it (Ctrl+A then Ctrl+C; on a phone: touch and hold, Select all, Copy).</li>
+          <li>Come back here, choose the subject, paste, press Check, then Import.</li>
+        </ol>
+      </details>
       <label className="block">
         <span className="block text-xs font-bold text-muted mb-1">Subject</span>
         <Select value={subjectId} onChange={(e) => { setSubjectId(e.target.value); reset(); }} aria-label="Subject">

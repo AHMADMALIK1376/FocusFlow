@@ -323,6 +323,7 @@ The Google button uses the OAuth client ID set in `frontend/src/Pages/Authpage.j
 | `APPS_SCRIPT_URL`, `APPS_SCRIPT_SECRET` | With `apps-script` | The web address of your Apps Script relay and its shared secret |
 | `CRON_SECRET` | Recommended in production | Private key for `/api/cron/tick` (the free keep-alive and reminder trigger) and the server's diagnostics. Unset means both are switched off. |
 | `LMS_TOKEN_KEY` | To use the university LMS connection | 32 random bytes, base64 (for example `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`). Encrypts each student's LMS key in the database. Unset means the LMS connection is switched off. Never commit it. |
+| `SLOW_SQL_MS` | No | Print one line for every database query slower than this many milliseconds (for example `300`), to find what makes a page slow. Off when unset. |
 | `LMS_BASE_URL` | No | The Moodle site. Defaults to `https://lms.iqra.edu.pk`. |
 | `LMS_TIMEZONE` | No | Time zone for class dates from the LMS. Defaults to `Asia/Karachi`. |
 | `LMS_SYNC` | No | Set to `off` to stop the 20-minute LMS refresh on this copy of the server. |

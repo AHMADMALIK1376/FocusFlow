@@ -6,6 +6,15 @@ Update this file with every change.
 
 ---
 
+## 2026-10-31 — Subject page: assignment progress graph; local file links; slow-query switch
+
+- **Subject page:** the assignments panel (already filtered to that subject) now starts with a ring showing the percentage submitted, "N of M submitted", a bar split into done / in progress / to do, and a red "N overdue" count. Each assignment also lists the teacher's files. Nothing is drawn for a subject with no assignments.
+- **Why the teacher's PDF showed a 404 page on the owner's PC only:** Create React App's `proxy` setting forwards `/api` to the backend only for requests that do not ask for a web page, and a link opened in a new tab does ask for one, so the front end answered with its own 404. `src/setupProxy.js` (development only; the build ignores it) forwards every `/api` request, as `vercel.json` already does on the live site.
+- **Attendance wording:** the card now says plainly that the LMS does not allow other apps to read attendance, that everything else syncs on its own, and tucks the how-to into "How to bring in my attendance".
+- **Slowness:** not guessed at. `SLOW_SQL_MS=300` (backend `.env`) prints one line per database query slower than that: the start of the statement and its time, never the values. Suspects, in order: the database is in Seoul (every query pays the distance, and some pages run ten or more one after another), the development build with React's strict mode (each request twice), and the heavy shadows and 3D scenes on a modest laptop. The LMS adds a few small queries and runs in the background.
+
+---
+
 ## 2026-10-31 — LMS: assignment files, emails, and attendance by paste
 
 - **Teacher's files:** each assignment's attachments (a PDF, a lab file) are listed on its board card and open in a new tab. Only the name, size and the file's path on the LMS are stored (table `LMS_FILES`); the file itself is **not stored**. `GET /api/lms/file/:id` fetches it from the LMS with the student's own key and streams it on (25 MB cap, `nosniff`, never cached). PDFs and images open in the page; anything else is offered as a download, because an HTML file from a teacher must never run on our address. A redirect is never followed, only paths on the LMS's own address are fetched, and a "login page" answer from the LMS (a refused key) is reported, not passed on. The assignment's own text (HTML) becomes the card's note, as plain words, when the card is created.

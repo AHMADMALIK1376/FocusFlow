@@ -103,12 +103,22 @@ function upperRow(row) {
   return out;
 }
 
+// Optional: set SLOW_SQL_MS=300 and every database query slower than that prints one line (the start of the statement and the time; never the
+// values), so a slow page can be traced to the statement behind it. Off by default.
+function slowNote(ms, sql, limit = Number(process.env.SLOW_SQL_MS) || 0) {
+  if (!limit || ms < limit) return null;
+  return `slow query (${Math.round(ms)} ms): ${String(sql).replace(/\s+/g, ' ').trim().slice(0, 90)}`;
+}
+
 // Wrap a pg client so callers can use the old oracledb-style API.
 function wrap(client) {
   return {
     execute: async (sql, params = []) => {
       const text = convertBinds(translateSql(sql), params);
+      const started = Date.now();
       const res = await client.query(text.text, text.values);
+      const note = slowNote(Date.now() - started, sql);
+      if (note) console.warn(note);
       return {
         rows: (res.rows || []).map(upperRow),
         rowsAffected: res.rowCount,
@@ -204,4 +214,5 @@ module.exports = {
   getPoolStats,
   healthCheck,
   validateConnection,
+  slowNote,
 };

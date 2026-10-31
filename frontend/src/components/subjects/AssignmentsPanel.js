@@ -5,6 +5,8 @@ import { Button, Input, Badge, EmptyState, DeleteButton } from "../ui";
 import { Panel } from "../dashboard/DashKit";
 import { PanelLoading, useFirstLoad } from "../common/LoadingSpinner";
 import { useKanban } from "../../features/kanban/useKanban";
+import AttachmentLinks from "../../features/lms/AttachmentLinks";
+import AssignmentProgress from "./AssignmentProgress";
 
 const COL_LABEL = { "col-todo": "To do", "col-doing": "In progress", "col-done": "Done" };
 const COL_TONE = { "col-todo": "muted", "col-doing": "info", "col-done": "success" };
@@ -30,6 +32,7 @@ export default function AssignmentsPanel({ subjectId }) {
 
   return (
     <Panel title="Assignments" className="mb-6" right={<Button size="sm" variant="ghost" onClick={() => navigate("/projects")}>Board</Button>}>
+      {!firstLoad && <AssignmentProgress cards={cards} />}
       <div className="flex gap-2 mb-3">
         <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="New assignment…" onKeyDown={(e) => e.key === "Enter" && add()} className="!py-2 !px-3 text-sm" />
         <Button size="sm" variant="primary" onClick={add} disabled={adding || !title.trim()} className="shrink-0 gap-1"><Plus size={14} /> Add</Button>
@@ -55,6 +58,7 @@ export default function AssignmentsPanel({ subjectId }) {
                   <Badge tone={COL_TONE[c.columnId] || "muted"}>{COL_LABEL[c.columnId] || c.columnId}</Badge>
                   {c.dueDate && <span className="text-[10px] text-muted">Due {c.dueDate}</span>}
                 </div>
+                <AttachmentLinks files={c.files} />
               </div>
               <DeleteButton onClick={() => removeCard(c.id)} title="Delete" />
             </li>
