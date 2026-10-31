@@ -108,6 +108,28 @@ function localTime(unixSeconds, tz = TIMEZONE()) {
   return new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(n * 1000));
 }
 
+// The teacher's text for an assignment arrives as HTML: keep the words, drop the markup.
+function htmlToText(html, max = 900) {
+  const text = String(html || '')
+    .replace(/<(script|style)[\s\S]*?<\/\1>/gi, ' ')
+    .replace(/<br\s*\/?>|<\/(p|div|li|h[1-6]|tr)>/gi, '\n')
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&')
+    .replace(/[ \t]+/g, ' ').replace(/\s*\n\s*/g, '\n').trim();
+  return text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text;
+}
+
+// Where a file lives on the LMS: only the path, and only on the LMS's own address (so a made-up address is never fetched).
+function relativeFilePath(fileurl, base) {
+  try {
+    const u = new URL(String(fileurl));
+    if (u.origin !== new URL(base).origin) return null;
+    return /^\/(webservice\/)?pluginfile\.php\/[^?#]+$/.test(u.pathname) ? u.pathname : null;
+  } catch (e) {
+    return null;
+  }
+}
+
 // ---- What changed? ----------------------------------------------------------------------------------
 // State kept per assignment between syncs: "<submitted 0/1>|<due unix>|<title>".
 const assignmentState = (submitted, due, title) => `${submitted ? 1 : 0}|${Number(due) || 0}|${title}`;
@@ -139,5 +161,5 @@ function isCurrentCourse(course, nowSeconds = Date.now() / 1000) {
 module.exports = {
   parseLaunchText, keyFromEnv, encryptToken, decryptToken,
   parseCourseName, titleCase, to24h, normalizeName,
-  localDate, localTime, assignmentState, parseAssignmentState, diffSessions, isCurrentCourse,
+  htmlToText, relativeFilePath, localDate, localTime, assignmentState, parseAssignmentState, diffSessions, isCurrentCourse,
 };

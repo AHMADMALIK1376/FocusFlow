@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { GraduationCap, RefreshCw, Unplug } from "lucide-react";
 import { lmsAPI } from "../../services/api";
 import { Button } from "../../components/ui";
+import AttendanceImport from "./AttendanceImport";
 import { buildLaunchUrl, keyFromAddress, MANUAL_SCHEME, randomPassport, registerHandler, summarizeSync } from "./lmsLink";
 
 const when = (iso) => {
@@ -174,6 +175,10 @@ export default function LmsConnectCard() {
             </span>
           )}
         </div>
+      )}
+
+      {status.connected && !status.needsReconnect && (
+        <div className="border-t border-[rgb(var(--ink)/0.08)] pt-4"><AttendanceImport /></div>
       )}
 
       {busy && <p className="text-muted" role="status">Working...</p>}

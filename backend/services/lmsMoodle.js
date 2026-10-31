@@ -55,8 +55,23 @@ async function assignments(token, courseIds) {
   if (!courseIds.length) return [];
   const d = await call(token, 'mod_assign_get_assignments', { courseids: courseIds });
   return (d.courses || []).flatMap((c) => (c.assignments || []).map((a) => ({
-    id: a.id, courseId: c.id, name: a.name || 'Assignment', duedate: a.duedate || 0,
+    id: a.id, courseId: c.id, name: a.name || 'Assignment', duedate: a.duedate || 0, intro: a.intro || '',
+    files: (a.introattachments || []).map((f) => ({ name: f.filename, size: f.filesize, mime: f.mimetype, url: f.fileurl })),
   })));
+}
+
+// One file of the teacher's, streamed to the student's own browser through our server. Only a file path on the LMS itself is ever asked for,
+// and a redirect is never followed (so it cannot be sent somewhere else).
+async function fetchFile(token, path) {
+  if (!/^\/(webservice\/)?pluginfile\.php\/[^?#]+$/.test(String(path))) throw new LmsError('badpath', 'Not a file address.');
+  const url = new URL(baseUrl() + String(path).replace(/^\/pluginfile\.php\//, '/webservice/pluginfile.php/'));
+  url.searchParams.set('token', token);
+  url.searchParams.set('forcedownload', '1');
+  try {
+    return await fetch(url, { signal: AbortSignal.timeout(30000), redirect: 'error' });
+  } catch (e) {
+    throw new LmsError('unreachable', 'The LMS did not answer.');
+  }
 }
 
 async function isSubmitted(token, assignId) {
@@ -90,4 +105,4 @@ async function grades(token, userId, courseId) {
     }));
 }
 
-module.exports = { LmsError, keyRejected, baseUrl, call, siteInfo, courses, assignments, isSubmitted, calendarEvents, grades };
+module.exports = { LmsError, keyRejected, baseUrl, call, siteInfo, courses, assignments, isSubmitted, calendarEvents, grades, fetchFile };

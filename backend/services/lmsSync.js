@@ -88,7 +88,7 @@ async function syncUser(userId, opts = {}) {
 
 async function runSync(connection, userId, token, lmsUserId, api, now) {
   const nowSec = now.getTime() / 1000;
-  const out = { subjects: 0, assignments: 0, moved: 0, sessions: 0, quizzes: 0, grades: 0 };
+  const out = { subjects: 0, assignments: 0, moved: 0, sessions: 0, quizzes: 0, grades: 0, files: 0 };
 
   // What we already know from earlier syncs.
   const maps = await connection.execute(`SELECT kind, lms_id, local_id, state FROM LMS_ITEM_MAP WHERE user_id = :userId`, { userId });
@@ -151,6 +151,7 @@ async function runSync(connection, userId, token, lmsUserId, api, now) {
   // 2. Assignments -> board cards
   const found = await api.assignments(token, [...subjectOfCourse.keys()]);
   let checks = 0;
+  const fileTargets = [];
   for (const a of found) {
     const subjectId = subjectOfCourse.get(a.courseId);
     if (!subjectId) continue;
@@ -170,11 +171,15 @@ async function runSync(connection, userId, token, lmsUserId, api, now) {
       const id = generateId();
       await connection.execute(
         `INSERT INTO ASSIGNMENTS (assignment_id, user_id, subject_id, title, note, due_date, column_id, board_order) VALUES (:id, :userId, :subjectId, :title, :note, :due, :col, :ord)`,
-        { id, userId, subjectId, title: String(a.name).slice(0, 300), note: 'From your LMS', due, col, ord: Number(count.rows[0].C) || 0 }
+        { id, userId, subjectId, title: String(a.name).slice(0, 300), note: lms.htmlToText(a.intro) || 'From your LMS', due, col, ord: Number(count.rows[0].C) || 0 }
       );
+      fileTargets.push({ localId: id, files: a.files || [] });
       await remember('assign', a.id, id, state);
       out.assignments += 1;
-    } else if (known.state !== state) {
+    } else {
+      fileTargets.push({ localId: known.localId, files: a.files || [] });
+    }
+    if (known && known.state !== state) {
       // The teacher changed the title or the due date: follow it. A deleted card (no row changed) stays deleted.
       if (before.title !== a.name || before.due !== (Number(a.duedate) || 0)) {
         await connection.execute(
@@ -192,6 +197,14 @@ async function runSync(connection, userId, token, lmsUserId, api, now) {
       }
       await remember('assign', a.id, known.localId, state);
     }
+  }
+
+  // 2b. The teacher's attached files. Optional: a problem here never stops the rest, except a key the LMS refuses.
+  try {
+    out.files = await syncFiles(connection, userId, fileTargets);
+  } catch (err) {
+    if (moodleReal.keyRejected(err)) throw err;
+    if (!(err && (err.code === '42P01' || err instanceof moodleReal.LmsError))) throw err; // table not created yet, or the LMS declined
   }
 
   // 3. Calendar attendance sessions -> the semester's class dates
@@ -264,6 +277,47 @@ async function runSync(connection, userId, token, lmsUserId, api, now) {
     if (!(err && (err.code === '42P01' || err instanceof moodleReal.LmsError))) throw err; // tables not created yet, or the LMS declined: skip
   }
   return out;
+}
+
+// The teacher's attachments (a PDF, a lab file) for each assignment. Only the name, size and where the file lives are kept:
+// the file itself is fetched from the LMS, with the student's own key, when they open it. Optional like the marks.
+async function syncFiles(connection, userId, targets) {
+  const wantedRows = [];
+  const live = new Set((await connection.execute(`SELECT assignment_id FROM ASSIGNMENTS WHERE user_id = :userId`, { userId })).rows.map((r) => r.ASSIGNMENT_ID));
+  for (const t of targets) {
+    if (!live.has(t.localId)) continue; // the student deleted that card: leave it
+    for (const f of t.files) {
+      const path = lms.relativeFilePath(f.url, moodleReal.baseUrl());
+      if (path && f.name) wantedRows.push({ assignmentId: t.localId, name: String(f.name).slice(0, 200), size: Number(f.size) || 0, mime: String(f.mime || '').slice(0, 100), path });
+    }
+  }
+  const have = (await connection.execute(
+    `SELECT file_id, assignment_id, name, size_bytes FROM LMS_FILES WHERE user_id = :userId`, { userId }
+  )).rows;
+  const key = (a, n) => `${a}\u0000${n}`;
+  const haveBy = new Map(have.map((r) => [key(r.ASSIGNMENT_ID, r.NAME), r]));
+  const wantBy = new Map(wantedRows.map((w) => [key(w.assignmentId, w.name), w]));
+  const changed = wantedRows.filter((w) => { const h = haveBy.get(key(w.assignmentId, w.name)); return !h || Number(h.SIZE_BYTES) !== w.size; });
+  if (changed.length) {
+    await connection.execute(
+      `INSERT INTO LMS_FILES (file_id, user_id, assignment_id, name, size_bytes, mime, path)
+       SELECT t.file_id, CAST(:userId AS VARCHAR), t.assignment_id, t.name, t.size_bytes, t.mime, t.path
+       FROM unnest(CAST(:fileIds AS VARCHAR[]), CAST(:assignmentIds AS VARCHAR[]), CAST(:names AS VARCHAR[]), CAST(:sizes AS BIGINT[]),
+                   CAST(:mimes AS VARCHAR[]), CAST(:paths AS TEXT[])) AS t(file_id, assignment_id, name, size_bytes, mime, path)
+       ON CONFLICT (user_id, assignment_id, name) DO UPDATE SET size_bytes = EXCLUDED.size_bytes, mime = EXCLUDED.mime, path = EXCLUDED.path`,
+      {
+        userId,
+        fileIds: changed.map(() => generateId()), assignmentIds: changed.map((c) => c.assignmentId), names: changed.map((c) => c.name),
+        sizes: changed.map((c) => c.size), mimes: changed.map((c) => c.mime), paths: changed.map((c) => c.path),
+      }
+    );
+  }
+  for (const h of have) {
+    if (live.has(h.ASSIGNMENT_ID) && !wantBy.has(key(h.ASSIGNMENT_ID, h.NAME))) {
+      await connection.execute(`DELETE FROM LMS_FILES WHERE user_id = :userId AND file_id = :id`, { userId, id: h.FILE_ID });
+    }
+  }
+  return wantedRows.length;
 }
 
 async function syncGrades(connection, userId, token, lmsUserId, api, subjectOfCourse) {

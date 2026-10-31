@@ -19,6 +19,7 @@ import { useSubjects } from "../features/subjects/useSubjects";
 import ScanImportModal from "../features/scanner/ScanImportModal";
 import { assignmentsScan } from "../features/scanner/kinds/assignments";
 import PageMascot from "../components/common/PageMascot";
+import AttachmentLinks from "../features/lms/AttachmentLinks";
 
 const COLUMN_DOT = { "col-todo": "bg-warn", "col-doing": "bg-info", "col-done": "bg-success" };
 
@@ -33,7 +34,8 @@ function SortableCard({ card, onEdit, onRemove }) {
         </button>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-bold text-ink break-words">{card.title}</p>
-          {card.note && <p className="text-xs text-muted mt-0.5 break-words">{card.note}</p>}
+          {card.note && <p className="text-xs text-muted mt-0.5 break-words whitespace-pre-line">{card.note}</p>}
+          <AttachmentLinks files={card.files} />
           {(card.subjectName || card.dueDate) && (
             <div className="flex items-center gap-2 mt-1.5">
               {card.subjectName && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand/10 text-brand">{card.subjectName}</span>}

@@ -7,6 +7,7 @@ let rows;        // what a SELECT answers
 let calls;
 let failWith;    // an error code the database should raise
 let synced;      // how the sync was asked for
+let dbHook;      // a test can answer some statements itself
 const stub = (rel, exports) => {
   const p = path.join(__dirname, '..', rel);
   require.cache[p] = { id: p, filename: p, loaded: true, exports };
@@ -15,6 +16,7 @@ stub('config/database.js', {
   getConnection: async () => ({
     execute: async (sql, params) => {
       calls.push({ sql, params });
+      if (dbHook) { const answer = dbHook(sql, params); if (answer) return answer; }
       if (failWith) { const e = new Error('db'); e.code = failWith; throw e; }
       return { rows: /^\s*SELECT/i.test(sql) ? rows : [], rowsAffected: 1 };
     },
@@ -39,7 +41,7 @@ const res = () => {
 const req = (body) => ({ user: { userId: 'u1' }, body });
 
 beforeEach(() => {
-  rows = []; calls = []; failWith = null; synced = null; syncing = false;
+  rows = []; calls = []; failWith = null; synced = null; syncing = false; dbHook = null;
   syncAnswer = Promise.resolve({ subjects: 1, assignments: 2, moved: 0, sessions: 3 });
   process.env.LMS_TOKEN_KEY = KEY_B64;
   moodle.siteInfo = async () => ({ userId: 5, siteName: 'Iqra' });
@@ -137,7 +139,7 @@ test('sync: passes the button flag through and answers with the counts', async (
 test('disconnect: forgets the key and the memory of the LMS for this student only, and keeps their subjects and cards', async () => {
   const r = res(); await ctl.disconnect(req(), r);
   assert.equal(r.body.success, true);
-  assert.deepEqual(calls.map((c) => c.sql.match(/FROM (\w+)/)[1]), ['LMS_GRADES', 'LMS_SESSIONS', 'LMS_ITEM_MAP', 'LMS_CONNECTIONS']);
+  assert.deepEqual(calls.map((c) => c.sql.match(/FROM (\w+)/)[1]), ['LMS_FILES', 'LMS_GRADES', 'LMS_SESSIONS', 'LMS_ITEM_MAP', 'LMS_CONNECTIONS']);
   calls.forEach((c) => assert.equal(c.params.userId, 'u1'));
 });
 
@@ -169,7 +171,7 @@ test('disconnect still works when the marks table has not been created yet', asy
   require.cache[p].exports.getConnection = async () => ({
     execute: async (sql, params) => {
       calls.push({ sql, params });
-      if (first && /LMS_GRADES/.test(sql)) { first = false; const e = new Error('missing'); e.code = '42P01'; throw e; }
+      if (first && /LMS_FILES/.test(sql)) { first = false; const e = new Error('missing'); e.code = '42P01'; throw e; }
       return { rows: [], rowsAffected: 1 };
     },
     close: async () => {},
@@ -177,8 +179,140 @@ test('disconnect still works when the marks table has not been created yet', asy
   try {
     const r = res(); await ctl.disconnect(req(), r);
     assert.equal(r.body.success, true);
-    assert.deepEqual(calls.map((c) => c.sql.match(/FROM (\w+)/)[1]), ['LMS_GRADES', 'LMS_SESSIONS', 'LMS_ITEM_MAP', 'LMS_CONNECTIONS']);
+    assert.deepEqual(calls.map((c) => c.sql.match(/FROM (\w+)/)[1]), ['LMS_FILES', 'LMS_GRADES', 'LMS_SESSIONS', 'LMS_ITEM_MAP', 'LMS_CONNECTIONS']);
   } finally {
     require.cache[p].exports.getConnection = original;
   }
+});
+
+// ---- opening a teacher's file
+const { PassThrough } = require('node:stream');
+function fileRes() {
+  const out = new PassThrough();
+  out.headers = {};
+  out.statusCode = 200;
+  out.setHeader = (k, v) => { out.headers[k.toLowerCase()] = v; };
+  out.status = (c) => { out.statusCode = c; return out; };
+  out.json = (b) => { out.body = b; out.end(); return out; };
+  out.chunks = [];
+  out.on('data', (c) => out.chunks.push(c));
+  return out;
+}
+const done = (out) => new Promise((resolve) => { if (out.writableEnded) return resolve(); out.on('end', resolve); out.on('close', resolve); });
+const fileRow = (over = {}) => ({ NAME: 'Lab 4.pdf', MIME: 'application/pdf', PATH: '/webservice/pluginfile.php/9/a/Lab%204.pdf', TOKEN_ENC: lms.encryptToken(TOKEN, lms.keyFromEnv()), ...over });
+const reply = (body, headers, status = 200) => new Response(body, { status, headers });
+
+test('file: the student gets the PDF, shown in the browser, fetched with their own key; nothing about the key is sent on', async () => {
+  rows = [fileRow()];
+  let asked;
+  moodle.fetchFile = async (token, p) => { asked = { token, p }; return reply('%PDF-1.4 hello', { 'content-type': 'application/pdf', 'content-length': '14' }); };
+  const out = fileRes();
+  await ctl.getFile({ user: { userId: 'u1' }, params: { id: 'f1' } }, out);
+  await done(out);
+  assert.deepEqual(asked, { token: TOKEN, p: '/webservice/pluginfile.php/9/a/Lab%204.pdf' });
+  assert.equal(Buffer.concat(out.chunks).toString(), '%PDF-1.4 hello');
+  assert.equal(out.headers['content-type'], 'application/pdf');
+  assert.match(out.headers['content-disposition'], /^inline; filename="Lab 4.pdf"; filename\*=UTF-8''Lab%204\.pdf$/);
+  assert.equal(out.headers['x-content-type-options'], 'nosniff');
+  assert.match(out.headers['cache-control'], /no-store/);
+  assert.ok(!JSON.stringify(out.headers).includes(TOKEN));
+  assert.deepEqual(calls[0].params, { id: 'f1', userId: 'u1' }); // only this student's file
+});
+
+test('file: anything that is not a PDF or an image is offered as a download, never opened in the page', async () => {
+  rows = [fileRow({ NAME: 'notes.html', MIME: 'text/html' })];
+  moodle.fetchFile = async () => reply('<script>alert(1)</script>', { 'content-type': 'text/html' });
+  const out = fileRes();
+  await ctl.getFile({ user: { userId: 'u1' }, params: { id: 'f1' } }, out);
+  await done(out);
+  assert.match(out.headers['content-disposition'], /^attachment;/);
+  rows = [fileRow({ NAME: 'data.zip', MIME: 'application/zip' })];
+  moodle.fetchFile = async () => reply('PK', { 'content-type': 'application/zip' });
+  const zip = fileRes();
+  await ctl.getFile({ user: { userId: 'u1' }, params: { id: 'f2' } }, zip);
+  await done(zip);
+  assert.match(zip.headers['content-disposition'], /^attachment;/);
+});
+
+test('file: not found, no server key, a refused key (the LMS sends a page), an LMS error, and a file that is too big', async () => {
+  rows = [];
+  let out = fileRes(); await ctl.getFile({ user: { userId: 'u1' }, params: { id: 'nope' } }, out);
+  assert.equal(out.statusCode, 404);
+  rows = [fileRow()];
+  moodle.fetchFile = async () => reply('<html>login</html>', { 'content-type': 'text/html; charset=utf-8' });
+  out = fileRes(); await ctl.getFile({ user: { userId: 'u1' }, params: { id: 'f1' } }, out);
+  assert.equal(out.statusCode, 502);
+  assert.match(out.body.error, /would not give that file/);
+  moodle.fetchFile = async () => reply('x', { 'content-type': 'application/pdf' }, 500);
+  out = fileRes(); await ctl.getFile({ user: { userId: 'u1' }, params: { id: 'f1' } }, out);
+  assert.equal(out.statusCode, 502);
+  moodle.fetchFile = async () => { throw new moodle.LmsError('unreachable'); };
+  out = fileRes(); await ctl.getFile({ user: { userId: 'u1' }, params: { id: 'f1' } }, out);
+  assert.equal(out.statusCode, 502);
+  moodle.fetchFile = async () => reply('x', { 'content-type': 'application/pdf', 'content-length': String(26 * 1024 * 1024) });
+  out = fileRes(); await ctl.getFile({ user: { userId: 'u1' }, params: { id: 'f1' } }, out);
+  assert.equal(out.statusCode, 413);
+  delete process.env.LMS_TOKEN_KEY;
+  out = fileRes(); await ctl.getFile({ user: { userId: 'u1' }, params: { id: 'f1' } }, out);
+  assert.equal(out.statusCode, 503);
+  process.env.LMS_TOKEN_KEY = KEY_B64;
+  failWith = '42P01';
+  out = fileRes(); await ctl.getFile({ user: { userId: 'u1' }, params: { id: 'f1' } }, out);
+  assert.equal(out.statusCode, 404);
+});
+
+// ---- importing the attendance page
+const PAGE = 'Fri 16 Oct 2026\n1AM - 3:20AM\tRegular class session\tPresent\t2 / 2\nFri 23 Oct 2026\t...\tAbsent\t0 / 2\nFri 30 Oct 2026\t...\t?\t? / 2';
+const attReq = (body) => ({ user: { userId: 'u1' }, body });
+function attDb(existing) {
+  dbHook = (sql, params) => {
+    if (/FROM SUBJECTS/.test(sql)) return { rows: params.subjectId === 'mine' ? [{ SUBJECT_ID: 'mine' }] : [] };
+    if (/FROM SUBJECT_ATTENDANCE/.test(sql)) return { rows: existing };
+    return { rows: [], rowsAffected: 1 };
+  };
+  return () => { dbHook = null; };
+}
+
+test('attendance import: new and changed days are written in one statement for this student and subject; same ones are not', async () => {
+  const restore = attDb([{ D: '2026-10-16', STATUS: 'Present' }, { D: '2026-10-23', STATUS: 'Present' }]);
+  try {
+    const r = res(); await ctl.importAttendance(attReq({ subjectId: 'mine', text: PAGE }), r);
+    assert.deepEqual(r.body, { found: 2, added: 0, changed: 1, same: 1, dryRun: false });
+    const w = calls.filter((c) => /INSERT INTO SUBJECT_ATTENDANCE/.test(c.sql));
+    assert.equal(w.length, 1);
+    assert.deepEqual([w[0].params.userId, w[0].params.subjectId, w[0].params.dates, w[0].params.statuses], ['u1', 'mine', ['2026-10-23'], ['Absent']]);
+    assert.match(w[0].sql, /ON CONFLICT \(subject_id, class_date\) DO UPDATE/);
+  } finally { restore(); }
+});
+
+test('attendance import: a preview (dryRun) counts but writes nothing, and nothing new means no write', async () => {
+  let restore = attDb([]);
+  try {
+    let r = res(); await ctl.importAttendance(attReq({ subjectId: 'mine', text: PAGE, dryRun: true }), r);
+    assert.deepEqual(r.body, { found: 2, added: 2, changed: 0, same: 0, dryRun: true });
+    assert.equal(calls.filter((c) => /INSERT/.test(c.sql)).length, 0);
+  } finally { restore(); }
+  restore = attDb([{ D: '2026-10-16', STATUS: 'Present' }, { D: '2026-10-23', STATUS: 'Absent' }]);
+  try {
+    calls = [];
+    const r = res(); await ctl.importAttendance(attReq({ subjectId: 'mine', text: PAGE }), r);
+    assert.deepEqual([r.body.added, r.body.changed, r.body.same], [0, 0, 2]);
+    assert.equal(calls.filter((c) => /INSERT/.test(c.sql)).length, 0);
+  } finally { restore(); }
+});
+
+test('attendance import: no subject, text with nothing in it, and a subject that is not theirs are refused and write nothing', async () => {
+  const restore = attDb([]);
+  try {
+    let r = res(); await ctl.importAttendance(attReq({ text: PAGE }), r);
+    assert.equal(r.statusCode, 400);
+    r = res(); await ctl.importAttendance(attReq({ subjectId: 'mine', text: 'hello' }), r);
+    assert.equal(r.statusCode, 400);
+    assert.match(r.body.error, /No marked classes found/);
+    r = res(); await ctl.importAttendance(attReq({ subjectId: 'someone-elses', text: PAGE }), r);
+    assert.equal(r.statusCode, 404);
+    r = res(); await ctl.importAttendance({ user: { userId: 'u1' } }, r);
+    assert.equal(r.statusCode, 400);
+    assert.equal(calls.filter((c) => /INSERT/.test(c.sql)).length, 0);
+  } finally { restore(); }
 });

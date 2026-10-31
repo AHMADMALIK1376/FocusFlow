@@ -33,7 +33,21 @@ exports.getAssignments = async (req, res) => {
        WHERE ${where.join(' AND ')} ORDER BY a.board_order ASC, a.created_at ASC`,
       binds
     );
-    res.json(result.rows.map(toCard));
+    const cards = result.rows.map(toCard);
+    // Files the teacher attached on a connected LMS (none, and no error, when there is no LMS or its tables).
+    try {
+      const f = await connection.execute(
+        `SELECT file_id, assignment_id, name, size_bytes FROM LMS_FILES WHERE user_id = :userId ORDER BY name ASC`,
+        { userId: req.user.userId }
+      );
+      const byCard = new Map();
+      for (const r of f.rows) {
+        if (!byCard.has(r.ASSIGNMENT_ID)) byCard.set(r.ASSIGNMENT_ID, []);
+        byCard.get(r.ASSIGNMENT_ID).push({ id: r.FILE_ID, name: r.NAME, size: Number(r.SIZE_BYTES) || 0 });
+      }
+      for (const c of cards) if (byCard.has(c.id)) c.files = byCard.get(c.id);
+    } catch (e) { /* no LMS files table yet */ }
+    res.json(cards);
   } catch (err) {
     console.error('Get assignments error:', err);
     res.status(500).json({ error: 'Failed to get assignments.' });

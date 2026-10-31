@@ -503,3 +503,14 @@ CREATE TABLE IF NOT EXISTS LMS_GRADES (
   PRIMARY KEY (user_id, item_id)
 );
 CREATE INDEX IF NOT EXISTS idx_lms_grades_subject ON LMS_GRADES(subject_id);
+CREATE TABLE IF NOT EXISTS LMS_FILES (
+  file_id       VARCHAR(50) PRIMARY KEY,
+  user_id       VARCHAR(50) NOT NULL REFERENCES USERS(user_id) ON DELETE CASCADE,
+  assignment_id VARCHAR(50) NOT NULL REFERENCES ASSIGNMENTS(assignment_id) ON DELETE CASCADE,
+  name          VARCHAR(200) NOT NULL,
+  size_bytes    BIGINT DEFAULT 0,
+  mime          VARCHAR(100),
+  path          TEXT NOT NULL,
+  UNIQUE (user_id, assignment_id, name)
+);
+CREATE INDEX IF NOT EXISTS idx_lms_files_user ON LMS_FILES(user_id);

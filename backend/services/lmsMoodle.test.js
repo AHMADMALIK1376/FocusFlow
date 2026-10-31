@@ -50,8 +50,11 @@ test('lists are sent the way Moodle wants them, and asking about no courses asks
 test('answers are reshaped to what FocusFlow needs', async () => {
   answer([{ id: 7, fullname: 'X', startdate: 1, enddate: 2, extra: 'ignored' }]);
   assert.deepEqual(await moodle.courses('t', 5), [{ id: 7, fullname: 'X', startdate: 1, enddate: 2 }]);
-  answer({ courses: [{ id: 7, assignments: [{ id: 21, name: 'A', duedate: 99, intro: 'x' }] }] });
-  assert.deepEqual(await moodle.assignments('t', [7]), [{ id: 21, courseId: 7, name: 'A', duedate: 99 }]);
+  answer({ courses: [{ id: 7, assignments: [{ id: 21, name: 'A', duedate: 99, intro: '<p>x</p>', introattachments: [{ filename: 'Lab.pdf', filesize: 1234, mimetype: 'application/pdf', fileurl: 'https://lms.iqra.edu.pk/webservice/pluginfile.php/1/a/Lab.pdf', other: 1 }] }] }] });
+  assert.deepEqual(await moodle.assignments('t', [7]), [{
+    id: 21, courseId: 7, name: 'A', duedate: 99, intro: '<p>x</p>',
+    files: [{ name: 'Lab.pdf', size: 1234, mime: 'application/pdf', url: 'https://lms.iqra.edu.pk/webservice/pluginfile.php/1/a/Lab.pdf' }],
+  }]);
   answer({ lastattempt: { submission: { status: 'submitted' } } });
   assert.equal(await moodle.isSubmitted('t', 21), true);
   answer({ lastattempt: { submission: { status: 'draft' } } });
@@ -90,4 +93,21 @@ test('Moodle errors, bad replies and a dead network become one tidy error with a
   await assert.rejects(() => moodle.siteInfo('t'), (e) => e.code === 'badreply');
   global.fetch = async () => { throw new Error('ECONNRESET'); };
   await assert.rejects(() => moodle.siteInfo('t'), (e) => e.code === 'unreachable' && !moodle.keyRejected(e));
+});
+
+test('a file is fetched only from a file path on the LMS, with the key as a query value, with no redirects followed', async () => {
+  let seen;
+  global.fetch = async (url, opts) => { seen = { url: String(url), opts }; return { ok: true }; };
+  await moodle.fetchFile('f'.repeat(32), '/pluginfile.php/12/mod_assign/introattachment/0/Lab%201.pdf');
+  const u = new URL(seen.url);
+  assert.equal(u.origin + u.pathname, 'https://lms.iqra.edu.pk/webservice/pluginfile.php/12/mod_assign/introattachment/0/Lab%201.pdf');
+  assert.equal(u.searchParams.get('token'), 'f'.repeat(32));
+  assert.equal(seen.opts.redirect, 'error');
+  await moodle.fetchFile('t', '/webservice/pluginfile.php/1/a.pdf');
+  assert.ok(seen.url.includes('/webservice/pluginfile.php/1/a.pdf'));
+  for (const bad of ['/admin/tool/mobile/launch.php', '//evil.example/pluginfile.php/1/a.pdf', 'https://evil.example/pluginfile.php/1/a.pdf', '/pluginfile.php/1/a.pdf?x=1', '', undefined]) {
+    await assert.rejects(() => moodle.fetchFile('t', bad), (e) => e.code === 'badpath');
+  }
+  global.fetch = async () => { throw new Error('down'); };
+  await assert.rejects(() => moodle.fetchFile('t', '/pluginfile.php/1/a.pdf'), (e) => e.code === 'unreachable');
 });

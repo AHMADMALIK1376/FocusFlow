@@ -1,5 +1,8 @@
+const { Readable } = require('stream');
 const { getConnection } = require('../config/database');
 const lms = require('../utils/lms');
+const { generateId } = require('../utils/helpers');
+const { parseAttendanceText, diffAttendance } = require('../utils/lmsAttendance');
 const moodle = require('../services/lmsMoodle');
 const { syncUser, isSyncing } = require('../services/lmsSync');
 
@@ -92,6 +95,109 @@ exports.sync = async (req, res) => {
   }
 };
 
+// GET /api/lms/file/:id  -- opens one of the teacher's attachments. The server fetches it from the LMS with the student's own key and
+// passes it on; the key never reaches the browser, and the file is not stored here.
+const MAX_FILE_BYTES = 25 * 1024 * 1024;
+const INLINE_TYPES = /^(application\/pdf|image\/(png|jpe?g|gif|webp))$/i;
+const asciiName = (n) => String(n).replace(/[^\w.\- ]+/g, '_').slice(0, 100) || 'file';
+
+exports.getFile = async (req, res) => {
+  const key = lms.keyFromEnv();
+  if (!key) return res.status(503).json({ error: 'Connecting to the LMS is not set up on this server yet.' });
+  let connection;
+  let file;
+  let token;
+  try {
+    connection = await getConnection();
+    const r = await connection.execute(
+      `SELECT f.name, f.mime, f.path, c.token_enc
+       FROM LMS_FILES f JOIN LMS_CONNECTIONS c ON c.user_id = f.user_id
+       WHERE f.file_id = :id AND f.user_id = :userId AND COALESCE(c.needs_reconnect, 0) = 0`,
+      { id: req.params.id, userId: req.user.userId }
+    );
+    if (r.rows.length === 0) return res.status(404).json({ error: 'File not found.' });
+    file = r.rows[0];
+    token = lms.decryptToken(file.TOKEN_ENC, key);
+  } catch (err) {
+    if (tablesMissing(err)) return res.status(404).json({ error: 'File not found.' });
+    console.error('LMS file lookup error:', err.message);
+    return res.status(500).json({ error: 'Failed to open the file.' });
+  } finally {
+    if (connection) await connection.close();
+  }
+
+  let upstream;
+  try {
+    upstream = await moodle.fetchFile(token, file.PATH);
+  } catch (err) {
+    return res.status(502).json({ error: 'The LMS did not answer. Try again in a minute.' });
+  }
+  const type = String(upstream.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+  const size = Number(upstream.headers.get('content-length')) || 0;
+  // The LMS answers a refused key with a web page, not the file.
+  if (!upstream.ok || (type === 'text/html' && !/html/i.test(file.MIME || ''))) {
+    return res.status(502).json({ error: 'The LMS would not give that file. Try syncing again, or sign in to the LMS once more.' });
+  }
+  if (size > MAX_FILE_BYTES) return res.status(413).json({ error: 'That file is too big to open here (25 MB at most).' });
+
+  const mime = /^[a-z]+\/[a-z0-9.+-]+$/.test(type) ? type : 'application/octet-stream';
+  const inline = INLINE_TYPES.test(mime);
+  res.setHeader('Content-Type', mime);
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Cache-Control', 'private, no-store');
+  res.setHeader('Content-Disposition', `${inline ? 'inline' : 'attachment'}; filename="${asciiName(file.NAME)}"; filename*=UTF-8''${encodeURIComponent(file.NAME)}`);
+  if (size) res.setHeader('Content-Length', String(size));
+
+  let sent = 0;
+  const body = Readable.fromWeb(upstream.body);
+  body.on('data', (chunk) => {
+    sent += chunk.length;
+    if (sent > MAX_FILE_BYTES) body.destroy(new Error('too big')); // a file that lied about its size
+  });
+  body.on('error', () => { if (!res.writableEnded) res.destroy(); });
+  body.pipe(res);
+};
+
+// POST /api/lms/attendance  { subjectId, text, dryRun? }
+// The LMS does not give an app the Present/Absent marks, so the student copies the course's Attendance page and pastes it. The text is read
+// here (rules only), and written into that subject's attendance. The LMS is the official record, so a day it marks wins over the student's own mark.
+// dryRun only counts what would happen.
+exports.importAttendance = async (req, res) => {
+  const { subjectId, text, dryRun } = req.body || {};
+  if (!subjectId || typeof subjectId !== 'string') return res.status(400).json({ error: 'Choose the subject this page belongs to.' });
+  const parsed = parseAttendanceText(text);
+  if (parsed.length === 0) {
+    return res.status(400).json({ error: 'No marked classes found in that text. On the LMS, open the course, open Attendance, select the whole page, copy it, and paste it here.' });
+  }
+  let connection;
+  try {
+    connection = await getConnection();
+    const owned = await connection.execute(`SELECT subject_id FROM SUBJECTS WHERE subject_id = :subjectId AND user_id = :userId`, { subjectId, userId: req.user.userId });
+    if (owned.rows.length === 0) return res.status(404).json({ error: 'Subject not found.' });
+    const have = await connection.execute(
+      `SELECT TO_CHAR(class_date, 'YYYY-MM-DD') AS d, status FROM SUBJECT_ATTENDANCE WHERE subject_id = :subjectId AND user_id = :userId`,
+      { subjectId, userId: req.user.userId }
+    );
+    const diff = diffAttendance(have.rows.map((r) => ({ date: r.D, status: r.STATUS })), parsed);
+    const writes = [...diff.add, ...diff.change];
+    if (!dryRun && writes.length) {
+      await connection.execute(
+        `INSERT INTO SUBJECT_ATTENDANCE (record_id, user_id, subject_id, class_date, status)
+         SELECT t.record_id, CAST(:userId AS VARCHAR), CAST(:subjectId AS VARCHAR), t.class_date, t.status
+         FROM unnest(CAST(:recordIds AS VARCHAR[]), CAST(:dates AS DATE[]), CAST(:statuses AS VARCHAR[])) AS t(record_id, class_date, status)
+         ON CONFLICT (subject_id, class_date) DO UPDATE SET status = EXCLUDED.status`,
+        { userId: req.user.userId, subjectId, recordIds: writes.map(() => generateId()), dates: writes.map((w) => w.date), statuses: writes.map((w) => w.status) }
+      );
+    }
+    res.json({ found: parsed.length, added: diff.add.length, changed: diff.change.length, same: diff.same, dryRun: Boolean(dryRun) });
+  } catch (err) {
+    console.error('LMS attendance import error:', err.message);
+    res.status(500).json({ error: 'Failed to import the attendance.' });
+  } finally {
+    if (connection) await connection.close();
+  }
+};
+
 // GET /api/lms/grades  -- the marks imported from the LMS, grouped by subject (read-only; never part of the CGPA)
 exports.getGrades = async (req, res) => {
   let connection;
@@ -125,11 +231,11 @@ exports.disconnect = async (req, res) => {
   let connection;
   try {
     connection = await getConnection();
-    for (const table of ['LMS_GRADES', 'LMS_SESSIONS', 'LMS_ITEM_MAP', 'LMS_CONNECTIONS']) {
+    for (const table of ['LMS_FILES', 'LMS_GRADES', 'LMS_SESSIONS', 'LMS_ITEM_MAP', 'LMS_CONNECTIONS']) {
       try {
         await connection.execute(`DELETE FROM ${table} WHERE user_id = :userId`, { userId: req.user.userId });
       } catch (err) {
-        if (!(tablesMissing(err) && table === 'LMS_GRADES')) throw err; // the marks table may not exist yet
+        if (!(tablesMissing(err) && (table === 'LMS_GRADES' || table === 'LMS_FILES'))) throw err; // these tables may not exist yet
       }
     }
     res.json({ success: true });

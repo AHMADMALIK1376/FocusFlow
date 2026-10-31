@@ -208,6 +208,11 @@ Solid status fills (delete pop-up, danger `Button`, the done tick) take `text-on
 6. Disconnect (`DELETE /api/lms`) deletes the key, the remembered mapping, the sessions and the marks; subjects and cards stay.
 7. Phase 2: the same calendar read (`calendarEvents`) also returns quizzes, which become Quiz rows in `EXAMS_DEADLINES` (remembered in `LMS_ITEM_MAP` as `quiz`). `syncGrades` reads each course's marks (`gradereport_user_get_grade_items`) into `LMS_GRADES` in one batched statement, only for changed marks. `GET /api/lms/grades` groups them by subject for the Grades page (`LmsGradesPanel`), read-only and never part of the CGPA.
 
+### LMS files, emails and attendance paste (31 Oct 2026)
+- Sync (`syncFiles`) stores each assignment's attachment list in `LMS_FILES` (name, size, path on the LMS). `GET /api/assignments` adds `files: [{id, name, size}]` to a card; the board shows them (`AttachmentLinks`) as links to `/api/lms/file/<id>`, which the server answers by fetching the file from the LMS with the student's key (`lmsController.getFile`).
+- Emails: `notificationScheduler.loadUserData` also loads `pending` (not submitted, not due today/tomorrow; only in the morning-email window) and `fresh` (LMS items added after connecting, last two days). `computeDue` turns `pending` into the "Not submitted yet" part of the digest and each `fresh` item into one `lmsnew:` message.
+- Attendance paste: Settings > University LMS > Attendance from the LMS (`AttendanceImport`) posts the pasted text to `POST /api/lms/attendance` (`dryRun` first); `utils/lmsAttendance.js` reads it; new and changed days are written in one statement into `SUBJECT_ATTENDANCE`.
+
 ## 3. Scanner flow (screenshot → saved data)
 
 Used by Subjects, Daily Routine, Exams, Grades and Assignments.

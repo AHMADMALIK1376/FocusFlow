@@ -20,6 +20,11 @@ require.cache[dbPath] = {
         if (sql.includes('FROM SUBJECTS')) return { rows: db.subjects };
         if (sql.includes('COUNT(*)')) return { rows: [{ C: db.count }] };
         if (sql.includes('FROM LMS_SESSIONS')) return { rows: db.sessions };
+        if (sql.includes('FROM LMS_FILES')) { if (db.noFilesTable) { const e = new Error('missing'); e.code = '42P01'; throw e; } return { rows: db.fileRows }; }
+        if (sql.includes('SELECT assignment_id FROM ASSIGNMENTS')) {
+          const created = calls.filter((c) => c.sql && /INSERT INTO ASSIGNMENTS/.test(c.sql)).map((c) => c.params.id);
+          return { rows: [...db.cards, ...created].map((id) => ({ ASSIGNMENT_ID: id })) };
+        }
         if (sql.includes('FROM LMS_GRADES')) { if (db.noGradesTable) { const e = new Error('missing'); e.code = '42P01'; throw e; } return { rows: db.gradeRows }; }
         throw new Error('unexpected select: ' + sql);
       },
@@ -57,12 +62,12 @@ const connRow = (over = {}) => ({ TOKEN_ENC: lms.encryptToken(TOKEN, KEY), LMS_U
 
 beforeEach(() => {
   calls = [];
-  db = { conn: connRow(), maps: [], subjects: [], scheduled: [], sessions: [], gradeRows: [], count: 0, rowsAffected: 1 };
+  db = { conn: connRow(), maps: [], subjects: [], scheduled: [], sessions: [], gradeRows: [], fileRows: [], cards: ['c1'], count: 0, rowsAffected: 1 };
 });
 
 test('a first sync makes the subject (named, coloured, with its class slot), the card, the map and the semester sessions', async () => {
   const r = await sync();
-  assert.deepEqual(r, { subjects: 1, assignments: 1, moved: 0, sessions: 2, quizzes: 0, grades: 0 });
+  assert.deepEqual(r, { subjects: 1, assignments: 1, moved: 0, sessions: 2, quizzes: 0, grades: 0, files: 0 });
   const subject = stmts(/INSERT INTO SUBJECTS/)[0].params;
   assert.equal(subject.name, 'Advance Database Management Systems');
   assert.equal(subject.code, 'IUIC_COURSE_FALL26_576');
@@ -116,7 +121,7 @@ test('an existing subject with no schedule gets the LMS class slot', async () =>
 test('a subject the student deleted stays deleted, and so do its assignments and sessions', async () => {
   db.maps = [{ KIND: 'course', LMS_ID: 7, LOCAL_ID: 'gone', STATE: '' }];
   const r = await sync();
-  assert.deepEqual(r, { subjects: 0, assignments: 0, moved: 0, sessions: 0, quizzes: 0, grades: 0 });
+  assert.deepEqual(r, { subjects: 0, assignments: 0, moved: 0, sessions: 0, quizzes: 0, grades: 0, files: 0 });
   assert.equal(stmts(/INSERT INTO (SUBJECTS|ASSIGNMENTS|LMS_SESSIONS)/).length, 0);
 });
 
@@ -306,4 +311,63 @@ test('a key the LMS refuses while reading marks still marks the connection for r
   const r = await sync({ api: fakeApi({ grades: async () => { throw new LmsError('invalidtoken'); } }) });
   assert.deepEqual(r, { error: 'invalidtoken' });
   assert.equal(stmts(/UPDATE LMS_CONNECTIONS SET last_error/)[0].params.nr, 1);
+});
+
+const FILE = { name: 'Lab 4.pdf', size: 2048, mime: 'application/pdf', url: 'https://lms.iqra.edu.pk/webservice/pluginfile.php/9/mod_assign/introattachment/0/Lab%204.pdf?token=x' };
+const withFiles = (files, extra = {}) => fakeApi({ assignments: async () => [{ id: 21, courseId: 7, name: 'assigment 1', duedate: OCT(30, 0), intro: '<p>Do <b>all</b> questions.</p>', files, ...extra }] });
+
+test('a new assignment gets the teacher\'s words as its note and its attachments listed, in one statement, without the key in the stored address', async () => {
+  known();
+  const r = await sync({ api: withFiles([FILE]) });
+  assert.equal(r.files, 1);
+  assert.equal(stmts(/INSERT INTO ASSIGNMENTS/)[0].params.note, 'Do all questions.');
+  const w = stmts(/INSERT INTO LMS_FILES/);
+  assert.equal(w.length, 1);
+  const p = w[0].params;
+  assert.equal(p.userId, 'u1');
+  assert.deepEqual([p.names, p.sizes, p.mimes, p.paths], [['Lab 4.pdf'], [2048], ['application/pdf'], ['/webservice/pluginfile.php/9/mod_assign/introattachment/0/Lab%204.pdf']]);
+  assert.equal(p.assignmentIds.length, 1);
+  assert.equal(p.assignmentIds[0], stmts(/INSERT INTO ASSIGNMENTS/)[0].params.id);
+  assert.ok(!JSON.stringify(w[0]).includes('token=x'));
+});
+
+test('an assignment with no text keeps the plain "From your LMS" note', async () => {
+  known();
+  await sync({ api: withFiles([], { intro: '' }) });
+  assert.equal(stmts(/INSERT INTO ASSIGNMENTS/)[0].params.note, 'From your LMS');
+  assert.equal(stmts(/INSERT INTO LMS_FILES/).length, 0);
+});
+
+test('files already stored are not written again, a changed size is, and a removed file is deleted', async () => {
+  known();
+  db.maps.push({ KIND: 'assign', LMS_ID: 21, LOCAL_ID: 'c1', STATE: lms.assignmentState(false, OCT(30, 0), 'assigment 1') });
+  db.fileRows = [{ FILE_ID: 'f1', ASSIGNMENT_ID: 'c1', NAME: 'Lab 4.pdf', SIZE_BYTES: '2048' }, { FILE_ID: 'f2', ASSIGNMENT_ID: 'c1', NAME: 'Old.pdf', SIZE_BYTES: 5 }];
+  await sync({ api: withFiles([FILE]) });
+  assert.equal(stmts(/INSERT INTO LMS_FILES/).length, 0);
+  assert.equal(stmts(/DELETE FROM LMS_FILES/)[0].params.id, 'f2');
+  assert.equal(stmts(/DELETE FROM LMS_FILES/).length, 1);
+  calls = [];
+  await sync({ api: withFiles([{ ...FILE, size: 4096 }]) });
+  assert.deepEqual(stmts(/INSERT INTO LMS_FILES/)[0].params.sizes, [4096]);
+});
+
+test('the files of a card the student deleted are left alone, and a file with an address that is not the LMS is skipped', async () => {
+  known();
+  db.cards = [];
+  db.maps.push({ KIND: 'assign', LMS_ID: 21, LOCAL_ID: 'c1', STATE: lms.assignmentState(false, OCT(30, 0), 'assigment 1') });
+  await sync({ api: withFiles([FILE]) });
+  assert.equal(stmts(/INSERT INTO LMS_FILES/).length, 0);
+  calls = [];
+  db.maps = db.maps.slice(0, 1);
+  await sync({ api: withFiles([{ ...FILE, url: 'https://evil.example/webservice/pluginfile.php/9/x.pdf' }]) });
+  assert.equal(stmts(/INSERT INTO LMS_FILES/).length, 0);
+});
+
+test('no files table yet, or the LMS declining, never stops the rest of the sync', async () => {
+  known();
+  db.noFilesTable = true;
+  let r = await sync({ api: withFiles([FILE]) });
+  assert.equal(r.assignments, 1);
+  assert.equal(stmts(/UPDATE LMS_CONNECTIONS SET last_synced/).length, 1);
+  db.noFilesTable = false;
 });

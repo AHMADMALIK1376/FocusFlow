@@ -4,7 +4,7 @@
 const cron = require('node-cron');
 const jwt = require('jsonwebtoken');
 const { getConnection } = require('../config/database');
-const { DEFAULT_SETTINGS, localParts, computeDue } = require('../utils/reminders');
+const { DEFAULT_SETTINGS, localParts, computeDue, isDue, toMinutes } = require('../utils/reminders');
 const { deliver } = require('./notifyChannels');
 const { recordTick } = require('./schedulerStatus');
 
@@ -81,7 +81,7 @@ function withAnswerLink(n, userId) {
   };
 }
 
-async function loadUserData(connection, userId, now) {
+async function loadUserData(connection, userId, now, settings = {}) {
   // Sequential on purpose: one pg client can't run queries in parallel.
   const classes = await connection.execute(
     `SELECT ss.schedule_id, s.subject_id, s.name, ss.day_of_week, ss.start_time, ss.end_time, ss.room,
@@ -116,6 +116,47 @@ async function loadUserData(connection, userId, now) {
     { userId, d: now.date }
   );
 
+  // For the morning email only: everything not submitted that is overdue or due later (today and tomorrow are listed already).
+  let pending = [];
+  if (settings.digestEnabled && isDue(now.minutes, toMinutes(settings.digestTime), 180)) {
+    const p = await connection.execute(
+      `SELECT a.assignment_id, a.title, TO_CHAR(a.due_date,'YYYY-MM-DD') AS due_date, s.name AS subject_name
+       FROM ASSIGNMENTS a LEFT JOIN SUBJECTS s ON s.subject_id = a.subject_id
+       WHERE a.user_id = :userId AND COALESCE(a.column_id,'') <> 'col-done'
+         AND (a.due_date IS NULL OR a.due_date < CAST(:d1 AS DATE) OR a.due_date > CAST(:d2 AS DATE))
+       ORDER BY a.due_date ASC NULLS LAST`,
+      { userId, d1: now.date, d2: now.tomorrow }
+    );
+    pending = p.rows.map((a) => ({ id: a.ASSIGNMENT_ID, title: a.TITLE, dueDate: a.DUE_DATE, subjectName: a.SUBJECT_NAME }));
+  }
+
+  // Things the LMS added after the student connected (not the first import), in the last two days: one "new" email each.
+  // Without the LMS tables (migration not run yet) there is simply nothing new.
+  let fresh = [];
+  try {
+    const f = await connection.execute(
+      `SELECT 'assignment' AS kind, a.assignment_id AS id, a.title, TO_CHAR(a.due_date,'YYYY-MM-DD') AS d, NULL AS t, s.name AS subject_name
+         FROM ASSIGNMENTS a
+         JOIN LMS_ITEM_MAP m ON m.user_id = a.user_id AND m.kind = 'assign' AND m.local_id = a.assignment_id
+         JOIN LMS_CONNECTIONS c ON c.user_id = a.user_id
+         LEFT JOIN SUBJECTS s ON s.subject_id = a.subject_id
+        WHERE a.user_id = :userId AND COALESCE(a.column_id,'') <> 'col-done'
+          AND a.created_at > c.created_at + INTERVAL '1 hour' AND a.created_at > NOW() - INTERVAL '2 days'
+       UNION ALL
+       SELECT 'quiz' AS kind, e.item_id AS id, e.title, TO_CHAR(e.event_date,'YYYY-MM-DD') AS d, e.event_time AS t, s.name AS subject_name
+         FROM EXAMS_DEADLINES e
+         JOIN LMS_ITEM_MAP m ON m.user_id = e.user_id AND m.kind = 'quiz' AND m.local_id = e.item_id
+         JOIN LMS_CONNECTIONS c ON c.user_id = e.user_id
+         LEFT JOIN SUBJECTS s ON s.subject_id = e.subject_id
+        WHERE e.user_id = :userId AND COALESCE(e.is_done,0) = 0
+          AND e.created_at > c.created_at + INTERVAL '1 hour' AND e.created_at > NOW() - INTERVAL '2 days'`,
+      { userId }
+    );
+    fresh = f.rows.map((r) => ({ id: r.ID, kind: r.KIND, title: r.TITLE, date: r.D, time: r.T, subjectName: r.SUBJECT_NAME }));
+  } catch (err) {
+    if (!err || err.code !== '42P01') throw err;
+  }
+
   const routineMap = new Map();
   for (const r of routines.rows) {
     if (!routineMap.has(r.ROUTINE_ID)) routineMap.set(r.ROUTINE_ID, { routineId: r.ROUTINE_ID, name: String(r.ACTIVITY_NAME || '').trim(), time: r.ACTIVITY_TIME, days: [] });
@@ -134,6 +175,8 @@ async function loadUserData(connection, userId, now) {
       location: e.LOCATION, subjectId: e.SUBJECT_ID, subjectName: e.SUBJECT_NAME,
     })),
     assignments: assignments.rows.map((a) => ({ id: a.ASSIGNMENT_ID, title: a.TITLE, dueDate: a.DUE_DATE, subjectName: a.SUBJECT_NAME })),
+    pending,
+    fresh,
     markedSubjectIds: new Set(marked.rows.map((m) => m.SUBJECT_ID)),
   };
 }
@@ -210,7 +253,7 @@ async function runTick(nowDate = new Date()) {
       try {
         const settings = rowToSettings(row);
         const now = localParts(nowDate, settings.timezone);
-        const data = await loadUserData(connection, userId, now);
+        const data = await loadUserData(connection, userId, now, settings);
         const due = computeDue({ now, settings, ...data });
         for (let n of due) {
           if (!(await claim(connection, userId, n.key))) continue;

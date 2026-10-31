@@ -6,6 +6,15 @@ Update this file with every change.
 
 ---
 
+## 2026-10-31 — LMS: assignment files, emails, and attendance by paste
+
+- **Teacher's files:** each assignment's attachments (a PDF, a lab file) are listed on its board card and open in a new tab. Only the name, size and the file's path on the LMS are stored (table `LMS_FILES`); the file itself is **not stored**. `GET /api/lms/file/:id` fetches it from the LMS with the student's own key and streams it on (25 MB cap, `nosniff`, never cached). PDFs and images open in the page; anything else is offered as a download, because an HTML file from a teacher must never run on our address. A redirect is never followed, only paths on the LMS's own address are fetched, and a "login page" answer from the LMS (a refused key) is reported, not passed on. The assignment's own text (HTML) becomes the card's note, as plain words, when the card is created.
+- **Emails:** the existing morning email (time chosen in Settings > Reminders) already lists today's classes, quizzes and assignments because the LMS data lives in the same tables. It now also has **"Not submitted yet"**: every assignment not done that is overdue, due later or has no date, overdue first (at most 8, then "and N more"). A **"New assignment / New quiz on your LMS"** email goes out once per new item the LMS added after the student connected (not the first import, so connecting never sends ten emails at once; the reminder log keeps it to one each). Both follow the "deadline reminders" switch. Emails are built in the same templates as before: no emoji, line icons only.
+- **Attendance (Present/Absent) cannot come from the LMS automatically.** The API gives no attendance functions to a student, and the sign-in key has no private part for Moodle's auto-login. What is possible and safe: the student copies the course's Attendance page (select all, copy) and pastes it under Settings > University LMS. Rules (no AI) read each dated class and its status; "?" and notes are skipped; two sessions on one day give one record (Present only if all were). They check first (nothing saved), then import. The LMS is the official record, so a day it marks replaces the student's own mark for that day. Rejected: a browser bookmarklet or extension (clumsy on phones), asking for the student's Microsoft password.
+- **Needs** the migration again (`node backend/scripts/migrate-lms.js`: adds `LMS_FILES`); without it files simply do not appear and the rest works.
+
+---
+
 ## 2026-10-31 — LMS phase 2: quizzes and marks (read-only)
 
 - **What:** the same sync now also (1) turns each quiz in the LMS calendar into a **Quiz** in Exams & Deadlines (date and local time, moved when the teacher moves it, left alone if the student deleted it), and (2) stores the student's marks per course and shows them on the Grades page under "From your LMS".

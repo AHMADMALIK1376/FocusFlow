@@ -107,3 +107,27 @@ test('the clock time of a quiz is the student\'s local time, 24 hour, not UTC', 
   assert.equal(lms.localTime(Date.UTC(2026, 9, 29, 20, 5) / 1000, 'UTC'), '20:05');
   assert.equal(lms.localTime(0), null);
 });
+
+test('the teacher\'s HTML becomes plain words, with line breaks, entities decoded and a length limit', () => {
+  assert.equal(lms.htmlToText('<p>Read chapter&nbsp;3 &amp; do <b>Q1</b>.</p><p>Submit a PDF.</p><script>alert(1)</script>'), 'Read chapter 3 & do Q1.\nSubmit a PDF.');
+  assert.equal(lms.htmlToText(''), '');
+  assert.equal(lms.htmlToText(undefined), '');
+  assert.equal(lms.htmlToText('a<br>b<br/>c'), 'a\nb\nc');
+  const long = lms.htmlToText('x'.repeat(2000), 50);
+  assert.equal(long.length, 50);
+  assert.ok(long.endsWith('…'));
+  assert.equal(lms.htmlToText('&lt;b&gt;'), '<b>');
+  assert.equal(lms.htmlToText('&amp;lt;'), '&lt;'); // decoded once only
+});
+
+test('only a file path on the LMS itself is accepted', () => {
+  const base = 'https://lms.iqra.edu.pk';
+  assert.equal(lms.relativeFilePath('https://lms.iqra.edu.pk/webservice/pluginfile.php/12/mod_assign/introattachment/0/Lab%201.pdf?token=x', base), '/webservice/pluginfile.php/12/mod_assign/introattachment/0/Lab%201.pdf');
+  assert.equal(lms.relativeFilePath('https://lms.iqra.edu.pk/pluginfile.php/1/a.pdf', base), '/pluginfile.php/1/a.pdf');
+  assert.equal(lms.relativeFilePath('https://evil.example/webservice/pluginfile.php/1/a.pdf', base), null);
+  assert.equal(lms.relativeFilePath('https://lms.iqra.edu.pk.evil.example/pluginfile.php/1/a.pdf', base), null);
+  assert.equal(lms.relativeFilePath('https://lms.iqra.edu.pk/admin/tool/x.php', base), null);
+  assert.equal(lms.relativeFilePath('http://lms.iqra.edu.pk/pluginfile.php/1/a.pdf', base), null);
+  assert.equal(lms.relativeFilePath('not a url', base), null);
+  assert.equal(lms.relativeFilePath(undefined, base), null);
+});
