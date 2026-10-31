@@ -84,7 +84,7 @@ export default function GradesPanel({ subjectId }) {
                     {x.score ?? "—"}/{x.maxScore ?? "—"}{pct != null ? ` · ${pct}%` : ""}{x.weight ? ` · wt ${x.weight}%` : ""}
                   </p>
                 </div>
-                <button onClick={() => openEdit(x)} className="p-1.5 rounded-lg text-muted hover:text-brand hover:bg-brand/10 transition-colors" title="Edit grade"><Pencil size={15} /></button>
+                <button onClick={() => openEdit(x)} className="p-1.5 max-sm:p-2.5 rounded-lg text-muted hover:text-brand hover:bg-brand/10 transition-colors" title="Edit grade"><Pencil size={15} /></button>
                 <DeleteButton onClick={() => onDelete(x)} title="Delete grade" />
               </li>
             );

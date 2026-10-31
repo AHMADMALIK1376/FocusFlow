@@ -166,7 +166,7 @@ export default function FinancePage() {
                   </div>
                   <span className="text-xs text-muted shrink-0">{e.date}</span>
                   <span className={`font-black text-sm shrink-0 ${e.type === "income" ? "text-success" : "text-focus"}`}>{fmt(e.amount)}</span>
-                  <button onClick={() => removeEntry(e.id)} className="text-muted hover:text-focus shrink-0" aria-label="Delete"><X size={15} /></button>
+                  <button onClick={() => removeEntry(e.id)} className="text-muted hover:text-focus shrink-0 max-sm:p-2" aria-label="Delete"><X size={15} /></button>
                 </li>
               ))}
             </ul>
