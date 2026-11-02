@@ -66,11 +66,26 @@ test('status: off until the server has a key; then connected or not, never any s
   assert.equal(calls[calls.length - 1].params.userId, 'u1');
 });
 
-test('status: tables not created yet means "not available", not an error', async () => {
+test('status: tables not created yet means "not available", not an error, and says why', async () => {
   failWith = '42P01';
   const r = res(); await ctl.getStatus(req(), r);
   assert.equal(r.statusCode, 200);
   assert.equal(r.body.available, false);
+  assert.equal(r.body.reason, 'no_tables');
+});
+
+test('status: off because of the server key says which problem: missing, or set but not a 32-byte key', async () => {
+  delete process.env.LMS_TOKEN_KEY;
+  let r = res(); await ctl.getStatus(req(), r);
+  assert.deepEqual([r.body.available, r.body.reason], [false, 'no_key']);
+  process.env.LMS_TOKEN_KEY = 'too-short';
+  r = res(); await ctl.getStatus(req(), r);
+  assert.deepEqual([r.body.available, r.body.reason], [false, 'bad_key']);
+  assert.ok(!JSON.stringify(r.body).includes('too-short')); // the setting itself is never sent back
+  process.env.LMS_TOKEN_KEY = KEY_B64;
+  r = res(); await ctl.getStatus(req(), r);
+  assert.equal(r.body.available, true);
+  assert.equal('reason' in r.body, false);
 });
 
 test('connect: the pasted text is checked with the LMS, saved encrypted, and synced at once', async () => {

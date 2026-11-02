@@ -3,7 +3,7 @@ import { GraduationCap, RefreshCw, Unplug } from "lucide-react";
 import { lmsAPI } from "../../services/api";
 import { Button } from "../../components/ui";
 import AttendanceImport from "./AttendanceImport";
-import { buildLaunchUrl, keyFromAddress, MANUAL_SCHEME, randomPassport, registerHandler, summarizeSync } from "./lmsLink";
+import { buildLaunchUrl, offReason, keyFromAddress, MANUAL_SCHEME, randomPassport, registerHandler, summarizeSync } from "./lmsLink";
 
 const when = (iso) => {
   const d = iso ? new Date(iso) : null;
@@ -99,7 +99,12 @@ export default function LmsConnectCard() {
     );
   }
   if (!status.available) {
-    return <p className="text-sm text-muted">Connecting to your university LMS is not switched on for this server yet.</p>;
+    return (
+      <div className="text-sm text-muted space-y-1.5">
+        <p>Connecting to your university LMS is not switched on for this server yet.</p>
+        {offReason(status.reason) && <p className="text-xs">{offReason(status.reason)}</p>}
+      </div>
+    );
   }
 
   const signIn = buildLaunchUrl(status.site, passport);

@@ -32,7 +32,8 @@ const withSyncing = (body, userId) => ({ ...body, syncing: isSyncing(userId) });
 // GET /api/lms/status
 exports.getStatus = async (req, res) => {
   const base = { available: Boolean(lms.keyFromEnv()), site: moodle.baseUrl(), connected: false };
-  if (!base.available) return res.json(base);
+  // Why it is off, in a word the card turns into plain English: no_key (LMS_TOKEN_KEY not set), bad_key (set, but not 32 bytes), no_tables.
+  if (!base.available) return res.json({ ...base, reason: process.env.LMS_TOKEN_KEY ? 'bad_key' : 'no_key' });
   let connection;
   try {
     connection = await getConnection();
@@ -42,7 +43,7 @@ exports.getStatus = async (req, res) => {
     );
     res.json(withSyncing(r.rows.length ? { ...base, ...sessionFor(r.rows[0]) } : base, req.user.userId));
   } catch (err) {
-    if (tablesMissing(err)) return res.json({ ...base, available: false });
+    if (tablesMissing(err)) return res.json({ ...base, available: false, reason: 'no_tables' });
     console.error('LMS status error:', err.message);
     res.status(500).json({ error: 'Failed to get the LMS status.' });
   } finally {

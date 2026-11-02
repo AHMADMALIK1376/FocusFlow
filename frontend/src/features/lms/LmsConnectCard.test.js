@@ -140,3 +140,10 @@ test("a first sync that is still running is waited for: the card says so and che
     jest.useRealTimers();
   }
 });
+
+test("when it is off, the card says why (so the person running the server knows what to add)", async () => {
+  mockApi.status.mockResolvedValue({ available: false, reason: "no_key" });
+  render(<LmsConnectCard />);
+  expect(await screen.findByText(/not switched on/i)).toBeInTheDocument();
+  expect(screen.getByText(/no LMS_TOKEN_KEY setting yet/i)).toBeInTheDocument();
+});

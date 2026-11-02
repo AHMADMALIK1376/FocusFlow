@@ -40,6 +40,14 @@ export const randomPassport = () => {
   return `${bytes[0]}${bytes[1]}`;
 };
 
+// Why the server has the LMS switched off, for the person who runs it.
+export function offReason(reason) {
+  if (reason === "no_key") return "The server has no LMS_TOKEN_KEY setting yet. Add it to the server's settings (on Render, under Environment), then restart the server.";
+  if (reason === "bad_key") return "The server's LMS_TOKEN_KEY is set but is not a valid key (it must be 32 random bytes, written in base64). Make a new one and replace it.";
+  if (reason === "no_tables") return "The database does not have the LMS tables yet. Run node backend/scripts/migrate-lms.js once.";
+  return "";
+}
+
 // "Added 2 subjects, 5 assignments." (or "Everything is up to date.").
 export function summarizeSync(result) {
   if (!result || result.error) return "";

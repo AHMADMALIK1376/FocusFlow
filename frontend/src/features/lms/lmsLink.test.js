@@ -1,4 +1,4 @@
-import { buildLaunchUrl, handlerUrl, keyFromAddress, MANUAL_SCHEME, PROTOCOL, randomPassport, registerHandler, summarizeSync } from "./lmsLink";
+import { offReason, buildLaunchUrl, handlerUrl, keyFromAddress, MANUAL_SCHEME, PROTOCOL, randomPassport, registerHandler, summarizeSync } from "./lmsLink";
 
 test("the sign-in address asks Moodle to hand the key back to an app name that Moodle accepts", () => {
   const u = new URL(buildLaunchUrl("https://lms.iqra.edu.pk/", "12345"));
@@ -47,4 +47,12 @@ test("the result of a sync is said in plain words", () => {
   expect(summarizeSync({ skipped: "recent" })).toBe("Everything is up to date.");
   expect(summarizeSync({ error: "unreachable" })).toBe("");
   expect(summarizeSync(undefined)).toBe("");
+});
+
+test("the reason the LMS is off is told in plain words, and an unknown reason says nothing", () => {
+  expect(offReason("no_key")).toMatch(/LMS_TOKEN_KEY setting yet.*Render/);
+  expect(offReason("bad_key")).toMatch(/32 random bytes/);
+  expect(offReason("no_tables")).toMatch(/migrate-lms\.js/);
+  expect(offReason("something")).toBe("");
+  expect(offReason(undefined)).toBe("");
 });
