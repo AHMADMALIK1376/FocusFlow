@@ -103,6 +103,22 @@ test("the browser is asked to send LMS sign-in links to FocusFlow", async () => 
   navigator.registerProtocolHandler = original;
 });
 
+test("step 1 asks the browser again on a click (browsers only show the Allow box for a click) and says what to do next", async () => {
+  mockApi.status.mockResolvedValue({ available: true, site: SITE, connected: false });
+  const original = navigator.registerProtocolHandler;
+  navigator.registerProtocolHandler = jest.fn();
+  render(<LmsConnectCard />);
+  await screen.findByRole("link", { name: /sign in with the lms/i });
+  navigator.registerProtocolHandler.mockClear();
+  fireEvent.click(screen.getByRole("button", { name: /allow focusflow to receive the sign-in/i }));
+  expect(navigator.registerProtocolHandler).toHaveBeenCalledTimes(1);
+  expect(screen.getByText(/click Allow in the small box/i)).toBeInTheDocument();
+  navigator.registerProtocolHandler = undefined;
+  fireEvent.click(screen.getByRole("button", { name: /allow focusflow to receive the sign-in/i }));
+  expect(screen.getByText(/cannot do that/i)).toBeInTheDocument();
+  navigator.registerProtocolHandler = original;
+});
+
 test("the key never appears on the page", async () => {
   mockApi.status.mockResolvedValue({ available: true, site: SITE, connected: false });
   mockApi.connect.mockResolvedValue({ connected: true, result: {} });

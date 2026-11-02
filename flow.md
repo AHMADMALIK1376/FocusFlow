@@ -286,3 +286,5 @@ Used by Subjects, Daily Routine, Exams, Grades and Assignments.
 
 ## Responsive layout
 `Layout` shows `Sidebar` from `lg` and `MobileTabBar` (with the More sheet) below it. Pages sit in one column on phones and widen at `md`/`lg`/`xl`. Signed-out pages render a phone-only header and switch link (`md:hidden`) and the sliding two-panel card from `md`. Modals cap at 90dvh and scroll inside. Wide charts scroll inside their card.
+
+LMS sign-in card: step 1 button calls registerHandler (navigator.registerProtocolHandler) on a click, then the sign-in link goes to launch.php; if the browser still does not hand the key back, the paste box is used.

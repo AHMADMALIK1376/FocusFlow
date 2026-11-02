@@ -18,6 +18,7 @@ export default function LmsConnectCard() {
   const [note, setNote] = useState("");
   const [error, setError] = useState("");
   const [confirming, setConfirming] = useState(false);
+  const [asked, setAsked] = useState(""); // "" | "yes" | "no": did the browser accept the request to bring the sign-in back here
   const [passport] = useState(() => randomPassport());
   const returned = useRef(false);
 
@@ -135,11 +136,20 @@ export default function LmsConnectCard() {
 
       {needsConnect && (
         <div className="space-y-3">
+          <div className="space-y-1.5">
+            <p className="text-xs font-bold text-ink">Step 1. Let your browser bring you back here</p>
+            <Button variant="ghost" size="sm" onClick={() => setAsked(registerHandler(window.location.origin) ? "yes" : "no")}>
+              Allow FocusFlow to receive the sign-in
+            </Button>
+            {asked === "yes" && <p className="text-xs text-muted">Now look at the right end of the address bar: click Allow in the small box that appeared. Then do step 2.</p>}
+            {asked === "no" && <p className="text-xs text-muted">This browser cannot do that. Use "It did not bring me back" below.</p>}
+          </div>
+          <p className="text-xs font-bold text-ink">Step 2. Sign in</p>
           <a href={signIn} className="inline-flex items-center gap-2 rounded-full bg-grad-hero text-on-brand font-bold px-4 py-2 shadow-neu-sm">
             <GraduationCap size={16} aria-hidden="true" /> Sign in with the LMS
           </a>
           <p className="text-xs text-muted">
-            You sign in on the university's own page. If your browser then asks to let FocusFlow open links, choose Allow: you come back here and are connected.
+            You sign in on the university's own page, and you come back here connected.
           </p>
           <details className="text-xs text-muted">
             <summary className="cursor-pointer font-bold text-ink">It did not bring me back</summary>
