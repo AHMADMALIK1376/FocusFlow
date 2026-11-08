@@ -6,6 +6,18 @@ Update this file with every change.
 
 ---
 
+## 2026-11-08 — Android app: Version 1 screen flow (a plan, no code changed)
+
+- **What:** `docs/mobile/FocusFlow Screen Flow V1.pdf` plans the Android app: 56 frames with IDs, 332 connections, a build order and a card for each screen. The same plan is in the Claude design system, whose README makes Claude Design read it before every screen, design one at a time and report progress.
+- **Five tabs:** Today, Subjects, Study, Plan, Progress, each answering one question. Settings sits behind the student's picture. **Rejected:** the web's six items with nine features behind More and 9px labels; a "Me" tab mixing grades with settings.
+- **Version 1 is the daily study loop.** Notes, Budget, Goals, Daily Routine, the cube, workspaces and the LMS sign-in wait, and stay on the web. The owner confirmed this cut on 2026-11-08. **Rejected:** rebuilding everything before the first launch. Each screen has to be rebuilt in React Native, so scope is the biggest cost.
+- **Onboarding is three steps ending on the student's own classes:** mascot, timetable, reminders. **Rejected:** the web's six steps, which ask for phone, birthday and pronouns before giving anything back.
+- **Design order starts with Today, not login,** so that the main screen sets the look.
+- **Found while planning:** there is no delete-account feature, and Google Play requires one in the app and on the web. The screen is designed (E7); the server part is not built.
+- **Mobile tokens differ from the web on purpose:** text colours use the values from `deriveTokens.js`'s readability guard, because the default theme skips that guard (white on coral is 2.96:1). `tokens.css` here is unchanged, so the web still has this problem.
+
+---
+
 ## 2026-10-31 — Subject page redesign; "&amp;" names; duplicate subjects merged back
 
 - **What went wrong (owner's screenshots):** subjects made by the LMS sync showed "HCI &amp; Computer Graphics Lab" (the LMS sends names HTML-escaped) and a code like `IUIC_COURSE_FALL26_589` that overflowed the cube; and some subject pages had no attendance. Nothing was deleted: the sync could not match "HCI &amp; ..." to the student's own "HCI & ...", so it made a **second, empty copy**, and the marks the student had made were still on the original.
