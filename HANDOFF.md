@@ -13,6 +13,31 @@ standing rules), then `decision.md` (every choice, with why) and `flow.md` (how 
 - Production: frontend on Vercel (it passes `/api/*` to the backend, so the sign-in cookie stays first-party),
   backend on Render free (sleeps when idle), database on Supabase free. Never set `REACT_APP_API_URL`.
 
+## 1b. What we are building, and why
+- **What it is:** a study companion for students (school, college, university). Everything is organised around the
+  student's **subjects**: each subject ties together its class times, attendance, grades, exams, assignments, notes and
+  flashcards. The app tells the student when the next class is, which exam is coming, what the GPA looks like, and
+  whether an assignment was handed in. Students can scan a timetable, date sheet or marks screenshot instead of typing
+  (free, rule-based: Tesseract.js in the browser plus regex; no AI service).
+- **Why students only:** it started as a general productivity app and was deliberately narrowed to one audience
+  (spec: `docs/superpowers/specs/2026-06-29-student-focused-pivot-design.md`). Shopping, contacts, mood and events were
+  deleted; Kanban became the assignment board, time tracking became study hours, habits became study streaks.
+- **Why it is built this way (cloud and hosting):** the owner is a student with no budget, so everything is free tier:
+  Vercel (frontend), Render (backend, sleeps when idle), Supabase (Postgres). It is a **PWA**, so friends install it
+  from the browser without the Play Store, and it can send reminder pop-ups when closed. No paid AI or paid services,
+  by rule. Data is saved per account in the database, so it is the same on phone and laptop.
+- **Why Vercel passes `/api` to Render:** so the app and API share one address and the sign-in cookie is first-party
+  (no domain purchase needed).
+- **Design:** a soft "clay" look (cream, coral, sage, sunshine), line icons only (lucide), no emoji. All colours are
+  design tokens in `frontend/src/design/tokens.css`; since PR 10 the student can change them at runtime
+  (theme engine + Design Studio, 24 ready-made palettes, contrast guarded). The original visual direction is in
+  `docs/superpowers/specs/2026-06-18-frontend-aurora-redesign-design.md`.
+- **Why we work with Claude agents:** the owner asked for a repeatable pipeline, so each task goes
+  planner -> coder -> tester -> reviewer (`.claude/agents/`), with a written plan first and a reviewer who attacks the
+  result. That is a working method, not part of the app.
+- **Where the reasons for every choice are:** `decision.md` (what, why, what was rejected) and `flow.md` (how execution
+  moves through the code). Read those for any "why did we do X" question.
+
 ## 2. How the owner wants work done (from CLAUDE.md, the short version)
 - Branch from `main` as `feat/<name>` (or `fix/<name>`), never push to `main`, open a draft PR, several small commits.
 - Plan first in `docs/superpowers/specs/` for anything bigger than a small fix. Use the subagents in
